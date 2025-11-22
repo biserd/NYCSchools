@@ -6,6 +6,10 @@ import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { LogIn, LogOut, User, Heart } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,9 +18,11 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<SortOption>("overall");
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: rawSchools, isLoading } = useQuery<School[]>({
-    queryKey: ["/schools.json"],
+    queryKey: ["/api/schools"],
   });
 
   const schools = useMemo(() => {
@@ -118,7 +124,57 @@ export default function Home() {
                 Find and compare NYC public and charter elementary schools
               </p>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              {isAuthenticated && user && (
+                <>
+                  <Link href="/favorites">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-favorites-nav"
+                    >
+                      <Heart className="w-4 h-4 mr-2" />
+                      My Favorites
+                    </Button>
+                  </Link>
+                  <div className="flex items-center gap-2 mr-2" data-testid="container-user-info">
+                    {user.profileImageUrl && (
+                      <img 
+                        src={user.profileImageUrl} 
+                        alt={`${user.firstName || 'User'}'s profile`} 
+                        className="w-8 h-8 rounded-full object-cover"
+                        data-testid="img-user-avatar"
+                      />
+                    )}
+                    <span className="text-sm text-muted-foreground" data-testid="text-user-name">
+                      {user.firstName || user.email || 'User'}
+                    </span>
+                  </div>
+                </>
+              )}
+              {isAuthenticated ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = '/api/logout'}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => window.location.href = '/api/login'}
+                  data-testid="button-login"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>

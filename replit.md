@@ -4,7 +4,7 @@
 A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools. Built with React, TypeScript, and Shadcn UI, this application helps parents make informed decisions about kindergarten enrollment by providing clear, scannable data about schools across all NYC districts.
 
 ## Current State (November 22, 2025)
-**Status**: Frontend complete, ready for integration testing
+**Status**: Database-backed application with authentication and favorites feature
 
 ### Completed Features
 1. **Data Model & Sample Data**
@@ -132,22 +132,46 @@ npm run dev
 
 The workflow "Start application" runs `npm run dev` which starts both the Express backend (minimal, just serving static files) and Vite frontend on the same port.
 
-## Future Enhancements (Out of Current Scope)
+## Completed Features (Latest Sprint)
 
-### Real Data Integration
+### Database & Persistence ✅
+- PostgreSQL database integration with Drizzle ORM
+- Database tables: users, sessions, schools, favorites
+- Automated seeding with 25 NYC schools from schools.json
+- User data and favorites persisted in database
+
+### User Authentication ✅
+- Replit Auth integration (OpenID Connect)
+- Login/logout functionality
+- Session management with PostgreSQL session store (auto-creates sessions table)
+- Session cookies: secure flag only in production (allows development testing)
+- User profile display with avatar and name
+- Protected API endpoints requiring authentication
+
+### Favorites & Comparison ✅
+- Save/unsave favorite schools (persisted to database)
+- Favorite button on each school card
+- Dedicated /favorites page for viewing saved schools
+- Side-by-side comparison of favorite schools
+- Visual indicator (filled heart) for favorited schools
+
+## In Progress / Next Features
+
+### Real Data Integration (Planned)
 - Connect to NYC Open Data API for live school data
 - Integrate NYSED data for additional metrics
 - Add data refresh mechanism
 
-### User Features
-- Save favorite schools for comparison
-- Export school lists to PDF
-- Add map view with school locations
+### Map View (Planned)
+- Add map component showing school locations
+- Geocode school addresses
 - Calculate commute times from home address
 
-### Enhanced Features
-- User accounts for saving preferences
-- Side-by-side school comparison tool
+### PDF Export (Planned)
+- Export filtered school lists to PDF
+- Export comparison reports
+
+### Enhanced Features (Future)
 - Historical trend data for scores
 - Parent reviews and ratings
 - Application deadline tracking
