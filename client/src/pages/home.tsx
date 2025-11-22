@@ -1,0 +1,156 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { FilterBar, SortOption } from "@/components/FilterBar";
+import { SchoolList } from "@/components/SchoolList";
+import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("all");
+  const [selectedGradeBand, setSelectedGradeBand] = useState("All");
+  const [sortBy, setSortBy] = useState<SortOption>("overall");
+  const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const { data: rawSchools, isLoading } = useQuery<School[]>({
+    queryKey: ["/schools.json"],
+  });
+
+  const schools = useMemo(() => {
+    if (!rawSchools) return [];
+    
+    return rawSchools.map((school): SchoolWithOverallScore => ({
+      ...school,
+      overall_score: calculateOverallScore(school),
+    }));
+  }, [rawSchools]);
+
+  const filteredAndSortedSchools = useMemo(() => {
+    let filtered = schools;
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (school) =>
+          school.name.toLowerCase().includes(query) ||
+          school.dbn.toLowerCase().includes(query)
+      );
+    }
+
+    if (selectedDistrict !== "all") {
+      filtered = filtered.filter(
+        (school) => school.district === parseInt(selectedDistrict)
+      );
+    }
+
+    if (selectedGradeBand !== "All") {
+      filtered = filtered.filter((school) => school.grade_band === selectedGradeBand);
+    }
+
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "overall":
+          return b.overall_score - a.overall_score;
+        case "academics":
+          return b.academics_score - a.academics_score;
+        case "climate":
+          return b.climate_score - a.climate_score;
+        case "progress":
+          return b.progress_score - a.progress_score;
+        case "name":
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [schools, searchQuery, selectedDistrict, selectedGradeBand, sortBy]);
+
+  const handleSchoolClick = (school: SchoolWithOverallScore) => {
+    setSelectedSchool(school);
+    setDetailOpen(true);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background" data-testid="loading-state">
+        <div className="sticky top-0 z-50 bg-background border-b" data-testid="skeleton-filter-bar">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <Skeleton className="h-12 flex-1" data-testid="skeleton-search" />
+                <Skeleton className="h-12 w-full md:w-48" data-testid="skeleton-district" />
+                <Skeleton className="h-12 w-full md:w-48" data-testid="skeleton-grade" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-32" data-testid="skeleton-sort-1" />
+                <Skeleton className="h-8 w-24" data-testid="skeleton-sort-2" />
+                <Skeleton className="h-8 w-24" data-testid="skeleton-sort-3" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="skeleton-schools">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-64" data-testid={`skeleton-card-${i}`} />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background" data-testid="home-page">
+      <header className="bg-background border-b" data-testid="header-main">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-page-title">
+                NYC Kindergarten School Finder
+              </h1>
+              <p className="text-muted-foreground" data-testid="text-page-subtitle">
+                Find and compare NYC public and charter elementary schools
+              </p>
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      <FilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedDistrict={selectedDistrict}
+        onDistrictChange={setSelectedDistrict}
+        selectedGradeBand={selectedGradeBand}
+        onGradeBandChange={setSelectedGradeBand}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
+
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground" data-testid="text-results-count">
+            Showing {filteredAndSortedSchools.length} {filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}
+          </p>
+        </div>
+        <SchoolList
+          schools={filteredAndSortedSchools}
+          onSchoolClick={handleSchoolClick}
+        />
+      </main>
+
+      <SchoolDetailPanel
+        school={selectedSchool}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
+    </div>
+  );
+}
