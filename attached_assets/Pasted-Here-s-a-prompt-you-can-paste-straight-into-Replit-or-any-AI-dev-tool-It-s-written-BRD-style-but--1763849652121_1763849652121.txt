@@ -1,0 +1,144 @@
+Here’s a prompt you can paste straight into Replit (or any AI dev tool). It’s written BRD-style but still very actionable:
+
+⸻
+
+PROJECT TITLE:
+NYC Kindergarten School Finder – Parent-Friendly Dashboard
+
+⸻
+
+CONTEXT & GOAL
+
+I am a parent of a 4-year-old applying to NYC kindergarten. I need a simple, parent-friendly web dashboard that helps me browse and compare NYC public/charter elementary schools by district and school name, using publicly available school data (test scores, climate, etc.).
+
+For this first version, it’s OK to use static sample data (JSON) that mimics real NYC DOE / NYSED data. Focus on a clean UX and clear structure so actual APIs can be wired in later.
+
+⸻
+
+HIGH-LEVEL REQUIREMENTS
+
+Build a single-page web application (SPA) with:
+	1.	Landing / Main Dashboard (one page)
+	•	A top filter bar with:
+	•	Text search: Search by school name (case-insensitive, live filtering).
+	•	Dropdown: Select NYC District (e.g., “All Districts, 1, 2, 3, …”).
+	•	Optional dropdown: Grade band (e.g., “K–5, K–8, All”).
+	•	A sortable, scrollable school list:
+	•	Each row/card shows:
+	•	School name
+	•	DBN (school code)
+	•	District
+	•	Overall score (0–100, see below)
+	•	ELA % proficient, Math % proficient
+	•	Student–teacher ratio (if available)
+	•	Click on a school row/card to open a detail panel.
+	•	A simple scoring model (computed on the frontend for now):
+	•	overallScore = 0.4 * academics + 0.3 * climate + 0.3 * progress
+	•	Each factor is a 0–100 value from the dataset.
+	•	Sorting controls:
+	•	Sort by: Overall Score (default), Academics, Climate, Progress, School Name A–Z.
+	2.	School Detail Panel / Drawer
+When a school is clicked, show a side panel or modal (no separate page) with:
+	•	Header:
+	•	School name, DBN, district
+	•	Address (if available in data)
+	•	“Snapshot” section:
+	•	Overall score (0–100) with label (“Outstanding / Strong / Average / Below average” based on ranges)
+	•	A small radar or bar chart showing:
+	•	Academics score
+	•	Climate score
+	•	Progress score
+	•	“Academics” section:
+	•	ELA % proficient
+	•	Math % proficient
+	•	“Environment / Climate” section:
+	•	Climate score and 2–3 submetrics if present (e.g., safety, family engagement).
+	•	“Details” section:
+	•	Enrollment, grade span, student–teacher ratio (if available).
+	3.	Filters & UX Behavior
+	•	Filters and search should work together:
+	•	District filter + name search + sort should all combine.
+	•	No page reloads; everything should update client-side.
+	•	If no schools match the filters, show a friendly “No schools found for these filters” message.
+
+⸻
+
+DATA MODEL (SAMPLE JSON)
+
+Create a local JSON file (e.g., schools.json) with at least ~20 sample entries so the UI feels real. Each school object should look like:
+
+{
+  "dbn": "02M123",
+  "name": "PS 123 Example Elementary",
+  "district": 2,
+  "address": "123 Example St, New York, NY 10028",
+  "grade_band": "K-5",
+  "academics_score": 78,
+  "climate_score": 85,
+  "progress_score": 72,
+  "ela_proficiency": 65,
+  "math_proficiency": 70,
+  "enrollment": 550,
+  "student_teacher_ratio": 15.2
+}
+
+The frontend should:
+	•	Load this JSON on startup.
+	•	Compute overallScore from the 3 scores.
+	•	Display everything without needing any external API.
+
+⸻
+
+UX & DESIGN GUIDELINES
+	•	Clean, modern, parent-friendly look.
+Think: large fonts, lots of whitespace, clear labels, minimal clutter.
+	•	Use responsive design so it works on desktop and tablet.
+	•	Visual elements:
+	•	Use a simple chart for the detail view (e.g., minimal radar or grouped bar chart).
+	•	Use subtle card styling for each school in the list.
+	•	Make it obvious that:
+	•	You can click a school to view more details.
+	•	Filters are at the top and affect the list immediately.
+
+⸻
+
+TECHNICAL REQUIREMENTS
+	•	Use React + TypeScript for the frontend.
+	•	Use a simple build setup (Vite or Create React App equivalent in Replit).
+	•	Organize code into components, for example:
+	•	App – main layout and state management
+	•	FilterBar – search + district + grade band controls
+	•	SchoolList – displays the table or cards
+	•	SchoolCard – individual school row/card
+	•	SchoolDetailPanel – side drawer/modal with detailed info
+	•	State management can be local React state (no need for Redux).
+	•	No backend required for this version; just load the local JSON.
+	•	Write clear comments in the code to show where real NYC data integrations (DOE/NYSED APIs or CSV imports) could be plugged in later.
+
+⸻
+
+OUT OF SCOPE (FOR THIS VERSION)
+	•	User login / accounts.
+	•	Saving favorites or comparisons.
+	•	Real API integration with NYC DOE / NYSED.
+	•	Maps or commute calculations.
+
+⸻
+
+DELIVERABLE
+
+A working React + TypeScript app in Replit that:
+	1.	Loads schools.json with sample NYC-like school data.
+	2.	Lets me:
+	•	Filter by district
+	•	Search by school name
+	•	Sort by different scores
+	3.	Shows a nice, intuitive dashboard of schools for a NYC parent choosing kindergarten.
+	4.	Has a clickable detail panel with charts and key metrics for each school.
+
+⸻
+
+Please generate all code files, set up the project so it runs in Replit with a single “Run” command, and include a brief README explaining how to:
+	•	Run the app
+	•	Where to edit schools.json
+	•	Where to later connect to real NYC school data APIs.
