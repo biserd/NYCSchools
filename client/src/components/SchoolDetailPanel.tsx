@@ -4,6 +4,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetClose,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid="sheet-detail" className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent data-testid="panel-school-detail" className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetClose asChild>
           <Button
             data-testid="button-close-detail"
@@ -48,6 +49,9 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
 
         <SheetHeader className="pb-6 space-y-3" data-testid="header-detail">
           <SheetTitle className="text-2xl font-bold text-left pr-8" data-testid="text-detail-school-name">{school.name}</SheetTitle>
+          <SheetDescription className="text-sm text-left text-muted-foreground">
+            Detailed information and metrics for {school.name}
+          </SheetDescription>
           <div className="flex flex-col gap-2 text-left">
             <p className="text-sm text-muted-foreground" data-testid="text-detail-address">{school.address}</p>
             <div className="flex gap-2 flex-wrap" data-testid="container-badges">
@@ -67,7 +71,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             <div className="flex items-center gap-4 mb-6" data-testid="container-overall-score">
               <div className="flex items-center gap-3">
                 <div className={`w-4 h-4 rounded-full ${colorMap[scoreColor]}`} data-testid="indicator-detail-score" />
-                <span className="text-5xl font-bold tabular-nums" data-testid="score-detail-overall">
+                <span className="text-5xl font-bold tabular-nums" data-testid="text-detail-overall-score">
                   {school.overall_score}
                 </span>
               </div>
@@ -81,13 +85,14 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <div data-testid="row-bar-academics">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm font-medium" data-testid="label-bar-academics">Academics</span>
-                  <span className="text-sm font-bold tabular-nums" data-testid="score-detail-academics">{school.academics_score}</span>
+                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-academics">{school.academics_score}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-academics">
                   <div
                     className="h-full bg-chart-1 rounded-full transition-all"
                     style={{ width: getBarWidth(school.academics_score) }}
-                    data-testid="bar-academics"
+                    data-testid="fill-bar-academics"
+                    aria-label={`Academics score: ${school.academics_score}`}
                   />
                 </div>
               </div>
@@ -95,13 +100,14 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <div data-testid="row-bar-climate">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm font-medium" data-testid="label-bar-climate">Climate</span>
-                  <span className="text-sm font-bold tabular-nums" data-testid="score-detail-climate-bar">{school.climate_score}</span>
+                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-climate">{school.climate_score}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-climate">
                   <div
                     className="h-full bg-chart-2 rounded-full transition-all"
                     style={{ width: getBarWidth(school.climate_score) }}
-                    data-testid="bar-climate"
+                    data-testid="fill-bar-climate"
+                    aria-label={`Climate score: ${school.climate_score}`}
                   />
                 </div>
               </div>
@@ -109,13 +115,14 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <div data-testid="row-bar-progress">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm font-medium" data-testid="label-bar-progress">Progress</span>
-                  <span className="text-sm font-bold tabular-nums" data-testid="score-detail-progress">{school.progress_score}</span>
+                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-progress">{school.progress_score}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-progress">
                   <div
                     className="h-full bg-chart-3 rounded-full transition-all"
                     style={{ width: getBarWidth(school.progress_score) }}
-                    data-testid="bar-progress"
+                    data-testid="fill-bar-progress"
+                    aria-label={`Progress score: ${school.progress_score}`}
                   />
                 </div>
               </div>
@@ -129,11 +136,11 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </h3>
             <div className="grid grid-cols-2 gap-4" data-testid="grid-academics">
               <div data-testid="container-ela-proficiency">
-                <p className="text-3xl font-bold tabular-nums mb-1" data-testid="score-detail-ela">{school.ela_proficiency}%</p>
+                <p className="text-3xl font-bold tabular-nums mb-1" data-testid="text-detail-ela">{school.ela_proficiency}%</p>
                 <p className="text-sm text-muted-foreground" data-testid="label-ela-proficiency">ELA Proficient</p>
               </div>
               <div data-testid="container-math-proficiency">
-                <p className="text-3xl font-bold tabular-nums mb-1" data-testid="score-detail-math">{school.math_proficiency}%</p>
+                <p className="text-3xl font-bold tabular-nums mb-1" data-testid="text-detail-math">{school.math_proficiency}%</p>
                 <p className="text-sm text-muted-foreground" data-testid="label-math-proficiency">Math Proficient</p>
               </div>
             </div>
@@ -168,7 +175,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               </div>
               <div className="col-span-2" data-testid="container-student-teacher">
                 <p className="text-sm text-muted-foreground mb-1" data-testid="label-ratio">Student-Teacher Ratio</p>
-                <p className="text-xl font-bold flex items-center gap-2" data-testid="text-detail-ratio">
+                <p className="text-xl font-bold flex items-center gap-2" data-testid="text-detail-student-teacher-ratio">
                   <Users className="w-5 h-5 text-muted-foreground" data-testid="icon-users" />
                   {school.student_teacher_ratio}:1
                 </p>
