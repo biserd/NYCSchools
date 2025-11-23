@@ -32,7 +32,7 @@ I prefer detailed explanations. Ask before making major changes.
 - **School Data**: Comprehensive data for 1,533 NYC 5-borough schools, including academic, climate, and progress scores, NYC School Survey results, and realistic student-teacher ratios.
   - **Student-Teacher Ratios**: Deterministically generated based on school DBN (ID) for stability, ranging from 10:1 to 20:1 with an average of 14:1. Ratios are displayed as whole numbers and vary by grade band, with elementary schools averaging lower ratios than high schools, reflecting realistic NYC school characteristics.
 - **Filtering & Sorting**: Live search, district, grade band filters, and sorting by various metrics (Overall Score, Academics, Climate, Progress, Name).
-- **School Display**: Responsive grid of school cards and a detailed side panel (`SchoolDetailPanel`) with charts and full metrics.
+- **School Display**: Responsive grid of school cards with commute times, and a detailed side panel (`SchoolDetailPanel`) with charts and full metrics.
 - **Authentication**: Replit Auth integration for secure login/logout and session management.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated `/favorites` page, and compare them.
 - **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions.
@@ -82,6 +82,11 @@ All scores (Overall, ELA, Math, Climate, Progress) display color-coded indicator
 - **API Endpoints**: Dedicated API endpoints (e.g., `/api/schools/:dbn`, `/api/chat`) for data fetching and AI integration.
 - **Error Handling**: Graceful degradation and user-friendly error messages for AI responses and missing data.
 - **Performance Optimizations**: 
+  - Load More pagination (20 schools initially) to reduce initial render time
+  - 300ms search debounce for efficient filtering
+  - Server-side caching with 5-minute TTL for school data
+  - Gzip compression for API responses
+  - Code-split Map and Recommendations pages with React.lazy/Suspense
   - CommuteTime components use stable query keys (individual lat/lng values) to prevent render storms
   - 30-minute staleTime for commute queries to reduce API calls
   - Graceful error handling that returns error objects instead of throwing exceptions

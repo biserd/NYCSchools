@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
 import { Link } from "wouter";
+import { CommuteTime } from "./CommuteTime";
 
 interface SchoolCardProps {
   school: School;
@@ -157,6 +158,7 @@ export function SchoolCard({ school }: SchoolCardProps) {
               <Users className="w-3 h-3" data-testid={`icon-ratio-${school.dbn}`} />
               {school.student_teacher_ratio}:1
             </span>
+            <CommuteTime schoolDbn={school.dbn} compact data-testid={`commute-${school.dbn}`} />
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button
