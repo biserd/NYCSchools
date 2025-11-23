@@ -4,9 +4,10 @@ import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Users, GraduationCap, MapPin, Info } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
+import { useComparison } from "@/contexts/ComparisonContext";
 import { Link } from "wouter";
 
 interface SchoolCardProps {
@@ -17,11 +18,24 @@ export function SchoolCard({ school }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
   const scoreColor = getScoreColor(overallScore);
   const borough = getBoroughFromDBN(school.dbn);
+  const { addToComparison, removeFromComparison, isInComparison, comparedSchools } = useComparison();
+  const inComparison = isInComparison(school.dbn);
+  const canAddMore = comparedSchools.length < 4;
 
   const colorMap = {
     green: "bg-emerald-500",
     yellow: "bg-amber-500",
     red: "bg-red-500",
+  };
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (inComparison) {
+      removeFromComparison(school.dbn);
+    } else if (canAddMore) {
+      addToComparison(school);
+    }
   };
 
   return (
@@ -139,7 +153,29 @@ export function SchoolCard({ school }: SchoolCardProps) {
               {school.student_teacher_ratio}:1
             </span>
           </div>
-          <ChevronRight className="w-4 h-4 shrink-0" data-testid={`icon-chevron-${school.dbn}`} />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant={inComparison ? "default" : "outline"}
+              size="sm"
+              onClick={handleCompareClick}
+              disabled={!inComparison && !canAddMore}
+              data-testid={`button-compare-${school.dbn}`}
+              className="h-8"
+            >
+              {inComparison ? (
+                <>
+                  <Check className="w-3 h-3 mr-1" />
+                  Added
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3 h-3 mr-1" />
+                  Compare
+                </>
+              )}
+            </Button>
+            <ChevronRight className="w-4 h-4" data-testid={`icon-chevron-${school.dbn}`} />
+          </div>
           </div>
         </div>
       </Card>
