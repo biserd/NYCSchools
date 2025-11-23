@@ -113,6 +113,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Geocoding API
+  app.get("/api/geocode", async (req: Request, res: Response) => {
+    try {
+      const address = req.query.address as string;
+      if (!address) {
+        return res.status(400).json({ error: "Address parameter required" });
+      }
+
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!googleMapsApiKey) {
+        console.error("Google Maps API key not configured");
+        return res.status(500).json({ error: "Google Maps API not configured" });
+      }
+
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`;
+      console.log("Geocoding address:", address);
+      const response = await fetch(url);
+      const data = await response.json();
+      console.log("Google Maps geocoding response:", JSON.stringify(data, null, 2));
+
+      if (data.status === "REQUEST_DENIED") {
+        console.error("Google Maps API key not authorized for Geocoding API");
+        return res.status(500).json({ 
+          error: "Google Maps Geocoding API not enabled. Please enable it in Google Cloud Console.",
+          status: data.status 
+        });
+      }
+
+      if (data.status !== "OK" || !data.results[0]) {
+        console.error("Geocoding failed:", data.status, data.error_message);
+        return res.json({ 
+          error: data.error_message || "Address not found. Please check and try again.",
+          status: data.status 
+        });
+      }
+
+      const location = data.results[0].geometry.location;
+      console.log("Geocoded location:", location);
+      res.json({
+        latitude: location.lat,
+        longitude: location.lng,
+      });
+    } catch (error) {
+      console.error("Error geocoding address:", error);
+      res.status(500).json({ error: "Failed to geocode address" });
+    }
+  });
+
   // User Profile API
   app.get("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {

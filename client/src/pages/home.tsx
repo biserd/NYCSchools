@@ -8,7 +8,7 @@ import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -158,6 +158,16 @@ export default function Home() {
                     >
                       <Heart className="w-4 h-4 mr-2" />
                       My Favorites
+                    </Button>
+                  </Link>
+                  <Link href="/settings">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-settings-nav"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
                     </Button>
                   </Link>
                   <div className="flex items-center gap-2 mr-2" data-testid="container-user-info">

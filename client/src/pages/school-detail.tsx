@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
+import { CommuteTime } from "@/components/CommuteTime";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -201,7 +202,7 @@ export default function SchoolDetail() {
               <h2 className="text-3xl font-bold mb-2" data-testid="text-school-name">
                 {schoolWithScore.name}
               </h2>
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap mb-3">
                 <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
                 {borough && (
                   <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-borough">
@@ -213,6 +214,7 @@ export default function SchoolDetail() {
                   District {schoolWithScore.district}
                 </span>
               </div>
+              <CommuteTime schoolDbn={schoolWithScore.dbn} />
             </div>
             <FavoriteButton 
               schoolDbn={schoolWithScore.dbn} 
