@@ -55,8 +55,8 @@ async function updateStudentTeacherRatios() {
       ratio = ratio * 0.95;
     }
     
-    // Round to one decimal place
-    ratio = Math.round(ratio * 10) / 10;
+    // Round to whole number (no decimals)
+    ratio = Math.round(ratio);
     
     // Ensure ratio is within reasonable bounds (8:1 to 20:1)
     ratio = Math.max(8, Math.min(20, ratio));
