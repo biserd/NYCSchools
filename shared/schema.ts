@@ -76,15 +76,24 @@ export function calculateOverallScore(school: School): number {
 }
 
 export function getScoreLabel(score: number): string {
-  if (score >= 85) return "Outstanding";
-  if (score >= 70) return "Strong";
-  if (score >= 55) return "Average";
-  return "Below Average";
+  if (score >= 90) return "Outstanding";
+  if (score >= 80) return "Strong";
+  if (score >= 70) return "Average";
+  return "Needs Improvement";
 }
 
-export function getScoreColor(score: number): "green" | "yellow" | "red" {
-  if (score >= 80) return "green";
-  if (score >= 60) return "yellow";
+export function getScoreColor(score: number): "green" | "yellow" | "amber" | "red" {
+  if (score >= 90) return "green";
+  if (score >= 80) return "yellow";
+  if (score >= 70) return "amber";
+  return "red";
+}
+
+// Get color for individual metrics (ELA, Math, Climate, Progress)
+export function getMetricColor(score: number): "green" | "yellow" | "amber" | "red" {
+  if (score >= 90) return "green";
+  if (score >= 80) return "yellow";
+  if (score >= 70) return "amber";
   return "red";
 }
 

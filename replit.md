@@ -11,12 +11,12 @@ I prefer detailed explanations. Ask before making major changes.
 ### UI/UX Decisions
 - **Design System**: Clean, modern design following `design_guidelines.md`.
 - **Typography**: Inter typeface for excellent readability, with a clear hierarchy for headers and body text.
-- **Colors**: Enhanced vibrant primary blue (214 95% 50%) for better visual appeal, with success (142 76% 36%) and warning (38 92% 50%) colors. Emerald (≥80), Amber (≥60), and Red (<60) for score indicators. Consistent foreground/muted-foreground for text.
+- **Colors**: Enhanced vibrant primary blue (214 95% 50%) for better visual appeal, with success (142 76% 36%) and warning (38 92% 50%) colors. Color-coded metric indicators: Emerald (≥90), Yellow (80-89), Amber (70-79), and Red (<70) for all scores.
 - **Spacing**: Responsive padding, comfortable card padding, and clear grid/section spacing.
 - **Interactions**: Hover and active states with smooth transitions, `hover-elevate` and `active-elevate-2` for feedback, and accessible `IconButtons` for tooltips.
 - **Responsiveness**: Optimized for mobile, tablet, and desktop breakpoints.
 - **Accessibility**: Proper ARIA labels and keyboard navigation.
-- **Visual Cues**: Comprehensive tooltips for all metrics on school cards and detail panels.
+- **Visual Cues**: Comprehensive tooltips for all metrics on school cards and detail panels. Color-coded indicators on all individual metrics (ELA, Math, Climate, Progress) and overall score.
 - **Footer**: Consistent footer component across all pages (home, favorites, map, compare, settings, recommendations, school-detail, privacy, terms) with links to Privacy Policy and Terms of Service.
 
 ### Technical Implementations
@@ -59,10 +59,17 @@ Overall Score = Test Proficiency (40%) + Climate Score (30%) + Progress Score (3
 - **Progress Score (30% weight)**: NYC DOE metric tracking year-over-year student academic growth and improvement. Measures how effectively schools help students advance, regardless of starting point.
 
 **Score Interpretation:**
-- **80+ (Green)**: Outstanding - Exceeds expectations
-- **60-79 (Yellow)**: Strong - Meets expectations  
-- **40-59 (Amber)**: Average - Room for improvement
-- **Below 40 (Red)**: Needs improvement
+- **90+ (Green)**: Outstanding - Exceeds expectations
+- **80-89 (Yellow)**: Strong - Strong performance
+- **70-79 (Amber)**: Average - Meets expectations
+- **Below 70 (Red)**: Needs improvement
+
+**Visual Indicators:**
+All scores (Overall, ELA, Math, Climate, Progress) display color-coded indicators to help parents quickly identify school strengths and areas of concern:
+- Green dots indicate outstanding performance (90+)
+- Yellow dots indicate strong performance (80-89)
+- Amber dots indicate average performance (70-79)
+- Red dots indicate areas needing improvement (<70)
 
 **Data Sources:**
 - ELA/Math proficiency: NYC Open Data (grades 3-8 state test results)

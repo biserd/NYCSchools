@@ -1,4 +1,4 @@
-import { School, calculateOverallScore, getScoreColor } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,8 @@ interface SchoolCardProps {
 export function SchoolCard({ school }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
   const scoreColor = getScoreColor(overallScore);
+  const elaColor = getMetricColor(school.ela_proficiency);
+  const mathColor = getMetricColor(school.math_proficiency);
   const borough = getBoroughFromDBN(school.dbn);
   const { addToComparison, removeFromComparison, isInComparison, comparedSchools } = useComparison();
   const inComparison = isInComparison(school.dbn);
@@ -24,7 +26,8 @@ export function SchoolCard({ school }: SchoolCardProps) {
 
   const colorMap = {
     green: "bg-emerald-500",
-    yellow: "bg-amber-500",
+    yellow: "bg-yellow-500",
+    amber: "bg-amber-500",
     red: "bg-red-500",
   };
 
@@ -89,6 +92,7 @@ export function SchoolCard({ school }: SchoolCardProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-ela-${school.dbn}`}>
+            <div className={`w-2 h-2 rounded-full ${colorMap[elaColor]} shrink-0`} data-testid={`indicator-ela-${school.dbn}`} />
             <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-ela-${school.dbn}`} />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency}%</div>
@@ -114,6 +118,7 @@ export function SchoolCard({ school }: SchoolCardProps) {
           </div>
           
           <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-math-${school.dbn}`}>
+            <div className={`w-2 h-2 rounded-full ${colorMap[mathColor]} shrink-0`} data-testid={`indicator-math-${school.dbn}`} />
             <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-math-${school.dbn}`} />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency}%</div>

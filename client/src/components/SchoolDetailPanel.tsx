@@ -1,4 +1,4 @@
-import { SchoolWithOverallScore, getScoreLabel, getScoreColor } from "@shared/schema";
+import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import {
@@ -27,10 +27,16 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
   const scoreColor = getScoreColor(school.overall_score);
   const scoreLabel = getScoreLabel(school.overall_score);
   const borough = getBoroughFromDBN(school.dbn);
+  
+  const elaColor = getMetricColor(school.ela_proficiency);
+  const mathColor = getMetricColor(school.math_proficiency);
+  const climateColor = getMetricColor(school.climate_score);
+  const progressColor = getMetricColor(school.progress_score);
 
   const colorMap = {
     green: "bg-emerald-500",
-    yellow: "bg-amber-500",
+    yellow: "bg-yellow-500",
+    amber: "bg-amber-500",
     red: "bg-red-500",
   };
 
@@ -158,6 +164,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <div data-testid="row-bar-climate">
                 <div className="flex justify-between mb-2">
                   <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${colorMap[climateColor]}`} data-testid="indicator-climate-bar" />
                     <span className="text-sm font-medium" data-testid="label-bar-climate">Climate</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -185,6 +192,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <div data-testid="row-bar-progress">
                 <div className="flex justify-between mb-2">
                   <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${colorMap[progressColor]}`} data-testid="indicator-progress-bar" />
                     <span className="text-sm font-medium" data-testid="label-bar-progress">Progress</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -218,7 +226,10 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </h3>
             <div className="grid grid-cols-2 gap-4" data-testid="grid-academics">
               <div data-testid="container-ela-proficiency">
-                <p className="text-3xl font-bold tabular-nums mb-1" data-testid="text-detail-ela">{school.ela_proficiency}%</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={`w-3 h-3 rounded-full ${colorMap[elaColor]}`} data-testid="indicator-ela-detail" />
+                  <p className="text-3xl font-bold tabular-nums" data-testid="text-detail-ela">{school.ela_proficiency}%</p>
+                </div>
                 <div className="flex items-center gap-1">
                   <p className="text-sm text-muted-foreground" data-testid="label-ela-proficiency">ELA Proficient</p>
                   <Tooltip>
@@ -234,7 +245,10 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                 </div>
               </div>
               <div data-testid="container-math-proficiency">
-                <p className="text-3xl font-bold tabular-nums mb-1" data-testid="text-detail-math">{school.math_proficiency}%</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={`w-3 h-3 rounded-full ${colorMap[mathColor]}`} data-testid="indicator-math-detail" />
+                  <p className="text-3xl font-bold tabular-nums" data-testid="text-detail-math">{school.math_proficiency}%</p>
+                </div>
                 <div className="flex items-center gap-1">
                   <p className="text-sm text-muted-foreground" data-testid="label-math-proficiency">Math Proficient</p>
                   <Tooltip>
@@ -258,7 +272,10 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               School Climate
             </h3>
             <div data-testid="container-climate-score">
-              <p className="text-3xl font-bold tabular-nums mb-1" data-testid="score-detail-climate">{school.climate_score}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`w-3 h-3 rounded-full ${colorMap[climateColor]}`} data-testid="indicator-climate-detail" />
+                <p className="text-3xl font-bold tabular-nums" data-testid="score-detail-climate">{school.climate_score}</p>
+              </div>
               <p className="text-sm text-muted-foreground" data-testid="text-climate-description">
                 Climate score reflects school safety, family engagement, and student support
               </p>
