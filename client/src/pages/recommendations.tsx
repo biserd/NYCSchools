@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Footer } from "@/components/Footer";
 import { ArrowLeft, Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { SchoolCard } from "@/components/SchoolCard";
@@ -181,7 +182,7 @@ I focused on schools with strong academics and balanced climate scores in Manhat
 
   if (step === "results") {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex flex-col min-h-screen bg-background">
         <header className="border-b">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
@@ -231,12 +232,14 @@ I focused on schools with strong academics and balanced climate scores in Manhat
             </Card>
           )}
         </main>
+        
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">
@@ -378,6 +381,8 @@ I focused on schools with strong academics and balanced climate scores in Manhat
           </CardContent>
         </Card>
       </main>
+      
+      <Footer />
     </div>
   );
 }

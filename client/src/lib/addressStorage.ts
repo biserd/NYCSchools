@@ -33,6 +33,7 @@ export function clearStoredAddress(): void {
   
   try {
     localStorage.removeItem(ADDRESS_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent('addressChanged'));
   } catch (error) {
     console.error('Failed to clear address:', error);
   }

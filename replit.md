@@ -11,12 +11,13 @@ I prefer detailed explanations. Ask before making major changes.
 ### UI/UX Decisions
 - **Design System**: Clean, modern design following `design_guidelines.md`.
 - **Typography**: Inter typeface for excellent readability, with a clear hierarchy for headers and body text.
-- **Colors**: Primary blue for trust, with Emerald (≥80), Amber (≥60), and Red (<60) for score indicators. Consistent foreground/muted-foreground for text.
+- **Colors**: Enhanced vibrant primary blue (214 95% 50%) for better visual appeal, with success (142 76% 36%) and warning (38 92% 50%) colors. Emerald (≥80), Amber (≥60), and Red (<60) for score indicators. Consistent foreground/muted-foreground for text.
 - **Spacing**: Responsive padding, comfortable card padding, and clear grid/section spacing.
 - **Interactions**: Hover and active states with smooth transitions, `hover-elevate` and `active-elevate-2` for feedback, and accessible `IconButtons` for tooltips.
 - **Responsiveness**: Optimized for mobile, tablet, and desktop breakpoints.
 - **Accessibility**: Proper ARIA labels and keyboard navigation.
 - **Visual Cues**: Comprehensive tooltips for all metrics on school cards and detail panels.
+- **Footer**: Consistent footer component across all pages (home, favorites, map, compare, settings, recommendations, school-detail, privacy, terms) with links to Privacy Policy and Terms of Service.
 
 ### Technical Implementations
 - **Frontend Stack**: React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing.
@@ -38,13 +39,20 @@ I prefer detailed explanations. Ask before making major changes.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers, popups, and district filtering.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics, stored in localStorage with persistent state.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews, with one review per user per school.
-- **Public Commute Time Calculator**: All users (no authentication required) can set home address and see transit times and distances to schools using Google Maps APIs. Address stored in localStorage for non-authenticated users, database for authenticated users.
+- **Public Commute Time Calculator**: All users (no authentication required) can set home address and see transit times and distances to schools using Google Maps APIs. Address stored in localStorage for all users (synced for authenticated users to ensure consistency), with coordinates cached for optimal performance. Graceful error handling with fallback displays.
+- **Legal Pages**: Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages with comprehensive legal content.
 
 ### System Design Choices
 - **Database**: PostgreSQL with Drizzle ORM for persistence of user data, sessions, schools, and favorites.
 - **Data Source**: Initial data from `public/schools.json` has been replaced by a PostgreSQL database populated from NYC School Survey CSV and NYC Open Data.
 - **API Endpoints**: Dedicated API endpoints (e.g., `/api/schools/:dbn`, `/api/chat`) for data fetching and AI integration.
 - **Error Handling**: Graceful degradation and user-friendly error messages for AI responses and missing data.
+- **Performance Optimizations**: 
+  - CommuteTime components use stable query keys (individual lat/lng values) to prevent render storms
+  - 30-minute staleTime for commute queries to reduce API calls
+  - Graceful error handling that returns error objects instead of throwing exceptions
+  - Event-driven architecture with `addressChanged` custom events for reactive coordinate updates
+- **LocalStorage Synchronization**: Authenticated users have their address synced to both database and localStorage to ensure CommuteTime components can access coordinates immediately without additional API calls.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database for application data.

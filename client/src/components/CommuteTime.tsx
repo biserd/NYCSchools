@@ -21,7 +21,10 @@ interface CommuteData {
 }
 
 export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(() => {
+    const stored = getStoredAddress();
+    return stored ? { lat: stored.latitude, lng: stored.longitude } : null;
+  });
 
   useEffect(() => {
     const updateCoordinates = () => {
@@ -33,22 +36,30 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
       }
     };
 
-    updateCoordinates();
     window.addEventListener('addressChanged', updateCoordinates);
     return () => window.removeEventListener('addressChanged', updateCoordinates);
   }, []);
 
-  const { data: commuteData, isLoading } = useQuery<CommuteData>({
-    queryKey: ["/api/commute", schoolDbn, coordinates],
+  const { data: commuteData, isLoading, isError } = useQuery<CommuteData>({
+    queryKey: ["/api/commute", schoolDbn, coordinates?.lat, coordinates?.lng],
     queryFn: async () => {
       if (!coordinates) {
         return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, error: "No home address set" };
       }
-      const response = await fetch(`/api/commute/${schoolDbn}?lat=${coordinates.lat}&lng=${coordinates.lng}`);
-      return response.json();
+      try {
+        const response = await fetch(`/api/commute/${schoolDbn}?lat=${coordinates.lat}&lng=${coordinates.lng}`);
+        if (!response.ok) {
+          return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, error: "Failed to fetch commute time" };
+        }
+        return response.json();
+      } catch (error) {
+        return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, error: "Network error" };
+      }
     },
     enabled: !!coordinates,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 30,
+    retry: 1,
+    retryDelay: 1000,
   });
 
   if (!coordinates && isLoading) {
@@ -97,7 +108,7 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
     );
   }
 
-  if (commuteData?.error || !commuteData?.commuteTime) {
+  if (isError || commuteData?.error || !commuteData?.commuteTime) {
     return compact ? (
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />

@@ -4,6 +4,7 @@ import { FilterBar, SortOption } from "@/components/FilterBar";
 import { SchoolList } from "@/components/SchoolList";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -115,7 +116,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="home-page">
+    <div className="flex flex-col min-h-screen bg-background" data-testid="home-page">
       <header className="bg-background border-b" data-testid="header-main">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="flex items-center justify-between gap-4">
@@ -239,6 +240,8 @@ export default function Home() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
+      
+      <Footer />
     </div>
   );
 }

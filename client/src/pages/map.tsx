@@ -5,6 +5,7 @@ import L from "leaflet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Footer } from "@/components/Footer";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { School, calculateOverallScore, getScoreColor } from "@shared/schema";
 
@@ -249,6 +250,8 @@ export default function MapPage() {
           data-testid="map-container"
         />
       </div>
+      
+      <Footer />
     </div>
   );
 }

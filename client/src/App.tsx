@@ -14,6 +14,8 @@ import RecommendationsPage from "@/pages/recommendations";
 import MapPage from "@/pages/map";
 import ComparePage from "@/pages/compare";
 import SettingsPage from "@/pages/settings";
+import PrivacyPage from "@/pages/privacy";
+import TermsPage from "@/pages/terms";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +27,8 @@ function Router() {
       <Route path="/compare" component={ComparePage} />
       <Route path="/map" component={MapPage} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
       <Route path="/school/:dbn" component={SchoolDetail} />
       <Route component={NotFound} />
     </Switch>

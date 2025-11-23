@@ -4,12 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Footer } from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { MapPin, Save } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { MapPin, Save, ArrowLeft } from "lucide-react";
 import { UserProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
-import { getStoredAddress, setStoredAddress } from "@/lib/addressStorage";
+import { getStoredAddress, setStoredAddress, clearStoredAddress } from "@/lib/addressStorage";
+import { Link } from "wouter";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -49,7 +52,7 @@ export default function Settings() {
   });
 
   const saveProfileMutation = useMutation({
-    mutationFn: async (data: { homeAddress: string; latitude: number; longitude: number }) => {
+    mutationFn: async (data: { homeAddress: string | null; latitude: number | null; longitude: number | null }) => {
       const response = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -58,12 +61,30 @@ export default function Settings() {
       if (!response.ok) throw new Error("Failed to save profile");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
-      toast({
-        title: "Address saved",
-        description: "Your home address has been updated.",
-      });
+      
+      if (variables.homeAddress === null) {
+        // Clear both database and localStorage
+        clearStoredAddress();
+        setAddress("");
+        toast({
+          title: "Address cleared",
+          description: "Your home address has been removed.",
+        });
+      } else {
+        // Sync to localStorage for CommuteTime components
+        setStoredAddress({
+          address: variables.homeAddress,
+          latitude: variables.latitude!,
+          longitude: variables.longitude!,
+        });
+        toast({
+          title: "Address saved",
+          description: "Your home address has been updated.",
+        });
+        window.dispatchEvent(new CustomEvent('addressChanged'));
+      }
     },
     onError: () => {
       toast({
@@ -114,63 +135,101 @@ export default function Settings() {
     }
   };
 
+  const handleClearAddress = () => {
+    if (isAuthenticated) {
+      // For authenticated users, clear from database
+      saveProfileMutation.mutate({
+        homeAddress: null,
+        latitude: null,
+        longitude: null,
+      });
+    } else {
+      // For non-authenticated users, clear from localStorage
+      clearStoredAddress();
+      setAddress("");
+      toast({
+        title: "Address cleared",
+        description: "Your home address has been removed.",
+      });
+    }
+  };
+
+  const currentAddress = isAuthenticated ? profile?.homeAddress : getStoredAddress()?.address;
   const isProcessing = geocodeMutation.isPending || saveProfileMutation.isPending;
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">
-          Configure your home address to calculate commute times to schools
-        </p>
-      </div>
-
-      <Card data-testid="card-address-settings">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
-            <CardTitle>Home Address</CardTitle>
+    <div className="flex flex-col min-h-screen">
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="ghost" size="icon" data-testid="button-back">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">Settings</h1>
           </div>
-          <CardDescription>
-            Enter your home address to see estimated commute times to each school using public transit
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="input-address">Address</Label>
-            <Input
-              id="input-address"
-              data-testid="input-address"
-              placeholder="123 Main St, New York, NY 10001"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              disabled={isProcessing || isLoading}
-            />
-            <p className="text-sm text-muted-foreground">
-              Include street address, city, state, and ZIP code for best results
-            </p>
-          </div>
+          <ThemeToggle />
+        </div>
+      </header>
 
-          <Button
-            data-testid="button-save-address"
-            onClick={handleSave}
-            disabled={isProcessing || isLoading}
-            className="w-full"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            {isProcessing ? "Saving..." : "Save Address"}
-          </Button>
-
-          {((isAuthenticated && profile?.homeAddress) || (!isAuthenticated && getStoredAddress())) && (
-            <div className="mt-4 p-4 bg-muted rounded-md" data-testid="text-current-address">
-              <p className="text-sm font-medium mb-1">Current Address:</p>
-              <p className="text-sm text-muted-foreground">
-                {isAuthenticated ? profile?.homeAddress : getStoredAddress()?.address}
-              </p>
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Home Address
+            </CardTitle>
+            <CardDescription>
+              Set your home address to calculate commute times to schools using public transit
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your full address (e.g., 123 Main St, New York, NY 10001)"
+                data-testid="input-address"
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSave}
+                disabled={isProcessing || !address.trim()}
+                data-testid="button-save-address"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isProcessing ? "Saving..." : "Save Address"}
+              </Button>
+              {currentAddress && (
+                <Button
+                  variant="outline"
+                  onClick={handleClearAddress}
+                  disabled={isProcessing}
+                  data-testid="button-clear-address"
+                >
+                  Clear Address
+                </Button>
+              )}
+            </div>
+
+            {currentAddress && (
+              <div className="mt-4 p-4 bg-muted rounded-md" data-testid="text-current-address">
+                <p className="text-sm font-medium mb-1">Current Address:</p>
+                <p className="text-sm text-muted-foreground">
+                  {currentAddress}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+      <Footer />
     </div>
   );
 }
+

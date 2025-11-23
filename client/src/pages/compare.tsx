@@ -2,6 +2,7 @@ import { useComparison } from "@/contexts/ComparisonContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
 import { Link } from "wouter";
 import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin } from "lucide-react";
 import { calculateOverallScore, getScoreColor } from "@shared/schema";
@@ -72,7 +73,7 @@ export default function ComparePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -292,6 +293,8 @@ export default function ComparePage() {
           </Card>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }

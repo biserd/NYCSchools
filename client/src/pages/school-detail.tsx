@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -141,7 +142,7 @@ export default function SchoolDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">
@@ -420,6 +421,8 @@ export default function SchoolDetail() {
           <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 }

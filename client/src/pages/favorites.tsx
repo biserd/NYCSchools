@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useMemo } from "react";
 import { School, SchoolWithOverallScore, calculateOverallScore, Favorite } from "@shared/schema";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Heart } from "lucide-react";
@@ -73,7 +74,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="favorites-page">
+    <div className="flex flex-col min-h-screen bg-background" data-testid="favorites-page">
       <header className="bg-background border-b">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="flex items-center gap-4 mb-4">
@@ -113,10 +114,6 @@ export default function FavoritesPage() {
               <SchoolCard
                 key={school.dbn}
                 school={school}
-                onClick={() => {
-                  setSelectedSchool(school);
-                  setDetailOpen(true);
-                }}
               />
             ))}
           </div>
@@ -128,6 +125,8 @@ export default function FavoritesPage() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
+      
+      <Footer />
     </div>
   );
 }
