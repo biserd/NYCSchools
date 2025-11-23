@@ -186,6 +186,17 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - Added borough display to SchoolCard and SchoolDetailPanel
 - Borough distribution: Manhattan (288), Bronx (351), Brooklyn (472), Queens (348), Staten Island (74)
 
+### Visual Cues and Tooltips ✅
+- Created comprehensive tooltip configuration (`shared/metricHelp.ts`) for all metrics
+- Added info icon tooltips to SchoolCard (Overall Score, ELA, Math)
+- Added tooltips to SchoolDetailPanel:
+  - Overall Snapshot with color legend (green/yellow/red)
+  - Component scores (Academics, Climate, Progress bars)
+  - Academics section (ELA/Math proficiency)
+  - NYC School Survey Results header
+- All tooltips use IconButtons for keyboard/touch accessibility
+- Includes aria-labels and stopPropagation for proper interaction handling
+
 ## In Progress / Next Features
 
 ### Data Enrichment (Future)

@@ -219,11 +219,35 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             <div className="grid grid-cols-2 gap-4" data-testid="grid-academics">
               <div data-testid="container-ela-proficiency">
                 <p className="text-3xl font-bold tabular-nums mb-1" data-testid="text-detail-ela">{school.ela_proficiency}%</p>
-                <p className="text-sm text-muted-foreground" data-testid="label-ela-proficiency">ELA Proficient</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground" data-testid="label-ela-proficiency">ELA Proficient</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELA proficiency information">
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">{METRIC_TOOLTIPS.elaProficiency.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
               <div data-testid="container-math-proficiency">
                 <p className="text-3xl font-bold tabular-nums mb-1" data-testid="text-detail-math">{school.math_proficiency}%</p>
-                <p className="text-sm text-muted-foreground" data-testid="label-math-proficiency">Math Proficient</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground" data-testid="label-math-proficiency">Math Proficient</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Math proficiency information">
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">{METRIC_TOOLTIPS.mathProficiency.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
             </div>
           </Card>
@@ -245,10 +269,29 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
            (school.teacher_quality !== null && school.teacher_quality !== undefined) || 
            (school.guardian_satisfaction !== null && school.guardian_satisfaction !== undefined) ? (
             <Card className="p-6" data-testid="card-survey">
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-survey-title">
-                <MessageSquare className="w-5 h-5" data-testid="icon-survey" />
-                NYC School Survey Results
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-survey-title">
+                  <MessageSquare className="w-5 h-5" data-testid="icon-survey" />
+                  NYC School Survey Results
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 p-0"
+                      data-testid="button-tooltip-survey"
+                      aria-label="NYC School Survey information"
+                    >
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm" data-testid="tooltip-survey">
+                    <p className="text-sm">{METRIC_TOOLTIPS.dataSource.description}</p>
+                    <p className="text-sm mt-2">Percentages show the proportion of respondents answering positively to survey questions in each category.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <p className="text-sm text-muted-foreground mb-6" data-testid="text-survey-description">
                 Based on feedback from students, teachers, and parents
               </p>

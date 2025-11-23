@@ -74,37 +74,55 @@ export function SchoolCard({ school, onClick }: SchoolCardProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-ela-${school.dbn}`}>
-                <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-ela-${school.dbn}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency}%</div>
-                  <div className="text-xs text-muted-foreground truncate" data-testid={`label-ela-${school.dbn}`}>ELA</div>
-                </div>
-                <Info className="h-3 w-3 text-muted-foreground shrink-0" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs" data-testid={`tooltip-ela-${school.dbn}`}>
-              <p className="text-sm">{METRIC_TOOLTIPS.elaProficiency.tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-ela-${school.dbn}`}>
+            <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-ela-${school.dbn}`} />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency}%</div>
+              <div className="text-xs text-muted-foreground truncate" data-testid={`label-ela-${school.dbn}`}>ELA</div>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0 shrink-0"
+                  data-testid={`button-tooltip-ela-${school.dbn}`}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="ELA proficiency information"
+                >
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs" data-testid={`tooltip-ela-${school.dbn}`}>
+                <p className="text-sm">{METRIC_TOOLTIPS.elaProficiency.tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-math-${school.dbn}`}>
-                <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-math-${school.dbn}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency}%</div>
-                  <div className="text-xs text-muted-foreground truncate" data-testid={`label-math-${school.dbn}`}>Math</div>
-                </div>
-                <Info className="h-3 w-3 text-muted-foreground shrink-0" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs" data-testid={`tooltip-math-${school.dbn}`}>
-              <p className="text-sm">{METRIC_TOOLTIPS.mathProficiency.tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-math-${school.dbn}`}>
+            <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-math-${school.dbn}`} />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency}%</div>
+              <div className="text-xs text-muted-foreground truncate" data-testid={`label-math-${school.dbn}`}>Math</div>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0 shrink-0"
+                  data-testid={`button-tooltip-math-${school.dbn}`}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Math proficiency information"
+                >
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs" data-testid={`tooltip-math-${school.dbn}`}>
+                <p className="text-sm">{METRIC_TOOLTIPS.mathProficiency.tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
