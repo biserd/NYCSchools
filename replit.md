@@ -36,6 +36,9 @@ I prefer detailed explanations. Ask before making major changes.
 - **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions.
 - **Smart Recommendations**: AI-powered questionnaire (priority, district, class size) for personalized school recommendations.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers, popups, and district filtering.
+- **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics, stored in localStorage with persistent state.
+- **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews, with one review per user per school.
+- **Commute Time Calculator**: Authenticated users can set home address, see transit times and distances to schools using Google Maps APIs.
 
 ### System Design Choices
 - **Database**: PostgreSQL with Drizzle ORM for persistence of user data, sessions, schools, and favorites.
@@ -50,3 +53,4 @@ I prefer detailed explanations. Ask before making major changes.
 - **Leaflet**: JavaScript library for interactive maps.
 - **NYC School Survey Data**: CSV data used for populating school survey results.
 - **NYC Open Data (School Point Locations)**: Used for geocoding school locations for the map view.
+- **Google Maps APIs**: Requires Geocoding API and Distance Matrix API to be enabled in Google Cloud Console for commute time calculator.
