@@ -18,6 +18,11 @@ export function SchoolCard({ school, onClick }: SchoolCardProps) {
   const scoreColor = getScoreColor(overallScore);
   const borough = getBoroughFromDBN(school.dbn);
 
+  const handleClick = () => {
+    console.log('[SchoolCard] Card clicked:', school.dbn);
+    onClick();
+  };
+
   const colorMap = {
     green: "bg-emerald-500",
     yellow: "bg-amber-500",
@@ -26,9 +31,17 @@ export function SchoolCard({ school, onClick }: SchoolCardProps) {
 
   return (
     <Card
-      data-testid={`card-school-${school.dbn}`}
+      data-testid={`school-card-${school.dbn}`}
       className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all"
-      onClick={onClick}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-2">

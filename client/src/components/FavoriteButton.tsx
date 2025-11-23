@@ -74,7 +74,10 @@ export function FavoriteButton({
       <Button
         variant={variant}
         size={size}
-        onClick={() => window.location.href = "/api/login"}
+        onClick={(e) => {
+          e.stopPropagation();
+          window.location.href = "/api/login";
+        }}
         data-testid={`button-favorite-login-${schoolDbn}`}
       >
         <Heart className="w-4 h-4" />
