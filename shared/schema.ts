@@ -9,13 +9,45 @@ export const schools = pgTable("schools", {
   district: integer("district").notNull(),
   address: text("address").notNull(),
   grade_band: varchar("grade_band").notNull(),
+  
+  // Academic Performance
   academics_score: integer("academics_score").notNull(),
   climate_score: integer("climate_score").notNull(),
   progress_score: integer("progress_score").notNull(),
   ela_proficiency: integer("ela_proficiency").notNull(),
   math_proficiency: integer("math_proficiency").notNull(),
+  
+  // School Info
   enrollment: integer("enrollment").notNull(),
   student_teacher_ratio: real("student_teacher_ratio").notNull(),
+  
+  // NYC DOE Snapshot Data
+  economic_need_index: integer("economic_need_index"),
+  attendance_rate: integer("attendance_rate"),
+  quality_rating_instruction: varchar("quality_rating_instruction"),
+  quality_rating_safety: varchar("quality_rating_safety"),
+  quality_rating_family: varchar("quality_rating_family"),
+  principal_name: varchar("principal_name"),
+  website: varchar("website"),
+  phone: varchar("phone"),
+  
+  // NYC School Survey Data - Student
+  student_safety: integer("student_safety"),
+  student_teacher_trust: integer("student_teacher_trust"),
+  student_engagement: integer("student_engagement"),
+  
+  // NYC School Survey Data - Teacher
+  teacher_quality: integer("teacher_quality"),
+  teacher_collaboration: integer("teacher_collaboration"),
+  teacher_leadership: integer("teacher_leadership"),
+  
+  // NYC School Survey Data - Guardian  
+  guardian_satisfaction: integer("guardian_satisfaction"),
+  guardian_communication: integer("guardian_communication"),
+  guardian_school_trust: integer("guardian_school_trust"),
+  
+  // Metadata
+  last_updated: timestamp("last_updated").defaultNow(),
 });
 
 export const insertSchoolSchema = createInsertSchema(schools);
