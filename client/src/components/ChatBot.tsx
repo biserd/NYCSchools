@@ -38,15 +38,19 @@ export function ChatBot() {
 
     const userMessage = input.trim();
     setInput("");
+    
+    // Add user message immediately
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
     try {
-      // Get conversation history (last 5 exchanges)
+      // Get conversation history (last 5 exchanges) - excluding the message we just added
       const conversationHistory = messages.slice(-10).map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
+
+      console.log("Sending chat request:", { message: userMessage });
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -59,8 +63,12 @@ export function ChatBot() {
         }),
       });
 
+      console.log("Chat response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Failed to get response");
+        const errorData = await response.text();
+        console.error("Chat API error:", response.status, errorData);
+        throw new Error(`Failed to get response: ${response.status}`);
       }
 
       // Handle streaming response
@@ -100,10 +108,14 @@ export function ChatBot() {
                     return newMessages;
                   });
                 } else if (parsed.error) {
+                  console.error("Stream error:", parsed.error);
                   throw new Error(parsed.error);
                 }
               } catch (e) {
-                // Skip invalid JSON
+                // Skip invalid JSON (SSE can send partial data)
+                if (data && data !== "[DONE]") {
+                  console.debug("Skipping invalid JSON:", data.substring(0, 50));
+                }
               }
             }
           }
@@ -111,13 +123,17 @@ export function ChatBot() {
       }
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
+      setMessages((prev) => {
+        // Remove the empty assistant message if it exists
+        const filtered = prev.filter(m => m.content !== "" || m.role !== "assistant");
+        return [
+          ...filtered,
+          {
+            role: "assistant",
+            content: "Sorry, I encountered an error. Please try again.",
+          },
+        ];
+      });
     } finally {
       setIsLoading(false);
     }
