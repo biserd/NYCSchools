@@ -8,7 +8,7 @@ import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -127,7 +127,27 @@ export default function Home() {
                 Find and compare NYC public and charter elementary schools
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link href="/recommendations">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-recommendations-nav"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Find My Match
+                </Button>
+              </Link>
+              <Link href="/map">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-map-nav"
+                >
+                  <Map className="w-4 h-4 mr-2" />
+                  Map View
+                </Button>
+              </Link>
               {isAuthenticated && user && (
                 <>
                   <Link href="/favorites">
