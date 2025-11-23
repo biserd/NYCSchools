@@ -46,6 +46,10 @@ export const schools = pgTable("schools", {
   guardian_communication: integer("guardian_communication"),
   guardian_school_trust: integer("guardian_school_trust"),
   
+  // Geographic Coordinates
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  
   // Metadata
   last_updated: timestamp("last_updated").defaultNow(),
 });
