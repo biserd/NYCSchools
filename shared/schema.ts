@@ -123,3 +123,38 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type Favorite = typeof favorites.$inferSelect;
+
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  schoolDbn: varchar("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
+  reviewText: text("review_text"),
+  helpfulCount: integer("helpful_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_reviews_school").on(table.schoolDbn),
+  index("idx_reviews_user").on(table.userId),
+]);
+
+export const insertReviewSchema = createInsertSchema(reviews).omit({
+  id: true,
+  helpfulCount: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  rating: z.number().min(1).max(5),
+  reviewText: z.string().optional(),
+});
+
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type Review = typeof reviews.$inferSelect;
+
+export interface ReviewWithUser extends Review {
+  user: {
+    firstName: string | null;
+    lastName: string | null;
+    profileImageUrl: string | null;
+  } | null;
+}

@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFavoriteSchema } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import OpenAI from "openai";
 
@@ -110,6 +110,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking favorite:", error);
       res.status(500).json({ error: "Failed to check favorite" });
+    }
+  });
+
+  // Reviews API
+  app.get("/api/schools/:dbn/reviews", async (req: Request, res: Response) => {
+    try {
+      const reviews = await storage.getReviews(req.params.dbn);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.get("/api/schools/:dbn/reviews/stats", async (req: Request, res: Response) => {
+    try {
+      const stats = await storage.getSchoolRatingStats(req.params.dbn);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching review stats:", error);
+      res.status(500).json({ error: "Failed to fetch review stats" });
+    }
+  });
+
+  app.get("/api/schools/:dbn/reviews/user", async (req: any, res: Response) => {
+    try {
+      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+        return res.json(null);
+      }
+
+      const userId = req.user.claims.sub;
+      const schoolDbn = req.params.dbn;
+      const review = await storage.getUserReview(userId, schoolDbn);
+      res.json(review || null);
+    } catch (error) {
+      console.error("Error fetching user review:", error);
+      res.status(500).json({ error: "Failed to fetch user review" });
+    }
+  });
+
+  app.post("/api/schools/:dbn/reviews", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const schoolDbn = req.params.dbn;
+
+      const parsed = insertReviewSchema.safeParse({
+        userId,
+        schoolDbn,
+        rating: req.body.rating,
+        reviewText: req.body.reviewText || null,
+      });
+
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error });
+      }
+
+      // Check if user already reviewed this school
+      const existingReview = await storage.getUserReview(userId, schoolDbn);
+      if (existingReview) {
+        // Update existing review
+        const updated = await storage.updateReview(
+          existingReview.id,
+          userId,
+          parsed.data.rating,
+          parsed.data.reviewText || undefined
+        );
+        return res.json(updated);
+      }
+
+      // Create new review
+      const review = await storage.createReview(parsed.data);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(500).json({ error: "Failed to create review" });
+    }
+  });
+
+  app.delete("/api/reviews/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const reviewId = parseInt(req.params.id);
+
+      if (isNaN(reviewId)) {
+        return res.status(400).json({ error: "Invalid review ID" });
+      }
+
+      await storage.deleteReview(reviewId, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      res.status(500).json({ error: "Failed to delete review" });
     }
   });
 

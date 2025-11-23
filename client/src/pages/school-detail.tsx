@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { StarRating } from "@/components/StarRating";
+import { ReviewForm } from "@/components/ReviewForm";
+import { ReviewsList } from "@/components/ReviewsList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   GraduationCap, 
@@ -19,7 +23,8 @@ import {
   Info,
   TrendingUp,
   Heart,
-  School as SchoolIcon
+  School as SchoolIcon,
+  MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn, LogOut, User } from "lucide-react";
@@ -408,9 +413,89 @@ export default function SchoolDetail() {
               </dl>
             </CardContent>
           </Card>
+
+          {/* Reviews Section */}
+          <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
         </div>
       </main>
     </div>
+  );
+}
+
+function ReviewsSection({ schoolDbn, userId, isAuthenticated }: { schoolDbn: string; userId?: string; isAuthenticated: boolean }) {
+  const { data: stats } = useQuery<{ averageRating: number; totalReviews: number }>({
+    queryKey: ["/api/schools", schoolDbn, "reviews", "stats"],
+  });
+
+  const { data: userReview, isLoading: isLoadingUserReview } = useQuery<Review | null>({
+    queryKey: ["/api/schools", schoolDbn, "reviews", "user"],
+    enabled: isAuthenticated && !!userId,
+  });
+
+  const [activeTab, setActiveTab] = useState("reviews");
+
+  useEffect(() => {
+    if (!isLoadingUserReview && isAuthenticated) {
+      setActiveTab("write");
+    } else if (!isAuthenticated) {
+      setActiveTab("reviews");
+    }
+  }, [isAuthenticated, isLoadingUserReview]);
+
+  return (
+    <Card data-testid="card-reviews">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            <CardTitle>Parent Reviews</CardTitle>
+          </div>
+          {stats && stats.totalReviews > 0 && (
+            <div className="flex items-center gap-2">
+              <StarRating rating={stats.averageRating} readonly size="sm" />
+              <span className="text-sm text-muted-foreground">
+                {stats.averageRating.toFixed(1)} ({stats.totalReviews} {stats.totalReviews === 1 ? 'review' : 'reviews'})
+              </span>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isAuthenticated ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="write" data-testid="tab-write-review">Write Review</TabsTrigger>
+              <TabsTrigger value="reviews" data-testid="tab-view-reviews">
+                View Reviews {stats && stats.totalReviews > 0 && `(${stats.totalReviews})`}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="write" className="space-y-4">
+              <ReviewForm 
+                schoolDbn={schoolDbn}
+                existingReview={userReview || undefined}
+                onSuccess={() => setActiveTab("reviews")}
+              />
+            </TabsContent>
+            <TabsContent value="reviews">
+              <ReviewsList schoolDbn={schoolDbn} currentUserId={userId} />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-center py-4 bg-muted/50 rounded-lg">
+              <p className="text-muted-foreground mb-2">Sign in to write a review</p>
+              <Button variant="default" size="sm" asChild data-testid="button-login-to-review">
+                <a href="/api/login">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Log In
+                </a>
+              </Button>
+            </div>
+            <ReviewsList schoolDbn={schoolDbn} currentUserId={userId} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

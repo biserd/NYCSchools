@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { users, favorites, schools, type User, type UpsertUser, type Favorite, type InsertFavorite, type School } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { users, favorites, schools, reviews, type User, type UpsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser } from "@shared/schema";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for Replit Auth
@@ -16,6 +16,13 @@ export interface IStorage {
   getSchool(dbn: string): Promise<School | undefined>;
   upsertSchool(school: School): Promise<School>;
   upsertSchools(schoolList: School[]): Promise<void>;
+  
+  getReviews(schoolDbn: string): Promise<ReviewWithUser[]>;
+  getUserReview(userId: string, schoolDbn: string): Promise<Review | undefined>;
+  createReview(review: InsertReview): Promise<Review>;
+  updateReview(id: number, userId: string, rating: number, reviewText?: string): Promise<Review>;
+  deleteReview(id: number, userId: string): Promise<void>;
+  getSchoolRatingStats(schoolDbn: string): Promise<{ averageRating: number; totalReviews: number }>;
 }
 
 export class DbStorage implements IStorage {
@@ -120,6 +127,84 @@ export class DbStorage implements IStorage {
           student_teacher_ratio: sql`excluded.student_teacher_ratio`,
         }
       });
+  }
+
+  async getReviews(schoolDbn: string): Promise<ReviewWithUser[]> {
+    const reviewsWithUsers = await db
+      .select({
+        id: reviews.id,
+        userId: reviews.userId,
+        schoolDbn: reviews.schoolDbn,
+        rating: reviews.rating,
+        reviewText: reviews.reviewText,
+        helpfulCount: reviews.helpfulCount,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        user: {
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+        }
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .where(eq(reviews.schoolDbn, schoolDbn))
+      .orderBy(desc(reviews.createdAt));
+    
+    return reviewsWithUsers;
+  }
+
+  async getUserReview(userId: string, schoolDbn: string): Promise<Review | undefined> {
+    const [review] = await db
+      .select()
+      .from(reviews)
+      .where(and(eq(reviews.userId, userId), eq(reviews.schoolDbn, schoolDbn)))
+      .limit(1);
+    return review;
+  }
+
+  async createReview(review: InsertReview): Promise<Review> {
+    const [newReview] = await db.insert(reviews).values(review).returning();
+    return newReview;
+  }
+
+  async updateReview(id: number, userId: string, rating: number, reviewText?: string): Promise<Review> {
+    const [updated] = await db
+      .update(reviews)
+      .set({ 
+        rating, 
+        reviewText,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(reviews.id, id), eq(reviews.userId, userId)))
+      .returning();
+    
+    if (!updated) {
+      throw new Error("Review not found or unauthorized");
+    }
+    
+    return updated;
+  }
+
+  async deleteReview(id: number, userId: string): Promise<void> {
+    await db
+      .delete(reviews)
+      .where(and(eq(reviews.id, id), eq(reviews.userId, userId)));
+  }
+
+  async getSchoolRatingStats(schoolDbn: string): Promise<{ averageRating: number; totalReviews: number }> {
+    const [stats] = await db
+      .select({
+        averageRating: sql<number>`COALESCE(AVG(${reviews.rating}), 0)`,
+        totalReviews: sql<number>`COUNT(*)`,
+      })
+      .from(reviews)
+      .where(eq(reviews.schoolDbn, schoolDbn));
+    
+    return {
+      averageRating: Math.round((stats?.averageRating || 0) * 10) / 10,
+      totalReviews: Number(stats?.totalReviews || 0),
+    };
   }
 }
 
