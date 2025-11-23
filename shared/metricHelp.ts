@@ -7,7 +7,7 @@ export const METRIC_TOOLTIPS = {
   // Overall Score
   overallScore: {
     label: "Overall Score",
-    tooltip: "Overall score combines academics (40%), school climate (30%), and student progress (30%). Scores 80+ are Outstanding, 60-79 are Strong, 40-59 are Average, and below 40 need improvement.",
+    tooltip: "Overall score combines test proficiency (average of ELA and Math - 40%), school climate (30%), and student progress (30%). Scores 80+ are Outstanding, 60-79 are Strong, 40-59 are Average, and below 40 need improvement.",
     color: "Based on score: Green (80+), Yellow (60-79), Red (<60)",
   },
   

@@ -64,8 +64,12 @@ export interface SchoolWithOverallScore extends School {
 }
 
 export function calculateOverallScore(school: School): number {
+  // Calculate test proficiency as average of ELA and Math
+  const testProficiency = (school.ela_proficiency + school.math_proficiency) / 2;
+  
+  // Overall Score = Test Proficiency (40%) + Climate (30%) + Progress (30%)
   return Math.round(
-    0.4 * school.academics_score +
+    0.4 * testProficiency +
     0.3 * school.climate_score +
     0.3 * school.progress_score
   );

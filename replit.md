@@ -42,6 +42,32 @@ I prefer detailed explanations. Ask before making major changes.
 - **Public Commute Time Calculator**: All users (no authentication required) can set home address and see transit times and distances to schools using Google Maps APIs. Address stored in localStorage for all users (synced for authenticated users to ensure consistency), with coordinates cached for optimal performance. Graceful error handling with fallback displays.
 - **Legal Pages**: Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages with comprehensive legal content.
 
+### School Scoring Methodology
+The Overall Score provides a transparent, data-driven metric combining test proficiency with NYC DOE quality indicators:
+
+**Overall Score Formula:**
+```
+Overall Score = Test Proficiency (40%) + Climate Score (30%) + Progress Score (30%)
+```
+
+**Components Explained:**
+- **Test Proficiency (40% weight)**: Average of ELA and Math proficiency percentages from NYS grades 3-8 standardized tests. Represents the percentage of students meeting or exceeding state standards.
+  - Real data for 745+ elementary/middle schools (48.6% coverage)
+  - High schools and schools without grades 3-8 show 50% (placeholder) as they don't administer these tests
+- **Climate Score (30% weight)**: NYC DOE metric measuring school environment via NYC School Survey (students, teachers, parents). Includes rigorous instruction, collaborative teachers, supportive environment, family-community ties, and trust.
+- **Progress Score (30% weight)**: NYC DOE metric tracking year-over-year student academic growth and improvement. Measures how effectively schools help students advance, regardless of starting point.
+
+**Score Interpretation:**
+- **80+ (Green)**: Outstanding - Exceeds expectations
+- **60-79 (Yellow)**: Strong - Meets expectations  
+- **40-59 (Amber)**: Average - Room for improvement
+- **Below 40 (Red)**: Needs improvement
+
+**Data Sources:**
+- ELA/Math proficiency: NYC Open Data (grades 3-8 state test results)
+- Climate/Progress scores: NYC Department of Education School Survey and Quality Reports
+- Survey data: Annual feedback from students, teachers, and parents
+
 ### System Design Choices
 - **Database**: PostgreSQL with Drizzle ORM for persistence of user data, sessions, schools, and favorites.
 - **Data Source**: Initial data from `public/schools.json` has been replaced by a PostgreSQL database populated from NYC School Survey CSV and NYC Open Data.
