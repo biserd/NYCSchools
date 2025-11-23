@@ -5,22 +5,8 @@ import L from "leaflet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, MapPin, AlertCircle } from "lucide-react";
+import { ArrowLeft, MapPin } from "lucide-react";
 import { School, calculateOverallScore, getScoreColor } from "@shared/schema";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-// Sample coordinates for NYC districts (approximate centers)
-// In production, these would come from geocoded school addresses
-const SAMPLE_SCHOOLS_WITH_COORDS = [
-  { dbn: "01M015", lat: 40.7589, lng: -73.9851 }, // District 1 - Lower East Side
-  { dbn: "01M019", lat: 40.7178, lng: -73.9934 }, // District 1 - Lower Manhattan
-  { dbn: "02M047", lat: 40.7282, lng: -73.9942 }, // District 2 - Greenwich Village
-  { dbn: "02M111", lat: 40.7245, lng: -74.0027 }, // District 2 - West Village
-  { dbn: "03M075", lat: 40.8055, lng: -73.9650 }, // District 3 - Upper West Side
-  { dbn: "03M084", lat: 40.7870, lng: -73.9754 }, // District 3 - UWS
-  { dbn: "06M012", lat: 40.7851, lng: -73.9492 }, // District 6 - Upper East Side
-  { dbn: "06M158", lat: 40.7736, lng: -73.9566 }, // District 6 - UES
-];
 
 export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -34,21 +20,18 @@ export default function MapPage() {
     queryKey: ["/api/schools"],
   });
 
-  // Filter schools that we have sample coordinates for
+  // Filter schools that have geocoded coordinates
   const schoolsWithCoords = useMemo(() => {
     if (!allSchools) return [];
     
     return allSchools
-      .filter(school => SAMPLE_SCHOOLS_WITH_COORDS.some(s => s.dbn === school.dbn))
-      .map(school => {
-        const coords = SAMPLE_SCHOOLS_WITH_COORDS.find(s => s.dbn === school.dbn)!;
-        return {
-          ...school,
-          lat: coords.lat,
-          lng: coords.lng,
-          overall_score: calculateOverallScore(school),
-        };
-      });
+      .filter(school => school.latitude !== null && school.longitude !== null)
+      .map(school => ({
+        ...school,
+        lat: school.latitude!,
+        lng: school.longitude!,
+        overall_score: calculateOverallScore(school),
+      }));
   }, [allSchools]);
 
   // Filter by district
@@ -227,20 +210,6 @@ export default function MapPage() {
       </header>
 
       <div className="container mx-auto px-4 py-4">
-        <Alert className="mb-4" data-testid="alert-demo-mode">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Demo Mode</AlertTitle>
-          <AlertDescription>
-            Showing {schoolsWithCoords.length} sample schools with coordinates. Full map will be available once all school addresses are geocoded.
-            The map demonstrates how schools will be color-coded by overall score: 
-            <span className="inline-flex items-center gap-1 ml-1">
-              <span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Outstanding (80+),
-              <span className="inline-block w-3 h-3 rounded-full bg-amber-500"></span> Strong (60-79),
-              <span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> Needs Improvement (&lt;60)
-            </span>
-          </AlertDescription>
-        </Alert>
-
         <Card className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
@@ -261,7 +230,12 @@ export default function MapPage() {
                 </SelectContent>
               </Select>
               <div className="text-sm text-muted-foreground">
-                Showing {filteredSchools.length} {filteredSchools.length === 1 ? 'school' : 'schools'}
+                Showing {filteredSchools.length} of {schoolsWithCoords.length} geocoded {filteredSchools.length === 1 ? 'school' : 'schools'}
+              </div>
+              <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Outstanding (80+)
+                <span className="inline-block w-3 h-3 rounded-full bg-amber-500"></span> Strong (60-79)
+                <span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> Below Average (&lt;60)
               </div>
             </div>
           </CardContent>
