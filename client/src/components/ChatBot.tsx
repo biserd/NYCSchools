@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Message {
@@ -151,11 +151,11 @@ export function ChatBot() {
       <Button
         onClick={() => setIsOpen(true)}
         size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-2xl z-50 bg-primary hover:bg-primary/90 animate-pulse hover:animate-none"
         data-testid="button-chat-open"
-        aria-label="Open chat"
+        aria-label="Open AI Assistant chat"
       >
-        <MessageCircle className="w-6 h-6" />
+        <MessageCircle className="w-7 h-7" />
       </Button>
     );
   }
@@ -163,7 +163,10 @@ export function ChatBot() {
   return (
     <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col" data-testid="card-chat">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
-        <CardTitle className="text-lg font-semibold">School Finder Assistant</CardTitle>
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <CardTitle className="text-lg font-semibold">AI School Assistant</CardTitle>
+        </div>
         <Button
           variant="ghost"
           size="icon"

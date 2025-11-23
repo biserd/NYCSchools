@@ -26,7 +26,9 @@ import {
   TrendingUp,
   Heart,
   School as SchoolIcon,
-  MessageSquare
+  MessageSquare,
+  MessageCircle,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn, LogOut, User } from "lucide-react";
@@ -130,7 +132,8 @@ export default function SchoolDetail() {
   
   const colorMap = {
     green: "bg-emerald-500",
-    yellow: "bg-amber-500",
+    yellow: "bg-yellow-500",
+    amber: "bg-amber-500",
     red: "bg-red-500",
   };
 
@@ -197,6 +200,31 @@ export default function SchoolDetail() {
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="space-y-6">
+          {/* AI Assistant Banner */}
+          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 rounded-lg p-4" data-testid="banner-ai-assistant">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-primary shrink-0" />
+                <p className="text-sm text-foreground" data-testid="text-ai-banner-description">
+                  Have questions about this school? Ask our AI assistant for personalized insights!
+                </p>
+              </div>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
+                  if (chatButton) chatButton.click();
+                }}
+                data-testid="button-ai-assistant-banner"
+                className="shrink-0 bg-primary hover:bg-primary/90"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Ask AI
+              </Button>
+            </div>
+          </div>
+          
           {/* School Header */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">

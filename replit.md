@@ -13,10 +13,11 @@ I prefer detailed explanations. Ask before making major changes.
 - **Typography**: Inter typeface for excellent readability, with a clear hierarchy for headers and body text.
 - **Colors**: Enhanced vibrant primary blue (214 95% 50%) for better visual appeal, with success (142 76% 36%) and warning (38 92% 50%) colors. Color-coded metric indicators: Emerald (≥90), Yellow (80-89), Amber (70-79), and Red (<70) for all scores.
 - **Spacing**: Responsive padding, comfortable card padding, and clear grid/section spacing.
-- **Interactions**: Hover and active states with smooth transitions, `hover-elevate` and `active-elevate-2` for feedback, and accessible `IconButtons` for tooltips.
+- **Interactions**: Hover and active states with smooth transitions, `hover-elevate` and `active-elevate-2` for feedback, and accessible `IconButtons` for tooltips. Pulsing animation on floating AI chat button to draw attention.
 - **Responsiveness**: Optimized for mobile, tablet, and desktop breakpoints.
 - **Accessibility**: Proper ARIA labels and keyboard navigation.
 - **Visual Cues**: Comprehensive tooltips for all metrics on school cards and detail panels. Color-coded indicators on all individual metrics (ELA, Math, Climate, Progress) and overall score.
+- **AI Assistant Prominence**: Multiple entry points including header button, homepage banner, school detail page banner, and pulsing floating button for maximum visibility.
 - **Footer**: Consistent footer component across all pages (home, favorites, map, compare, settings, recommendations, school-detail, privacy, terms) with links to Privacy Policy and Terms of Service.
 
 ### Technical Implementations
@@ -35,7 +36,11 @@ I prefer detailed explanations. Ask before making major changes.
 - **School Display**: Responsive grid of school cards with commute times, and a detailed side panel (`SchoolDetailPanel`) with charts and full metrics.
 - **Authentication**: Replit Auth integration for secure login/logout and session management.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated `/favorites` page, and compare them.
-- **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions.
+- **AI Chat Assistant**: Prominently featured OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions. Accessible via:
+  - Prominent "Ask AI Assistant" button in homepage header
+  - Featured banner on homepage with AI assistant promotion
+  - Banner on individual school detail pages
+  - Pulsing floating chat button (bottom-right) on all pages
 - **Smart Recommendations**: AI-powered questionnaire (priority, district, class size) for personalized school recommendations.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers, popups, and district filtering.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics, stored in localStorage with persistent state.

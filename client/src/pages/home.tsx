@@ -9,7 +9,7 @@ import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -140,6 +140,19 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
+                  if (chatButton) chatButton.click();
+                }}
+                data-testid="button-ai-assistant-header"
+                className="bg-primary hover:bg-primary/90"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Ask AI Assistant
+              </Button>
               <Link href="/recommendations">
                 <Button
                   variant="outline"
@@ -236,6 +249,36 @@ export default function Home() {
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
+        <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 rounded-lg p-6" data-testid="banner-ai-assistant">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="bg-primary/10 p-3 rounded-lg">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-1 flex items-center gap-2" data-testid="text-ai-banner-title">
+                  Need help finding the perfect school?
+                </h2>
+                <p className="text-muted-foreground text-sm" data-testid="text-ai-banner-description">
+                  Chat with our AI assistant to get personalized recommendations, compare schools, and find answers to all your questions about NYC kindergarten schools.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="default"
+              onClick={() => {
+                const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
+                if (chatButton) chatButton.click();
+              }}
+              data-testid="button-ai-assistant-banner"
+              className="shrink-0 bg-primary hover:bg-primary/90"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Ask AI Assistant
+            </Button>
+          </div>
+        </div>
+        
         <div className="mb-4">
           <p className="text-sm text-muted-foreground" data-testid="text-results-count">
             Showing {filteredAndSortedSchools.length} {filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}
