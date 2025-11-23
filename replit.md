@@ -3,8 +3,8 @@
 ## Project Overview
 A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools. Built with React, TypeScript, and Shadcn UI, this application helps parents make informed decisions about kindergarten enrollment by providing clear, scannable data about schools across all NYC districts.
 
-## Current State (November 22, 2025)
-**Status**: Database-backed application with authentication and favorites feature
+## Current State (November 23, 2025)
+**Status**: Database-backed application with authentication, favorites, and real NYC school data integration
 
 ### Completed Features
 1. **Data Model & Sample Data**
@@ -137,6 +137,7 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 ### Database & Persistence ✅
 - PostgreSQL database integration with Drizzle ORM
 - Database tables: users, sessions, schools, favorites
+- Extended schema with 18 new fields: survey scores, economic need index, attendance rates, quality ratings
 - Automated seeding with 25 NYC schools from schools.json
 - User data and favorites persisted in database
 
@@ -154,6 +155,22 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - Dedicated /favorites page for viewing saved schools
 - Side-by-side comparison of favorite schools
 - Visual indicator (filled heart) for favorited schools
+
+### Real Data Integration ✅
+- **CSV Survey Parser**: Parses NYC School Survey data (1,816 schools) with student, teacher, and parent feedback scores
+- **NYC DOE Snapshot Scraper**: Fetches additional school metrics from tools.nycenet.edu/snapshot (test scores, demographics, attendance, quality ratings)
+- **Data Sync Service**: Combines both sources to enrich school records
+  - Successfully synced all 25 schools in database
+  - 11 schools with survey + snapshot data
+  - 14 schools with snapshot data only
+- **Enhanced UI**: SchoolDetailPanel displays NYC School Survey Results with three sections:
+  - Student Voice (safety, teacher trust, engagement)
+  - Teacher Perspective (instruction quality, collaboration, leadership)
+  - Parent Feedback (satisfaction, communication, school trust)
+- **Robust Data Handling**: 
+  - Gracefully handles missing data (null-safe conditionals)
+  - Supports legitimate zero values
+  - Conditionally renders survey sections based on data availability
 
 ## In Progress / Next Features
 
