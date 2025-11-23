@@ -38,7 +38,7 @@ I prefer detailed explanations. Ask before making major changes.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers, popups, and district filtering.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics, stored in localStorage with persistent state.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews, with one review per user per school.
-- **Commute Time Calculator**: Authenticated users can set home address, see transit times and distances to schools using Google Maps APIs.
+- **Public Commute Time Calculator**: All users (no authentication required) can set home address and see transit times and distances to schools using Google Maps APIs. Address stored in localStorage for non-authenticated users, database for authenticated users.
 
 ### System Design Choices
 - **Database**: PostgreSQL with Drizzle ORM for persistence of user data, sessions, schools, and favorites.
