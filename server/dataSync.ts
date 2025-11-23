@@ -25,41 +25,51 @@ export async function syncSchoolData() {
       const survey = surveyData.get(school.dbn);
       
       if (!survey) {
-        console.log(`No survey data found for ${school.dbn}`);
-        continue;
+        console.log(`⚠ No survey data found for ${school.dbn} - will still fetch snapshot data`);
       }
       
       console.log(`Fetching snapshot data for ${school.dbn} - ${school.name}...`);
       const snapshot = await fetchSnapshotData(school.dbn);
       
+      const updateData: any = {
+        last_updated: new Date(),
+      };
+      
+      if (survey) {
+        updateData.student_safety = survey.studentSafety;
+        updateData.student_teacher_trust = survey.studentTeacherTrust;
+        updateData.student_engagement = survey.studentEngagement;
+        updateData.teacher_quality = survey.teacherQuality;
+        updateData.teacher_collaboration = survey.teacherCollaboration;
+        updateData.teacher_leadership = survey.teacherLeadership;
+        updateData.guardian_satisfaction = survey.guardianSatisfaction;
+        updateData.guardian_communication = survey.guardianCommunication;
+        updateData.guardian_school_trust = survey.guardianSchoolTrust;
+      }
+      
+      if (snapshot) {
+        if (snapshot.economicNeedIndex !== null) updateData.economic_need_index = snapshot.economicNeedIndex;
+        if (snapshot.attendanceRate !== null) updateData.attendance_rate = snapshot.attendanceRate;
+        if (snapshot.qualityRatingInstruction !== null) updateData.quality_rating_instruction = snapshot.qualityRatingInstruction;
+        if (snapshot.qualityRatingSafety !== null) updateData.quality_rating_safety = snapshot.qualityRatingSafety;
+        if (snapshot.qualityRatingFamily !== null) updateData.quality_rating_family = snapshot.qualityRatingFamily;
+        if (snapshot.principalName !== null) updateData.principal_name = snapshot.principalName;
+        if (snapshot.website !== null) updateData.website = snapshot.website;
+        if (snapshot.phone !== null) updateData.phone = snapshot.phone;
+        if (snapshot.elaProficiency !== null) updateData.ela_proficiency = snapshot.elaProficiency;
+        if (snapshot.mathProficiency !== null) updateData.math_proficiency = snapshot.mathProficiency;
+        if (snapshot.enrollment !== null) updateData.enrollment = snapshot.enrollment;
+      }
+      
       await db.update(schools)
-        .set({
-          student_safety: survey.studentSafety,
-          student_teacher_trust: survey.studentTeacherTrust,
-          student_engagement: survey.studentEngagement,
-          teacher_quality: survey.teacherQuality,
-          teacher_collaboration: survey.teacherCollaboration,
-          teacher_leadership: survey.teacherLeadership,
-          guardian_satisfaction: survey.guardianSatisfaction,
-          guardian_communication: survey.guardianCommunication,
-          guardian_school_trust: survey.guardianSchoolTrust,
-          economic_need_index: snapshot?.economicNeedIndex,
-          attendance_rate: snapshot?.attendanceRate,
-          quality_rating_instruction: snapshot?.qualityRatingInstruction,
-          quality_rating_safety: snapshot?.qualityRatingSafety,
-          quality_rating_family: snapshot?.qualityRatingFamily,
-          principal_name: snapshot?.principalName,
-          website: snapshot?.website,
-          phone: snapshot?.phone,
-          ela_proficiency: snapshot?.elaProficiency ?? school.ela_proficiency,
-          math_proficiency: snapshot?.mathProficiency ?? school.math_proficiency,
-          enrollment: snapshot?.enrollment ?? school.enrollment,
-          last_updated: new Date(),
-        })
+        .set(updateData)
         .where(eq(schools.dbn, school.dbn));
       
       updated++;
-      console.log(`✓ Updated ${school.dbn} (${updated}/${existingSchools.length})`);
+      const dataTypes = [];
+      if (survey) dataTypes.push('survey');
+      if (snapshot) dataTypes.push('snapshot');
+      console.log(`✓ Updated ${school.dbn} with ${dataTypes.join(' + ')} data (${updated}/${existingSchools.length})`);
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -83,7 +93,7 @@ export async function syncSingleSchool(dbn: string) {
   const survey = surveyData.get(dbn);
   
   if (!survey) {
-    throw new Error(`No survey data found for ${dbn}`);
+    console.log(`⚠ No survey data found for ${dbn} - will still fetch snapshot data`);
   }
   
   const snapshot = await fetchSnapshotData(dbn);
@@ -94,31 +104,42 @@ export async function syncSingleSchool(dbn: string) {
     throw new Error(`School ${dbn} not found in database`);
   }
   
+  const updateData: any = {
+    last_updated: new Date(),
+  };
+  
+  if (survey) {
+    updateData.student_safety = survey.studentSafety;
+    updateData.student_teacher_trust = survey.studentTeacherTrust;
+    updateData.student_engagement = survey.studentEngagement;
+    updateData.teacher_quality = survey.teacherQuality;
+    updateData.teacher_collaboration = survey.teacherCollaboration;
+    updateData.teacher_leadership = survey.teacherLeadership;
+    updateData.guardian_satisfaction = survey.guardianSatisfaction;
+    updateData.guardian_communication = survey.guardianCommunication;
+    updateData.guardian_school_trust = survey.guardianSchoolTrust;
+  }
+  
+  if (snapshot) {
+    if (snapshot.economicNeedIndex !== null) updateData.economic_need_index = snapshot.economicNeedIndex;
+    if (snapshot.attendanceRate !== null) updateData.attendance_rate = snapshot.attendanceRate;
+    if (snapshot.qualityRatingInstruction !== null) updateData.quality_rating_instruction = snapshot.qualityRatingInstruction;
+    if (snapshot.qualityRatingSafety !== null) updateData.quality_rating_safety = snapshot.qualityRatingSafety;
+    if (snapshot.qualityRatingFamily !== null) updateData.quality_rating_family = snapshot.qualityRatingFamily;
+    if (snapshot.principalName !== null) updateData.principal_name = snapshot.principalName;
+    if (snapshot.website !== null) updateData.website = snapshot.website;
+    if (snapshot.phone !== null) updateData.phone = snapshot.phone;
+    if (snapshot.elaProficiency !== null) updateData.ela_proficiency = snapshot.elaProficiency;
+    if (snapshot.mathProficiency !== null) updateData.math_proficiency = snapshot.mathProficiency;
+    if (snapshot.enrollment !== null) updateData.enrollment = snapshot.enrollment;
+  }
+  
   await db.update(schools)
-    .set({
-      student_safety: survey.studentSafety,
-      student_teacher_trust: survey.studentTeacherTrust,
-      student_engagement: survey.studentEngagement,
-      teacher_quality: survey.teacherQuality,
-      teacher_collaboration: survey.teacherCollaboration,
-      teacher_leadership: survey.teacherLeadership,
-      guardian_satisfaction: survey.guardianSatisfaction,
-      guardian_communication: survey.guardianCommunication,
-      guardian_school_trust: survey.guardianSchoolTrust,
-      economic_need_index: snapshot?.economicNeedIndex,
-      attendance_rate: snapshot?.attendanceRate,
-      quality_rating_instruction: snapshot?.qualityRatingInstruction,
-      quality_rating_safety: snapshot?.qualityRatingSafety,
-      quality_rating_family: snapshot?.qualityRatingFamily,
-      principal_name: snapshot?.principalName,
-      website: snapshot?.website,
-      phone: snapshot?.phone,
-      ela_proficiency: snapshot?.elaProficiency ?? school.ela_proficiency,
-      math_proficiency: snapshot?.mathProficiency ?? school.math_proficiency,
-      enrollment: snapshot?.enrollment ?? school.enrollment,
-      last_updated: new Date(),
-    })
+    .set(updateData)
     .where(eq(schools.dbn, dbn));
   
-  console.log(`✓ Successfully synced ${dbn}`);
+  const dataTypes = [];
+  if (survey) dataTypes.push('survey');
+  if (snapshot) dataTypes.push('snapshot');
+  console.log(`✓ Successfully synced ${dbn} with ${dataTypes.join(' + ')} data`);
 }

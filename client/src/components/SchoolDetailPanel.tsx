@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -159,6 +159,115 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </div>
           </Card>
 
+          {(school.student_safety !== null && school.student_safety !== undefined) || 
+           (school.teacher_quality !== null && school.teacher_quality !== undefined) || 
+           (school.guardian_satisfaction !== null && school.guardian_satisfaction !== undefined) ? (
+            <Card className="p-6" data-testid="card-survey">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-survey-title">
+                <MessageSquare className="w-5 h-5" data-testid="icon-survey" />
+                NYC School Survey Results
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6" data-testid="text-survey-description">
+                Based on feedback from students, teachers, and parents
+              </p>
+              
+              <div className="space-y-6" data-testid="container-survey-sections">
+                {(school.student_safety !== null && school.student_safety !== undefined) ||
+                 (school.student_teacher_trust !== null && school.student_teacher_trust !== undefined) ||
+                 (school.student_engagement !== null && school.student_engagement !== undefined) ? (
+                  <div data-testid="section-student-survey">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-base" data-testid="text-student-survey-title">
+                      <Shield className="w-4 h-4" data-testid="icon-student" />
+                      Student Voice
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4" data-testid="grid-student">
+                      {school.student_safety !== null && school.student_safety !== undefined && (
+                        <div data-testid="container-student-safety">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-student-safety">{school.student_safety}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-student-safety">Safety</p>
+                        </div>
+                      )}
+                      {school.student_teacher_trust !== null && school.student_teacher_trust !== undefined && (
+                        <div data-testid="container-student-trust">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-student-trust">{school.student_teacher_trust}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-student-trust">Teacher Trust</p>
+                        </div>
+                      )}
+                      {school.student_engagement !== null && school.student_engagement !== undefined && (
+                        <div data-testid="container-student-engagement">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-student-engagement">{school.student_engagement}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-student-engagement">Engagement</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(school.teacher_quality !== null && school.teacher_quality !== undefined) ||
+                 (school.teacher_collaboration !== null && school.teacher_collaboration !== undefined) ||
+                 (school.teacher_leadership !== null && school.teacher_leadership !== undefined) ? (
+                  <div data-testid="section-teacher-survey">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-base" data-testid="text-teacher-survey-title">
+                      <Briefcase className="w-4 h-4" data-testid="icon-teacher" />
+                      Teacher Perspective
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4" data-testid="grid-teacher">
+                      {school.teacher_quality !== null && school.teacher_quality !== undefined && (
+                        <div data-testid="container-teacher-quality">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-teacher-quality">{school.teacher_quality}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-teacher-quality">Instruction Quality</p>
+                        </div>
+                      )}
+                      {school.teacher_collaboration !== null && school.teacher_collaboration !== undefined && (
+                        <div data-testid="container-teacher-collab">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-teacher-collab">{school.teacher_collaboration}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-teacher-collab">Collaboration</p>
+                        </div>
+                      )}
+                      {school.teacher_leadership !== null && school.teacher_leadership !== undefined && (
+                        <div data-testid="container-teacher-leadership">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-teacher-leadership">{school.teacher_leadership}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-teacher-leadership">Leadership</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(school.guardian_satisfaction !== null && school.guardian_satisfaction !== undefined) ||
+                 (school.guardian_communication !== null && school.guardian_communication !== undefined) ||
+                 (school.guardian_school_trust !== null && school.guardian_school_trust !== undefined) ? (
+                  <div data-testid="section-guardian-survey">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-base" data-testid="text-guardian-survey-title">
+                      <Users className="w-4 h-4" data-testid="icon-guardian" />
+                      Parent Feedback
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4" data-testid="grid-guardian">
+                      {school.guardian_satisfaction !== null && school.guardian_satisfaction !== undefined && (
+                        <div data-testid="container-guardian-satisfaction">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-guardian-satisfaction">{school.guardian_satisfaction}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-guardian-satisfaction">Satisfaction</p>
+                        </div>
+                      )}
+                      {school.guardian_communication !== null && school.guardian_communication !== undefined && (
+                        <div data-testid="container-guardian-communication">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-guardian-communication">{school.guardian_communication}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-guardian-communication">Communication</p>
+                        </div>
+                      )}
+                      {school.guardian_school_trust !== null && school.guardian_school_trust !== undefined && (
+                        <div data-testid="container-guardian-trust">
+                          <p className="text-2xl font-bold tabular-nums mb-1" data-testid="text-guardian-trust">{school.guardian_school_trust}%</p>
+                          <p className="text-xs text-muted-foreground" data-testid="label-guardian-trust">School Trust</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          ) : null}
+
           <Card className="p-6" data-testid="card-details">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-details-title">
               <Building2 className="w-5 h-5" data-testid="icon-details" />
@@ -184,7 +293,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
           </Card>
 
           <div className="text-xs text-muted-foreground text-center py-4" data-testid="text-data-source">
-            Data represents sample NYC DOE school information. For real-time data integration, connect to NYC Open Data APIs.
+            Data sourced from NYC Department of Education School Survey and public records. Survey scores reflect feedback from students, teachers, and parents.
           </div>
         </div>
       </SheetContent>
