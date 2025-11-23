@@ -14,7 +14,7 @@ import { Link } from "wouter";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDistrict, setSelectedDistrict] = useState("all");
+  const [selectedDistrict, setSelectedDistrict] = useState("2");
   const [selectedGradeBand, setSelectedGradeBand] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("overall");
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
