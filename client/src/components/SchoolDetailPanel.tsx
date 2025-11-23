@@ -1,5 +1,6 @@
 import { SchoolWithOverallScore, getScoreLabel, getScoreColor } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
+import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import {
   Sheet,
   SheetContent,
@@ -10,7 +11,8 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -75,10 +77,43 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
 
         <div className="space-y-6" data-testid="container-detail-content">
           <Card className="p-6" data-testid="card-snapshot">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-snapshot-title">
-              <TrendingUp className="w-5 h-5" data-testid="icon-snapshot" />
-              Overall Snapshot
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-snapshot-title">
+                <TrendingUp className="w-5 h-5" data-testid="icon-snapshot" />
+                Overall Snapshot
+              </h3>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 p-0"
+                    data-testid="button-tooltip-snapshot"
+                    aria-label="Overall snapshot information"
+                  >
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm" data-testid="tooltip-snapshot">
+                  <p className="text-sm font-medium mb-2">Score Breakdown:</p>
+                  <p className="text-sm">{METRIC_TOOLTIPS.overallScore.tooltip}</p>
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>{METRIC_TOOLTIPS.colorLegend.green.label} (80+)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span>{METRIC_TOOLTIPS.colorLegend.yellow.label} (60-79)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      <span>{METRIC_TOOLTIPS.colorLegend.red.label} (&lt;60)</span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex items-center gap-4 mb-6" data-testid="container-overall-score">
               <div className="flex items-center gap-3">
                 <div className={`w-4 h-4 rounded-full ${colorMap[scoreColor]}`} data-testid="indicator-detail-score" />
@@ -95,7 +130,19 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             <div className="space-y-4" data-testid="container-bars">
               <div data-testid="row-bar-academics">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium" data-testid="label-bar-academics">Academics</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium" data-testid="label-bar-academics">Academics</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Academics information">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">{METRIC_TOOLTIPS.academics.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <span className="text-sm font-bold tabular-nums" data-testid="score-bar-academics">{school.academics_score}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-academics">
@@ -110,7 +157,19 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
 
               <div data-testid="row-bar-climate">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium" data-testid="label-bar-climate">Climate</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium" data-testid="label-bar-climate">Climate</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Climate information">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">{METRIC_TOOLTIPS.climate.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <span className="text-sm font-bold tabular-nums" data-testid="score-bar-climate">{school.climate_score}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-climate">
@@ -125,7 +184,19 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
 
               <div data-testid="row-bar-progress">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium" data-testid="label-bar-progress">Progress</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium" data-testid="label-bar-progress">Progress</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Progress information">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">{METRIC_TOOLTIPS.progress.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <span className="text-sm font-bold tabular-nums" data-testid="score-bar-progress">{school.progress_score}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-progress">
