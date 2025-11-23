@@ -4,7 +4,7 @@
 A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools. Built with React, TypeScript, and Shadcn UI, this application helps parents make informed decisions about kindergarten enrollment by providing clear, scannable data about schools across all NYC districts.
 
 ## Current State (November 23, 2025)
-**Status**: Full-featured application with SEO-optimized school pages, AI chat assistant, authentication, favorites, and real NYC school data
+**Status**: Full-featured application with SEO-optimized school pages, AI chat assistant, authentication, favorites, smart recommendations, interactive map view, and real NYC school data
 
 ### Completed Features
 1. **Data Model & Sample Data**
@@ -59,9 +59,14 @@ client/src/
 │   ├── FilterBar.tsx          # Search, filters, and sort controls
 │   ├── SchoolCard.tsx         # Individual school card
 │   ├── SchoolList.tsx         # Grid of schools with empty state
-│   └── SchoolDetailPanel.tsx  # Detailed school view (Sheet)
+│   ├── SchoolDetailPanel.tsx  # Detailed school view (Sheet)
+│   └── ChatBot.tsx            # AI assistant floating button
 ├── pages/
 │   ├── home.tsx               # Main dashboard with state management
+│   ├── school-detail.tsx      # Individual school page (/school/:dbn)
+│   ├── favorites.tsx          # Saved schools comparison
+│   ├── recommendations.tsx    # AI-powered school matcher
+│   ├── map.tsx                # Interactive map view
 │   └── not-found.tsx          # 404 page
 └── App.tsx                    # Root with routing setup
 ```
@@ -214,6 +219,27 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - Added borough display to SchoolCard and SchoolDetailPanel
 - Borough distribution: Manhattan (288), Bronx (351), Brooklyn (472), Queens (348), Staten Island (74)
 
+### Smart School Recommendations ✅
+- **AI-Powered Matching**: Questionnaire-based system using OpenAI to recommend schools
+- **Three-Question Form**: Collects priority (academics/climate/progress/balanced), district preference, and class size preference
+- **Intelligent Parsing**: Robust AI response parser handles various output formats (bullets, dashes, em dashes)
+- **Graceful Degradation**: Shows user-friendly error messages when AI returns unexpected format
+- **Visual Results**: Displays 5-8 recommended schools using existing SchoolCard components
+- **Route**: `/recommendations` with "Find My Match" button in header
+- **Integration**: Uses existing `/api/chat` endpoint with specialized prompt
+
+### Interactive Map View ✅
+- **Leaflet Integration**: OpenStreetMap tiles with color-coded school markers
+- **Marker Colors**: Green (≥80), yellow (≥60), red (<60) based on overall score
+- **School Popups**: Click markers to view school info with navigation to detail page
+- **District Filter**: Filter visible schools by district (All or specific 1-32)
+- **React-Friendly Navigation**: Uses wouter's setLocation for SPA navigation
+- **Event Management**: Proper listener cleanup on popup close and component unmount
+- **Demo Mode**: Currently displays 8 sample schools with Manhattan coordinates
+- **Production Ready**: Architecture supports all 1,533 schools once addresses are geocoded
+- **Route**: `/map` with "Map View" button in header
+- **Packages**: leaflet, @types/leaflet, CSS imported globally in main.tsx
+
 ## In Progress / Next Features
 
 ### Data Enrichment (Future)
@@ -226,9 +252,9 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - Integrate NYSED data for additional metrics
 - Add data refresh mechanism
 
-### Map View (Planned)
-- Add map component showing school locations
-- Geocode school addresses
+### Map Enhancement (Future)
+- Geocode all 1,533 school addresses (currently "TBD")
+- Display all schools on map instead of 8 demo schools
 - Calculate commute times from home address
 
 ### PDF Export (Planned)
