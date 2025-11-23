@@ -158,3 +158,18 @@ export interface ReviewWithUser extends Review {
     profileImageUrl: string | null;
   } | null;
 }
+
+export const userProfiles = pgTable("user_profiles", {
+  userId: varchar("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  homeAddress: text("home_address"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
+  updatedAt: true,
+});
+
+export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+export type UserProfile = typeof userProfiles.$inferSelect;

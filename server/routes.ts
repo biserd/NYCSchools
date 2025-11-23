@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import OpenAI from "openai";
 
@@ -110,6 +110,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking favorite:", error);
       res.status(500).json({ error: "Failed to check favorite" });
+    }
+  });
+
+  // User Profile API
+  app.get("/api/profile", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getUserProfile(userId);
+      res.json(profile || null);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  app.post("/api/profile", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const parsed = insertUserProfileSchema.safeParse({
+        userId,
+        homeAddress: req.body.homeAddress,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude,
+      });
+
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error });
+      }
+
+      const profile = await storage.upsertUserProfile(parsed.data);
+      res.json(profile);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      res.status(500).json({ error: "Failed to save profile" });
+    }
+  });
+
+  // Commute Time API
+  app.get("/api/commute/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const schoolDbn = req.params.schoolDbn;
+
+      const profile = await storage.getUserProfile(userId);
+      if (!profile || !profile.latitude || !profile.longitude) {
+        return res.json({ commuteTime: null, distance: null, error: "No home address set" });
+      }
+
+      const school = await storage.getSchool(schoolDbn);
+      if (!school || !school.latitude || !school.longitude) {
+        return res.json({ commuteTime: null, distance: null, error: "School location not available" });
+      }
+
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!googleMapsApiKey) {
+        return res.json({ commuteTime: null, distance: null, error: "Google Maps API not configured" });
+      }
+
+      const origin = `${profile.latitude},${profile.longitude}`;
+      const destination = `${school.latitude},${school.longitude}`;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=transit&key=${googleMapsApiKey}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status !== "OK" || !data.rows[0]?.elements[0]) {
+        return res.json({ commuteTime: null, distance: null, error: "Unable to calculate route" });
+      }
+
+      const element = data.rows[0].elements[0];
+      if (element.status !== "OK") {
+        return res.json({ commuteTime: null, distance: null, error: "Route not available" });
+      }
+
+      res.json({
+        commuteTime: element.duration.text,
+        commuteMinutes: Math.round(element.duration.value / 60),
+        distance: element.distance.text,
+        distanceMeters: element.distance.value,
+      });
+    } catch (error) {
+      console.error("Error calculating commute:", error);
+      res.status(500).json({ error: "Failed to calculate commute time" });
     }
   });
 

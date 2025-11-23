@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, type User, type UpsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, type User, type UpsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -23,6 +23,9 @@ export interface IStorage {
   updateReview(id: number, userId: string, rating: number, reviewText?: string): Promise<Review>;
   deleteReview(id: number, userId: string): Promise<void>;
   getSchoolRatingStats(schoolDbn: string): Promise<{ averageRating: number; totalReviews: number }>;
+  
+  getUserProfile(userId: string): Promise<UserProfile | undefined>;
+  upsertUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
 }
 
 export class DbStorage implements IStorage {
@@ -205,6 +208,30 @@ export class DbStorage implements IStorage {
       averageRating: Math.round((stats?.averageRating || 0) * 10) / 10,
       totalReviews: Number(stats?.totalReviews || 0),
     };
+  }
+
+  async getUserProfile(userId: string): Promise<UserProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, userId))
+      .limit(1);
+    return profile;
+  }
+
+  async upsertUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
+    const [userProfile] = await db
+      .insert(userProfiles)
+      .values(profile)
+      .onConflictDoUpdate({
+        target: userProfiles.userId,
+        set: {
+          ...profile,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return userProfile;
   }
 }
 
