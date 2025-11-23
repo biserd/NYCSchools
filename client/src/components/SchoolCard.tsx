@@ -7,13 +7,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ChevronRight, Users, GraduationCap, MapPin, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
+import { Link } from "wouter";
 
 interface SchoolCardProps {
   school: School;
-  onClick: () => void;
 }
 
-export function SchoolCard({ school, onClick }: SchoolCardProps) {
+export function SchoolCard({ school }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
   const scoreColor = getScoreColor(overallScore);
   const borough = getBoroughFromDBN(school.dbn);
@@ -25,23 +25,13 @@ export function SchoolCard({ school, onClick }: SchoolCardProps) {
   };
 
   return (
-    <Card
-      data-testid={`school-card-${school.dbn}`}
-      className="overflow-visible hover-elevate active-elevate-2 transition-all"
-    >
-      <div 
-        className="p-6 cursor-pointer flex flex-col gap-4"
-        onClick={onClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
-          }
-        }}
+    <Link href={`/school/${school.dbn}`} data-testid={`link-school-${school.dbn}`}>
+      <Card
+        data-testid={`school-card-${school.dbn}`}
+        className="overflow-visible hover-elevate active-elevate-2 transition-all"
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className="p-6 flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2 mb-1">
               <h3 className="text-lg font-semibold text-foreground line-clamp-2 flex-1" data-testid={`text-school-name-${school.dbn}`}>
@@ -150,8 +140,9 @@ export function SchoolCard({ school, onClick }: SchoolCardProps) {
             </span>
           </div>
           <ChevronRight className="w-4 h-4 shrink-0" data-testid={`icon-chevron-${school.dbn}`} />
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }

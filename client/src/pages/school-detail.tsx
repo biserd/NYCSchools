@@ -1,0 +1,485 @@
+import { useEffect } from "react";
+import { useParams, Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor } from "@shared/schema";
+import { getBoroughFromDBN } from "@shared/boroughMapping";
+import { METRIC_TOOLTIPS } from "@shared/metricHelp";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { 
+  ArrowLeft, 
+  GraduationCap, 
+  Users, 
+  MapPin, 
+  Info,
+  TrendingUp,
+  Heart,
+  School as SchoolIcon
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { LogIn, LogOut, User } from "lucide-react";
+
+export default function SchoolDetail() {
+  const { dbn } = useParams();
+  const [, setLocation] = useLocation();
+  const { user, isAuthenticated } = useAuth();
+
+  const { data: school, isLoading, error } = useQuery<School>({
+    queryKey: ["/api/schools", dbn],
+    enabled: !!dbn,
+  });
+
+  const schoolWithScore: SchoolWithOverallScore | null = school ? {
+    ...school,
+    overall_score: calculateOverallScore(school),
+  } : null;
+
+  useEffect(() => {
+    if (schoolWithScore) {
+      const borough = getBoroughFromDBN(schoolWithScore.dbn);
+      const boroughText = borough ? ` in ${borough}` : '';
+      
+      document.title = `${schoolWithScore.name} - NYC Kindergarten Finder`;
+      
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', 
+          `Explore ${schoolWithScore.name}${boroughText}, District ${schoolWithScore.district}. Overall Score: ${schoolWithScore.overall_score}. ELA: ${schoolWithScore.ela_proficiency}%, Math: ${schoolWithScore.math_proficiency}%. View detailed metrics and NYC School Survey results.`
+        );
+      }
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) {
+        ogTitle.setAttribute('content', `${schoolWithScore.name} - NYC Kindergarten Finder`);
+      }
+
+      const ogDescription = document.querySelector('meta[property="og:description"]');
+      if (ogDescription) {
+        ogDescription.setAttribute('content', 
+          `Overall Score: ${schoolWithScore.overall_score}. ELA: ${schoolWithScore.ela_proficiency}%, Math: ${schoolWithScore.math_proficiency}%. District ${schoolWithScore.district}.`
+        );
+      }
+    }
+  }, [schoolWithScore]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
+            <div className="flex items-center gap-4">
+              <Link href="/">
+                <Button variant="ghost" size="icon" data-testid="button-back">
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+              </Link>
+              <h1 className="text-2xl font-bold">Loading...</h1>
+            </div>
+            <ThemeToggle />
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="text-center text-muted-foreground">Loading school details...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!schoolWithScore) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
+            <div className="flex items-center gap-4">
+              <Link href="/">
+                <Button variant="ghost" size="icon" data-testid="button-back">
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+              </Link>
+              <h1 className="text-2xl font-bold">School Not Found</h1>
+            </div>
+            <ThemeToggle />
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-4">School with DBN {dbn} not found.</p>
+            <Link href="/">
+              <Button data-testid="button-browse-schools">Browse All Schools</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const scoreColor = getScoreColor(schoolWithScore.overall_score);
+  const borough = getBoroughFromDBN(schoolWithScore.dbn);
+  
+  const colorMap = {
+    green: "bg-emerald-500",
+    yellow: "bg-amber-500",
+    red: "bg-red-500",
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 80) return "Outstanding";
+    if (score >= 60) return "Strong";
+    if (score >= 40) return "Average";
+    return "Below Average";
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="ghost" size="icon" data-testid="button-back">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <SchoolIcon className="w-6 h-6 text-primary" />
+              <h1 className="text-xl font-bold">NYC Kindergarten Finder</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {isAuthenticated ? (
+              <>
+                <Link href="/favorites">
+                  <Button variant="ghost" size="icon" data-testid="button-nav-favorites">
+                    <Heart className="w-5 h-5" />
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  asChild
+                  data-testid="button-user-menu"
+                >
+                  <a href="/api/logout">
+                    <User className="w-4 h-4 mr-2" />
+                    {user?.firstName || user?.email}
+                    <LogOut className="w-4 h-4 ml-2" />
+                  </a>
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="default" 
+                size="sm" 
+                asChild
+                data-testid="button-login"
+              >
+                <a href="/api/login">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Log In
+                </a>
+              </Button>
+            )}
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="space-y-6">
+          {/* School Header */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold mb-2" data-testid="text-school-name">
+                {schoolWithScore.name}
+              </h2>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
+                {borough && (
+                  <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-borough">
+                    <MapPin className="w-3 h-3" />
+                    {borough}
+                  </span>
+                )}
+                <span className="text-sm text-muted-foreground" data-testid="text-district">
+                  District {schoolWithScore.district}
+                </span>
+              </div>
+            </div>
+            <FavoriteButton 
+              schoolDbn={schoolWithScore.dbn} 
+              variant="default" 
+              size="default"
+              showLabel={true}
+            />
+          </div>
+
+          {/* Overall Score Card */}
+          <Card data-testid="card-overall-score">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Overall Snapshot</CardTitle>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 p-0"
+                      data-testid="button-tooltip-snapshot"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Overall snapshot information"
+                    >
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm" data-testid="tooltip-snapshot">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">Score Color Guide:</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                          <span className="text-xs">{METRIC_TOOLTIPS.colorLegend.green.description}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-amber-500" />
+                          <span className="text-xs">{METRIC_TOOLTIPS.colorLegend.yellow.description}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500" />
+                          <span className="text-xs">{METRIC_TOOLTIPS.colorLegend.red.description}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className={`w-4 h-4 rounded-full ${colorMap[scoreColor]}`} data-testid="indicator-overall" />
+                <div>
+                  <div className="text-5xl font-bold tabular-nums" data-testid="score-overall">
+                    {schoolWithScore.overall_score}
+                  </div>
+                  <div className="text-sm text-muted-foreground" data-testid="label-overall">
+                    {getScoreLabel(schoolWithScore.overall_score)}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Component Scores */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ScoreBar
+              label="Academics"
+              score={schoolWithScore.academics_score}
+              tooltip={METRIC_TOOLTIPS.academics.tooltip}
+              testId="academics"
+            />
+            <ScoreBar
+              label="Climate"
+              score={schoolWithScore.climate_score}
+              tooltip={METRIC_TOOLTIPS.climate.tooltip}
+              testId="climate"
+            />
+            <ScoreBar
+              label="Progress"
+              score={schoolWithScore.progress_score}
+              tooltip={METRIC_TOOLTIPS.progress.tooltip}
+              testId="progress"
+            />
+          </div>
+
+          {/* Academic Performance */}
+          <Card data-testid="card-academics">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5" />
+                Academic Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <MetricCard
+                  label="ELA Proficiency"
+                  value={`${schoolWithScore.ela_proficiency}%`}
+                  tooltip={METRIC_TOOLTIPS.elaProficiency.tooltip}
+                  testId="ela"
+                />
+                <MetricCard
+                  label="Math Proficiency"
+                  value={`${schoolWithScore.math_proficiency}%`}
+                  tooltip={METRIC_TOOLTIPS.mathProficiency.tooltip}
+                  testId="math"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* School Survey Results */}
+          {(schoolWithScore.student_safety !== null || 
+            schoolWithScore.teacher_quality !== null || 
+            schoolWithScore.guardian_satisfaction !== null) && (
+            <Card data-testid="card-survey">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>NYC School Survey Results</CardTitle>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 p-0"
+                        data-testid="button-tooltip-survey"
+                        aria-label="Survey information"
+                      >
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">Annual survey responses from students, teachers, and parents about school quality and culture.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {schoolWithScore.student_safety !== null && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Student Voice</h4>
+                    <div className="grid gap-2">
+                      <SurveyMetric label="Safety & Respect" value={schoolWithScore.student_safety} />
+                    </div>
+                  </div>
+                )}
+                
+                {schoolWithScore.teacher_quality !== null && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Teacher Perspective</h4>
+                    <div className="grid gap-2">
+                      <SurveyMetric label="Instruction Quality" value={schoolWithScore.teacher_quality} />
+                    </div>
+                  </div>
+                )}
+                
+                {schoolWithScore.guardian_satisfaction !== null && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Parent Feedback</h4>
+                    <div className="grid gap-2">
+                      <SurveyMetric label="Overall Satisfaction" value={schoolWithScore.guardian_satisfaction} />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* School Details */}
+          <Card data-testid="card-details">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                School Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Enrollment</dt>
+                  <dd className="text-lg font-semibold" data-testid="text-enrollment">{schoolWithScore.enrollment}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Grade Span</dt>
+                  <dd className="text-lg font-semibold" data-testid="text-grade-span">{schoolWithScore.grade_band}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Student-Teacher Ratio</dt>
+                  <dd className="text-lg font-semibold" data-testid="text-ratio">{schoolWithScore.student_teacher_ratio}:1</dd>
+                </div>
+                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
+                  <div className="md:col-span-2">
+                    <dt className="text-sm text-muted-foreground">Address</dt>
+                    <dd className="text-lg font-semibold" data-testid="text-address">{schoolWithScore.address}</dd>
+                  </div>
+                )}
+              </dl>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function ScoreBar({ label, score, tooltip, testId }: { label: string; score: number; tooltip: string; testId: string }) {
+  return (
+    <Card data-testid={`card-${testId}`}>
+      <CardContent className="pt-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium" data-testid={`label-${testId}`}>{label}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 p-0"
+                    data-testid={`button-tooltip-${testId}`}
+                    aria-label={`${label} information`}
+                  >
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{score}</span>
+          </div>
+          <Progress value={score} className="h-2" data-testid={`progress-${testId}`} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MetricCard({ label, value, tooltip, testId }: { label: string; value: string; tooltip: string; testId: string }) {
+  return (
+    <div className="bg-muted/50 rounded-lg p-4 space-y-1" data-testid={`container-${testId}`}>
+      <div className="flex items-center gap-1">
+        <dt className="text-sm text-muted-foreground">{label}</dt>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4 p-0"
+              data-testid={`button-tooltip-${testId}`}
+              aria-label={`${label} information`}
+            >
+              <Info className="h-3 w-3 text-muted-foreground" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-sm">{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      <dd className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{value}</dd>
+    </div>
+  );
+}
+
+function SurveyMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}%</span>
+    </div>
+  );
+}

@@ -4,7 +4,7 @@
 A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools. Built with React, TypeScript, and Shadcn UI, this application helps parents make informed decisions about kindergarten enrollment by providing clear, scannable data about schools across all NYC districts.
 
 ## Current State (November 23, 2025)
-**Status**: Database-backed application with authentication, favorites, and real NYC school data integration
+**Status**: Full-featured application with SEO-optimized school pages, AI chat assistant, authentication, favorites, and real NYC school data
 
 ### Completed Features
 1. **Data Model & Sample Data**
@@ -179,12 +179,22 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
   - Conditionally renders survey sections based on data availability
 
 ## Recent Updates (November 23, 2025)
-### NYC 5-Borough Filtering ✅
-- Created DBN-to-borough mapping utility (`shared/boroughMapping.ts`)
-- Filtered database to only NYC 5-borough schools (1,533 total)
-- Removed 283 non-NYC schools (districts 75, 84 - special programs)
-- Added borough display to SchoolCard and SchoolDetailPanel
-- Borough distribution: Manhattan (288), Bronx (351), Brooklyn (472), Queens (348), Staten Island (74)
+
+### SEO-Optimized School Pages ✅
+- **Individual School Routes**: Each school has dedicated page at `/school/:dbn`
+- **Dynamic Meta Tags**: Title, description, and Open Graph tags update per school
+- **Direct Navigation**: SchoolCard uses Link components for proper routing
+- **Dedicated API Endpoint**: GET `/api/schools/:dbn` for efficient single-school fetching
+- **Benefits**: Bookmarkable URLs, better search engine indexing, improved social sharing
+
+### AI Chat Assistant ✅
+- **OpenAI Integration**: Uses Replit AI Integrations (no API key required, bills to credits)
+- **Streaming Responses**: Real-time message streaming with gpt-4o-mini
+- **School Context**: AI has knowledge of 1,533 NYC schools (cached sample of 50)
+- **Conversation History**: Maintains context across multiple messages
+- **Floating UI**: Accessible chat button on all pages with expandable panel
+- **Smart Suggestions**: Recommends viewing school pages at `/school/{DBN}`
+- **Performance**: Caches school summary to avoid repeated database queries
 
 ### Visual Cues and Tooltips ✅
 - Created comprehensive tooltip configuration (`shared/metricHelp.ts`) for all metrics
@@ -196,6 +206,13 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
   - NYC School Survey Results header
 - All tooltips use IconButtons for keyboard/touch accessibility
 - Includes aria-labels and stopPropagation for proper interaction handling
+
+### NYC 5-Borough Filtering ✅
+- Created DBN-to-borough mapping utility (`shared/boroughMapping.ts`)
+- Filtered database to only NYC 5-borough schools (1,533 total)
+- Removed 283 non-NYC schools (districts 75, 84 - special programs)
+- Added borough display to SchoolCard and SchoolDetailPanel
+- Borough distribution: Manhattan (288), Bronx (351), Brooklyn (472), Queens (348), Staten Island (74)
 
 ## In Progress / Next Features
 

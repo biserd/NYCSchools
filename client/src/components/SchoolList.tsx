@@ -4,10 +4,9 @@ import { AlertCircle } from "lucide-react";
 
 interface SchoolListProps {
   schools: SchoolWithOverallScore[];
-  onSchoolClick: (school: SchoolWithOverallScore) => void;
 }
 
-export function SchoolList({ schools, onSchoolClick }: SchoolListProps) {
+export function SchoolList({ schools }: SchoolListProps) {
   if (schools.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4" data-testid="empty-state">
@@ -28,7 +27,6 @@ export function SchoolList({ schools, onSchoolClick }: SchoolListProps) {
         <SchoolCard
           key={school.dbn}
           school={school}
-          onClick={() => onSchoolClick(school)}
         />
       ))}
     </div>
