@@ -148,6 +148,16 @@ export default function Home() {
                   Map View
                 </Button>
               </Link>
+              <Link href="/settings">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-settings-nav"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              </Link>
               {isAuthenticated && user && (
                 <>
                   <Link href="/favorites">
@@ -158,16 +168,6 @@ export default function Home() {
                     >
                       <Heart className="w-4 h-4 mr-2" />
                       My Favorites
-                    </Button>
-                  </Link>
-                  <Link href="/settings">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid="button-settings-nav"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
                     </Button>
                   </Link>
                   <div className="flex items-center gap-2 mr-2" data-testid="container-user-info">

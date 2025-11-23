@@ -5,23 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { MapPin, Save } from "lucide-react";
 import { UserProfile } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
+import { getStoredAddress, setStoredAddress } from "@/lib/addressStorage";
 
 export default function Settings() {
   const { toast } = useToast();
   const [address, setAddress] = useState("");
+  const { isAuthenticated } = useAuth();
 
   const { data: profile, isLoading } = useQuery<UserProfile | null>({
     queryKey: ["/api/profile"],
+    enabled: isAuthenticated,
   });
 
   useEffect(() => {
-    if (profile?.homeAddress) {
+    if (isAuthenticated && profile?.homeAddress) {
       setAddress(profile.homeAddress);
+    } else if (!isAuthenticated) {
+      const stored = getStoredAddress();
+      if (stored) {
+        setAddress(stored.address);
+      }
     }
-  }, [profile]);
+  }, [profile, isAuthenticated]);
 
   const geocodeMutation = useMutation({
     mutationFn: async (address: string) => {
@@ -77,11 +86,25 @@ export default function Settings() {
 
     try {
       const coords = await geocodeMutation.mutateAsync(address);
-      await saveProfileMutation.mutateAsync({
-        homeAddress: address,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-      });
+      
+      if (isAuthenticated) {
+        await saveProfileMutation.mutateAsync({
+          homeAddress: address,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        });
+      } else {
+        setStoredAddress({
+          address,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        });
+        toast({
+          title: "Address saved",
+          description: "Your home address has been saved locally.",
+        });
+        window.dispatchEvent(new CustomEvent('addressChanged'));
+      }
     } catch (error: any) {
       toast({
         title: "Geocoding failed",
@@ -138,10 +161,12 @@ export default function Settings() {
             {isProcessing ? "Saving..." : "Save Address"}
           </Button>
 
-          {profile?.homeAddress && (
+          {((isAuthenticated && profile?.homeAddress) || (!isAuthenticated && getStoredAddress())) && (
             <div className="mt-4 p-4 bg-muted rounded-md" data-testid="text-current-address">
               <p className="text-sm font-medium mb-1">Current Address:</p>
-              <p className="text-sm text-muted-foreground">{profile.homeAddress}</p>
+              <p className="text-sm text-muted-foreground">
+                {isAuthenticated ? profile?.homeAddress : getStoredAddress()?.address}
+              </p>
             </div>
           )}
         </CardContent>

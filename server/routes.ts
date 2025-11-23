@@ -196,14 +196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Commute Time API
-  app.get("/api/commute/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
+  // Commute Time API (public - accepts lat/lng as query params)
+  app.get("/api/commute/:schoolDbn", async (req: Request, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
       const schoolDbn = req.params.schoolDbn;
+      const originLat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+      const originLng = req.query.lng ? parseFloat(req.query.lng as string) : null;
 
-      const profile = await storage.getUserProfile(userId);
-      if (!profile || !profile.latitude || !profile.longitude) {
+      if (!originLat || !originLng) {
         return res.json({ commuteTime: null, distance: null, error: "No home address set" });
       }
 
@@ -217,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ commuteTime: null, distance: null, error: "Google Maps API not configured" });
       }
 
-      const origin = `${profile.latitude},${profile.longitude}`;
+      const origin = `${originLat},${originLng}`;
       const destination = `${school.latitude},${school.longitude}`;
       const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=transit&key=${googleMapsApiKey}`;
 

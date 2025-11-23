@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
 import { Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { getStoredAddress } from "@/lib/addressStorage";
 
 interface CommuteTimeProps {
   schoolDbn: string;
@@ -20,19 +21,41 @@ interface CommuteData {
 }
 
 export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
-  const { isAuthenticated } = useAuth();
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    const updateCoordinates = () => {
+      const stored = getStoredAddress();
+      if (stored) {
+        setCoordinates({ lat: stored.latitude, lng: stored.longitude });
+      } else {
+        setCoordinates(null);
+      }
+    };
+
+    updateCoordinates();
+    window.addEventListener('addressChanged', updateCoordinates);
+    return () => window.removeEventListener('addressChanged', updateCoordinates);
+  }, []);
 
   const { data: commuteData, isLoading } = useQuery<CommuteData>({
-    queryKey: ["/api/commute", schoolDbn],
-    enabled: isAuthenticated,
+    queryKey: ["/api/commute", schoolDbn, coordinates],
+    queryFn: async () => {
+      if (!coordinates) {
+        return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, error: "No home address set" };
+      }
+      const response = await fetch(`/api/commute/${schoolDbn}?lat=${coordinates.lat}&lng=${coordinates.lng}`);
+      return response.json();
+    },
+    enabled: !!coordinates,
     staleTime: 1000 * 60 * 10,
   });
 
-  if (!isAuthenticated) {
+  if (!coordinates && isLoading) {
     return null;
   }
 
-  if (isLoading) {
+  if (isLoading && coordinates) {
     return compact ? (
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />
