@@ -4,8 +4,40 @@ import { storage } from "./storage";
 import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import OpenAI from "openai";
+import compression from "compression";
+
+// Simple in-memory cache
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<any>>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    cache.delete(key);
+    return null;
+  }
+  
+  return entry.data as T;
+}
+
+function setCache<T>(key: string, data: T): void {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+  });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add compression middleware
+  app.use(compression());
+
   // Auth middleware
   await setupAuth(app);
 
@@ -24,10 +56,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Schools API (public)
+  // Schools API (public) with caching
   app.get("/api/schools", async (req: Request, res: Response) => {
     try {
+      const cacheKey = "all-schools";
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
       const schools = await storage.getSchools();
+      setCache(cacheKey, schools);
       res.json(schools);
     } catch (error) {
       console.error("Error fetching schools:", error);

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
 import { SchoolList } from "@/components/SchoolList";
@@ -14,6 +14,7 @@ import { Link } from "wouter";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("2");
   const [selectedGradeBand, setSelectedGradeBand] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("overall");
@@ -21,6 +22,16 @@ export default function Home() {
   const [detailOpen, setDetailOpen] = useState(false);
   
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const { data: rawSchools, isLoading } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -38,11 +49,11 @@ export default function Home() {
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
 
-    if (searchQuery) {
+    if (debouncedSearchQuery) {
       const normalizeString = (str: string) => 
         str.toLowerCase().replace(/[^a-z0-9]/g, '');
       
-      const normalizedQuery = normalizeString(searchQuery);
+      const normalizedQuery = normalizeString(debouncedSearchQuery);
       filtered = filtered.filter(
         (school) =>
           normalizeString(school.name).includes(normalizedQuery) ||
@@ -78,7 +89,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, searchQuery, selectedDistrict, selectedGradeBand, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
