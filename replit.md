@@ -138,7 +138,7 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - PostgreSQL database integration with Drizzle ORM
 - Database tables: users, sessions, schools, favorites
 - Extended schema with 18 new fields: survey scores, economic need index, attendance rates, quality ratings
-- Automated seeding with 25 NYC schools from schools.json
+- Database contains 26 NYC schools (original 25 from schools.json + PS 158 Bayard Taylor added on request)
 - User data and favorites persisted in database
 
 ### User Authentication ✅
@@ -160,9 +160,10 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - **CSV Survey Parser**: Parses NYC School Survey data (1,816 schools) with student, teacher, and parent feedback scores
 - **NYC DOE Snapshot Scraper**: Fetches additional school metrics from tools.nycenet.edu/snapshot (test scores, demographics, attendance, quality ratings)
 - **Data Sync Service**: Combines both sources to enrich school records
-  - Successfully synced all 25 schools in database
-  - 11 schools with survey + snapshot data
+  - Successfully synced 26 schools in database
+  - 12 schools with survey + snapshot data (including PS 158 Bayard Taylor)
   - 14 schools with snapshot data only
+- **On-Demand School Addition**: Can add individual schools from the 1,816-school CSV dataset on request
 - **Enhanced UI**: SchoolDetailPanel displays NYC School Survey Results with three sections:
   - Student Voice (safety, teacher trust, engagement)
   - Teacher Perspective (instruction quality, collaboration, leadership)
