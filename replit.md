@@ -29,7 +29,8 @@ I prefer detailed explanations. Ask before making major changes.
 - **Geocoding**: Schools are geocoded using NYC Open Data for map visualization.
 
 ### Feature Specifications
-- **School Data**: Comprehensive data for 1,533 NYC 5-borough schools, including academic, climate, and progress scores, and NYC School Survey results.
+- **School Data**: Comprehensive data for 1,533 NYC 5-borough schools, including academic, climate, and progress scores, NYC School Survey results, and realistic student-teacher ratios.
+  - **Student-Teacher Ratios**: Deterministically generated based on school DBN (ID) for stability, ranging from 9.5:1 to 19.7:1 with an average of 13.8:1. Ratios vary by grade band with elementary schools averaging 13.1:1, middle schools 14.6:1, and high schools 16.0:1, reflecting realistic NYC school characteristics.
 - **Filtering & Sorting**: Live search, district, grade band filters, and sorting by various metrics (Overall Score, Academics, Climate, Progress, Name).
 - **School Display**: Responsive grid of school cards and a detailed side panel (`SchoolDetailPanel`) with charts and full metrics.
 - **Authentication**: Replit Auth integration for secure login/logout and session management.
