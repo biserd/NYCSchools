@@ -1,22 +1,26 @@
-import { useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useState, useEffect } from "react";
 import { SchoolWithOverallScore } from "@shared/schema";
 import { SchoolCard } from "./SchoolCard";
 import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SchoolListProps {
   schools: SchoolWithOverallScore[];
 }
 
-export function SchoolList({ schools }: SchoolListProps) {
-  const parentRef = useRef<HTMLDivElement>(null);
+const INITIAL_LOAD = 20;
+const LOAD_MORE_INCREMENT = 20;
 
-  const virtualizer = useVirtualizer({
-    count: Math.ceil(schools.length / 2),
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 300,
-    overscan: 3,
-  });
+export function SchoolList({ schools }: SchoolListProps) {
+  const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
+
+  // Reset display count when schools change (filtering, etc.)
+  useEffect(() => {
+    setDisplayCount(INITIAL_LOAD);
+  }, [schools]);
+
+  const displayedSchools = schools.slice(0, displayCount);
+  const hasMore = displayCount < schools.length;
 
   if (schools.length === 0) {
     return (
@@ -33,46 +37,28 @@ export function SchoolList({ schools }: SchoolListProps) {
   }
 
   return (
-    <div
-      ref={parentRef}
-      className="h-[calc(100vh-400px)] overflow-auto"
-      data-testid="list-schools"
-    >
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const startIndex = virtualRow.index * 2;
-          const leftSchool = schools[startIndex];
-          const rightSchool = schools[startIndex + 1];
-
-          // Skip if no left school (overscan beyond data)
-          if (!leftSchool) return null;
-
-          return (
-            <div
-              key={virtualRow.key}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-1">
-                <SchoolCard school={leftSchool} />
-                {rightSchool && <SchoolCard school={rightSchool} />}
-              </div>
-            </div>
-          );
-        })}
+    <div className="space-y-6" data-testid="list-schools">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {displayedSchools.map((school) => (
+          <SchoolCard
+            key={school.dbn}
+            school={school}
+          />
+        ))}
       </div>
+      
+      {hasMore && (
+        <div className="flex justify-center pt-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setDisplayCount(prev => Math.min(prev + LOAD_MORE_INCREMENT, schools.length))}
+            data-testid="button-load-more"
+          >
+            Load More Schools ({schools.length - displayCount} remaining)
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
