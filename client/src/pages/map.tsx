@@ -13,7 +13,7 @@ export default function MapPage() {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const popupListenersRef = useRef<Map<string, () => void>>(new Map());
-  const [selectedDistrict, setSelectedDistrict] = useState("all");
+  const [selectedDistrict, setSelectedDistrict] = useState("2");
   const [, setLocation] = useLocation();
 
   const { data: allSchools } = useQuery<School[]>({
@@ -43,8 +43,8 @@ export default function MapPage() {
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Initialize map centered on Manhattan
-    const map = L.map(mapRef.current).setView([40.7589, -73.9851], 12);
+    // Initialize map centered on Manhattan District 2 (Greenwich Village area)
+    const map = L.map(mapRef.current).setView([40.728, -74.000], 13);
 
     // Add OpenStreetMap tiles
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
