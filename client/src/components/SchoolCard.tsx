@@ -1,7 +1,8 @@
 import { School, calculateOverallScore, getScoreColor } from "@shared/schema";
+import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Users, GraduationCap } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin } from "lucide-react";
 import { FavoriteButton } from "./FavoriteButton";
 
 interface SchoolCardProps {
@@ -12,6 +13,7 @@ interface SchoolCardProps {
 export function SchoolCard({ school, onClick }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
   const scoreColor = getScoreColor(overallScore);
+  const borough = getBoroughFromDBN(school.dbn);
 
   const colorMap = {
     green: "bg-emerald-500",
@@ -67,14 +69,20 @@ export function SchoolCard({ school, onClick }: SchoolCardProps) {
         </div>
 
         <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            {borough && (
+              <span className="flex items-center gap-1" data-testid={`text-borough-${school.dbn}`}>
+                <MapPin className="w-3 h-3" data-testid={`icon-borough-${school.dbn}`} />
+                {borough}
+              </span>
+            )}
             <span data-testid={`text-district-${school.dbn}`}>District {school.district}</span>
             <span className="flex items-center gap-1" data-testid={`text-ratio-${school.dbn}`}>
               <Users className="w-3 h-3" data-testid={`icon-ratio-${school.dbn}`} />
               {school.student_teacher_ratio}:1
             </span>
           </div>
-          <ChevronRight className="w-4 h-4" data-testid={`icon-chevron-${school.dbn}`} />
+          <ChevronRight className="w-4 h-4 shrink-0" data-testid={`icon-chevron-${school.dbn}`} />
         </div>
       </div>
     </Card>

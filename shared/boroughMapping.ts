@@ -34,7 +34,7 @@ const DISTRICT_TO_BOROUGH: Record<number, Borough> = {
   21: "Brooklyn",
   22: "Brooklyn",
   23: "Brooklyn",
-  32: "Brooklyn",
+  32: "Brooklyn", // Note: District 32 schools span both Brooklyn and Queens
   
   // Queens (Districts 24-30)
   24: "Queens",
@@ -48,6 +48,14 @@ const DISTRICT_TO_BOROUGH: Record<number, Borough> = {
   // Staten Island (District 31)
   31: "Staten Island",
 };
+
+// Non-geographic districts to explicitly exclude from NYC 5-borough filtering
+const EXCLUDED_DISTRICTS = new Set([
+  75, // Special education programs (District 75)
+  84, // Charter schools (District 84)
+  79, // Alternative schools (District 79)
+  97, // Special programs
+]);
 
 /**
  * Extract district number from DBN code
@@ -71,8 +79,16 @@ export function getBoroughFromDBN(dbn: string): Borough | null {
 
 /**
  * Check if a DBN belongs to a NYC 5-borough school
+ * Explicitly excludes special education, charter, and alternative programs
  */
 export function isNYC5Borough(dbn: string): boolean {
+  const district = extractDistrictFromDBN(dbn);
+  
+  // Explicitly exclude non-geographic districts
+  if (EXCLUDED_DISTRICTS.has(district)) {
+    return false;
+  }
+  
   return getBoroughFromDBN(dbn) !== null;
 }
 

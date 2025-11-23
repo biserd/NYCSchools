@@ -1,4 +1,5 @@
 import { SchoolWithOverallScore, getScoreLabel, getScoreColor } from "@shared/schema";
+import { getBoroughFromDBN } from "@shared/boroughMapping";
 import {
   Sheet,
   SheetContent,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -23,6 +24,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
 
   const scoreColor = getScoreColor(school.overall_score);
   const scoreLabel = getScoreLabel(school.overall_score);
+  const borough = getBoroughFromDBN(school.dbn);
 
   const colorMap = {
     green: "bg-emerald-500",
@@ -55,6 +57,15 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
           <div className="flex flex-col gap-2 text-left">
             <p className="text-sm text-muted-foreground" data-testid="text-detail-address">{school.address}</p>
             <div className="flex gap-2 flex-wrap" data-testid="container-badges">
+              <Badge 
+                variant={borough ? "default" : "secondary"} 
+                data-testid="badge-detail-borough" 
+                className="gap-1"
+                title={borough ? undefined : "Borough information unavailable for this district"}
+              >
+                <MapPin className="w-3 h-3" />
+                {borough || "Borough N/A"}
+              </Badge>
               <Badge variant="secondary" data-testid="badge-detail-dbn">{school.dbn}</Badge>
               <Badge variant="secondary" data-testid="badge-detail-district">District {school.district}</Badge>
               <Badge variant="secondary" data-testid="badge-detail-grade">{school.grade_band}</Badge>

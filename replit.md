@@ -178,7 +178,20 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
   - Supports legitimate zero values
   - Conditionally renders survey sections based on data availability
 
+## Recent Updates (November 23, 2025)
+### NYC 5-Borough Filtering ✅
+- Created DBN-to-borough mapping utility (`shared/boroughMapping.ts`)
+- Filtered database to only NYC 5-borough schools (1,533 total)
+- Removed 283 non-NYC schools (districts 75, 84 - special programs)
+- Added borough display to SchoolCard and SchoolDetailPanel
+- Borough distribution: Manhattan (288), Bronx (351), Brooklyn (472), Queens (348), Staten Island (74)
+
 ## In Progress / Next Features
+
+### Data Enrichment (Future)
+- NYC DOE Snapshot scraper requires browser automation (Playwright/Puppeteer) for JavaScript-rendered pages
+- Alternative: NYC Open Data API for additional metrics
+- Quality ratings, attendance rates, demographic data
 
 ### Real Data Integration (Planned)
 - Connect to NYC Open Data API for live school data
