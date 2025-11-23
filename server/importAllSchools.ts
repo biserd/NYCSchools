@@ -131,7 +131,7 @@ async function parseAllSchoolsFromCSV(filePath: string): Promise<SchoolSeed[]> {
         dbn,
         name,
         district,
-        address: "Address to be updated",
+        address: "TBD",
         grade_band,
         academics_score,
         climate_score,

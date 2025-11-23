@@ -138,7 +138,7 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 - PostgreSQL database integration with Drizzle ORM
 - Database tables: users, sessions, schools, favorites
 - Extended schema with 18 new fields: survey scores, economic need index, attendance rates, quality ratings
-- Database contains 26 NYC schools (original 25 from schools.json + PS 158 Bayard Taylor added on request)
+- Database contains 1,816 NYC schools from NYC School Survey CSV (November 2025 dataset)
 - User data and favorites persisted in database
 
 ### User Authentication ✅
@@ -158,12 +158,13 @@ The workflow "Start application" runs `npm run dev` which starts both the Expres
 
 ### Real Data Integration ✅
 - **CSV Survey Parser**: Parses NYC School Survey data (1,816 schools) with student, teacher, and parent feedback scores
-- **NYC DOE Snapshot Scraper**: Fetches additional school metrics from tools.nycenet.edu/snapshot (test scores, demographics, attendance, quality ratings)
-- **Data Sync Service**: Combines both sources to enrich school records
-  - Successfully synced 26 schools in database
-  - 12 schools with survey + snapshot data (including PS 158 Bayard Taylor)
-  - 14 schools with snapshot data only
-- **On-Demand School Addition**: Can add individual schools from the 1,816-school CSV dataset on request
+- **Bulk Import System**: All 1,816 schools from NYC School Survey CSV imported with real survey data
+  - 1,576 schools (87%) have teacher quality data
+  - 1,803 schools (99%) have guardian satisfaction data
+  - 1,070 schools (59%) have student safety data
+  - Minimal placeholder defaults for fields not in CSV (address="TBD", enrollment=400, student-teacher ratio=14)
+- **NYC DOE Snapshot Scraper**: Available for enriching schools with additional metrics from tools.nycenet.edu/snapshot (test scores, demographics, attendance, quality ratings)
+- **Smart Search**: Normalizes queries to match schools regardless of punctuation ("PS 158" finds "P.S. 158 Bayard Taylor")
 - **Enhanced UI**: SchoolDetailPanel displays NYC School Survey Results with three sections:
   - Student Voice (safety, teacher trust, engagement)
   - Teacher Perspective (instruction quality, collaboration, leadership)

@@ -38,11 +38,14 @@ export default function Home() {
     let filtered = schools;
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const normalizeString = (str: string) => 
+        str.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      const normalizedQuery = normalizeString(searchQuery);
       filtered = filtered.filter(
         (school) =>
-          school.name.toLowerCase().includes(query) ||
-          school.dbn.toLowerCase().includes(query)
+          normalizeString(school.name).includes(normalizedQuery) ||
+          normalizeString(school.dbn).includes(normalizedQuery)
       );
     }
 
