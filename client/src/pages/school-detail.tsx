@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -28,7 +28,8 @@ import {
   School as SchoolIcon,
   MessageSquare,
   MessageCircle,
-  Sparkles
+  Sparkles,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn, LogOut, User } from "lucide-react";
@@ -236,6 +237,21 @@ export default function SchoolDetail() {
               </h2>
               <div className="flex items-center gap-3 flex-wrap mb-3">
                 <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
+                {schoolWithScore.economic_need_index !== null && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Badge variant="outline" className="text-xs gap-1" data-testid="badge-eni">
+                          <DollarSign className="w-3 h-3" />
+                          {schoolWithScore.economic_need_index}% ENI
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 {borough && (
                   <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-borough">
                     <MapPin className="w-3 h-3" />
