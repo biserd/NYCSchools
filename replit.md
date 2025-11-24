@@ -32,6 +32,7 @@ I prefer detailed explanations. Ask before making major changes.
 
 ### Feature Specifications
 - **School Data**: Comprehensive data for 1,509 NYC 5-borough schools, including academic, climate, and progress scores, NYC School Survey results, comprehensive demographics, and realistic student-teacher ratios.
+  - **Data Years**: Test scores and demographics from 2021-22 to 2022-23 academic years; Climate/Progress scores from 2023-2024
   - **Student-Teacher Ratios**: Deterministically generated based on school DBN (ID) for stability, ranging from 10:1 to 20:1 with an average of 14:1. Ratios are displayed as whole numbers and vary by grade band, with elementary schools averaging lower ratios than high schools, reflecting realistic NYC school characteristics.
   - **Demographics Data**: Complete student demographics from NYC Open Data Portal (dataset c7ru-d68s) including:
     - **Economic Need Index (ENI)**: Percentage of students facing economic hardship, with comprehensive tooltip explaining temporary housing, poverty metrics, SNAP/TANF eligibility, and funding implications. Displayed in comparison table and school detail views.

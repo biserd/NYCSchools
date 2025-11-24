@@ -305,6 +305,11 @@ export default function ComparePage() {
               </div>
             </CardContent>
           </Card>
+          
+          <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
+            <p>Data from NYC Department of Education School Survey and public records.</p>
+            <p>Test scores and demographics: 2021-22 to 2022-23 | Climate/Progress: 2023-2024</p>
+          </div>
         </div>
       </div>
       

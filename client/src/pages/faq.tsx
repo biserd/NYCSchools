@@ -103,17 +103,18 @@ export default function FAQ() {
         <div>
           <p className="mb-2">We use official NYC Department of Education data from multiple sources:</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Test Scores:</strong> NYC Open Data (grades 3-8 state test results)</li>
-            <li><strong>Climate & Progress:</strong> NYC DOE School Survey and Quality Reports</li>
-            <li><strong>Demographics:</strong> NYC Open Data Portal (student demographics dataset c7ru-d68s)</li>
+            <li><strong>Test Scores:</strong> NYC Open Data, grades 3-8 state test results (2021-22 to 2022-23 academic years)</li>
+            <li><strong>Climate & Progress:</strong> NYC DOE School Survey and Quality Reports (2023-2024)</li>
+            <li><strong>Demographics:</strong> NYC Open Data Portal, student demographics dataset c7ru-d68s (2021-22 to 2022-23 academic years)</li>
             <li><strong>School Locations:</strong> NYC Open Data School Point Locations</li>
           </ul>
+          <p className="mt-2 text-sm">All data represents the most recent information available from official NYC DOE sources.</p>
         </div>
       )
     },
     {
       question: "How often is the data updated?",
-      answer: "We update our school data when new information is released by the NYC Department of Education, typically annually. Test scores and survey results are from the most recent available school year."
+      answer: "We update our school data when new information is released by the NYC Department of Education, typically annually. Our current data includes test scores and demographics from the 2021-22 to 2022-23 academic years, and school quality metrics (climate and progress scores) from 2023-2024."
     },
     {
       question: "Can I write reviews for schools?",
