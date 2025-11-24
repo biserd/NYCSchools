@@ -30,8 +30,14 @@ I prefer detailed explanations. Ask before making major changes.
 - **Geocoding**: Schools are geocoded using NYC Open Data for map visualization.
 
 ### Feature Specifications
-- **School Data**: Comprehensive data for 1,533 NYC 5-borough schools, including academic, climate, and progress scores, NYC School Survey results, and realistic student-teacher ratios.
+- **School Data**: Comprehensive data for 1,509 NYC 5-borough schools, including academic, climate, and progress scores, NYC School Survey results, comprehensive demographics, and realistic student-teacher ratios.
   - **Student-Teacher Ratios**: Deterministically generated based on school DBN (ID) for stability, ranging from 10:1 to 20:1 with an average of 14:1. Ratios are displayed as whole numbers and vary by grade band, with elementary schools averaging lower ratios than high schools, reflecting realistic NYC school characteristics.
+  - **Demographics Data**: Complete student demographics from NYC Open Data Portal (dataset c7ru-d68s) including:
+    - **Economic Need Index (ENI)**: Percentage of students facing economic hardship, with comprehensive tooltip explaining temporary housing, poverty metrics, SNAP/TANF eligibility, and funding implications. Displayed in comparison table and school detail views.
+    - **English Language Learners (ELL)**: Percentage of students receiving English language instruction
+    - **Students with IEPs**: Percentage of students with Individualized Education Programs
+    - **Race/Ethnicity Breakdown**: Complete diversity metrics showing percentage of Asian, Black, Hispanic/Latino, White, and Multi-Racial students
+    - All demographic metrics include detailed, parent-friendly tooltips and are displayed in dedicated "Student Demographics" cards on both SchoolDetailPanel (homepage sidebar) and school-detail pages
 - **Filtering & Sorting**: Live search, district, grade band filters, and sorting by various metrics (Overall Score, Academics, Climate, Progress, Name).
 - **School Display**: Responsive grid of school cards with commute times, and a detailed side panel (`SchoolDetailPanel`) with charts and full metrics.
 - **Authentication**: Replit Auth integration for secure login/logout and session management.
