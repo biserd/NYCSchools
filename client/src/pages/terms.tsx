@@ -3,10 +3,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function Terms() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEOHead 
+        title="Terms of Service"
+        description="Read the terms and conditions for using NYC Kindergarten School Finder. Understand your rights and responsibilities."
+        keywords="terms of service, terms and conditions, user agreement, school finder terms"
+        canonicalPath="/terms"
+      />
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">

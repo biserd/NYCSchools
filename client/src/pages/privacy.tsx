@@ -3,10 +3,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function Privacy() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEOHead 
+        title="Privacy Policy"
+        description="Learn how NYC Kindergarten School Finder protects your privacy and handles your personal information. Read our comprehensive privacy policy."
+        keywords="privacy policy, data protection, user privacy, school finder privacy"
+        canonicalPath="/privacy"
+      />
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">

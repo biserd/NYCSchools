@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { School, calculateOverallScore, getScoreColor, getSchoolSlug } from "@shared/schema";
 
@@ -193,6 +194,12 @@ export default function MapPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEOHead 
+        title="School Map View"
+        description="Explore NYC elementary schools on an interactive map. View school locations, ratings, and filter by district to find schools near you."
+        keywords="NYC school map, kindergarten school locations, school finder map, NYC school districts, elementary school map"
+        canonicalPath="/map"
+      />
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">

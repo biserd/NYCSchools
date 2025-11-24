@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
 import { Link } from "wouter";
 import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl } from "@shared/schema";
@@ -75,6 +76,12 @@ export default function ComparePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEOHead 
+        title="Compare Schools Side-by-Side"
+        description="Compare NYC elementary schools side-by-side. View test scores, ratings, demographics, and key metrics to make informed kindergarten enrollment decisions."
+        keywords="compare NYC schools, school comparison tool, side-by-side school ratings, NYC school metrics, kindergarten school comparison"
+        canonicalPath="/compare"
+      />
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">

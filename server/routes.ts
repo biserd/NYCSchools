@@ -482,6 +482,70 @@ Remember: All 1,533 schools are in the database, but you're seeing a sample. For
     }
   });
 
+  // SEO: Sitemap.xml endpoint
+  app.get("/sitemap.xml", async (req: Request, res: Response) => {
+    try {
+      const schools = await storage.getSchools();
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Static pages
+      const staticPages = [
+        { url: '/', changefreq: 'daily', priority: '1.0' },
+        { url: '/map', changefreq: 'weekly', priority: '0.8' },
+        { url: '/favorites', changefreq: 'weekly', priority: '0.7' },
+        { url: '/compare', changefreq: 'weekly', priority: '0.7' },
+        { url: '/recommendations', changefreq: 'weekly', priority: '0.8' },
+        { url: '/faq', changefreq: 'monthly', priority: '0.6' },
+        { url: '/privacy', changefreq: 'monthly', priority: '0.3' },
+        { url: '/terms', changefreq: 'monthly', priority: '0.3' },
+      ];
+      
+      // Generate XML
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+      
+      // Add static pages
+      staticPages.forEach(page => {
+        xml += '  <url>\n';
+        xml += `    <loc>https://nyc-kindergarten-school-finder.replit.app${page.url}</loc>\n`;
+        xml += `    <lastmod>${today}</lastmod>\n`;
+        xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
+        xml += `    <priority>${page.priority}</priority>\n`;
+        xml += '  </url>\n';
+      });
+      
+      // Add school pages
+      schools.forEach(school => {
+        const slug = `${school.dbn.toLowerCase()}-${school.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}`;
+        xml += '  <url>\n';
+        xml += `    <loc>https://nyc-kindergarten-school-finder.replit.app/school/${slug}</loc>\n`;
+        xml += `    <lastmod>${today}</lastmod>\n`;
+        xml += `    <changefreq>weekly</changefreq>\n`;
+        xml += `    <priority>0.9</priority>\n`;
+        xml += '  </url>\n';
+      });
+      
+      xml += '</urlset>';
+      
+      res.header('Content-Type', 'application/xml');
+      res.send(xml);
+    } catch (error) {
+      console.error("Error generating sitemap:", error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+
+  // SEO: Robots.txt endpoint
+  app.get("/robots.txt", (req: Request, res: Response) => {
+    const robotsTxt = `User-agent: *
+Allow: /
+
+Sitemap: https://nyc-kindergarten-school-finder.replit.app/sitemap.xml`;
+    
+    res.header('Content-Type', 'text/plain');
+    res.send(robotsTxt);
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

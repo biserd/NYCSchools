@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { School, SchoolWithOverallScore, calculateOverallScore, Favorite } from "@shared/schema";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Heart } from "lucide-react";
@@ -75,6 +76,12 @@ export default function FavoritesPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background" data-testid="favorites-page">
+      <SEOHead 
+        title="My Favorite Schools"
+        description="View and manage your favorite NYC elementary schools. Compare saved schools and make informed kindergarten enrollment decisions."
+        keywords="favorite schools, saved schools, NYC kindergarten favorites, school bookmarks, compare schools"
+        canonicalPath="/favorites"
+      />
       <header className="bg-background border-b">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="flex items-center gap-4 mb-4">

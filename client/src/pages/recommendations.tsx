@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
 import { ArrowLeft, Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { SchoolCard } from "@/components/SchoolCard";
@@ -183,6 +184,12 @@ I focused on schools with strong academics and balanced climate scores in Manhat
   if (step === "results") {
     return (
       <div className="flex flex-col min-h-screen bg-background">
+        <SEOHead 
+          title="Personalized School Recommendations"
+          description="Get AI-powered personalized NYC kindergarten school recommendations based on your priorities, district preferences, and specific needs."
+          keywords="school recommendations, personalized schools, NYC kindergarten AI, school finder recommendations, school suggestions"
+          canonicalPath="/recommendations"
+        />
         <header className="border-b">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
@@ -240,6 +247,12 @@ I focused on schools with strong academics and balanced climate scores in Manhat
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEOHead 
+        title="Get School Recommendations"
+        description="Get AI-powered personalized NYC kindergarten school recommendations based on your priorities, district preferences, and specific needs."
+        keywords="school recommendations, personalized schools, NYC kindergarten AI, school finder recommendations, school suggestions"
+        canonicalPath="/recommendations"
+      />
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">

@@ -23,11 +23,21 @@ I prefer detailed explanations. Ask before making major changes.
 
 ### Technical Implementations
 - **Frontend Stack**: React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing.
-- **Component Structure**: Organized into `components/` for reusable UI elements (e.g., `FilterBar`, `SchoolCard`, `SchoolDetailPanel`, `ChatBot`) and `pages/` for main application views (e.g., `home`, `school-detail`, `favorites`, `map`, `recommendations`).
+- **Component Structure**: Organized into `components/` for reusable UI elements (e.g., `FilterBar`, `SchoolCard`, `SchoolDetailPanel`, `ChatBot`, `SEOHead`, `StructuredData`) and `pages/` for main application views (e.g., `home`, `school-detail`, `favorites`, `map`, `recommendations`).
 - **Data Flow**: Initial data loaded from `public/schools.json` (now primarily database-driven), with client-side score calculation, filtering, and sorting using React state and `useMemo`.
 - **State Management**: Primarily uses React's `useState` and `useMemo` for efficient client-side state handling.
 - **Data Model**: `shared/schema.ts` defines school types and score calculation utilities.
-- **SEO**: Individual school pages (`/school/:dbn`) with dynamic meta tags for improved search engine indexing and shareability.
+- **SEO Optimization**: Comprehensive SEO implementation for maximum search visibility:
+  - **SEOHead Component**: Reusable component managing meta tags, Open Graph, Twitter Cards, and canonical URLs across all pages
+  - **Dynamic Meta Tags**: Page-specific titles, descriptions, and keywords for all routes (home, map, favorites, compare, recommendations, FAQ, privacy, terms, school-detail)
+  - **Structured Data (Schema.org JSON-LD)**:
+    - **Homepage**: Organization and WebSite schemas with site search markup
+    - **School Pages**: EducationalOrganization schema with school details, address, coordinates, grade ranges, and enrollment data
+    - **FAQ Page**: FAQPage schema marking up all questions and answers for rich search results
+  - **Sitemap.xml**: Dynamically generated from database with all 1,509 school pages plus static pages, with proper priority and changefreq values
+  - **Robots.txt**: Search engine directives with sitemap reference
+  - **Social Sharing**: Open Graph and Twitter Card tags for rich link previews on social media
+  - **Canonical URLs**: Prevent duplicate content issues across all pages
 - **Geocoding**: Schools are geocoded using NYC Open Data for map visualization.
 
 ### Feature Specifications

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses } from "@shared/schema";
@@ -12,6 +12,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
+import { StructuredData } from "@/components/StructuredData";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -51,34 +53,6 @@ export default function SchoolDetail() {
     ...school,
     overall_score: calculateOverallScore(school),
   } : null;
-
-  useEffect(() => {
-    if (schoolWithScore) {
-      const borough = getBoroughFromDBN(schoolWithScore.dbn);
-      const boroughText = borough ? ` in ${borough}` : '';
-      
-      document.title = `${schoolWithScore.name} - NYC Kindergarten Finder`;
-      
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute('content', 
-          `Explore ${schoolWithScore.name}${boroughText}, District ${schoolWithScore.district}. Overall Score: ${schoolWithScore.overall_score}. ELA: ${schoolWithScore.ela_proficiency}%, Math: ${schoolWithScore.math_proficiency}%. View detailed metrics and NYC School Survey results.`
-        );
-      }
-
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) {
-        ogTitle.setAttribute('content', `${schoolWithScore.name} - NYC Kindergarten Finder`);
-      }
-
-      const ogDescription = document.querySelector('meta[property="og:description"]');
-      if (ogDescription) {
-        ogDescription.setAttribute('content', 
-          `Overall Score: ${schoolWithScore.overall_score}. ELA: ${schoolWithScore.ela_proficiency}%, Math: ${schoolWithScore.math_proficiency}%. District ${schoolWithScore.district}.`
-        );
-      }
-    }
-  }, [schoolWithScore]);
 
   if (isLoading) {
     return (
@@ -148,8 +122,43 @@ export default function SchoolDetail() {
     return "Below Average";
   };
 
+  const boroughText = borough ? ` in ${borough}` : '';
+  const schoolDescription = `${schoolWithScore.name}${boroughText}, District ${schoolWithScore.district}. Overall Score: ${schoolWithScore.overall_score}. ELA: ${schoolWithScore.ela_proficiency}%, Math: ${schoolWithScore.math_proficiency}%. View detailed metrics, NYC School Survey results, parent reviews, and commute times.`;
+  const schoolSlug = slug || '';
+
+  const educationalOrgSchema = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": schoolWithScore.name,
+    "url": `https://nyc-kindergarten-school-finder.replit.app/school/${schoolSlug}`,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": borough || "New York",
+      "addressRegion": "NY",
+      "addressCountry": "US"
+    },
+    "description": schoolDescription,
+    ...(schoolWithScore.latitude && schoolWithScore.longitude ? {
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": schoolWithScore.latitude,
+        "longitude": schoolWithScore.longitude
+      }
+    } : {}),
+    "educationalLevel": schoolWithScore.grade_band,
+    "numberOfStudents": schoolWithScore.enrollment,
+    "telephone": schoolWithScore.phone || undefined,
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEOHead 
+        title={schoolWithScore.name}
+        description={schoolDescription}
+        keywords={`${schoolWithScore.name}, NYC school, District ${schoolWithScore.district}, ${borough} schools, kindergarten, elementary school, school ratings`}
+        canonicalPath={`/school/${schoolSlug}`}
+      />
+      <StructuredData data={educationalOrgSchema} />
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">

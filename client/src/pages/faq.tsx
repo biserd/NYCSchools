@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
+import { StructuredData } from "@/components/StructuredData";
 import {
   Collapsible,
   CollapsibleContent,
@@ -146,8 +148,28 @@ export default function FAQ() {
     }
   ];
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.map(faq => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": typeof faq.answer === 'string' ? faq.answer : faq.question
+      }
+    }))
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <SEOHead 
+        title="FAQ - Frequently Asked Questions"
+        description="Find answers to common questions about using the NYC Kindergarten School Finder, including how scores are calculated, data sources, and feature guides."
+        keywords="NYC school finder FAQ, school ratings questions, NYC DOE data, kindergarten enrollment help, school comparison guide"
+        canonicalPath="/faq"
+      />
+      <StructuredData data={faqSchema} />
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">

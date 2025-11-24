@@ -5,6 +5,8 @@ import { SchoolList } from "@/components/SchoolList";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
+import { StructuredData } from "@/components/StructuredData";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
@@ -126,8 +128,36 @@ export default function Home() {
     );
   }
 
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "NYC Kindergarten School Finder",
+    "url": "https://nyc-kindergarten-school-finder.replit.app",
+    "description": "Find and compare NYC public and charter elementary schools with ratings, test scores, and parent reviews",
+    "sameAs": []
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "NYC Kindergarten School Finder",
+    "url": "https://nyc-kindergarten-school-finder.replit.app",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://nyc-kindergarten-school-finder.replit.app/?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background" data-testid="home-page">
+      <SEOHead 
+        description="Find and compare NYC public and charter elementary schools. Browse 1,500+ schools with ratings, test scores, demographics, and parent reviews to make informed kindergarten enrollment decisions."
+        keywords="NYC schools, kindergarten, elementary schools, public schools, charter schools, school ratings, school finder, New York City education, school comparison, parent reviews, NYC DOE"
+        canonicalPath="/"
+      />
+      <StructuredData data={organizationSchema} />
+      <StructuredData data={websiteSchema} />
       <header className="bg-background border-b" data-testid="header-main">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="flex items-center justify-between gap-4">
