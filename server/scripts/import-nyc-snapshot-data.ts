@@ -54,6 +54,11 @@ interface DemographicRecord {
   economic_need_index?: string;
   percent_ell?: string;
   percent_swd?: string;
+  asian_1?: string;
+  black_1?: string;
+  hispanic_1?: string;
+  white_1?: string;
+  multi_racial_1?: string;
   principal_name?: string;
   website?: string;
   phone?: string;
@@ -236,6 +241,52 @@ async function fetchDemographicData(): Promise<Map<string, Partial<School>>> {
       const value = parseFloat(record.percent_swd);
       if (!isNaN(value)) {
         school.iep_percent = value <= 1 
+          ? Math.round(value * 100) 
+          : Math.round(value);
+      }
+    }
+
+    // Race/Ethnicity Demographics (convert from decimal to 0-100)
+    if (record.asian_1) {
+      const value = parseFloat(record.asian_1);
+      if (!isNaN(value)) {
+        school.asian_percent = value <= 1 
+          ? Math.round(value * 100) 
+          : Math.round(value);
+      }
+    }
+
+    if (record.black_1) {
+      const value = parseFloat(record.black_1);
+      if (!isNaN(value)) {
+        school.black_percent = value <= 1 
+          ? Math.round(value * 100) 
+          : Math.round(value);
+      }
+    }
+
+    if (record.hispanic_1) {
+      const value = parseFloat(record.hispanic_1);
+      if (!isNaN(value)) {
+        school.hispanic_percent = value <= 1 
+          ? Math.round(value * 100) 
+          : Math.round(value);
+      }
+    }
+
+    if (record.white_1) {
+      const value = parseFloat(record.white_1);
+      if (!isNaN(value)) {
+        school.white_percent = value <= 1 
+          ? Math.round(value * 100) 
+          : Math.round(value);
+      }
+    }
+
+    if (record.multi_racial_1) {
+      const value = parseFloat(record.multi_racial_1);
+      if (!isNaN(value)) {
+        school.multi_racial_percent = value <= 1 
           ? Math.round(value * 100) 
           : Math.round(value);
       }

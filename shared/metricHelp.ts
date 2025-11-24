@@ -99,8 +99,9 @@ export const METRIC_TOOLTIPS = {
   
   // NYC DOE Snapshot Data - Demographics & Economics
   economicNeedIndex: {
-    label: "Economic Need Index",
-    tooltip: "Percentage of students facing economic hardship (eligible for free/reduced lunch, temporary housing, or HRA-eligible). Higher percentages indicate greater economic challenges. This metric helps understand the school's student population and resource needs.",
+    label: "Economic Need Index (ENI)",
+    tooltip: "The Economic Need Index (ENI) measures the percentage of students facing economic hardship at a school. This includes students in temporary housing, those living in poverty, or receiving public assistance such as SNAP or TANF. A higher ENI percentage means more students at the school come from economically disadvantaged backgrounds. ENI helps parents understand the socioeconomic diversity of the school community and can indicate access to additional support services and funding. Schools with higher ENI may receive extra resources to support student needs.",
+    fullDescription: "The Economic Need Index is calculated by NYC DOE based on multiple factors including temporary housing status, eligibility for public assistance programs (SNAP, TANF), and Census poverty data. It provides a comprehensive view of the economic challenges students face and helps identify schools that may need additional resources and support services.",
   },
   
   ellPercent: {
@@ -111,6 +112,32 @@ export const METRIC_TOOLTIPS = {
   iepPercent: {
     label: "Students with IEPs",
     tooltip: "Percentage of students with Individualized Education Programs (IEP). These students receive special education services tailored to their unique learning needs. Schools provide specialized instruction and support for IEP students.",
+  },
+
+  // Demographics - Race/Ethnicity
+  asianPercent: {
+    label: "Asian Students",
+    tooltip: "Percentage of students who identify as Asian. Understanding racial and ethnic diversity helps parents assess whether their child will find a welcoming and representative community.",
+  },
+
+  blackPercent: {
+    label: "Black Students",
+    tooltip: "Percentage of students who identify as Black or African American. Demographic diversity contributes to a richer learning environment and cultural awareness.",
+  },
+
+  hispanicPercent: {
+    label: "Hispanic/Latino Students",
+    tooltip: "Percentage of students who identify as Hispanic or Latino. Schools with diverse student populations offer valuable opportunities for cross-cultural understanding.",
+  },
+
+  whitePercent: {
+    label: "White Students",
+    tooltip: "Percentage of students who identify as White. Reviewing demographic breakdowns helps parents understand the school's diversity and whether all students see themselves reflected in their community.",
+  },
+
+  multiRacialPercent: {
+    label: "Multi-Racial Students",
+    tooltip: "Percentage of students who identify as multi-racial or multi-ethnic. Diverse student bodies create inclusive environments where all backgrounds are valued.",
   },
   
   // Attendance Metrics
