@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, DollarSign, School, FileCheck, Target } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -591,7 +591,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
           {(school.economic_need_index !== null || school.ell_percent !== null || school.iep_percent !== null) && (
             <Card className="p-6" data-testid="card-special-populations">
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-special-populations-title">
-                <DollarSign className="w-5 h-5" data-testid="icon-special-populations" />
+                <Home className="w-5 h-5" data-testid="icon-special-populations" />
                 Student Demographics
               </h3>
               <div className="grid grid-cols-3 gap-4" data-testid="grid-special-populations">
@@ -610,7 +610,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <p className="text-xs text-muted-foreground">Economic Need</p>
+                    <p className="text-xs text-muted-foreground">Economic Need Index</p>
                   </div>
                 )}
                 {school.ell_percent !== null && (

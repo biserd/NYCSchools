@@ -29,7 +29,7 @@ import {
   MessageSquare,
   MessageCircle,
   Sparkles,
-  DollarSign
+  Home
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn, LogOut, User } from "lucide-react";
@@ -242,7 +242,7 @@ export default function SchoolDetail() {
                     <TooltipTrigger asChild>
                       <div>
                         <Badge variant="outline" className="text-xs gap-1" data-testid="badge-eni">
-                          <DollarSign className="w-3 h-3" />
+                          <Home className="w-3 h-3" />
                           {schoolWithScore.economic_need_index}% ENI
                         </Badge>
                       </div>
@@ -472,7 +472,7 @@ export default function SchoolDetail() {
             <Card data-testid="card-demographics">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
+                  <Home className="w-5 h-5" />
                   Student Demographics
                 </CardTitle>
               </CardHeader>
@@ -497,7 +497,7 @@ export default function SchoolDetail() {
                               </TooltipContent>
                             </Tooltip>
                           </div>
-                          <p className="text-xs text-muted-foreground">Economic Need</p>
+                          <p className="text-xs text-muted-foreground">Economic Need Index</p>
                         </div>
                       )}
                       {schoolWithScore.ell_percent !== null && (

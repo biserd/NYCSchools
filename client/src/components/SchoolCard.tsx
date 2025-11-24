@@ -4,7 +4,7 @@ import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, DollarSign } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
@@ -80,7 +80,7 @@ export function SchoolCard({ school }: SchoolCardProps) {
                   <TooltipTrigger asChild>
                     <div>
                       <Badge variant="outline" className="text-xs gap-1" data-testid={`badge-economic-${school.dbn}`}>
-                        <DollarSign className="w-3 h-3" />
+                        <Home className="w-3 h-3" />
                         {school.economic_need_index}% ENI
                       </Badge>
                     </div>
