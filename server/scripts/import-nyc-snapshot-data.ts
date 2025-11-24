@@ -208,6 +208,18 @@ async function fetchDemographicData(): Promise<Map<string, Partial<School>>> {
 
   const schoolData = new Map<string, Partial<School>>();
 
+  // Debug: Log first record to see what fields we're getting
+  if (records.length > 0) {
+    console.log("\n  📋 Sample demographic record fields:");
+    console.log("  DBN:", records[0].dbn);
+    console.log("  Has asian_1?", !!records[0].asian_1);
+    console.log("  Has black_1?", !!records[0].black_1);
+    console.log("  Has hispanic_1?", !!records[0].hispanic_1);
+    console.log("  Has white_1?", !!records[0].white_1);
+    console.log("  Has economic_need_index?", !!records[0].economic_need_index);
+    console.log();
+  }
+
   for (const record of records) {
     if (!record.dbn) continue;
 

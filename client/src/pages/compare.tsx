@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { Link } from "wouter";
-import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin } from "lucide-react";
+import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin, DollarSign } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
@@ -255,6 +255,19 @@ export default function ComparePage() {
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-enrollment-${school.dbn}`}>
                           {school.enrollment}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-muted-foreground" />
+                          Economic Need Index (ENI)
+                        </div>
+                      </TableCell>
+                      {schoolsWithScores.map((school) => (
+                        <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-eni-${school.dbn}`}>
+                          {school.economic_need_index != null ? `${school.economic_need_index}%` : 'N/A'}
                         </TableCell>
                       ))}
                     </TableRow>
