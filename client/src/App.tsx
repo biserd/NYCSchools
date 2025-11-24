@@ -16,6 +16,7 @@ import ComparePage from "@/pages/compare";
 import SettingsPage from "@/pages/settings";
 import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
+import FAQPage from "@/pages/faq";
 import NotFound from "@/pages/not-found";
 
 // Lazy load heavy route components
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/settings" component={SettingsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
+      <Route path="/faq" component={FAQPage} />
       <Route path="/school/:slug" component={SchoolDetail} />
       <Route component={NotFound} />
     </Switch>

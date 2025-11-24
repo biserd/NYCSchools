@@ -9,6 +9,10 @@ export function Footer() {
             <span>© 2025 NYC Kindergarten School Finder</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/faq" className="hover:text-foreground transition-colors" data-testid="link-faq">
+              FAQ
+            </Link>
+            <span className="text-muted-foreground/50">•</span>
             <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">
               Privacy Policy
             </Link>
