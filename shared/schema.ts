@@ -112,6 +112,24 @@ export function getQualityRatingColor(rating: string | null): "green" | "yellow"
   }
 }
 
+// Helper function to get quality rating badge classes with proper Tailwind styling
+export function getQualityRatingBadgeClasses(rating: string | null): string {
+  if (!rating) return "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700";
+  
+  switch (rating.toLowerCase()) {
+    case "excellent":
+      return "bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-100 border-emerald-200 dark:border-emerald-800";
+    case "good":
+      return "bg-yellow-100 dark:bg-yellow-950 text-yellow-900 dark:text-yellow-100 border-yellow-200 dark:border-yellow-800";
+    case "fair":
+      return "bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-100 border-amber-200 dark:border-amber-800";
+    case "needs improvement":
+      return "bg-red-100 dark:bg-red-950 text-red-900 dark:text-red-100 border-red-200 dark:border-red-800";
+    default:
+      return "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700";
+  }
+}
+
 // Helper function to get quality rating bars (1-4)
 export function getQualityRatingBars(rating: string | null): number {
   if (!rating) return 0;

@@ -1,4 +1,4 @@
-import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingColor } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
@@ -92,7 +92,8 @@ export function SchoolCard({ school }: SchoolCardProps) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Badge 
-                      className={`text-xs ${getQualityRatingColor(bestRating.value)}`}
+                      variant="outline"
+                      className={`text-xs ${getQualityRatingBadgeClasses(bestRating.value)}`}
                       data-testid={`badge-quality-${school.dbn}`}
                     >
                       {getQualityRatingLabel(bestRating.value)}
