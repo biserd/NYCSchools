@@ -18,7 +18,8 @@ I prefer detailed explanations. Ask before making major changes.
 - **Accessibility**: Proper ARIA labels and keyboard navigation.
 - **Visual Cues**: Comprehensive tooltips for all metrics on school cards and detail panels. Color-coded indicators on all individual metrics (ELA, Math, Climate, Progress) and overall score.
 - **AI Assistant Prominence**: Multiple entry points including header button, homepage banner, school detail page banner, and pulsing floating button for maximum visibility.
-- **Footer**: Consistent footer component across all pages (home, favorites, map, compare, settings, recommendations, school-detail, privacy, terms) with links to Privacy Policy and Terms of Service.
+- **Footer**: Consistent footer component across all pages (home, favorites, map, compare, settings, recommendations, school-detail, privacy, terms, faq) with links to FAQ, Privacy Policy, and Terms of Service.
+- **Icons**: Home icon (🏠) used to represent Economic Need Index and demographics, replacing previous dollar sign icon for better semantic meaning.
 
 ### Technical Implementations
 - **Frontend Stack**: React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing.
