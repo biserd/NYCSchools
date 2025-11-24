@@ -78,10 +78,12 @@ export function SchoolCard({ school }: SchoolCardProps) {
               {school.economic_need_index !== null && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge variant="outline" className="text-xs gap-1" data-testid={`badge-economic-${school.dbn}`}>
-                      <DollarSign className="w-3 h-3" />
-                      {school.economic_need_index}% ENI
-                    </Badge>
+                    <div>
+                      <Badge variant="outline" className="text-xs gap-1" data-testid={`badge-economic-${school.dbn}`}>
+                        <DollarSign className="w-3 h-3" />
+                        {school.economic_need_index}% ENI
+                      </Badge>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs" data-testid={`tooltip-economic-${school.dbn}`}>
                     <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
@@ -91,13 +93,15 @@ export function SchoolCard({ school }: SchoolCardProps) {
               {bestRating && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge 
-                      variant="outline"
-                      className={`text-xs ${getQualityRatingBadgeClasses(bestRating.value)}`}
-                      data-testid={`badge-quality-${school.dbn}`}
-                    >
-                      {getQualityRatingLabel(bestRating.value)}
-                    </Badge>
+                    <div>
+                      <Badge 
+                        variant="outline"
+                        className={`text-xs ${getQualityRatingBadgeClasses(bestRating.value)}`}
+                        data-testid={`badge-quality-${school.dbn}`}
+                      >
+                        {getQualityRatingLabel(bestRating.value)}
+                      </Badge>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs" data-testid={`tooltip-quality-${school.dbn}`}>
                     <p className="text-sm">
