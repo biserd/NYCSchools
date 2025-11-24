@@ -1,4 +1,4 @@
-import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor } from "@shared/schema";
+import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingColor, getQualityRatingLabel, type MiddleSchoolDestination } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import {
@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, DollarSign, School, FileCheck, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -409,6 +409,404 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               </div>
             </Card>
           ) : null}
+
+          {(school.quality_rating_instruction || school.quality_rating_safety || school.quality_rating_family) && (
+            <Card className="p-6" data-testid="card-quality-ratings">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-quality-title">
+                  <Award className="w-5 h-5" data-testid="icon-quality" />
+                  NYC DOE Quality Ratings
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0" aria-label="Quality ratings information">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="text-sm">Official NYC Department of Education quality ratings based on classroom observations, data analysis, and school visits. Ratings: Excellent, Good, Fair, or Needs Improvement.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div className="space-y-4" data-testid="container-quality-ratings">
+                {school.quality_rating_instruction && (
+                  <div data-testid="container-quality-instruction">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Instruction</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Instruction rating information">
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">{METRIC_TOOLTIPS.qualityRatingInstruction.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Badge className={getQualityRatingColor(school.quality_rating_instruction)} data-testid="badge-quality-instruction">
+                        {getQualityRatingLabel(school.quality_rating_instruction)}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-1" data-testid="bars-quality-instruction">
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-2 flex-1 rounded-sm ${
+                            i < getQualityRatingBars(school.quality_rating_instruction)
+                              ? getQualityRatingColor(school.quality_rating_instruction).includes('emerald') ? 'bg-emerald-500' :
+                                getQualityRatingColor(school.quality_rating_instruction).includes('blue') ? 'bg-blue-500' :
+                                getQualityRatingColor(school.quality_rating_instruction).includes('amber') ? 'bg-amber-500' :
+                                'bg-red-500'
+                              : 'bg-muted'
+                          }`}
+                          data-testid={`bar-quality-instruction-${i}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {school.quality_rating_safety && (
+                  <div data-testid="container-quality-safety">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Safety & Respect</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Safety rating information">
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">{METRIC_TOOLTIPS.qualityRatingSafety.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Badge className={getQualityRatingColor(school.quality_rating_safety)} data-testid="badge-quality-safety">
+                        {getQualityRatingLabel(school.quality_rating_safety)}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-1" data-testid="bars-quality-safety">
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-2 flex-1 rounded-sm ${
+                            i < getQualityRatingBars(school.quality_rating_safety)
+                              ? getQualityRatingColor(school.quality_rating_safety).includes('emerald') ? 'bg-emerald-500' :
+                                getQualityRatingColor(school.quality_rating_safety).includes('blue') ? 'bg-blue-500' :
+                                getQualityRatingColor(school.quality_rating_safety).includes('amber') ? 'bg-amber-500' :
+                                'bg-red-500'
+                              : 'bg-muted'
+                          }`}
+                          data-testid={`bar-quality-safety-${i}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {school.quality_rating_family && (
+                  <div data-testid="container-quality-family">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Family Engagement</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Family engagement rating information">
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-sm">{METRIC_TOOLTIPS.qualityRatingFamily.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Badge className={getQualityRatingColor(school.quality_rating_family)} data-testid="badge-quality-family">
+                        {getQualityRatingLabel(school.quality_rating_family)}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-1" data-testid="bars-quality-family">
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-2 flex-1 rounded-sm ${
+                            i < getQualityRatingBars(school.quality_rating_family)
+                              ? getQualityRatingColor(school.quality_rating_family).includes('emerald') ? 'bg-emerald-500' :
+                                getQualityRatingColor(school.quality_rating_family).includes('blue') ? 'bg-blue-500' :
+                                getQualityRatingColor(school.quality_rating_family).includes('amber') ? 'bg-amber-500' :
+                                'bg-red-500'
+                              : 'bg-muted'
+                          }`}
+                          data-testid={`bar-quality-family-${i}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {(school.attendance_rate !== null || school.teacher_attendance_rate !== null) && (
+            <Card className="p-6" data-testid="card-attendance">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-attendance-title">
+                <Clock className="w-5 h-5" data-testid="icon-attendance" />
+                Attendance Metrics
+              </h3>
+              <div className="grid grid-cols-2 gap-4" data-testid="grid-attendance">
+                {school.attendance_rate !== null && (
+                  <div data-testid="container-student-attendance">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-3xl font-bold tabular-nums" data-testid="text-attendance-rate">{school.attendance_rate}%</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Student attendance information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.attendanceRate.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Student Attendance</p>
+                  </div>
+                )}
+                {school.teacher_attendance_rate !== null && (
+                  <div data-testid="container-teacher-attendance">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-3xl font-bold tabular-nums" data-testid="text-teacher-attendance-rate">{school.teacher_attendance_rate}%</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Teacher attendance information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.teacherAttendanceRate.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Teacher Attendance</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {(school.economic_need_index !== null || school.ell_percent !== null || school.iep_percent !== null) && (
+            <Card className="p-6" data-testid="card-special-populations">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-special-populations-title">
+                <DollarSign className="w-5 h-5" data-testid="icon-special-populations" />
+                Student Demographics
+              </h3>
+              <div className="grid grid-cols-3 gap-4" data-testid="grid-special-populations">
+                {school.economic_need_index !== null && (
+                  <div data-testid="container-economic-need">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-2xl font-bold tabular-nums" data-testid="text-economic-need">{school.economic_need_index}%</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Economic need information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Economic Need</p>
+                  </div>
+                )}
+                {school.ell_percent !== null && (
+                  <div data-testid="container-ell">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-2xl font-bold tabular-nums" data-testid="text-ell">{school.ell_percent}%</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELL information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.ellPercent.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-xs text-muted-foreground">ELL Students</p>
+                  </div>
+                )}
+                {school.iep_percent !== null && (
+                  <div data-testid="container-iep">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-2xl font-bold tabular-nums" data-testid="text-iep">{school.iep_percent}%</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="IEP information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.iepPercent.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-xs text-muted-foreground">IEP Students</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {(school.principal_experience_years !== null || school.teacher_experience_percent !== null) && (
+            <Card className="p-6" data-testid="card-staff-experience">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-staff-title">
+                <Briefcase className="w-5 h-5" data-testid="icon-staff" />
+                Staff Experience
+              </h3>
+              <div className="grid grid-cols-2 gap-4" data-testid="grid-staff">
+                {school.principal_experience_years !== null && (
+                  <div data-testid="container-principal-tenure">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-3xl font-bold tabular-nums" data-testid="text-principal-experience">{school.principal_experience_years}</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Principal tenure information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.principalExperienceYears.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Years Principal Tenure</p>
+                  </div>
+                )}
+                {school.teacher_experience_percent !== null && (
+                  <div data-testid="container-teacher-experience">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-3xl font-bold tabular-nums" data-testid="text-teacher-experience">{school.teacher_experience_percent}%</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Teacher experience information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.teacherExperiencePercent.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Experienced Teachers</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {(school.admission_method || school.accountability_status || school.next_level_readiness !== null) && (
+            <Card className="p-6" data-testid="card-admissions">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-admissions-title">
+                <FileCheck className="w-5 h-5" data-testid="icon-admissions" />
+                Admissions & Accountability
+              </h3>
+              <div className="space-y-4" data-testid="container-admissions">
+                {school.admission_method && (
+                  <div data-testid="container-admission-method">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm text-muted-foreground">Admission Method</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Admission method information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.admissionMethod.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Badge variant="secondary" data-testid="badge-admission-method">{school.admission_method}</Badge>
+                  </div>
+                )}
+                {school.accountability_status && (
+                  <div data-testid="container-accountability">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm text-muted-foreground">Accountability Status</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Accountability status information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.accountabilityStatus.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Badge variant="outline" data-testid="badge-accountability">{school.accountability_status}</Badge>
+                  </div>
+                )}
+                {school.next_level_readiness !== null && (
+                  <div data-testid="container-readiness">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm text-muted-foreground">Next Grade Readiness</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Next grade readiness information">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">{METRIC_TOOLTIPS.nextLevelReadiness.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-2xl font-bold tabular-nums" data-testid="text-readiness">{school.next_level_readiness}%</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {school.middle_schools_pipeline && Array.isArray(school.middle_schools_pipeline) && school.middle_schools_pipeline.length > 0 && (
+            <Card className="p-6" data-testid="card-middle-schools">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-middle-schools-title">
+                  <School className="w-5 h-5" data-testid="icon-middle-schools" />
+                  Middle School Pipeline
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0" aria-label="Middle school pipeline information">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">{METRIC_TOOLTIPS.middleSchoolsPipeline.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div className="space-y-3" data-testid="container-middle-schools">
+                {(school.middle_schools_pipeline as MiddleSchoolDestination[]).map((ms, idx) => (
+                  <div key={idx} className="flex items-center justify-between" data-testid={`middle-school-${idx}`}>
+                    <div>
+                      <p className="font-medium" data-testid={`middle-school-name-${idx}`}>{ms.name}</p>
+                      {ms.dbn && <p className="text-xs text-muted-foreground" data-testid={`middle-school-dbn-${idx}`}>{ms.dbn}</p>}
+                    </div>
+                    {ms.percent && (
+                      <Badge variant="secondary" data-testid={`middle-school-percent-${idx}`}>{ms.percent}%</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           <Card className="p-6" data-testid="card-details">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-details-title">

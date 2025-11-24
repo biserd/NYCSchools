@@ -1,10 +1,10 @@
-import { School, calculateOverallScore, getScoreColor, getMetricColor } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingColor } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
@@ -32,6 +32,20 @@ export function SchoolCard({ school }: SchoolCardProps) {
     red: "bg-red-500",
   };
 
+  // Find best quality rating
+  const ratings = [
+    { type: 'instruction', value: school.quality_rating_instruction },
+    { type: 'safety', value: school.quality_rating_safety },
+    { type: 'family', value: school.quality_rating_family }
+  ].filter(r => r.value);
+  
+  const bestRating = ratings.length > 0 
+    ? ratings.sort((a, b) => {
+        const order = { 'Excellent': 4, 'Good': 3, 'Fair': 2, 'Needs Improvement': 1 };
+        return (order[b.value as keyof typeof order] || 0) - (order[a.value as keyof typeof order] || 0);
+      })[0]
+    : null;
+
   const handleCompareClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -57,9 +71,41 @@ export function SchoolCard({ school }: SchoolCardProps) {
               </h3>
               <FavoriteButton schoolDbn={school.dbn} variant="ghost" size="icon" />
             </div>
-            <Badge variant="secondary" className="text-xs" data-testid={`badge-dbn-${school.dbn}`}>
-              {school.dbn}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="text-xs" data-testid={`badge-dbn-${school.dbn}`}>
+                {school.dbn}
+              </Badge>
+              {school.economic_need_index !== null && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-xs gap-1" data-testid={`badge-economic-${school.dbn}`}>
+                      <DollarSign className="w-3 h-3" />
+                      {school.economic_need_index}% ENI
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid={`tooltip-economic-${school.dbn}`}>
+                    <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {bestRating && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      className={`text-xs ${getQualityRatingColor(bestRating.value)}`}
+                      data-testid={`badge-quality-${school.dbn}`}
+                    >
+                      {getQualityRatingLabel(bestRating.value)}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid={`tooltip-quality-${school.dbn}`}>
+                    <p className="text-sm">
+                      Best Quality Rating: {bestRating.value} for {bestRating.type === 'instruction' ? 'Instruction' : bestRating.type === 'safety' ? 'Safety' : 'Family Engagement'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <div className="flex items-center gap-2">
