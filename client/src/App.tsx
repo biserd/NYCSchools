@@ -57,7 +57,7 @@ function Router() {
       <Route path="/settings" component={SettingsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
-      <Route path="/school/:dbn" component={SchoolDetail} />
+      <Route path="/school/:slug" component={SchoolDetail} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -34,9 +34,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { LogIn, LogOut, User } from "lucide-react";
 
 export default function SchoolDetail() {
-  const { dbn } = useParams();
+  const { slug } = useParams();
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
+
+  // Extract DBN from slug (format: "02m158-ps-158-bayard-taylor" or legacy "02M158")
+  const dbn = slug?.split('-')[0]?.toUpperCase() || '';
 
   const { data: school, isLoading, error } = useQuery<School>({
     queryKey: ["/api/schools", dbn],

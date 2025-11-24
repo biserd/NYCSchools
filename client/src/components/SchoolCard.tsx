@@ -1,4 +1,4 @@
-import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
@@ -57,7 +57,7 @@ export function SchoolCard({ school }: SchoolCardProps) {
   };
 
   return (
-    <Link href={`/school/${school.dbn}`} data-testid={`link-school-${school.dbn}`}>
+    <Link href={getSchoolUrl(school)} data-testid={`link-school-${school.dbn}`}>
       <Card
         data-testid={`school-card-${school.dbn}`}
         className="overflow-visible hover-elevate active-elevate-2 transition-all"

@@ -184,6 +184,24 @@ export function getScoreLabel(score: number): string {
   return "Needs Improvement";
 }
 
+// Helper function to generate URL-friendly slug from school name and DBN
+export function getSchoolSlug(school: Pick<School, 'name' | 'dbn'>): string {
+  // Remove special characters, convert to lowercase, replace spaces with hyphens
+  const nameSlug = school.name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars except spaces and hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  
+  return `${school.dbn.toLowerCase()}-${nameSlug}`;
+}
+
+// Helper function to get school URL path
+export function getSchoolUrl(school: Pick<School, 'name' | 'dbn'>): string {
+  return `/school/${getSchoolSlug(school)}`;
+}
+
 export function getScoreColor(score: number): "green" | "yellow" | "amber" | "red" {
   if (score >= 90) return "green";
   if (score >= 80) return "yellow";

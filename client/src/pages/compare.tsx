@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { Link } from "wouter";
 import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin } from "lucide-react";
-import { calculateOverallScore, getScoreColor } from "@shared/schema";
+import { calculateOverallScore, getScoreColor, getSchoolUrl } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -68,7 +68,8 @@ export default function ComparePage() {
 
   const colorMap = {
     green: "text-emerald-500",
-    yellow: "text-amber-500",
+    yellow: "text-yellow-500",
+    amber: "text-amber-500",
     red: "text-red-500",
   };
 
@@ -150,7 +151,7 @@ export default function ComparePage() {
                       <span className="font-medium tabular-nums" data-testid={`score-progress-${school.dbn}`}>{school.progress_score}</span>
                     </div>
                   </div>
-                  <Link href={`/school/${school.dbn}`}>
+                  <Link href={getSchoolUrl(school)}>
                     <Button variant="outline" size="sm" className="w-full mt-4" data-testid={`button-view-details-${school.dbn}`}>
                       View Details
                     </Button>

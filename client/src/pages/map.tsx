@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Footer } from "@/components/Footer";
 import { ArrowLeft, MapPin } from "lucide-react";
-import { School, calculateOverallScore, getScoreColor } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getSchoolSlug } from "@shared/schema";
 
 export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -123,7 +123,7 @@ export default function MapPage() {
             ELA: ${school.ela_proficiency}% | Math: ${school.math_proficiency}%
           </p>
           <a 
-            href="/school/${school.dbn}" 
+            href="/school/${getSchoolSlug(school)}" 
             data-school-dbn="${school.dbn}"
             style="
               display: inline-block;
@@ -150,7 +150,7 @@ export default function MapPage() {
         if (link) {
           const handleClick = (e: Event) => {
             e.preventDefault();
-            setLocation(`/school/${school.dbn}`);
+            setLocation(`/school/${getSchoolSlug(school)}`);
           };
           
           link.addEventListener('click', handleClick);
