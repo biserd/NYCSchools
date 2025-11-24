@@ -130,6 +130,24 @@ export function getQualityRatingBadgeClasses(rating: string | null): string {
   }
 }
 
+// Helper function to get quality rating bar color for 4-bar visual
+export function getQualityRatingBarColor(rating: string | null): string {
+  if (!rating) return "bg-gray-500";
+  
+  switch (rating.toLowerCase()) {
+    case "excellent":
+      return "bg-emerald-500";
+    case "good":
+      return "bg-yellow-500";
+    case "fair":
+      return "bg-amber-500";
+    case "needs improvement":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
+}
+
 // Helper function to get quality rating bars (1-4)
 export function getQualityRatingBars(rating: string | null): number {
   if (!rating) return 0;

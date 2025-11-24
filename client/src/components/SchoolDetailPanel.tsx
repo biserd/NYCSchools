@@ -1,4 +1,4 @@
-import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingColor, getQualityRatingLabel, type MiddleSchoolDestination } from "@shared/schema";
+import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import {
@@ -446,7 +446,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <Badge className={getQualityRatingColor(school.quality_rating_instruction)} data-testid="badge-quality-instruction">
+                      <Badge variant="outline" className={getQualityRatingBadgeClasses(school.quality_rating_instruction)} data-testid="badge-quality-instruction">
                         {getQualityRatingLabel(school.quality_rating_instruction)}
                       </Badge>
                     </div>
@@ -456,10 +456,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                           key={i}
                           className={`h-2 flex-1 rounded-sm ${
                             i < getQualityRatingBars(school.quality_rating_instruction)
-                              ? getQualityRatingColor(school.quality_rating_instruction).includes('emerald') ? 'bg-emerald-500' :
-                                getQualityRatingColor(school.quality_rating_instruction).includes('blue') ? 'bg-blue-500' :
-                                getQualityRatingColor(school.quality_rating_instruction).includes('amber') ? 'bg-amber-500' :
-                                'bg-red-500'
+                              ? getQualityRatingBarColor(school.quality_rating_instruction)
                               : 'bg-muted'
                           }`}
                           data-testid={`bar-quality-instruction-${i}`}
@@ -485,7 +482,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <Badge className={getQualityRatingColor(school.quality_rating_safety)} data-testid="badge-quality-safety">
+                      <Badge variant="outline" className={getQualityRatingBadgeClasses(school.quality_rating_safety)} data-testid="badge-quality-safety">
                         {getQualityRatingLabel(school.quality_rating_safety)}
                       </Badge>
                     </div>
@@ -495,10 +492,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                           key={i}
                           className={`h-2 flex-1 rounded-sm ${
                             i < getQualityRatingBars(school.quality_rating_safety)
-                              ? getQualityRatingColor(school.quality_rating_safety).includes('emerald') ? 'bg-emerald-500' :
-                                getQualityRatingColor(school.quality_rating_safety).includes('blue') ? 'bg-blue-500' :
-                                getQualityRatingColor(school.quality_rating_safety).includes('amber') ? 'bg-amber-500' :
-                                'bg-red-500'
+                              ? getQualityRatingBarColor(school.quality_rating_safety)
                               : 'bg-muted'
                           }`}
                           data-testid={`bar-quality-safety-${i}`}
@@ -524,7 +518,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <Badge className={getQualityRatingColor(school.quality_rating_family)} data-testid="badge-quality-family">
+                      <Badge variant="outline" className={getQualityRatingBadgeClasses(school.quality_rating_family)} data-testid="badge-quality-family">
                         {getQualityRatingLabel(school.quality_rating_family)}
                       </Badge>
                     </div>
@@ -534,10 +528,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                           key={i}
                           className={`h-2 flex-1 rounded-sm ${
                             i < getQualityRatingBars(school.quality_rating_family)
-                              ? getQualityRatingColor(school.quality_rating_family).includes('emerald') ? 'bg-emerald-500' :
-                                getQualityRatingColor(school.quality_rating_family).includes('blue') ? 'bg-blue-500' :
-                                getQualityRatingColor(school.quality_rating_family).includes('amber') ? 'bg-amber-500' :
-                                'bg-red-500'
+                              ? getQualityRatingBarColor(school.quality_rating_family)
                               : 'bg-muted'
                           }`}
                           data-testid={`bar-quality-family-${i}`}
