@@ -464,6 +464,186 @@ export default function SchoolDetail() {
             </CardContent>
           </Card>
 
+          {/* Student Demographics Card */}
+          {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 
+            schoolWithScore.iep_percent !== null || schoolWithScore.asian_percent !== null || 
+            schoolWithScore.black_percent !== null || schoolWithScore.hispanic_percent !== null || 
+            schoolWithScore.white_percent !== null || schoolWithScore.multi_racial_percent !== null) && (
+            <Card data-testid="card-demographics">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Student Demographics
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Economic Need & Special Populations */}
+                {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || schoolWithScore.iep_percent !== null) && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3">Economic Need & Special Populations</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      {schoolWithScore.economic_need_index !== null && (
+                        <div data-testid="container-economic-need">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-2xl font-bold tabular-nums" data-testid="text-economic-need">{schoolWithScore.economic_need_index}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Economic need information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Economic Need</p>
+                        </div>
+                      )}
+                      {schoolWithScore.ell_percent !== null && (
+                        <div data-testid="container-ell">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-2xl font-bold tabular-nums" data-testid="text-ell">{schoolWithScore.ell_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELL information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.ellPercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">ELL Students</p>
+                        </div>
+                      )}
+                      {schoolWithScore.iep_percent !== null && (
+                        <div data-testid="container-iep">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-2xl font-bold tabular-nums" data-testid="text-iep">{schoolWithScore.iep_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="IEP information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.iepPercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">IEP Students</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Race/Ethnicity Demographics */}
+                {(schoolWithScore.asian_percent !== null || schoolWithScore.black_percent !== null || 
+                  schoolWithScore.hispanic_percent !== null || schoolWithScore.white_percent !== null || 
+                  schoolWithScore.multi_racial_percent !== null) && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3" data-testid="text-diversity-title">Racial & Ethnic Diversity</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="grid-diversity">
+                      {schoolWithScore.asian_percent !== null && (
+                        <div data-testid="container-asian-percent">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xl font-bold tabular-nums" data-testid="text-asian-percent">{schoolWithScore.asian_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Asian students information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.asianPercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Asian</p>
+                        </div>
+                      )}
+                      {schoolWithScore.black_percent !== null && (
+                        <div data-testid="container-black-percent">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xl font-bold tabular-nums" data-testid="text-black-percent">{schoolWithScore.black_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Black students information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.blackPercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Black</p>
+                        </div>
+                      )}
+                      {schoolWithScore.hispanic_percent !== null && (
+                        <div data-testid="container-hispanic-percent">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xl font-bold tabular-nums" data-testid="text-hispanic-percent">{schoolWithScore.hispanic_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Hispanic/Latino students information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.hispanicPercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Hispanic/Latino</p>
+                        </div>
+                      )}
+                      {schoolWithScore.white_percent !== null && (
+                        <div data-testid="container-white-percent">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xl font-bold tabular-nums" data-testid="text-white-percent">{schoolWithScore.white_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="White students information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.whitePercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">White</p>
+                        </div>
+                      )}
+                      {schoolWithScore.multi_racial_percent !== null && (
+                        <div data-testid="container-multi-racial-percent">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xl font-bold tabular-nums" data-testid="text-multi-racial-percent">{schoolWithScore.multi_racial_percent}%</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Multi-racial students information">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">{METRIC_TOOLTIPS.multiRacialPercent.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Multi-Racial</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Reviews Section */}
           <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
         </div>
