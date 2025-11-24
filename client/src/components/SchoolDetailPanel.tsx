@@ -650,6 +650,105 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                   </div>
                 )}
               </div>
+
+              {/* Race/Ethnicity Demographics */}
+              {(school.asian_percent !== null || school.black_percent !== null || school.hispanic_percent !== null || school.white_percent !== null || school.multi_racial_percent !== null) && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold mb-3" data-testid="text-diversity-title">Racial & Ethnic Diversity</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="grid-diversity">
+                    {school.asian_percent !== null && (
+                      <div data-testid="container-asian-percent">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-asian-percent">{school.asian_percent}%</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Asian students information">
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{METRIC_TOOLTIPS.asianPercent.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Asian</p>
+                      </div>
+                    )}
+                    {school.black_percent !== null && (
+                      <div data-testid="container-black-percent">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-black-percent">{school.black_percent}%</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Black students information">
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{METRIC_TOOLTIPS.blackPercent.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Black</p>
+                      </div>
+                    )}
+                    {school.hispanic_percent !== null && (
+                      <div data-testid="container-hispanic-percent">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-hispanic-percent">{school.hispanic_percent}%</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Hispanic/Latino students information">
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{METRIC_TOOLTIPS.hispanicPercent.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Hispanic/Latino</p>
+                      </div>
+                    )}
+                    {school.white_percent !== null && (
+                      <div data-testid="container-white-percent">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-white-percent">{school.white_percent}%</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="White students information">
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{METRIC_TOOLTIPS.whitePercent.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-xs text-muted-foreground">White</p>
+                      </div>
+                    )}
+                    {school.multi_racial_percent !== null && (
+                      <div data-testid="container-multi-racial-percent">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-multi-racial-percent">{school.multi_racial_percent}%</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Multi-racial students information">
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">{METRIC_TOOLTIPS.multiRacialPercent.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Multi-Racial</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </Card>
           )}
 
