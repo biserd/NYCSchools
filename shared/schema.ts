@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, serial, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, serial, timestamp, index, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -63,6 +63,10 @@ export const schools = pgTable("schools", {
   // Geographic Coordinates
   latitude: real("latitude"),
   longitude: real("longitude"),
+  
+  // Early Childhood Programs
+  has_3k: boolean("has_3k").default(false),
+  has_prek: boolean("has_prek").default(false),
   
   // Metadata
   last_updated: timestamp("last_updated").defaultNow(),
