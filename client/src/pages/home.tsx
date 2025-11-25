@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedDistrict, setSelectedDistrict] = useState("2");
   const [selectedGradeBand, setSelectedGradeBand] = useState("All");
   const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState("All");
+  const [giftedTalentedFilter, setGiftedTalentedFilter] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("overall");
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -94,6 +95,16 @@ export default function Home() {
       }
     }
 
+    if (giftedTalentedFilter !== "All") {
+      if (giftedTalentedFilter === "G&T") {
+        filtered = filtered.filter((school) => school.has_gifted_talented === true);
+      } else if (giftedTalentedFilter === "Citywide") {
+        filtered = filtered.filter((school) => school.gt_program_type === "citywide");
+      } else if (giftedTalentedFilter === "District") {
+        filtered = filtered.filter((school) => school.gt_program_type === "district");
+      }
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -112,7 +123,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -303,6 +314,8 @@ export default function Home() {
         onSortChange={setSortBy}
         earlyChildhoodFilter={earlyChildhoodFilter}
         onEarlyChildhoodFilterChange={setEarlyChildhoodFilter}
+        giftedTalentedFilter={giftedTalentedFilter}
+        onGiftedTalentedFilterChange={setGiftedTalentedFilter}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">

@@ -22,6 +22,8 @@ interface FilterBarProps {
   onSortChange: (value: SortOption) => void;
   earlyChildhoodFilter?: string;
   onEarlyChildhoodFilterChange?: (value: string) => void;
+  giftedTalentedFilter?: string;
+  onGiftedTalentedFilterChange?: (value: string) => void;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -40,6 +42,8 @@ export function FilterBar({
   onSortChange,
   earlyChildhoodFilter = "All",
   onEarlyChildhoodFilterChange,
+  giftedTalentedFilter = "All",
+  onGiftedTalentedFilterChange,
 }: FilterBarProps) {
   return (
     <div className="sticky top-0 z-50 bg-background border-b">
@@ -91,6 +95,19 @@ export function FilterBar({
                   <SelectItem data-testid="option-early-childhood-all" value="All">All Programs</SelectItem>
                   <SelectItem data-testid="option-early-childhood-prek" value="Pre-K">Has Pre-K</SelectItem>
                   <SelectItem data-testid="option-early-childhood-3k" value="3-K">Has 3-K</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {onGiftedTalentedFilterChange && (
+              <Select value={giftedTalentedFilter} onValueChange={onGiftedTalentedFilterChange}>
+                <SelectTrigger data-testid="select-gifted-talented" className="w-full md:w-48 h-12">
+                  <SelectValue placeholder="Gifted & Talented" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem data-testid="option-gt-all" value="All">All Schools</SelectItem>
+                  <SelectItem data-testid="option-gt-any" value="G&T">Has G&T Program</SelectItem>
+                  <SelectItem data-testid="option-gt-citywide" value="Citywide">Citywide G&T</SelectItem>
+                  <SelectItem data-testid="option-gt-district" value="District">District G&T</SelectItem>
                 </SelectContent>
               </Select>
             )}
