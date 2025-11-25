@@ -61,7 +61,14 @@ I prefer detailed explanations. Ask before making major changes.
   - Pulsing floating chat button (bottom-right) on all pages
 - **Smart Recommendations**: AI-powered questionnaire (priority, district, class size) for personalized school recommendations.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers, popups, and district filtering.
-- **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics, stored in localStorage with persistent state.
+- **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics, stored in localStorage with persistent state. Includes district comparison indicators showing how each school compares to its district average for ELA, Math, Climate, and Progress scores.
+- **District Comparison**: Shows how schools compare to their district averages across key metrics:
+  - School detail pages display district comparison badges and a dedicated comparison stats grid
+  - Compare page shows inline comparison indicators with arrows (↑ above, ↓ below) and difference values
+  - Color-coded: green for above average, yellow for at average (within 2 points), red for below average
+  - Tooltips show exact school value and district average
+  - API endpoints: `/api/districts/averages` (all districts), `/api/districts/citywide` (citywide averages), `/api/districts/:district/averages` (specific district)
+  - 5-minute server-side cache for optimal performance
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews, with one review per user per school.
 - **Public Commute Time Calculator**: All users (no authentication required) can set home address and see transit times and distances to schools using Google Maps APIs. Address stored in localStorage for all users (synced for authenticated users to ensure consistency), with coordinates cached for optimal performance. Graceful error handling with fallback displays.
 - **Legal Pages**: Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages with comprehensive legal content.

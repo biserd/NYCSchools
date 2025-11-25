@@ -19,6 +19,7 @@ import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages } from "@/components/DistrictComparison";
 import { 
   ArrowLeft, 
   GraduationCap, 
@@ -53,6 +54,9 @@ export default function SchoolDetail() {
     ...school,
     overall_score: calculateOverallScore(school),
   } : null;
+
+  // Fetch district averages for comparison
+  const { districtAverages, citywideAverages, isLoading: districtLoading } = useDistrictAverages(school?.district || 0);
 
   if (isLoading) {
     return (
@@ -324,15 +328,54 @@ export default function SchoolDetail() {
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className={`w-4 h-4 rounded-full ${colorMap[scoreColor]}`} data-testid="indicator-overall" />
-                <div>
-                  <div className="text-5xl font-bold tabular-nums" data-testid="score-overall">
-                    {schoolWithScore.overall_score}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <div className="text-5xl font-bold tabular-nums" data-testid="score-overall">
+                      {schoolWithScore.overall_score}
+                    </div>
+                    {districtAverages && (
+                      <DistrictComparisonBadge 
+                        value={schoolWithScore.overall_score} 
+                        districtAvg={districtAverages.overallScore} 
+                      />
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground" data-testid="label-overall">
                     {getScoreLabel(schoolWithScore.overall_score)}
                   </div>
                 </div>
               </div>
+              
+              {/* District Comparison Summary */}
+              {districtAverages && (
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <div className="text-sm font-medium mb-2 text-muted-foreground">District {schoolWithScore.district} Comparison</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-testid="district-comparison-summary">
+                    <ComparisonStat 
+                      label="Overall" 
+                      schoolValue={schoolWithScore.overall_score} 
+                      districtAvg={districtAverages.overallScore}
+                    />
+                    <ComparisonStat 
+                      label="ELA" 
+                      schoolValue={schoolWithScore.ela_proficiency} 
+                      districtAvg={districtAverages.elaProficiency}
+                      unit="%"
+                    />
+                    <ComparisonStat 
+                      label="Math" 
+                      schoolValue={schoolWithScore.math_proficiency} 
+                      districtAvg={districtAverages.mathProficiency}
+                      unit="%"
+                    />
+                    <ComparisonStat 
+                      label="Climate" 
+                      schoolValue={schoolWithScore.climate_score} 
+                      districtAvg={districtAverages.climateScore}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -811,6 +854,42 @@ function SurveyMetric({ label, value }: { label: string; value: number }) {
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-semibold tabular-nums">{value}%</span>
+    </div>
+  );
+}
+
+function ComparisonStat({ label, schoolValue, districtAvg, unit = "" }: { 
+  label: string; 
+  schoolValue: number; 
+  districtAvg: number;
+  unit?: string;
+}) {
+  const diff = schoolValue - districtAvg;
+  const isPositive = diff > 0;
+  const isNeutral = Math.abs(diff) < 2;
+  
+  const getColor = () => {
+    if (isNeutral) return "text-yellow-600 dark:text-yellow-400";
+    return isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
+  };
+  
+  const getArrow = () => {
+    if (isNeutral) return "→";
+    return isPositive ? "↑" : "↓";
+  };
+
+  return (
+    <div className="bg-muted/30 rounded-md p-2" data-testid={`comparison-stat-${label.toLowerCase()}`}>
+      <div className="text-xs text-muted-foreground mb-0.5">{label}</div>
+      <div className="flex items-center gap-1">
+        <span className="font-semibold">{schoolValue}{unit}</span>
+        <span className={`text-xs ${getColor()}`}>
+          {getArrow()} {isPositive ? "+" : ""}{diff.toFixed(0)}{unit}
+        </span>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        Dist. avg: {districtAvg.toFixed(0)}{unit}
+      </div>
     </div>
   );
 }

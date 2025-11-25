@@ -26,6 +26,23 @@ export interface IStorage {
   
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   upsertUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
+  
+  getDistrictAverages(district: number): Promise<DistrictAverages>;
+  getAllDistrictAverages(): Promise<Map<number, DistrictAverages>>;
+  getCitywideAverages(): Promise<DistrictAverages>;
+}
+
+export interface DistrictAverages {
+  district: number;
+  schoolCount: number;
+  overallScore: number;
+  elaProficiency: number;
+  mathProficiency: number;
+  climateScore: number;
+  progressScore: number;
+  studentTeacherRatio: number;
+  economicNeedIndex: number | null;
+  enrollment: number;
 }
 
 export class DbStorage implements IStorage {
@@ -271,6 +288,123 @@ export class DbStorage implements IStorage {
       })
       .returning();
     return userProfile;
+  }
+
+  async getDistrictAverages(district: number): Promise<DistrictAverages> {
+    const [stats] = await db
+      .select({
+        schoolCount: sql<number>`COUNT(*)`,
+        elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
+        mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
+        climateScore: sql<number>`ROUND(AVG(${schools.climate_score}), 1)`,
+        progressScore: sql<number>`ROUND(AVG(${schools.progress_score}), 1)`,
+        studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
+        economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
+        enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
+      })
+      .from(schools)
+      .where(eq(schools.district, district));
+    
+    const avgEla = Number(stats?.elaProficiency || 50);
+    const avgMath = Number(stats?.mathProficiency || 50);
+    const avgClimate = Number(stats?.climateScore || 50);
+    const avgProgress = Number(stats?.progressScore || 50);
+    
+    const testProficiency = (avgEla + avgMath) / 2;
+    const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
+    
+    return {
+      district,
+      schoolCount: Number(stats?.schoolCount || 0),
+      overallScore,
+      elaProficiency: avgEla,
+      mathProficiency: avgMath,
+      climateScore: avgClimate,
+      progressScore: avgProgress,
+      studentTeacherRatio: Number(stats?.studentTeacherRatio || 15),
+      economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
+      enrollment: Number(stats?.enrollment || 0),
+    };
+  }
+
+  async getAllDistrictAverages(): Promise<Map<number, DistrictAverages>> {
+    const results = await db
+      .select({
+        district: schools.district,
+        schoolCount: sql<number>`COUNT(*)`,
+        elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
+        mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
+        climateScore: sql<number>`ROUND(AVG(${schools.climate_score}), 1)`,
+        progressScore: sql<number>`ROUND(AVG(${schools.progress_score}), 1)`,
+        studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
+        economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
+        enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
+      })
+      .from(schools)
+      .groupBy(schools.district);
+    
+    const averagesMap = new Map<number, DistrictAverages>();
+    
+    for (const row of results) {
+      const avgEla = Number(row.elaProficiency || 50);
+      const avgMath = Number(row.mathProficiency || 50);
+      const avgClimate = Number(row.climateScore || 50);
+      const avgProgress = Number(row.progressScore || 50);
+      
+      const testProficiency = (avgEla + avgMath) / 2;
+      const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
+      
+      averagesMap.set(row.district, {
+        district: row.district,
+        schoolCount: Number(row.schoolCount || 0),
+        overallScore,
+        elaProficiency: avgEla,
+        mathProficiency: avgMath,
+        climateScore: avgClimate,
+        progressScore: avgProgress,
+        studentTeacherRatio: Number(row.studentTeacherRatio || 15),
+        economicNeedIndex: row.economicNeedIndex ? Number(row.economicNeedIndex) : null,
+        enrollment: Number(row.enrollment || 0),
+      });
+    }
+    
+    return averagesMap;
+  }
+
+  async getCitywideAverages(): Promise<DistrictAverages> {
+    const [stats] = await db
+      .select({
+        schoolCount: sql<number>`COUNT(*)`,
+        elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
+        mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
+        climateScore: sql<number>`ROUND(AVG(${schools.climate_score}), 1)`,
+        progressScore: sql<number>`ROUND(AVG(${schools.progress_score}), 1)`,
+        studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
+        economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
+        enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
+      })
+      .from(schools);
+    
+    const avgEla = Number(stats?.elaProficiency || 50);
+    const avgMath = Number(stats?.mathProficiency || 50);
+    const avgClimate = Number(stats?.climateScore || 50);
+    const avgProgress = Number(stats?.progressScore || 50);
+    
+    const testProficiency = (avgEla + avgMath) / 2;
+    const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
+    
+    return {
+      district: 0,
+      schoolCount: Number(stats?.schoolCount || 0),
+      overallScore,
+      elaProficiency: avgEla,
+      mathProficiency: avgMath,
+      climateScore: avgClimate,
+      progressScore: avgProgress,
+      studentTeacherRatio: Number(stats?.studentTeacherRatio || 15),
+      economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
+      enrollment: Number(stats?.enrollment || 0),
+    };
   }
 }
 

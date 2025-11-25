@@ -88,6 +88,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // District Averages API (public) with caching
+  app.get("/api/districts/averages", async (req: Request, res: Response) => {
+    try {
+      const cacheKey = "all-district-averages";
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
+      const averagesMap = await storage.getAllDistrictAverages();
+      const averagesObject = Object.fromEntries(averagesMap);
+      setCache(cacheKey, averagesObject);
+      res.json(averagesObject);
+    } catch (error) {
+      console.error("Error fetching district averages:", error);
+      res.status(500).json({ error: "Failed to fetch district averages" });
+    }
+  });
+
+  app.get("/api/districts/citywide", async (req: Request, res: Response) => {
+    try {
+      const cacheKey = "citywide-averages";
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
+      const citywide = await storage.getCitywideAverages();
+      setCache(cacheKey, citywide);
+      res.json(citywide);
+    } catch (error) {
+      console.error("Error fetching citywide averages:", error);
+      res.status(500).json({ error: "Failed to fetch citywide averages" });
+    }
+  });
+
+  app.get("/api/districts/:district/averages", async (req: Request, res: Response) => {
+    try {
+      const district = parseInt(req.params.district, 10);
+      if (isNaN(district)) {
+        return res.status(400).json({ error: "Invalid district number" });
+      }
+
+      const cacheKey = `district-${district}-averages`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
+      const averages = await storage.getDistrictAverages(district);
+      setCache(cacheKey, averages);
+      res.json(averages);
+    } catch (error) {
+      console.error("Error fetching district averages:", error);
+      res.status(500).json({ error: "Failed to fetch district averages" });
+    }
+  });
+
   // Favorites API (require authentication)
   app.get("/api/favorites", isAuthenticated, async (req: any, res: Response) => {
     try {

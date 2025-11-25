@@ -5,10 +5,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { Link } from "wouter";
-import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home } from "lucide-react";
+import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { DistrictAverages } from "@/components/DistrictComparison";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -18,8 +21,58 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+function ComparisonCell({ value, districtAvg, unit = "", higherIsBetter = true }: { 
+  value: number; 
+  districtAvg: number | undefined;
+  unit?: string;
+  higherIsBetter?: boolean;
+}) {
+  if (!districtAvg) {
+    return <span>{value}{unit}</span>;
+  }
+  
+  const diff = value - districtAvg;
+  const isPositive = higherIsBetter ? diff > 0 : diff < 0;
+  const isNeutral = Math.abs(diff) < 2;
+  
+  const getColor = () => {
+    if (isNeutral) return "text-yellow-600 dark:text-yellow-400";
+    return isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
+  };
+  
+  const getIcon = () => {
+    if (isNeutral) return <Minus className="w-3 h-3" />;
+    return isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />;
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex flex-col items-center gap-0.5 cursor-help">
+          <span className="font-medium">{value}{unit}</span>
+          <span className={`flex items-center gap-0.5 text-xs ${getColor()}`}>
+            {getIcon()}
+            <span>{diff > 0 ? "+" : ""}{diff.toFixed(0)}</span>
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="text-xs">
+          <div>School: {value}{unit}</div>
+          <div>District avg: {districtAvg.toFixed(1)}{unit}</div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function ComparePage() {
   const { comparedSchools, removeFromComparison, clearComparison } = useComparison();
+  
+  // Fetch all district averages for comparison
+  const { data: allDistrictAverages } = useQuery<Record<string, DistrictAverages>>({
+    queryKey: ["/api/districts/averages"],
+  });
 
   if (comparedSchools.length === 0) {
     return (
@@ -196,7 +249,11 @@ export default function ComparePage() {
                       </TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-ela-${school.dbn}`}>
-                          {school.ela_proficiency}%
+                          <ComparisonCell 
+                            value={school.ela_proficiency} 
+                            districtAvg={allDistrictAverages?.[String(school.district)]?.elaProficiency}
+                            unit="%"
+                          />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -209,7 +266,11 @@ export default function ComparePage() {
                       </TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-math-${school.dbn}`}>
-                          {school.math_proficiency}%
+                          <ComparisonCell 
+                            value={school.math_proficiency} 
+                            districtAvg={allDistrictAverages?.[String(school.district)]?.mathProficiency}
+                            unit="%"
+                          />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -222,7 +283,10 @@ export default function ComparePage() {
                       </TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-climate-${school.dbn}`}>
-                          {school.climate_score}
+                          <ComparisonCell 
+                            value={school.climate_score} 
+                            districtAvg={allDistrictAverages?.[String(school.district)]?.climateScore}
+                          />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -235,7 +299,10 @@ export default function ComparePage() {
                       </TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-progress-${school.dbn}`}>
-                          {school.progress_score}
+                          <ComparisonCell 
+                            value={school.progress_score} 
+                            districtAvg={allDistrictAverages?.[String(school.district)]?.progressScore}
+                          />
                         </TableCell>
                       ))}
                     </TableRow>
