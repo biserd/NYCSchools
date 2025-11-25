@@ -441,13 +441,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Chat API (public)
+  // AI Chat API (authenticated)
   // Cache school summary to avoid fetching on every request
   let cachedSchoolSummary: string | null = null;
   
-  app.post("/api/chat", async (req: Request, res: Response) => {
+  app.post("/api/chat", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const { message, conversationHistory } = req.body;
+      const userId = req.session.userId;
+      const { message, conversationHistory, sessionId } = req.body;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Message is required" });
@@ -457,6 +458,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      // Create or get chat session
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        // Create a new session
+        const session = await storage.createChatSession({
+          userId,
+          title: message.substring(0, 100), // Use first part of message as title
+        });
+        currentSessionId = session.id;
+      }
+
+      // Store user message in database
+      await storage.addChatMessage({
+        sessionId: currentSessionId,
+        role: "user",
+        content: message,
       });
 
       // Create or use cached school summary
@@ -478,21 +497,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cachedSchoolSummary = JSON.stringify(schoolSample, null, 2);
       }
 
-      const systemMessage = `You are a helpful assistant for parents looking for kindergarten schools in NYC. You have access to data from 1,533 NYC public and charter elementary schools across all 5 boroughs (Manhattan, Bronx, Brooklyn, Queens, Staten Island).
+      const systemMessage = `You are a helpful assistant for parents looking for schools in NYC. You have access to data from NYC public and charter schools across all 5 boroughs (Manhattan, Bronx, Brooklyn, Queens, Staten Island).
 
 School Data Overview:
-- Total schools: 1,533
 - Districts: 1-32 (community school districts)
 - Metrics available: Overall Score, Academics Score, Climate Score, Progress Score, ELA Proficiency, Math Proficiency, Enrollment, Student-Teacher Ratio, NYC School Survey scores
+- For high schools: Graduation rates, SAT scores, College readiness, AP courses
 
 Overall Score calculation: 40% academics + 30% climate + 30% progress
 
 Score Ranges:
-- 80+: Outstanding (Green)
-- 60-79: Strong (Yellow)
-- Below 60: Needs Improvement (Red)
+- 90+: Outstanding (Green)
+- 80-89: Strong (Yellow)
+- 70-79: Average (Amber)
+- Below 70: Needs Improvement (Red)
 
-Here's a sample of schools to help you answer questions (showing 50 of 1,533):
+Here's a sample of schools to help you answer questions:
 ${cachedSchoolSummary}
 
 When answering questions:
@@ -503,12 +523,17 @@ When answering questions:
 5. If asked to compare schools, focus on key differences
 6. If you don't have exact data for a specific question, acknowledge the limitation
 
-Remember: All 1,533 schools are in the database, but you're seeing a sample. For comprehensive searches across all schools, suggest using the search and filter tools on the website.`;
+Remember: Schools are in the database, but you're seeing a sample. For comprehensive searches across all schools, suggest using the search and filter tools on the website.`;
 
       // Set up streaming response
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+
+      // Send session ID first if it's a new session
+      if (!sessionId) {
+        res.write(`data: ${JSON.stringify({ sessionId: currentSessionId })}\n\n`);
+      }
 
       // Build conversation messages
       const messages: any[] = [
@@ -526,12 +551,21 @@ Remember: All 1,533 schools are in the database, but you're seeing a sample. For
         max_tokens: 1000,
       });
 
+      let fullResponse = "";
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) {
+          fullResponse += content;
           res.write(`data: ${JSON.stringify({ content })}\n\n`);
         }
       }
+
+      // Store assistant response in database
+      await storage.addChatMessage({
+        sessionId: currentSessionId,
+        role: "assistant",
+        content: fullResponse,
+      });
 
       res.write("data: [DONE]\n\n");
       res.end();
@@ -543,6 +577,64 @@ Remember: All 1,533 schools are in the database, but you're seeing a sample. For
         res.write(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`);
         res.end();
       }
+    }
+  });
+
+  // Get user's chat sessions
+  app.get("/api/chat/sessions", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const sessions = await storage.getUserChatSessions(userId);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching chat sessions:", error);
+      res.status(500).json({ error: "Failed to fetch chat sessions" });
+    }
+  });
+
+  // Get messages for a specific session
+  app.get("/api/chat/sessions/:sessionId", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const sessionId = parseInt(req.params.sessionId);
+
+      if (isNaN(sessionId)) {
+        return res.status(400).json({ error: "Invalid session ID" });
+      }
+
+      const session = await storage.getChatSession(sessionId);
+      if (!session || session.userId !== userId) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const sessionWithMessages = await storage.getChatSessionWithMessages(sessionId);
+      res.json(sessionWithMessages);
+    } catch (error) {
+      console.error("Error fetching chat session:", error);
+      res.status(500).json({ error: "Failed to fetch chat session" });
+    }
+  });
+
+  // Delete a chat session
+  app.delete("/api/chat/sessions/:sessionId", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const sessionId = parseInt(req.params.sessionId);
+
+      if (isNaN(sessionId)) {
+        return res.status(400).json({ error: "Invalid session ID" });
+      }
+
+      const session = await storage.getChatSession(sessionId);
+      if (!session || session.userId !== userId) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      await storage.deleteChatSession(sessionId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting chat session:", error);
+      res.status(500).json({ error: "Failed to delete chat session" });
     }
   });
 
