@@ -53,7 +53,13 @@ I prefer detailed explanations. Ask before making major changes.
     - All demographic metrics include detailed, parent-friendly tooltips and are displayed in dedicated "Student Demographics" cards on both SchoolDetailPanel (homepage sidebar) and school-detail pages
 - **Filtering & Sorting**: Live search, district, grade band filters, and sorting by various metrics (Overall Score, Academics, Climate, Progress, Name).
 - **School Display**: Responsive grid of school cards with commute times, and a detailed side panel (`SchoolDetailPanel`) with charts and full metrics.
-- **Authentication**: Replit Auth integration for secure login/logout and session management.
+- **Authentication**: Standalone email/password authentication system with:
+  - **Registration**: `/register` page with form validation (first name, last name, email, password, confirm password)
+  - **Login**: `/login` page with email/password form
+  - **Password Security**: bcrypt hashing (10 rounds) for secure password storage
+  - **Session Management**: PostgreSQL-backed sessions with 7-day TTL, httpOnly cookies
+  - **Protected Routes**: Middleware checks `req.session.userId` for authentication
+  - **API Endpoints**: POST `/api/register`, POST `/api/login`, POST `/api/logout`, GET `/api/auth/user`
 - **Favorites**: Users can save/unsave schools, view them on a dedicated `/favorites` page, and compare them.
 - **AI Chat Assistant**: Prominently featured OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions. Accessible via:
   - Prominent "Ask AI Assistant" button in homepage header
