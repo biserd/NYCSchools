@@ -320,6 +320,9 @@ export default function SchoolDetail() {
                     Average of ELA and Math proficiency percentages from NYS grades 3-8 standardized tests. 
                     Represents the percentage of students meeting or exceeding state standards.
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1 italic">
+                    Note: This differs from the "Academics" subscore shown below, which is a separate NYC DOE quality metric.
+                  </p>
                 </div>
                 <div className="border-l-4 border-green-500 pl-3" data-testid="explanation-climate">
                   <p className="font-medium text-sm">Climate Score (30% weight)</p>
