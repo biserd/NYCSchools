@@ -190,6 +190,19 @@ export default function SchoolDetail() {
                     Pre-K
                   </Badge>
                 )}
+                {schoolWithScore.has_gifted_talented && (
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      schoolWithScore.gt_program_type === 'citywide' 
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
+                        : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                    }`} 
+                    data-testid="badge-gt"
+                  >
+                    {schoolWithScore.gt_program_type === 'citywide' ? 'Citywide G&T' : 'District G&T'}
+                  </Badge>
+                )}
                 {borough && (
                   <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-borough">
                     <MapPin className="w-3 h-3" />

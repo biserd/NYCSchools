@@ -85,6 +85,19 @@ export function SchoolCard({ school }: SchoolCardProps) {
                   Pre-K
                 </Badge>
               )}
+              {school.has_gifted_talented && (
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs ${
+                    school.gt_program_type === 'citywide' 
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
+                      : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                  }`} 
+                  data-testid={`badge-gt-${school.dbn}`}
+                >
+                  {school.gt_program_type === 'citywide' ? 'Citywide G&T' : 'G&T'}
+                </Badge>
+              )}
               {school.economic_need_index !== null && (
                 <Tooltip>
                   <TooltipTrigger asChild>
