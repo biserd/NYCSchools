@@ -250,20 +250,11 @@ export default function SchoolDetail() {
               </h2>
               <div className="flex items-center gap-3 flex-wrap mb-3">
                 <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
-                {schoolWithScore.economic_need_index !== null && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Badge variant="outline" className="text-xs gap-1" data-testid="badge-eni">
-                          <Home className="w-3 h-3" />
-                          {schoolWithScore.economic_need_index}% ENI
-                        </Badge>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                {schoolWithScore.grade_band && (
+                  <Badge variant="outline" className="text-xs gap-1" data-testid="badge-grades">
+                    <GraduationCap className="w-3 h-3" />
+                    Grades {schoolWithScore.grade_band}
+                  </Badge>
                 )}
                 {borough && (
                   <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-borough">
@@ -346,7 +337,7 @@ export default function SchoolDetail() {
                 </div>
               </div>
               
-              {/* District Comparison Summary */}
+              {/* District Comparison Summary - shows unique metrics not duplicated below */}
               {districtAverages && (
                 <div className="mt-4 pt-4 border-t border-border/50">
                   <div className="text-sm font-medium mb-2 text-muted-foreground">District {schoolWithScore.district} Comparison</div>
@@ -357,21 +348,19 @@ export default function SchoolDetail() {
                       districtAvg={districtAverages.overallScore}
                     />
                     <ComparisonStat 
-                      label="ELA" 
-                      schoolValue={schoolWithScore.ela_proficiency} 
-                      districtAvg={districtAverages.elaProficiency}
-                      unit="%"
-                    />
-                    <ComparisonStat 
-                      label="Math" 
-                      schoolValue={schoolWithScore.math_proficiency} 
-                      districtAvg={districtAverages.mathProficiency}
-                      unit="%"
+                      label="Academics" 
+                      schoolValue={schoolWithScore.academics_score} 
+                      districtAvg={districtAverages.academicsScore}
                     />
                     <ComparisonStat 
                       label="Climate" 
                       schoolValue={schoolWithScore.climate_score} 
                       districtAvg={districtAverages.climateScore}
+                    />
+                    <ComparisonStat 
+                      label="Progress" 
+                      schoolValue={schoolWithScore.progress_score} 
+                      districtAvg={districtAverages.progressScore}
                     />
                   </div>
                 </div>
