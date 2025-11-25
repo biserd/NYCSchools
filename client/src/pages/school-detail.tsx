@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
+import { AppHeader } from "@/components/AppHeader";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -21,14 +21,11 @@ import { ReviewsList } from "@/components/ReviewsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { 
-  ArrowLeft, 
   GraduationCap, 
   Users, 
   MapPin, 
   Info,
   TrendingUp,
-  Heart,
-  School as SchoolIcon,
   MessageSquare,
   MessageCircle,
   Sparkles,
@@ -36,7 +33,6 @@ import {
   Calculator
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { LogIn, LogOut, User } from "lucide-react";
 
 export default function SchoolDetail() {
   const { slug } = useParams();
@@ -62,19 +58,7 @@ export default function SchoolDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="icon" data-testid="button-back">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-              <h1 className="text-2xl font-bold">Loading...</h1>
-            </div>
-            <ThemeToggle />
-          </div>
-        </header>
+        <AppHeader />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center text-muted-foreground">Loading school details...</div>
         </div>
@@ -85,19 +69,7 @@ export default function SchoolDetail() {
   if (!schoolWithScore) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="icon" data-testid="button-back">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-              <h1 className="text-2xl font-bold">School Not Found</h1>
-            </div>
-            <ThemeToggle />
-          </div>
-        </header>
+        <AppHeader />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">School with DBN {dbn} not found.</p>
@@ -164,57 +136,7 @@ export default function SchoolDetail() {
         canonicalPath={`/school/${schoolSlug}`}
       />
       <StructuredData data={educationalOrgSchema} />
-      <header className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <SchoolIcon className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">NYC School Ratings</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isAuthenticated ? (
-              <>
-                <Link href="/favorites">
-                  <Button variant="ghost" size="icon" data-testid="button-nav-favorites">
-                    <Heart className="w-5 h-5" />
-                  </Button>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={async () => {
-                    await fetch('/api/logout', { method: 'POST' });
-                    window.location.href = '/';
-                  }}
-                  data-testid="button-user-menu"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  {user?.firstName || user?.email}
-                  <LogOut className="w-4 h-4 ml-2" />
-                </Button>
-              </>
-            ) : (
-              <Link href="/login">
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  data-testid="button-login"
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Log In
-                </Button>
-              </Link>
-            )}
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="space-y-6">

@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Footer } from "@/components/Footer";
+import { SEOHead } from "@/components/SEOHead";
+import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { MapPin, Save, ArrowLeft } from "lucide-react";
+import { MapPin, Save, Settings as SettingsIcon } from "lucide-react";
 import { UserProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { getStoredAddress, setStoredAddress, clearStoredAddress } from "@/lib/addressStorage";
-import { Link } from "wouter";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -159,21 +159,19 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">Settings</h1>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      <SEOHead 
+        title="Settings"
+        description="Configure your NYC School Ratings experience. Set your home address for commute time calculations."
+        keywords="settings, commute calculator, home address, NYC schools"
+        canonicalPath="/settings"
+      />
+      <AppHeader />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center gap-2 mb-6">
+          <SettingsIcon className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Settings</h1>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

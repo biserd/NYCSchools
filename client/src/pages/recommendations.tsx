@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
-import { ArrowLeft, Sparkles, Loader2, ExternalLink } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
+import { Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { SchoolCard } from "@/components/SchoolCard";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
@@ -190,19 +191,7 @@ I focused on schools with strong academics and balanced climate scores in Manhat
           keywords="school recommendations, personalized schools, NYC kindergarten AI, school finder recommendations, school suggestions"
           canonicalPath="/recommendations"
         />
-        <header className="border-b">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Schools
-              </Link>
-              <Button onClick={resetQuestionnaire} variant="outline" size="sm" data-testid="button-new-search">
-                New Search
-              </Button>
-            </div>
-          </div>
-        </header>
+        <AppHeader />
 
         <main className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="mb-8">
@@ -253,14 +242,7 @@ I focused on schools with strong academics and balanced climate scores in Manhat
         keywords="school recommendations, personalized schools, NYC kindergarten AI, school finder recommendations, school suggestions"
         canonicalPath="/recommendations"
       />
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Schools
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-8 text-center">

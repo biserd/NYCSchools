@@ -24,7 +24,8 @@ I prefer detailed explanations. Ask before making major changes.
 
 ### Technical Implementations
 - **Frontend Stack**: React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing.
-- **Component Structure**: Organized into `components/` for reusable UI elements (e.g., `FilterBar`, `SchoolCard`, `SchoolDetailPanel`, `ChatBot`, `SEOHead`, `StructuredData`) and `pages/` for main application views (e.g., `home`, `school-detail`, `favorites`, `map`, `recommendations`).
+- **Component Structure**: Organized into `components/` for reusable UI elements (e.g., `FilterBar`, `SchoolCard`, `SchoolDetailPanel`, `ChatBot`, `SEOHead`, `StructuredData`, `AppHeader`) and `pages/` for main application views (e.g., `home`, `school-detail`, `favorites`, `map`, `recommendations`).
+- **Navigation**: Shared `AppHeader` component provides consistent navigation across ALL internal pages (map, favorites, compare, settings, recommendations, faq, privacy, terms, school-detail). Includes logo with home link, AI Assistant, Find My Match, Map View, Settings, My Favorites, Login/Logout, and Theme Toggle buttons. Users can navigate from any page to any other page without going back to home first.
 - **Data Flow**: Initial data loaded from `public/schools.json` (now primarily database-driven), with client-side score calculation, filtering, and sorting using React state and `useMemo`.
 - **State Management**: Primarily uses React's `useState` and `useMemo` for efficient client-side state handling.
 - **Data Model**: `shared/schema.ts` defines school types and score calculation utilities.

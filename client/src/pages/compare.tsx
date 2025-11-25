@@ -1,11 +1,11 @@
 import { useComparison } from "@/contexts/ComparisonContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
+import { AppHeader } from "@/components/AppHeader";
 import { Link } from "wouter";
-import { ArrowLeft, X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus } from "lucide-react";
+import { X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus, Scale } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
@@ -77,17 +77,7 @@ export default function ComparePage() {
   if (comparedSchools.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="border-b">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Schools
-              </Link>
-              <ThemeToggle />
-            </div>
-          </div>
-        </header>
+        <AppHeader />
 
         <div className="flex-1 flex items-center justify-center p-8">
           <Card className="max-w-md w-full">
@@ -135,36 +125,29 @@ export default function ComparePage() {
         keywords="compare NYC schools, school comparison tool, side-by-side school ratings, NYC school metrics, kindergarten school comparison"
         canonicalPath="/compare"
       />
-      <header className="sticky top-0 z-50 border-b bg-background">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Schools
-            </Link>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearComparison}
-                data-testid="button-clear-all-compare"
-              >
-                Clear All
-              </Button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-compare-title">
-            School Comparison
-          </h1>
-          <p className="text-muted-foreground" data-testid="text-compare-description">
-            Comparing {comparedSchools.length} {comparedSchools.length === 1 ? 'school' : 'schools'}
-          </p>
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Scale className="w-6 h-6 text-primary" />
+              <h1 className="text-3xl font-bold" data-testid="text-compare-title">
+                School Comparison
+              </h1>
+            </div>
+            <p className="text-muted-foreground" data-testid="text-compare-description">
+              Comparing {comparedSchools.length} {comparedSchools.length === 1 ? 'school' : 'schools'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearComparison}
+            data-testid="button-clear-all-compare"
+          >
+            Clear All
+          </Button>
         </div>
 
         <div className="grid gap-6 mb-8">

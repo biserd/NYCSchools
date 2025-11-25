@@ -1,11 +1,11 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ChevronDown, HelpCircle } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
+import { AppHeader } from "@/components/AppHeader";
 import {
   Collapsible,
   CollapsibleContent,
@@ -170,21 +170,13 @@ export default function FAQ() {
         canonicalPath="/faq"
       />
       <StructuredData data={faqSchema} />
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">Frequently Asked Questions</h1>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center gap-2 mb-2">
+          <HelpCircle className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Frequently Asked Questions</h1>
+        </div>
         <p className="text-muted-foreground mb-8">
           Find answers to common questions about using NYC School Ratings.
         </p>

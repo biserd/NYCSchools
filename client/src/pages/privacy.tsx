@@ -1,9 +1,7 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
+import { AppHeader } from "@/components/AppHeader";
+import { Shield } from "lucide-react";
 
 export default function Privacy() {
   return (
@@ -14,21 +12,13 @@ export default function Privacy() {
         keywords="privacy policy, data protection, user privacy, school ratings privacy"
         canonicalPath="/privacy"
       />
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">Privacy Policy</h1>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Privacy Policy</h1>
+        </div>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-sm text-muted-foreground mb-6">Last Updated: November 23, 2025</p>
 
@@ -149,14 +139,6 @@ export default function Privacy() {
             </p>
           </section>
 
-          <div className="mt-8 pt-8 border-t">
-            <Link href="/">
-              <Button variant="outline" data-testid="button-back-home">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
         </div>
       </main>
       <Footer />
