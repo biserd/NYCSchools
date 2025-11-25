@@ -173,7 +173,7 @@ export default function SchoolDetail() {
             </Link>
             <div className="flex items-center gap-2">
               <SchoolIcon className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">NYC Kindergarten Finder</h1>
+              <h1 className="text-xl font-bold">NYC School Ratings</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
