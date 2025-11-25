@@ -109,7 +109,11 @@ async function import3KData() {
   const allSchools = await db.select({ dbn: schools.dbn, name: schools.name }).from(schools);
   console.log(`   Total schools in database: ${allSchools.length}`);
   
-  console.log("\n5. Updating database with 3-K data...");
+  console.log("\n5. Resetting all has_3k flags to false...");
+  await db.update(schools).set({ has_3k: false });
+  console.log("   Reset complete.");
+  
+  console.log("\n6. Updating database with 3-K data...");
   let updated = 0;
   let matched = 0;
   
@@ -136,7 +140,7 @@ async function import3KData() {
   console.log(`   Schools updated with has_3k=true: ${updated}`);
   
   // Show sample updated schools
-  console.log("\n6. Sample schools with 3-K programs:");
+  console.log("\n7. Sample schools with 3-K programs:");
   const sampleSchools = await db
     .select()
     .from(schools)
@@ -148,7 +152,7 @@ async function import3KData() {
   });
   
   // Count by district
-  console.log("\n7. 3-K schools by district:");
+  console.log("\n8. 3-K schools by district:");
   const allSchoolsWith3K = await db
     .select({ district: schools.district })
     .from(schools)
