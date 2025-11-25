@@ -16,7 +16,8 @@ I prefer detailed explanations. Ask before making major changes.
 - **Interactions**: Hover and active states with smooth transitions, `hover-elevate` and `active-elevate-2` for feedback, and accessible `IconButtons` for tooltips. Pulsing animation on floating AI chat button to draw attention.
 - **Responsiveness**: Optimized for mobile, tablet, and desktop breakpoints.
 - **Accessibility**: Proper ARIA labels and keyboard navigation.
-- **Visual Cues**: Comprehensive tooltips for all metrics on school cards and detail panels. Color-coded indicators on all individual metrics (ELA, Math, Climate, Progress) and overall score.
+- **Visual Cues**: Color-coded indicators on all individual metrics (ELA, Math, Climate, Progress) and overall score. Score legend displayed directly on school detail pages.
+- **On-Screen Explanations**: All metric explanations are displayed directly on screen rather than hidden in tooltips, improving accessibility and transparency. This includes academic metrics, survey results, demographics, and district comparisons.
 - **AI Assistant Prominence**: Multiple entry points including header button, homepage banner, school detail page banner, and pulsing floating button for maximum visibility.
 - **Footer**: Consistent footer component across all pages (home, favorites, map, compare, settings, recommendations, school-detail, privacy, terms, faq) with links to FAQ, Privacy Policy, and Terms of Service.
 - **Icons**: Home icon (🏠) used to represent Economic Need Index and demographics, replacing previous dollar sign icon for better semantic meaning.

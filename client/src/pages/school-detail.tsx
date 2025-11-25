@@ -746,9 +746,21 @@ function SurveyMetric({ label, value, districtAvg }: { label: string; value: num
 function ComparisonStat({ label, schoolValue, districtAvg, unit = "" }: { 
   label: string; 
   schoolValue: number; 
-  districtAvg: number;
+  districtAvg?: number;
   unit?: string;
 }) {
+  if (districtAvg === undefined || districtAvg === null || isNaN(districtAvg)) {
+    return (
+      <div className="bg-muted/30 rounded-md p-2" data-testid={`comparison-stat-${label.toLowerCase()}`}>
+        <div className="text-xs text-muted-foreground mb-0.5">{label}</div>
+        <div className="flex items-center gap-1">
+          <span className="font-semibold">{schoolValue}{unit}</span>
+        </div>
+        <div className="text-xs text-muted-foreground">Dist. avg: N/A</div>
+      </div>
+    );
+  }
+  
   const diff = schoolValue - districtAvg;
   const isPositive = diff > 0;
   const isNeutral = Math.abs(diff) < 2;
