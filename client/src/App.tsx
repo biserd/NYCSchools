@@ -17,6 +17,8 @@ import SettingsPage from "@/pages/settings";
 import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
 import FAQPage from "@/pages/faq";
+import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
 import NotFound from "@/pages/not-found";
 
 // Lazy load heavy route components
@@ -43,6 +45,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
       <Route path="/favorites" component={FavoritesPage} />
       <Route path="/recommendations">
         <Suspense fallback={<PageLoader />}>

@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import compression from "compression";
 
@@ -39,17 +39,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(compression());
 
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
   // Auth routes
   app.get("/api/auth/user", async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      if (!req.session?.userId) {
         return res.json(null);
       }
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.json(null);
+      }
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -152,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Favorites API (require authentication)
   app.get("/api/favorites", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const favorites = await storage.getUserFavorites(userId);
       res.json(favorites);
     } catch (error) {
@@ -163,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/favorites", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
 
       const parsed = insertFavoriteSchema.safeParse({
         userId,
@@ -190,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/favorites/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       await storage.removeFavorite(userId, req.params.schoolDbn);
       res.status(204).send();
     } catch (error) {
@@ -205,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ isFavorite: false });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const isFav = await storage.isFavorite(userId, req.params.schoolDbn);
       res.json({ isFavorite: isFav });
     } catch (error) {
@@ -265,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Profile API
   app.get("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const profile = await storage.getUserProfile(userId);
       res.json(profile || null);
     } catch (error) {
@@ -276,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       
       const parsed = insertUserProfileSchema.safeParse({
         userId,
@@ -373,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(null);
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const schoolDbn = req.params.dbn;
       const review = await storage.getUserReview(userId, schoolDbn);
       res.json(review || null);
@@ -385,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/schools/:dbn/reviews", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const schoolDbn = req.params.dbn;
 
       const parsed = insertReviewSchema.safeParse({
@@ -423,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/reviews/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const reviewId = parseInt(req.params.id);
 
       if (isNaN(reviewId)) {
