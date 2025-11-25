@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -32,6 +32,17 @@ export interface IStorage {
   getDistrictAverages(district: number): Promise<DistrictAverages>;
   getAllDistrictAverages(): Promise<Map<number, DistrictAverages>>;
   getCitywideAverages(): Promise<DistrictAverages>;
+  
+  // AI Chat operations
+  createChatSession(session: InsertAiChatSession): Promise<AiChatSession>;
+  getChatSession(sessionId: number): Promise<AiChatSession | undefined>;
+  getUserChatSessions(userId: string): Promise<AiChatSession[]>;
+  updateChatSessionTitle(sessionId: number, title: string): Promise<void>;
+  deleteChatSession(sessionId: number): Promise<void>;
+  
+  addChatMessage(message: InsertAiChatMessage): Promise<AiChatMessage>;
+  getChatMessages(sessionId: number): Promise<AiChatMessage[]>;
+  getChatSessionWithMessages(sessionId: number): Promise<AiChatSessionWithMessages | undefined>;
 }
 
 export interface DistrictAverages {
@@ -564,6 +575,67 @@ export class DbStorage implements IStorage {
       guardianCommunication: stats?.guardianCommunication ? Number(stats.guardianCommunication) : null,
       guardianSchoolTrust: stats?.guardianSchoolTrust ? Number(stats.guardianSchoolTrust) : null,
     };
+  }
+
+  // AI Chat Session operations
+  async createChatSession(session: InsertAiChatSession): Promise<AiChatSession> {
+    const [created] = await db.insert(aiChatSessions).values(session).returning();
+    return created;
+  }
+
+  async getChatSession(sessionId: number): Promise<AiChatSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(aiChatSessions)
+      .where(eq(aiChatSessions.id, sessionId))
+      .limit(1);
+    return session;
+  }
+
+  async getUserChatSessions(userId: string): Promise<AiChatSession[]> {
+    return db
+      .select()
+      .from(aiChatSessions)
+      .where(eq(aiChatSessions.userId, userId))
+      .orderBy(desc(aiChatSessions.updatedAt));
+  }
+
+  async updateChatSessionTitle(sessionId: number, title: string): Promise<void> {
+    await db
+      .update(aiChatSessions)
+      .set({ title, updatedAt: new Date() })
+      .where(eq(aiChatSessions.id, sessionId));
+  }
+
+  async deleteChatSession(sessionId: number): Promise<void> {
+    await db.delete(aiChatSessions).where(eq(aiChatSessions.id, sessionId));
+  }
+
+  // AI Chat Message operations
+  async addChatMessage(message: InsertAiChatMessage): Promise<AiChatMessage> {
+    const [created] = await db.insert(aiChatMessages).values(message).returning();
+    // Also update the session's updatedAt timestamp
+    await db
+      .update(aiChatSessions)
+      .set({ updatedAt: new Date() })
+      .where(eq(aiChatSessions.id, message.sessionId));
+    return created;
+  }
+
+  async getChatMessages(sessionId: number): Promise<AiChatMessage[]> {
+    return db
+      .select()
+      .from(aiChatMessages)
+      .where(eq(aiChatMessages.sessionId, sessionId))
+      .orderBy(aiChatMessages.createdAt);
+  }
+
+  async getChatSessionWithMessages(sessionId: number): Promise<AiChatSessionWithMessages | undefined> {
+    const session = await this.getChatSession(sessionId);
+    if (!session) return undefined;
+    
+    const messages = await this.getChatMessages(sessionId);
+    return { ...session, messages };
   }
 }
 
