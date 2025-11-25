@@ -77,6 +77,16 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <Badge variant="secondary" data-testid="badge-detail-dbn">{school.dbn}</Badge>
               <Badge variant="secondary" data-testid="badge-detail-district">District {school.district}</Badge>
               <Badge variant="secondary" data-testid="badge-detail-grade">{school.grade_band}</Badge>
+              {school.has_3k && (
+                <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700" data-testid="badge-detail-3k">
+                  3-K
+                </Badge>
+              )}
+              {school.has_prek && (
+                <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700" data-testid="badge-detail-prek">
+                  Pre-K
+                </Badge>
+              )}
             </div>
           </div>
         </SheetHeader>

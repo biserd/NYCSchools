@@ -126,16 +126,8 @@ async function import3KPrekData() {
   const allSchools = await db.select({ dbn: schools.dbn, name: schools.name, grade_band: schools.grade_band }).from(schools);
   console.log(`   Found ${allSchools.length} schools in database\n`);
   
-  const k5Schools = allSchools.filter(s => s.grade_band === 'K-5');
-  console.log(`   K-5 schools: ${k5Schools.length}\n`);
-  
-  for (const school of k5Schools) {
-    if (school.dbn.includes('K') || school.dbn.startsWith('01') || 
-        school.dbn.startsWith('02') || school.dbn.startsWith('03') ||
-        school.dbn.startsWith('04') || school.dbn.startsWith('05')) {
-      schoolsWithPreK.add(school.dbn);
-    }
-  }
+  const elementarySchools = allSchools.filter(s => s.grade_band === 'K-5' || s.grade_band === 'K-8' || s.grade_band?.startsWith('PK') || s.grade_band?.startsWith('3K'));
+  console.log(`   Elementary/K-8 schools: ${elementarySchools.length}\n`);
   
   console.log("5. Updating database with 3-K/Pre-K data...");
   let updated3K = 0;

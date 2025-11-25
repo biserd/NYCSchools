@@ -19,6 +19,7 @@ export default function Home() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("2");
   const [selectedGradeBand, setSelectedGradeBand] = useState("All");
+  const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("overall");
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -73,6 +74,14 @@ export default function Home() {
       filtered = filtered.filter((school) => school.grade_band === selectedGradeBand);
     }
 
+    if (earlyChildhoodFilter !== "All") {
+      if (earlyChildhoodFilter === "Pre-K") {
+        filtered = filtered.filter((school) => school.has_prek === true);
+      } else if (earlyChildhoodFilter === "3-K") {
+        filtered = filtered.filter((school) => school.has_3k === true);
+      }
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -91,7 +100,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -280,6 +289,8 @@ export default function Home() {
         onGradeBandChange={setSelectedGradeBand}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        earlyChildhoodFilter={earlyChildhoodFilter}
+        onEarlyChildhoodFilterChange={setEarlyChildhoodFilter}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">

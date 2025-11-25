@@ -30,7 +30,8 @@ import {
   MessageCircle,
   Sparkles,
   Home,
-  Calculator
+  Calculator,
+  LogIn
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -177,6 +178,16 @@ export default function SchoolDetail() {
                   <Badge variant="outline" className="text-xs gap-1" data-testid="badge-grades">
                     <GraduationCap className="w-3 h-3" />
                     Grades {schoolWithScore.grade_band}
+                  </Badge>
+                )}
+                {schoolWithScore.has_3k && (
+                  <Badge variant="outline" className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700" data-testid="badge-3k">
+                    3-K
+                  </Badge>
+                )}
+                {schoolWithScore.has_prek && (
+                  <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700" data-testid="badge-prek">
+                    Pre-K
                   </Badge>
                 )}
                 {borough && (

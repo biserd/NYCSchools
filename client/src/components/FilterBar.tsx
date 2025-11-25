@@ -20,10 +20,14 @@ interface FilterBarProps {
   onGradeBandChange: (value: string) => void;
   sortBy: SortOption;
   onSortChange: (value: SortOption) => void;
+  earlyChildhoodFilter?: string;
+  onEarlyChildhoodFilterChange?: (value: string) => void;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
 const GRADE_BANDS = ["All", "K-5", "K-8"];
+
+const EARLY_CHILDHOOD_OPTIONS = ["All", "Pre-K", "3-K"];
 
 export function FilterBar({
   searchQuery,
@@ -34,6 +38,8 @@ export function FilterBar({
   onGradeBandChange,
   sortBy,
   onSortChange,
+  earlyChildhoodFilter = "All",
+  onEarlyChildhoodFilterChange,
 }: FilterBarProps) {
   return (
     <div className="sticky top-0 z-50 bg-background border-b">
@@ -76,6 +82,18 @@ export function FilterBar({
                 ))}
               </SelectContent>
             </Select>
+            {onEarlyChildhoodFilterChange && (
+              <Select value={earlyChildhoodFilter} onValueChange={onEarlyChildhoodFilterChange}>
+                <SelectTrigger data-testid="select-early-childhood" className="w-full md:w-48 h-12">
+                  <SelectValue placeholder="Early Childhood" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem data-testid="option-early-childhood-all" value="All">All Programs</SelectItem>
+                  <SelectItem data-testid="option-early-childhood-prek" value="Pre-K">Has Pre-K</SelectItem>
+                  <SelectItem data-testid="option-early-childhood-3k" value="3-K">Has 3-K</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
           
           <div className="flex flex-wrap gap-2">

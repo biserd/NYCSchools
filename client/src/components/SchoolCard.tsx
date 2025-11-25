@@ -75,6 +75,16 @@ export function SchoolCard({ school }: SchoolCardProps) {
               <Badge variant="secondary" className="text-xs" data-testid={`badge-dbn-${school.dbn}`}>
                 {school.dbn}
               </Badge>
+              {school.has_3k && (
+                <Badge variant="outline" className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700" data-testid={`badge-3k-${school.dbn}`}>
+                  3-K
+                </Badge>
+              )}
+              {school.has_prek && (
+                <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700" data-testid={`badge-prek-${school.dbn}`}>
+                  Pre-K
+                </Badge>
+              )}
               {school.economic_need_index !== null && (
                 <Tooltip>
                   <TooltipTrigger asChild>
