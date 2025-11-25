@@ -460,10 +460,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
-      // Create or get chat session
+      // Create or validate chat session ownership
       let currentSessionId = sessionId;
-      if (!currentSessionId) {
-        // Create a new session
+      if (currentSessionId) {
+        // Verify the session belongs to the current user
+        const existingSession = await storage.getChatSession(currentSessionId);
+        if (!existingSession || existingSession.userId !== userId) {
+          return res.status(403).json({ error: "Access denied to this chat session" });
+        }
+      } else {
+        // Create a new session for the authenticated user
         const session = await storage.createChatSession({
           userId,
           title: message.substring(0, 100), // Use first part of message as title

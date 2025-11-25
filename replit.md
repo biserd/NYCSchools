@@ -30,7 +30,7 @@ I prefer detailed explanations. Ask before making major changes.
 - **School Display**: Responsive grid of school cards, commute times, and a detailed side panel (`SchoolDetailPanel`).
 - **Authentication**: Email/password authentication with registration, login, bcrypt hashing, PostgreSQL-backed sessions, and protected routes.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated page, and compare them.
-- **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions.
+- **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions. **Requires authentication** - unauthenticated users see a login CTA with Sign In/Create Account buttons. All chat sessions and messages are stored in the database for history and training purposes.
 - **Smart Recommendations**: AI-powered questionnaire for personalized school recommendations.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers and district filtering.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics and district comparison indicators.
