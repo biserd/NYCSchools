@@ -24,8 +24,9 @@ I prefer detailed explanations. Ask before making major changes.
 - **Geocoding**: Schools are geocoded using NYC Open Data for map visualization.
 
 ### Feature Specifications
-- **School Data**: Comprehensive data for 1,509 NYC schools, including academic, climate, and progress scores, NYC School Survey results, demographics (Economic Need Index, ELL, IEP, Race/Ethnicity Breakdown), and realistic student-teacher ratios. Includes 3-K/Pre-K program information with badges and filtering.
-- **Filtering & Sorting**: Live search, district, grade band, early childhood filters, and sorting by various metrics.
+- **School Data**: Comprehensive data for 1,533 NYC schools, including academic, climate, and progress scores, NYC School Survey results, demographics (Economic Need Index, ELL, IEP, Race/Ethnicity Breakdown), and realistic student-teacher ratios. Includes 3-K/Pre-K program information and Gifted & Talented program data with badges and filtering.
+- **Gifted & Talented Programs**: 130 schools with G&T programs (5 citywide, 125 district). Filter by "Has G&T", "Citywide G&T", or "District G&T". Citywide schools: NEST+M, Anderson School, TAG Young Scholars, Brooklyn School of Inquiry, The 30th Avenue School.
+- **Filtering & Sorting**: Live search, district, grade band, early childhood, and G&T filters, plus sorting by various metrics.
 - **School Display**: Responsive grid of school cards, commute times, and a detailed side panel (`SchoolDetailPanel`).
 - **Authentication**: Email/password authentication with registration, login, bcrypt hashing, PostgreSQL-backed sessions, and protected routes.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated page, and compare them.
