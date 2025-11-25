@@ -257,14 +257,14 @@ export function DistrictComparisonRow({
 }
 
 interface InlineComparisonProps {
-  value: number;
+  value: number | null | undefined;
   districtAvg: number | null | undefined;
   unit?: string;
   higherIsBetter?: boolean;
 }
 
 export function InlineComparison({ value, districtAvg, unit = "%", higherIsBetter = true }: InlineComparisonProps) {
-  if (districtAvg === null || districtAvg === undefined) {
+  if (value === null || value === undefined || districtAvg === null || districtAvg === undefined) {
     return null;
   }
 
