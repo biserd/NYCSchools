@@ -32,7 +32,8 @@ import {
   MessageSquare,
   MessageCircle,
   Sparkles,
-  Home
+  Home,
+  Calculator
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn, LogOut, User } from "lucide-react";
@@ -348,6 +349,69 @@ export default function SchoolDetail() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* How We Calculate Scores */}
+          <Card data-testid="card-scoring-methodology">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-primary" />
+                <CardTitle className="text-lg">How We Calculate Scores</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Our Overall Score provides a transparent, data-driven metric combining test proficiency with NYC DOE quality indicators.
+              </p>
+              
+              {/* Formula Display */}
+              <div className="bg-muted/50 rounded-lg p-4 border" data-testid="formula-display">
+                <p className="text-sm font-medium mb-3">Overall Score Formula:</p>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-mono bg-background px-2 py-1 rounded border">Overall Score</span>
+                  <span>=</span>
+                  <span className="font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">Test Proficiency (40%)</span>
+                  <span>+</span>
+                  <span className="font-mono bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded">Climate (30%)</span>
+                  <span>+</span>
+                  <span className="font-mono bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Progress (30%)</span>
+                </div>
+              </div>
+
+              {/* Component Explanations */}
+              <div className="space-y-3">
+                <div className="border-l-4 border-blue-500 pl-3" data-testid="explanation-academics">
+                  <p className="font-medium text-sm">Test Proficiency (40% weight)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Average of ELA and Math proficiency percentages from NYS grades 3-8 standardized tests. 
+                    Represents the percentage of students meeting or exceeding state standards.
+                  </p>
+                </div>
+                <div className="border-l-4 border-green-500 pl-3" data-testid="explanation-climate">
+                  <p className="font-medium text-sm">Climate Score (30% weight)</p>
+                  <p className="text-xs text-muted-foreground">
+                    NYC DOE metric measuring school environment via the NYC School Survey (students, teachers, parents). 
+                    Includes rigorous instruction, collaborative teachers, supportive environment, and trust.
+                  </p>
+                </div>
+                <div className="border-l-4 border-purple-500 pl-3" data-testid="explanation-progress">
+                  <p className="font-medium text-sm">Progress Score (30% weight)</p>
+                  <p className="text-xs text-muted-foreground">
+                    NYC DOE metric tracking year-over-year student academic growth. 
+                    Measures how effectively schools help students advance, regardless of starting point.
+                  </p>
+                </div>
+              </div>
+
+              {/* Data Sources */}
+              <div className="text-xs text-muted-foreground pt-2 border-t">
+                <p className="font-medium mb-1">Data Sources:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>ELA/Math proficiency: NYC Open Data (grades 3-8 state test results)</li>
+                  <li>Climate/Progress scores: NYC Department of Education School Survey and Quality Reports</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 
