@@ -88,10 +88,19 @@ export default function MapPage() {
     filteredSchools.forEach(school => {
       const scoreColor = getScoreColor(school.overall_score);
       
-      // Create custom colored marker
+      // Create custom colored marker with 4-tier color system
+      const getMarkerColor = (color: string) => {
+        switch (color) {
+          case 'green': return '#22c55e';
+          case 'yellow': return '#eab308';
+          case 'amber': return '#f59e0b';
+          default: return '#ef4444';
+        }
+      };
+      
       const markerHtml = `
         <div style="
-          background-color: ${scoreColor === 'green' ? '#22c55e' : scoreColor === 'yellow' ? '#eab308' : '#ef4444'};
+          background-color: ${getMarkerColor(scoreColor)};
           width: 24px;
           height: 24px;
           border-radius: 50%;
@@ -116,7 +125,7 @@ export default function MapPage() {
           <p style="margin: 4px 0; font-size: 12px; color: #666;">District ${school.district}</p>
           <p style="margin: 4px 0; font-size: 14px;">
             <strong>Overall Score:</strong> 
-            <span style="color: ${scoreColor === 'green' ? '#22c55e' : scoreColor === 'yellow' ? '#eab308' : '#ef4444'};">
+            <span style="color: ${getMarkerColor(scoreColor)};">
               ${school.overall_score}
             </span>
           </p>
@@ -229,10 +238,11 @@ export default function MapPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {filteredSchools.length} of {schoolsWithCoords.length} geocoded {filteredSchools.length === 1 ? 'school' : 'schools'}
               </div>
-              <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Outstanding (80+)
-                <span className="inline-block w-3 h-3 rounded-full bg-amber-500"></span> Strong (60-79)
-                <span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> Below Average (&lt;60)
+              <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> 90+</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-500"></span> 80-89</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-amber-500"></span> 70-79</span>
+                <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> &lt;70</span>
               </div>
             </div>
           </CardContent>
