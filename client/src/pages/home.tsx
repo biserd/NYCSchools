@@ -84,7 +84,35 @@ export default function Home() {
     }
 
     if (selectedGradeBand !== "All") {
-      filtered = filtered.filter((school) => school.grade_band === selectedGradeBand);
+      switch (selectedGradeBand) {
+        case "PreK":
+          filtered = filtered.filter((school) => school.has_prek === true);
+          break;
+        case "3K":
+          filtered = filtered.filter((school) => school.has_3k === true);
+          break;
+        case "Elementary":
+          filtered = filtered.filter((school) => 
+            school.grade_band?.includes("K-5") || 
+            school.grade_band?.includes("PK-5") ||
+            school.grade_band?.match(/^[0-5]-[0-5]$/)
+          );
+          break;
+        case "K-8":
+          filtered = filtered.filter((school) => 
+            school.grade_band?.includes("K-8") || 
+            school.grade_band?.includes("PK-8") ||
+            school.grade_band?.match(/^[0-8]-[0-8]$/)
+          );
+          break;
+        case "HighSchool":
+          filtered = filtered.filter((school) => 
+            school.grade_band?.includes("9-12") || 
+            school.grade_band?.includes("6-12") ||
+            school.grade_band?.includes("7-12")
+          );
+          break;
+      }
     }
 
     if (earlyChildhoodFilter !== "All") {

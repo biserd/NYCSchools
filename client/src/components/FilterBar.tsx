@@ -27,7 +27,15 @@ interface FilterBarProps {
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
-const GRADE_BANDS = ["All", "K-5", "K-8"];
+
+const GRADE_BAND_OPTIONS = [
+  { value: "All", label: "All Grade Levels" },
+  { value: "PreK", label: "Pre-K Programs" },
+  { value: "3K", label: "3-K Programs" },
+  { value: "Elementary", label: "Elementary (K-5)" },
+  { value: "K-8", label: "K-8 Schools" },
+  { value: "HighSchool", label: "High School (9-12)" },
+];
 
 const EARLY_CHILDHOOD_OPTIONS = ["All", "Pre-K", "3-K"];
 
@@ -75,13 +83,13 @@ export function FilterBar({
               </SelectContent>
             </Select>
             <Select value={selectedGradeBand} onValueChange={onGradeBandChange}>
-              <SelectTrigger data-testid="select-grade-band" className="w-full md:w-48 h-12">
-                <SelectValue placeholder="All Grades" />
+              <SelectTrigger data-testid="select-grade-band" className="w-full md:w-52 h-12">
+                <SelectValue placeholder="All Grade Levels" />
               </SelectTrigger>
               <SelectContent>
-                {GRADE_BANDS.map((band) => (
-                  <SelectItem key={band} data-testid={`option-grade-${band.toLowerCase().replace('-', '')}`} value={band}>
-                    {band === "All" ? "All Grades" : band}
+                {GRADE_BAND_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} data-testid={`option-grade-${option.value.toLowerCase()}`} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
