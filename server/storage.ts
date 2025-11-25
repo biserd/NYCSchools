@@ -43,6 +43,26 @@ export interface DistrictAverages {
   studentTeacherRatio: number;
   economicNeedIndex: number | null;
   enrollment: number;
+  // Demographics
+  ellPercent: number | null;
+  iepPercent: number | null;
+  asianPercent: number | null;
+  blackPercent: number | null;
+  hispanicPercent: number | null;
+  whitePercent: number | null;
+  multiRacialPercent: number | null;
+  // Survey - Student
+  studentSafety: number | null;
+  studentTeacherTrust: number | null;
+  studentEngagement: number | null;
+  // Survey - Teacher
+  teacherQuality: number | null;
+  teacherCollaboration: number | null;
+  teacherLeadership: number | null;
+  // Survey - Guardian
+  guardianSatisfaction: number | null;
+  guardianCommunication: number | null;
+  guardianSchoolTrust: number | null;
 }
 
 export class DbStorage implements IStorage {
@@ -301,6 +321,26 @@ export class DbStorage implements IStorage {
         studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
         economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
+        // Demographics
+        ellPercent: sql<number>`ROUND(AVG(${schools.ell_percent}), 1)`,
+        iepPercent: sql<number>`ROUND(AVG(${schools.iep_percent}), 1)`,
+        asianPercent: sql<number>`ROUND(AVG(${schools.asian_percent}), 1)`,
+        blackPercent: sql<number>`ROUND(AVG(${schools.black_percent}), 1)`,
+        hispanicPercent: sql<number>`ROUND(AVG(${schools.hispanic_percent}), 1)`,
+        whitePercent: sql<number>`ROUND(AVG(${schools.white_percent}), 1)`,
+        multiRacialPercent: sql<number>`ROUND(AVG(${schools.multi_racial_percent}), 1)`,
+        // Survey - Student
+        studentSafety: sql<number>`ROUND(AVG(${schools.student_safety}), 1)`,
+        studentTeacherTrust: sql<number>`ROUND(AVG(${schools.student_teacher_trust}), 1)`,
+        studentEngagement: sql<number>`ROUND(AVG(${schools.student_engagement}), 1)`,
+        // Survey - Teacher
+        teacherQuality: sql<number>`ROUND(AVG(${schools.teacher_quality}), 1)`,
+        teacherCollaboration: sql<number>`ROUND(AVG(${schools.teacher_collaboration}), 1)`,
+        teacherLeadership: sql<number>`ROUND(AVG(${schools.teacher_leadership}), 1)`,
+        // Survey - Guardian
+        guardianSatisfaction: sql<number>`ROUND(AVG(${schools.guardian_satisfaction}), 1)`,
+        guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
+        guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
       })
       .from(schools)
       .where(eq(schools.district, district));
@@ -324,6 +364,26 @@ export class DbStorage implements IStorage {
       studentTeacherRatio: Number(stats?.studentTeacherRatio || 15),
       economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
       enrollment: Number(stats?.enrollment || 0),
+      // Demographics
+      ellPercent: stats?.ellPercent ? Number(stats.ellPercent) : null,
+      iepPercent: stats?.iepPercent ? Number(stats.iepPercent) : null,
+      asianPercent: stats?.asianPercent ? Number(stats.asianPercent) : null,
+      blackPercent: stats?.blackPercent ? Number(stats.blackPercent) : null,
+      hispanicPercent: stats?.hispanicPercent ? Number(stats.hispanicPercent) : null,
+      whitePercent: stats?.whitePercent ? Number(stats.whitePercent) : null,
+      multiRacialPercent: stats?.multiRacialPercent ? Number(stats.multiRacialPercent) : null,
+      // Survey - Student
+      studentSafety: stats?.studentSafety ? Number(stats.studentSafety) : null,
+      studentTeacherTrust: stats?.studentTeacherTrust ? Number(stats.studentTeacherTrust) : null,
+      studentEngagement: stats?.studentEngagement ? Number(stats.studentEngagement) : null,
+      // Survey - Teacher
+      teacherQuality: stats?.teacherQuality ? Number(stats.teacherQuality) : null,
+      teacherCollaboration: stats?.teacherCollaboration ? Number(stats.teacherCollaboration) : null,
+      teacherLeadership: stats?.teacherLeadership ? Number(stats.teacherLeadership) : null,
+      // Survey - Guardian
+      guardianSatisfaction: stats?.guardianSatisfaction ? Number(stats.guardianSatisfaction) : null,
+      guardianCommunication: stats?.guardianCommunication ? Number(stats.guardianCommunication) : null,
+      guardianSchoolTrust: stats?.guardianSchoolTrust ? Number(stats.guardianSchoolTrust) : null,
     };
   }
 
@@ -339,6 +399,26 @@ export class DbStorage implements IStorage {
         studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
         economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
+        // Demographics
+        ellPercent: sql<number>`ROUND(AVG(${schools.ell_percent}), 1)`,
+        iepPercent: sql<number>`ROUND(AVG(${schools.iep_percent}), 1)`,
+        asianPercent: sql<number>`ROUND(AVG(${schools.asian_percent}), 1)`,
+        blackPercent: sql<number>`ROUND(AVG(${schools.black_percent}), 1)`,
+        hispanicPercent: sql<number>`ROUND(AVG(${schools.hispanic_percent}), 1)`,
+        whitePercent: sql<number>`ROUND(AVG(${schools.white_percent}), 1)`,
+        multiRacialPercent: sql<number>`ROUND(AVG(${schools.multi_racial_percent}), 1)`,
+        // Survey - Student
+        studentSafety: sql<number>`ROUND(AVG(${schools.student_safety}), 1)`,
+        studentTeacherTrust: sql<number>`ROUND(AVG(${schools.student_teacher_trust}), 1)`,
+        studentEngagement: sql<number>`ROUND(AVG(${schools.student_engagement}), 1)`,
+        // Survey - Teacher
+        teacherQuality: sql<number>`ROUND(AVG(${schools.teacher_quality}), 1)`,
+        teacherCollaboration: sql<number>`ROUND(AVG(${schools.teacher_collaboration}), 1)`,
+        teacherLeadership: sql<number>`ROUND(AVG(${schools.teacher_leadership}), 1)`,
+        // Survey - Guardian
+        guardianSatisfaction: sql<number>`ROUND(AVG(${schools.guardian_satisfaction}), 1)`,
+        guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
+        guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
       })
       .from(schools)
       .groupBy(schools.district);
@@ -365,6 +445,26 @@ export class DbStorage implements IStorage {
         studentTeacherRatio: Number(row.studentTeacherRatio || 15),
         economicNeedIndex: row.economicNeedIndex ? Number(row.economicNeedIndex) : null,
         enrollment: Number(row.enrollment || 0),
+        // Demographics
+        ellPercent: row.ellPercent ? Number(row.ellPercent) : null,
+        iepPercent: row.iepPercent ? Number(row.iepPercent) : null,
+        asianPercent: row.asianPercent ? Number(row.asianPercent) : null,
+        blackPercent: row.blackPercent ? Number(row.blackPercent) : null,
+        hispanicPercent: row.hispanicPercent ? Number(row.hispanicPercent) : null,
+        whitePercent: row.whitePercent ? Number(row.whitePercent) : null,
+        multiRacialPercent: row.multiRacialPercent ? Number(row.multiRacialPercent) : null,
+        // Survey - Student
+        studentSafety: row.studentSafety ? Number(row.studentSafety) : null,
+        studentTeacherTrust: row.studentTeacherTrust ? Number(row.studentTeacherTrust) : null,
+        studentEngagement: row.studentEngagement ? Number(row.studentEngagement) : null,
+        // Survey - Teacher
+        teacherQuality: row.teacherQuality ? Number(row.teacherQuality) : null,
+        teacherCollaboration: row.teacherCollaboration ? Number(row.teacherCollaboration) : null,
+        teacherLeadership: row.teacherLeadership ? Number(row.teacherLeadership) : null,
+        // Survey - Guardian
+        guardianSatisfaction: row.guardianSatisfaction ? Number(row.guardianSatisfaction) : null,
+        guardianCommunication: row.guardianCommunication ? Number(row.guardianCommunication) : null,
+        guardianSchoolTrust: row.guardianSchoolTrust ? Number(row.guardianSchoolTrust) : null,
       });
     }
     
@@ -382,6 +482,26 @@ export class DbStorage implements IStorage {
         studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
         economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
+        // Demographics
+        ellPercent: sql<number>`ROUND(AVG(${schools.ell_percent}), 1)`,
+        iepPercent: sql<number>`ROUND(AVG(${schools.iep_percent}), 1)`,
+        asianPercent: sql<number>`ROUND(AVG(${schools.asian_percent}), 1)`,
+        blackPercent: sql<number>`ROUND(AVG(${schools.black_percent}), 1)`,
+        hispanicPercent: sql<number>`ROUND(AVG(${schools.hispanic_percent}), 1)`,
+        whitePercent: sql<number>`ROUND(AVG(${schools.white_percent}), 1)`,
+        multiRacialPercent: sql<number>`ROUND(AVG(${schools.multi_racial_percent}), 1)`,
+        // Survey - Student
+        studentSafety: sql<number>`ROUND(AVG(${schools.student_safety}), 1)`,
+        studentTeacherTrust: sql<number>`ROUND(AVG(${schools.student_teacher_trust}), 1)`,
+        studentEngagement: sql<number>`ROUND(AVG(${schools.student_engagement}), 1)`,
+        // Survey - Teacher
+        teacherQuality: sql<number>`ROUND(AVG(${schools.teacher_quality}), 1)`,
+        teacherCollaboration: sql<number>`ROUND(AVG(${schools.teacher_collaboration}), 1)`,
+        teacherLeadership: sql<number>`ROUND(AVG(${schools.teacher_leadership}), 1)`,
+        // Survey - Guardian
+        guardianSatisfaction: sql<number>`ROUND(AVG(${schools.guardian_satisfaction}), 1)`,
+        guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
+        guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
       })
       .from(schools);
     
@@ -404,6 +524,26 @@ export class DbStorage implements IStorage {
       studentTeacherRatio: Number(stats?.studentTeacherRatio || 15),
       economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
       enrollment: Number(stats?.enrollment || 0),
+      // Demographics
+      ellPercent: stats?.ellPercent ? Number(stats.ellPercent) : null,
+      iepPercent: stats?.iepPercent ? Number(stats.iepPercent) : null,
+      asianPercent: stats?.asianPercent ? Number(stats.asianPercent) : null,
+      blackPercent: stats?.blackPercent ? Number(stats.blackPercent) : null,
+      hispanicPercent: stats?.hispanicPercent ? Number(stats.hispanicPercent) : null,
+      whitePercent: stats?.whitePercent ? Number(stats.whitePercent) : null,
+      multiRacialPercent: stats?.multiRacialPercent ? Number(stats.multiRacialPercent) : null,
+      // Survey - Student
+      studentSafety: stats?.studentSafety ? Number(stats.studentSafety) : null,
+      studentTeacherTrust: stats?.studentTeacherTrust ? Number(stats.studentTeacherTrust) : null,
+      studentEngagement: stats?.studentEngagement ? Number(stats.studentEngagement) : null,
+      // Survey - Teacher
+      teacherQuality: stats?.teacherQuality ? Number(stats.teacherQuality) : null,
+      teacherCollaboration: stats?.teacherCollaboration ? Number(stats.teacherCollaboration) : null,
+      teacherLeadership: stats?.teacherLeadership ? Number(stats.teacherLeadership) : null,
+      // Survey - Guardian
+      guardianSatisfaction: stats?.guardianSatisfaction ? Number(stats.guardianSatisfaction) : null,
+      guardianCommunication: stats?.guardianCommunication ? Number(stats.guardianCommunication) : null,
+      guardianSchoolTrust: stats?.guardianSchoolTrust ? Number(stats.guardianSchoolTrust) : null,
     };
   }
 }
