@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, getMetricColor } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -31,7 +31,10 @@ import {
   Sparkles,
   Home,
   Calculator,
-  LogIn
+  LogIn,
+  BookOpen,
+  Award,
+  Star
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -201,6 +204,16 @@ export default function SchoolDetail() {
                     data-testid="badge-gt"
                   >
                     {schoolWithScore.gt_program_type === 'citywide' ? 'Citywide G&T' : 'District G&T'}
+                  </Badge>
+                )}
+                {schoolWithScore.is_specialized_hs && (
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700" 
+                    data-testid="badge-specialized"
+                  >
+                    <Star className="w-3 h-3 mr-1" />
+                    Specialized HS
                   </Badge>
                 )}
                 {borough && (
@@ -415,6 +428,133 @@ export default function SchoolDetail() {
               </div>
             </CardContent>
           </Card>
+
+          {/* High School Metrics - Only shown for high schools with data */}
+          {isHighSchool(schoolWithScore) && schoolWithScore.graduation_rate_4yr !== null && (
+            <Card data-testid="card-high-school-metrics">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-primary" />
+                  <CardTitle>High School Outcomes</CardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Key metrics for evaluating high school success: graduation rates, standardized test performance, and college preparation.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Graduation Rates */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    Graduation Rates
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {schoolWithScore.graduation_rate_4yr !== null && (
+                      <HSMetricCard
+                        label="4-Year Graduation Rate"
+                        value={schoolWithScore.graduation_rate_4yr}
+                        suffix="%"
+                        description="Percentage of students graduating within 4 years of entering high school."
+                        testId="grad-4yr"
+                      />
+                    )}
+                    {schoolWithScore.graduation_rate_6yr !== null && (
+                      <HSMetricCard
+                        label="6-Year Graduation Rate"
+                        value={schoolWithScore.graduation_rate_6yr}
+                        suffix="%"
+                        description="Percentage graduating within 6 years, including students who need additional time."
+                        testId="grad-6yr"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* SAT Scores */}
+                {(schoolWithScore.sat_avg_reading !== null || schoolWithScore.sat_avg_total !== null) && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" />
+                      SAT Performance
+                    </h4>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Average SAT scores for students at this school. National average is approximately 1050 total.
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {schoolWithScore.sat_avg_reading !== null && (
+                        <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-reading">
+                          <p className="text-2xl font-bold tabular-nums" data-testid="text-sat-reading">{schoolWithScore.sat_avg_reading}</p>
+                          <p className="text-xs text-muted-foreground">Reading</p>
+                        </div>
+                      )}
+                      {schoolWithScore.sat_avg_math !== null && (
+                        <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-math">
+                          <p className="text-2xl font-bold tabular-nums" data-testid="text-sat-math">{schoolWithScore.sat_avg_math}</p>
+                          <p className="text-xs text-muted-foreground">Math</p>
+                        </div>
+                      )}
+                      {schoolWithScore.sat_avg_total !== null && (
+                        <div className="bg-primary/10 rounded-lg p-3 text-center border border-primary/20" data-testid="container-sat-total">
+                          <p className="text-2xl font-bold tabular-nums text-primary" data-testid="text-sat-total">{schoolWithScore.sat_avg_total}</p>
+                          <p className="text-xs font-medium">Total</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      <span className="font-medium">Score Guide:</span> 1200+ Excellent | 1000-1199 Solid | 800-999 Average
+                    </div>
+                  </div>
+                )}
+
+                {/* College Readiness */}
+                {(schoolWithScore.college_readiness_rate !== null || schoolWithScore.ap_course_count !== null) && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      College Preparation
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {schoolWithScore.college_readiness_rate !== null && (
+                        <HSMetricCard
+                          label="College & Career Readiness"
+                          value={schoolWithScore.college_readiness_rate}
+                          suffix="%"
+                          description="Percentage of students meeting NYC's college and career readiness benchmarks."
+                          testId="college-ready"
+                        />
+                      )}
+                      {schoolWithScore.ap_course_count !== null && schoolWithScore.ap_course_count > 0 && (
+                        <HSMetricCard
+                          label="AP Courses Offered"
+                          value={schoolWithScore.ap_course_count}
+                          suffix=" courses"
+                          description="Number of Advanced Placement courses available for college-level study."
+                          testId="ap-courses"
+                          isCount={true}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Specialized HS Note */}
+                {schoolWithScore.is_specialized_hs && (
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800" data-testid="specialized-hs-note">
+                    <div className="flex items-start gap-3">
+                      <Star className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-indigo-800 dark:text-indigo-200">Specialized High School</p>
+                        <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
+                          This is one of New York City's nine specialized high schools. Admission requires passing the 
+                          Specialized High Schools Admissions Test (SHSAT) or meeting audition requirements.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* School Survey Results */}
           {(schoolWithScore.student_safety !== null || 
@@ -800,6 +940,53 @@ function ComparisonStat({ label, schoolValue, districtAvg, unit = "" }: {
       <div className="text-xs text-muted-foreground">
         Dist. avg: {districtAvg.toFixed(0)}{unit}
       </div>
+    </div>
+  );
+}
+
+function HSMetricCard({ 
+  label, 
+  value, 
+  suffix, 
+  description, 
+  testId,
+  isCount = false 
+}: { 
+  label: string; 
+  value: number; 
+  suffix: string; 
+  description: string; 
+  testId: string;
+  isCount?: boolean;
+}) {
+  const getColor = () => {
+    if (isCount) return "text-foreground";
+    if (value >= 90) return "text-emerald-600 dark:text-emerald-400";
+    if (value >= 80) return "text-yellow-600 dark:text-yellow-400";
+    if (value >= 70) return "text-amber-600 dark:text-amber-400";
+    return "text-red-600 dark:text-red-400";
+  };
+
+  const getIndicatorColor = () => {
+    if (isCount) return "bg-primary";
+    if (value >= 90) return "bg-emerald-500";
+    if (value >= 80) return "bg-yellow-500";
+    if (value >= 70) return "bg-amber-500";
+    return "bg-red-500";
+  };
+
+  return (
+    <div className="bg-muted/50 rounded-lg p-4 space-y-2" data-testid={`container-${testId}`}>
+      <div className="flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${getIndicatorColor()}`} />
+        <dt className="text-sm font-medium text-foreground">{label}</dt>
+      </div>
+      <dd className={`text-2xl font-bold tabular-nums ${getColor()}`} data-testid={`text-${testId}`}>
+        {value}{suffix}
+      </dd>
+      <p className="text-xs text-muted-foreground leading-relaxed" data-testid={`description-${testId}`}>
+        {description}
+      </p>
     </div>
   );
 }
