@@ -53,14 +53,26 @@ export default function Home() {
     let filtered = schools;
 
     if (debouncedSearchQuery) {
-      const normalizeString = (str: string) => 
+      const normalizeBasic = (str: string) => 
         str.toLowerCase().replace(/[^a-z0-9]/g, '');
       
-      const normalizedQuery = normalizeString(debouncedSearchQuery);
+      const normalizeSchoolSearch = (str: string) => {
+        let normalized = str.toLowerCase();
+        normalized = normalized.replace(/p\.?\s*s\.?\s*/gi, 'ps');
+        normalized = normalized.replace(/i\.?\s*s\.?\s*/gi, 'is');
+        normalized = normalized.replace(/m\.?\s*s\.?\s*/gi, 'ms');
+        normalized = normalized.replace(/j\.?\s*h\.?\s*s\.?\s*/gi, 'jhs');
+        normalized = normalized.replace(/h\.?\s*s\.?\s*/gi, 'hs');
+        normalized = normalized.replace(/[^a-z0-9]/g, '');
+        normalized = normalized.replace(/(ps|is|ms|jhs|hs)0*(\d+)/g, '$1$2');
+        return normalized;
+      };
+      
+      const normalizedQuery = normalizeSchoolSearch(debouncedSearchQuery);
       filtered = filtered.filter(
         (school) =>
-          normalizeString(school.name).includes(normalizedQuery) ||
-          normalizeString(school.dbn).includes(normalizedQuery)
+          normalizeSchoolSearch(school.name).includes(normalizedQuery) ||
+          normalizeBasic(school.dbn).includes(normalizeBasic(debouncedSearchQuery))
       );
     }
 
