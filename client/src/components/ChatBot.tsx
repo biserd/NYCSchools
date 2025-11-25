@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, LogIn } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "wouter";
 
 interface Message {
   role: "user" | "assistant";
@@ -11,11 +13,13 @@ interface Message {
 }
 
 export function ChatBot() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! I'm your NYC School Ratings assistant. I can help you find schools, compare options, and answer questions about NYC public and charter elementary schools. What would you like to know?",
+      content: "Hi! I'm your NYC School Ratings assistant. I can help you find schools, compare options, and answer questions about NYC public and charter schools. What would you like to know?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -34,7 +38,7 @@ export function ChatBot() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !isAuthenticated) return;
 
     const userMessage = input.trim();
     setInput("");
@@ -50,8 +54,6 @@ export function ChatBot() {
         content: msg.content,
       }));
 
-      console.log("Sending chat request:", { message: userMessage });
-
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -60,10 +62,9 @@ export function ChatBot() {
         body: JSON.stringify({
           message: userMessage,
           conversationHistory,
+          sessionId,
         }),
       });
-
-      console.log("Chat response status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -75,6 +76,7 @@ export function ChatBot() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = "";
+      let newSessionId: number | null = null;
 
       if (reader) {
         // Add empty assistant message that we'll update
@@ -96,6 +98,9 @@ export function ChatBot() {
 
               try {
                 const parsed = JSON.parse(data);
+                if (parsed.sessionId && !sessionId) {
+                  newSessionId = parsed.sessionId;
+                }
                 if (parsed.content) {
                   assistantMessage += parsed.content;
                   // Update the last message (assistant) with accumulated content
@@ -120,6 +125,11 @@ export function ChatBot() {
             }
           }
         }
+      }
+
+      // Update session ID if we got a new one
+      if (newSessionId) {
+        setSessionId(newSessionId);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -160,9 +170,88 @@ export function ChatBot() {
     );
   }
 
+  // Show login prompt if not authenticated
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <Card className="fixed bottom-6 right-6 w-96 h-auto shadow-2xl z-50 flex flex-col" data-testid="card-chat-login">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <CardTitle className="text-lg font-semibold">AI School Assistant</CardTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            data-testid="button-chat-close"
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="p-6">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+              <MessageCircle className="w-8 h-8 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Sign in to Chat</h3>
+              <p className="text-sm text-muted-foreground">
+                Get personalized help finding the perfect school for your child. Our AI assistant can answer questions, compare schools, and provide recommendations.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Link href="/login">
+                <Button className="w-full" data-testid="button-chat-login">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="outline" className="w-full" data-testid="button-chat-register">
+                  Create Account
+                </Button>
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Free to use - no credit card required
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <Card className="fixed bottom-6 right-6 w-96 h-auto shadow-2xl z-50 flex flex-col" data-testid="card-chat-loading">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <CardTitle className="text-lg font-semibold">AI School Assistant</CardTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            data-testid="button-chat-close"
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </CardHeader>
+        <CardContent className="p-6 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col" data-testid="card-chat">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
           <CardTitle className="text-lg font-semibold">AI School Assistant</CardTitle>
@@ -232,7 +321,7 @@ export function ChatBot() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Ask me anything about NYC kindergarten schools!
+            Ask me anything about NYC schools!
           </p>
         </div>
       </CardContent>
