@@ -192,7 +192,32 @@ export function getQualityRatingBars(rating: string | null): number {
   }
 }
 
+export function isHighSchool(school: Pick<School, 'grade_band' | 'name'>): boolean {
+  const gradeBand = school.grade_band?.toLowerCase() || '';
+  const name = school.name?.toLowerCase() || '';
+  
+  return gradeBand.includes('12') || 
+         gradeBand.includes('9-') ||
+         gradeBand === '9 to 12' ||
+         name.includes('high school');
+}
+
 export function calculateOverallScore(school: School): number {
+  // High schools use different metrics
+  if (isHighSchool(school) && school.graduation_rate_4yr !== null && school.graduation_rate_4yr !== undefined) {
+    // High School Score = Graduation Rate (40%) + College Readiness (30%) + Progress (30%)
+    const gradRate = school.graduation_rate_4yr;
+    const collegeReadiness = school.college_readiness_rate ?? school.progress_score;
+    const progressScore = school.progress_score;
+    
+    return Math.round(
+      0.4 * gradRate +
+      0.3 * collegeReadiness +
+      0.3 * progressScore
+    );
+  }
+  
+  // Elementary/Middle schools use test proficiency
   // Calculate test proficiency as average of ELA and Math
   const testProficiency = (school.ela_proficiency + school.math_proficiency) / 2;
   
