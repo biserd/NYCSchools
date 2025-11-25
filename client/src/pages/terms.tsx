@@ -10,8 +10,8 @@ export default function Terms() {
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
         title="Terms of Service"
-        description="Read the terms and conditions for using NYC Kindergarten School Finder. Understand your rights and responsibilities."
-        keywords="terms of service, terms and conditions, user agreement, school finder terms"
+        description="Read the terms and conditions for using NYC School Ratings. Understand your rights and responsibilities."
+        keywords="terms of service, terms and conditions, user agreement, school ratings terms"
         canonicalPath="/terms"
       />
       <header className="border-b bg-card">
@@ -35,7 +35,7 @@ export default function Terms() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Agreement to Terms</h2>
             <p>
-              By accessing or using NYC Kindergarten School Finder, you agree to be bound by these Terms of Service. 
+              By accessing or using NYC School Ratings, you agree to be bound by these Terms of Service. 
               If you disagree with any part of these terms, you may not use our service.
             </p>
           </section>
@@ -43,7 +43,7 @@ export default function Terms() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Description of Service</h2>
             <p className="mb-4">
-              NYC Kindergarten School Finder is an informational platform that helps parents:
+              NYC School Ratings is an informational platform that helps parents:
             </p>
             <ul className="list-disc pl-6 mb-4">
               <li>Browse and compare NYC public and charter elementary schools</li>

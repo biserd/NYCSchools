@@ -1,7 +1,7 @@
-# NYC Kindergarten School Finder - Design Guidelines
+# NYC School Ratings - Design Guidelines
 
 ## Design Approach
-**System-Based Approach** using principles from Material Design and modern data dashboard patterns. This is a utility-focused application where clarity, scannability, and trust are paramount for parents making important educational decisions.
+**System-Based Approach** using principles from Material Design and modern data dashboard patterns. This is a utility-focused application where clarity, scannability, and trust are paramount for parents making important school selection decisions.
 
 ## Typography System
 

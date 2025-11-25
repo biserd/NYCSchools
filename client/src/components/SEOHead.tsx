@@ -11,11 +11,11 @@ interface SEOHeadProps {
   noindex?: boolean;
 }
 
-const DEFAULT_TITLE = 'NYC Kindergarten School Finder';
-const DEFAULT_DESCRIPTION = 'Find and compare NYC public and charter elementary schools. Browse 1,500+ schools with ratings, test scores, demographics, and parent reviews to make informed kindergarten enrollment decisions.';
-const DEFAULT_KEYWORDS = 'NYC schools, kindergarten, elementary schools, public schools, charter schools, school ratings, school finder, New York City education, school comparison, parent reviews';
-const DEFAULT_OG_IMAGE = 'https://nyc-kindergarten-school-finder.replit.app/og-image.png';
-const SITE_URL = 'https://nyc-kindergarten-school-finder.replit.app';
+const DEFAULT_TITLE = 'NYC School Ratings';
+const DEFAULT_DESCRIPTION = 'Find and compare NYC public and charter elementary schools with ratings and detailed metrics. Browse 1,500+ schools with test scores, demographics, and parent reviews.';
+const DEFAULT_KEYWORDS = 'NYC schools, elementary schools, public schools, charter schools, school ratings, school finder, New York City education, school comparison, parent reviews';
+const DEFAULT_OG_IMAGE = 'https://nyc-school-ratings.replit.app/og-image.png';
+const SITE_URL = 'https://nyc-school-ratings.replit.app';
 
 export function SEOHead({
   title,

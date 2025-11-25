@@ -15,7 +15,7 @@ export function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! I'm your NYC Kindergarten School Finder assistant. I can help you find schools, compare options, and answer questions about NYC public and charter elementary schools. What would you like to know?",
+      content: "Hi! I'm your NYC School Ratings assistant. I can help you find schools, compare options, and answer questions about NYC public and charter elementary schools. What would you like to know?",
     },
   ]);
   const [input, setInput] = useState("");

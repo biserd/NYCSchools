@@ -45,8 +45,8 @@ function FAQItem({ question, answer }: FAQItemProps) {
 export default function FAQ() {
   const faqs: FAQItemProps[] = [
     {
-      question: "What is the NYC Kindergarten School Finder?",
-      answer: "The NYC Kindergarten School Finder is a comprehensive web application designed to help parents browse and compare NYC public and charter elementary schools. It provides detailed information about school performance, demographics, and quality metrics to help you make informed decisions about your child's education."
+      question: "What is NYC School Ratings?",
+      answer: "NYC School Ratings is a comprehensive web application designed to help parents browse and compare NYC public and charter elementary schools. It provides detailed information about school performance, demographics, and quality metrics to help you make informed decisions about your child's education."
     },
     {
       question: "How is the Overall Score calculated?",

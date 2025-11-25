@@ -10,8 +10,8 @@ export default function Privacy() {
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
         title="Privacy Policy"
-        description="Learn how NYC Kindergarten School Finder protects your privacy and handles your personal information. Read our comprehensive privacy policy."
-        keywords="privacy policy, data protection, user privacy, school finder privacy"
+        description="Learn how NYC School Ratings protects your privacy and handles your personal information. Read our comprehensive privacy policy."
+        keywords="privacy policy, data protection, user privacy, school ratings privacy"
         canonicalPath="/privacy"
       />
       <header className="border-b bg-card">
@@ -35,7 +35,7 @@ export default function Privacy() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
             <p>
-              Welcome to NYC Kindergarten School Finder. We are committed to protecting your privacy and ensuring 
+              Welcome to NYC School Ratings. We are committed to protecting your privacy and ensuring 
               transparency about how we collect, use, and protect your information.
             </p>
           </section>

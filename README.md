@@ -1,6 +1,6 @@
-# NYC Kindergarten School Finder
+# NYC School Ratings
 
-A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools.
+A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools with comprehensive ratings and detailed metrics.
 
 ## Features
 
