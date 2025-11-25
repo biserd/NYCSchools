@@ -13,6 +13,26 @@ export interface DistrictAverages {
   studentTeacherRatio: number;
   economicNeedIndex: number | null;
   enrollment: number;
+  // Demographics
+  ellPercent: number | null;
+  iepPercent: number | null;
+  asianPercent: number | null;
+  blackPercent: number | null;
+  hispanicPercent: number | null;
+  whitePercent: number | null;
+  multiRacialPercent: number | null;
+  // Survey - Student
+  studentSafety: number | null;
+  studentTeacherTrust: number | null;
+  studentEngagement: number | null;
+  // Survey - Teacher
+  teacherQuality: number | null;
+  teacherCollaboration: number | null;
+  teacherLeadership: number | null;
+  // Survey - Guardian
+  guardianSatisfaction: number | null;
+  guardianCommunication: number | null;
+  guardianSchoolTrust: number | null;
 }
 
 interface ComparisonIndicatorProps {
@@ -233,5 +253,51 @@ export function DistrictComparisonRow({
         </div>
       )}
     </div>
+  );
+}
+
+interface InlineComparisonProps {
+  value: number;
+  districtAvg: number | null | undefined;
+  unit?: string;
+  higherIsBetter?: boolean;
+}
+
+export function InlineComparison({ value, districtAvg, unit = "%", higherIsBetter = true }: InlineComparisonProps) {
+  if (districtAvg === null || districtAvg === undefined) {
+    return null;
+  }
+
+  const diff = value - districtAvg;
+  const absDiff = Math.abs(diff);
+  const threshold = 2;
+  const isNeutral = absDiff < threshold;
+  const isPositive = higherIsBetter ? diff > 0 : diff < 0;
+  
+  const getColor = () => {
+    if (isNeutral) return "text-yellow-600 dark:text-yellow-400";
+    return isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
+  };
+
+  const getIcon = () => {
+    if (isNeutral) return <Minus className="w-3 h-3" />;
+    return isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />;
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`inline-flex items-center gap-0.5 text-xs cursor-help ${getColor()}`}>
+          {getIcon()}
+          <span>{diff > 0 ? "+" : ""}{diff.toFixed(0)}</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="text-xs">
+          <div>School: {value}{unit}</div>
+          <div>District avg: {districtAvg.toFixed(1)}{unit}</div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
