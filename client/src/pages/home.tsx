@@ -131,8 +131,8 @@ export default function Home() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "NYC Kindergarten School Finder",
-    "url": "https://nyc-kindergarten-school-finder.replit.app",
+    "name": "NYC School Ratings",
+    "url": "https://nyc-school-ratings.replit.app",
     "description": "Find and compare NYC public and charter elementary schools with ratings, test scores, and parent reviews",
     "sameAs": []
   };
@@ -140,11 +140,11 @@ export default function Home() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "NYC Kindergarten School Finder",
-    "url": "https://nyc-kindergarten-school-finder.replit.app",
+    "name": "NYC School Ratings",
+    "url": "https://nyc-school-ratings.replit.app",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://nyc-kindergarten-school-finder.replit.app/?search={search_term_string}",
+      "target": "https://nyc-school-ratings.replit.app/?search={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };
@@ -163,7 +163,7 @@ export default function Home() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-page-title">
-                NYC Kindergarten School Finder
+                NYC School Ratings
               </h1>
               <p className="text-muted-foreground" data-testid="text-page-subtitle">
                 Find and compare NYC public and charter elementary schools

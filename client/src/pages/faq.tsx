@@ -165,8 +165,8 @@ export default function FAQ() {
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
         title="FAQ - Frequently Asked Questions"
-        description="Find answers to common questions about using the NYC Kindergarten School Finder, including how scores are calculated, data sources, and feature guides."
-        keywords="NYC school finder FAQ, school ratings questions, NYC DOE data, kindergarten enrollment help, school comparison guide"
+        description="Find answers to common questions about using NYC School Ratings, including how scores are calculated, data sources, and feature guides."
+        keywords="NYC school ratings FAQ, school ratings questions, NYC DOE data, school enrollment help, school comparison guide"
         canonicalPath="/faq"
       />
       <StructuredData data={faqSchema} />
@@ -186,7 +186,7 @@ export default function FAQ() {
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <p className="text-muted-foreground mb-8">
-          Find answers to common questions about using the NYC Kindergarten School Finder.
+          Find answers to common questions about using NYC School Ratings.
         </p>
 
         <div className="space-y-2">

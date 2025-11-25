@@ -146,7 +146,7 @@ export default function Terms() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, NYC Kindergarten School Finder and its creators shall not 
+              To the maximum extent permitted by law, NYC School Ratings and its creators shall not 
               be liable for any indirect, incidental, special, consequential, or punitive damages resulting from 
               your use or inability to use the service.
             </p>
