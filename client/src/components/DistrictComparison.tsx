@@ -6,6 +6,7 @@ export interface DistrictAverages {
   district: number;
   schoolCount: number;
   overallScore: number;
+  academicsScore: number;
   elaProficiency: number;
   mathProficiency: number;
   climateScore: number;

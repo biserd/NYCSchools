@@ -36,6 +36,7 @@ export interface DistrictAverages {
   district: number;
   schoolCount: number;
   overallScore: number;
+  academicsScore: number;
   elaProficiency: number;
   mathProficiency: number;
   climateScore: number;
@@ -351,12 +352,14 @@ export class DbStorage implements IStorage {
     const avgProgress = Number(stats?.progressScore || 50);
     
     const testProficiency = (avgEla + avgMath) / 2;
+    const academicsScore = Math.round(testProficiency);
     const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
     
     return {
       district,
       schoolCount: Number(stats?.schoolCount || 0),
       overallScore,
+      academicsScore,
       elaProficiency: avgEla,
       mathProficiency: avgMath,
       climateScore: avgClimate,
@@ -432,12 +435,14 @@ export class DbStorage implements IStorage {
       const avgProgress = Number(row.progressScore || 50);
       
       const testProficiency = (avgEla + avgMath) / 2;
+      const academicsScore = Math.round(testProficiency);
       const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
       
       averagesMap.set(row.district, {
         district: row.district,
         schoolCount: Number(row.schoolCount || 0),
         overallScore,
+        academicsScore,
         elaProficiency: avgEla,
         mathProficiency: avgMath,
         climateScore: avgClimate,
@@ -511,12 +516,14 @@ export class DbStorage implements IStorage {
     const avgProgress = Number(stats?.progressScore || 50);
     
     const testProficiency = (avgEla + avgMath) / 2;
+    const academicsScore = Math.round(testProficiency);
     const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
     
     return {
       district: 0,
       schoolCount: Number(stats?.schoolCount || 0),
       overallScore,
+      academicsScore,
       elaProficiency: avgEla,
       mathProficiency: avgMath,
       climateScore: avgClimate,

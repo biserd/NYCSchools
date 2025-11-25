@@ -279,41 +279,24 @@ export default function SchoolDetail() {
           {/* Overall Score Card */}
           <Card data-testid="card-overall-score">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Overall Snapshot</CardTitle>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 p-0"
-                      data-testid="button-tooltip-snapshot"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label="Overall snapshot information"
-                    >
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-sm" data-testid="tooltip-snapshot">
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold">Score Color Guide:</p>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                          <span className="text-xs">{METRIC_TOOLTIPS.colorLegend.green.description}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-amber-500" />
-                          <span className="text-xs">{METRIC_TOOLTIPS.colorLegend.yellow.description}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-red-500" />
-                          <span className="text-xs">{METRIC_TOOLTIPS.colorLegend.red.description}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+              <CardTitle>Overall Snapshot</CardTitle>
+              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground" data-testid="score-legend">
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span>90+ Outstanding</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                  <span>80-89 Strong</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <span>70-79 Average</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                  <span>&lt;70 Needs Work</span>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -426,30 +409,14 @@ export default function SchoolDetail() {
             schoolWithScore.guardian_satisfaction !== null) && (
             <Card data-testid="card-survey">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>NYC School Survey Results</CardTitle>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 p-0"
-                        data-testid="button-tooltip-survey"
-                        aria-label="Survey information"
-                      >
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">Annual survey responses from students, teachers, and parents about school quality and culture.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+                <CardTitle>NYC School Survey Results</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Annual survey responses from students, teachers, and parents about school quality and culture.</p>
               </CardHeader>
               <CardContent className="space-y-6">
                 {schoolWithScore.student_safety !== null && (
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Student Voice</h4>
+                    <p className="text-xs text-muted-foreground mb-2">How students rate their feelings of safety, respect, and belonging at school.</p>
                     <div className="grid gap-2">
                       <SurveyMetric 
                         label="Safety & Respect" 
@@ -463,6 +430,7 @@ export default function SchoolDetail() {
                 {schoolWithScore.teacher_quality !== null && (
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Teacher Perspective</h4>
+                    <p className="text-xs text-muted-foreground mb-2">Teachers' views on instruction quality, professional development, and school leadership.</p>
                     <div className="grid gap-2">
                       <SurveyMetric 
                         label="Instruction Quality" 
@@ -476,6 +444,7 @@ export default function SchoolDetail() {
                 {schoolWithScore.guardian_satisfaction !== null && (
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Parent Feedback</h4>
+                    <p className="text-xs text-muted-foreground mb-2">How parents/guardians rate their overall satisfaction with the school.</p>
                     <div className="grid gap-2">
                       <SurveyMetric 
                         label="Overall Satisfaction" 
@@ -538,72 +507,45 @@ export default function SchoolDetail() {
                 {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || schoolWithScore.iep_percent !== null) && (
                   <div>
                     <h4 className="font-semibold text-sm mb-3">Economic Need & Special Populations</h4>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {schoolWithScore.economic_need_index !== null && (
-                        <div data-testid="container-economic-need">
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="bg-muted/50 rounded-lg p-3" data-testid="container-economic-need">
+                          <p className="text-xs text-muted-foreground mb-1">Economic Need Index</p>
+                          <div className="flex items-center gap-2 mb-2">
                             <p className="text-2xl font-bold tabular-nums" data-testid="text-economic-need">{schoolWithScore.economic_need_index}%</p>
                             <InlineComparison 
                               value={schoolWithScore.economic_need_index} 
                               districtAvg={districtAverages?.economicNeedIndex}
                               higherIsBetter={false}
                             />
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Economic need information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.economicNeedIndex.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
                           </div>
-                          <p className="text-xs text-muted-foreground">Economic Need Index</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">Percentage of students facing economic hardship. Lower indicates fewer students in need.</p>
                         </div>
                       )}
                       {schoolWithScore.ell_percent !== null && (
-                        <div data-testid="container-ell">
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="bg-muted/50 rounded-lg p-3" data-testid="container-ell">
+                          <p className="text-xs text-muted-foreground mb-1">ELL Students</p>
+                          <div className="flex items-center gap-2 mb-2">
                             <p className="text-2xl font-bold tabular-nums" data-testid="text-ell">{schoolWithScore.ell_percent}%</p>
                             <InlineComparison 
                               value={schoolWithScore.ell_percent} 
                               districtAvg={districtAverages?.ellPercent}
                             />
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELL information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.ellPercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
                           </div>
-                          <p className="text-xs text-muted-foreground">ELL Students</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">Students receiving English Language Learner services.</p>
                         </div>
                       )}
                       {schoolWithScore.iep_percent !== null && (
-                        <div data-testid="container-iep">
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="bg-muted/50 rounded-lg p-3" data-testid="container-iep">
+                          <p className="text-xs text-muted-foreground mb-1">IEP Students</p>
+                          <div className="flex items-center gap-2 mb-2">
                             <p className="text-2xl font-bold tabular-nums" data-testid="text-iep">{schoolWithScore.iep_percent}%</p>
                             <InlineComparison 
                               value={schoolWithScore.iep_percent} 
                               districtAvg={districtAverages?.iepPercent}
                             />
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="IEP information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.iepPercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
                           </div>
-                          <p className="text-xs text-muted-foreground">IEP Students</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">Students with Individualized Education Programs for special needs.</p>
                         </div>
                       )}
                     </div>
@@ -615,95 +557,36 @@ export default function SchoolDetail() {
                   schoolWithScore.hispanic_percent !== null || schoolWithScore.white_percent !== null || 
                   schoolWithScore.multi_racial_percent !== null) && (
                   <div>
-                    <h4 className="font-semibold text-sm mb-3" data-testid="text-diversity-title">Racial & Ethnic Diversity</h4>
+                    <h4 className="font-semibold text-sm mb-2" data-testid="text-diversity-title">Racial & Ethnic Diversity</h4>
+                    <p className="text-xs text-muted-foreground mb-3">Percentage of students by race/ethnicity.</p>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="grid-diversity">
                       {schoolWithScore.asian_percent !== null && (
-                        <div data-testid="container-asian-percent">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xl font-bold tabular-nums" data-testid="text-asian-percent">{schoolWithScore.asian_percent}%</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Asian students information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.asianPercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
+                        <div className="bg-muted/30 rounded-lg p-2 text-center" data-testid="container-asian-percent">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-asian-percent">{schoolWithScore.asian_percent}%</p>
                           <p className="text-xs text-muted-foreground">Asian</p>
                         </div>
                       )}
                       {schoolWithScore.black_percent !== null && (
-                        <div data-testid="container-black-percent">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xl font-bold tabular-nums" data-testid="text-black-percent">{schoolWithScore.black_percent}%</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Black students information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.blackPercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
+                        <div className="bg-muted/30 rounded-lg p-2 text-center" data-testid="container-black-percent">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-black-percent">{schoolWithScore.black_percent}%</p>
                           <p className="text-xs text-muted-foreground">Black</p>
                         </div>
                       )}
                       {schoolWithScore.hispanic_percent !== null && (
-                        <div data-testid="container-hispanic-percent">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xl font-bold tabular-nums" data-testid="text-hispanic-percent">{schoolWithScore.hispanic_percent}%</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Hispanic/Latino students information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.hispanicPercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
+                        <div className="bg-muted/30 rounded-lg p-2 text-center" data-testid="container-hispanic-percent">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-hispanic-percent">{schoolWithScore.hispanic_percent}%</p>
                           <p className="text-xs text-muted-foreground">Hispanic/Latino</p>
                         </div>
                       )}
                       {schoolWithScore.white_percent !== null && (
-                        <div data-testid="container-white-percent">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xl font-bold tabular-nums" data-testid="text-white-percent">{schoolWithScore.white_percent}%</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="White students information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.whitePercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
+                        <div className="bg-muted/30 rounded-lg p-2 text-center" data-testid="container-white-percent">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-white-percent">{schoolWithScore.white_percent}%</p>
                           <p className="text-xs text-muted-foreground">White</p>
                         </div>
                       )}
                       {schoolWithScore.multi_racial_percent !== null && (
-                        <div data-testid="container-multi-racial-percent">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xl font-bold tabular-nums" data-testid="text-multi-racial-percent">{schoolWithScore.multi_racial_percent}%</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Multi-racial students information">
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-sm">{METRIC_TOOLTIPS.multiRacialPercent.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
+                        <div className="bg-muted/30 rounded-lg p-2 text-center" data-testid="container-multi-racial-percent">
+                          <p className="text-xl font-bold tabular-nums" data-testid="text-multi-racial-percent">{schoolWithScore.multi_racial_percent}%</p>
                           <p className="text-xs text-muted-foreground">Multi-Racial</p>
                         </div>
                       )}
@@ -810,30 +693,13 @@ function ScoreBar({ label, score, tooltip, testId }: { label: string; score: num
   return (
     <Card data-testid={`card-${testId}`}>
       <CardContent className="pt-6">
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium" data-testid={`label-${testId}`}>{label}</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 p-0"
-                    data-testid={`button-tooltip-${testId}`}
-                    aria-label={`${label} information`}
-                  >
-                    <Info className="h-3 w-3 text-muted-foreground" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-sm">{tooltip}</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            <span className="text-sm font-medium" data-testid={`label-${testId}`}>{label}</span>
             <span className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{score}</span>
           </div>
           <Progress value={score} className="h-2" data-testid={`progress-${testId}`} />
+          <p className="text-xs text-muted-foreground leading-relaxed" data-testid={`description-${testId}`}>{tooltip}</p>
         </div>
       </CardContent>
     </Card>
@@ -850,32 +716,15 @@ function MetricCard({ label, value, tooltip, testId, numericValue, districtAvg, 
   unit?: string;
 }) {
   return (
-    <div className="bg-muted/50 rounded-lg p-4 space-y-1" data-testid={`container-${testId}`}>
-      <div className="flex items-center gap-1">
-        <dt className="text-sm text-muted-foreground">{label}</dt>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 p-0"
-              data-testid={`button-tooltip-${testId}`}
-              aria-label={`${label} information`}
-            >
-              <Info className="h-3 w-3 text-muted-foreground" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p className="text-sm">{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
+    <div className="bg-muted/50 rounded-lg p-4 space-y-2" data-testid={`container-${testId}`}>
+      <dt className="text-sm font-medium text-foreground">{label}</dt>
       <div className="flex items-center gap-2">
         <dd className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{value}</dd>
         {numericValue !== undefined && districtAvg !== undefined && districtAvg !== null && (
           <InlineComparison value={numericValue} districtAvg={districtAvg} unit={unit} />
         )}
       </div>
+      <p className="text-xs text-muted-foreground leading-relaxed" data-testid={`description-${testId}`}>{tooltip}</p>
     </div>
   );
 }
