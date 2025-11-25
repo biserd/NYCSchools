@@ -187,28 +187,28 @@ export default function SchoolDetail() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  asChild
+                  onClick={async () => {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = '/';
+                  }}
                   data-testid="button-user-menu"
                 >
-                  <a href="/api/logout">
-                    <User className="w-4 h-4 mr-2" />
-                    {user?.firstName || user?.email}
-                    <LogOut className="w-4 h-4 ml-2" />
-                  </a>
+                  <User className="w-4 h-4 mr-2" />
+                  {user?.firstName || user?.email}
+                  <LogOut className="w-4 h-4 ml-2" />
                 </Button>
               </>
             ) : (
-              <Button 
-                variant="default" 
-                size="sm" 
-                asChild
-                data-testid="button-login"
-              >
-                <a href="/api/login">
+              <Link href="/login">
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  data-testid="button-login"
+                >
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In
-                </a>
-              </Button>
+                </Button>
+              </Link>
             )}
             <ThemeToggle />
           </div>
@@ -674,12 +674,12 @@ function ReviewsSection({ schoolDbn, userId, isAuthenticated }: { schoolDbn: str
           <div className="space-y-4">
             <div className="text-center py-4 bg-muted/50 rounded-lg">
               <p className="text-muted-foreground mb-2">Sign in to write a review</p>
-              <Button variant="default" size="sm" asChild data-testid="button-login-to-review">
-                <a href="/api/login">
+              <Link href="/login">
+                <Button variant="default" size="sm" data-testid="button-login-to-review">
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In
-                </a>
-              </Button>
+                </Button>
+              </Link>
             </div>
             <ReviewsList schoolDbn={schoolDbn} currentUserId={userId} />
           </div>

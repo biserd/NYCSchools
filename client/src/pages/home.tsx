@@ -244,22 +244,26 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.location.href = '/api/logout'}
+                  onClick={async () => {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = '/';
+                  }}
                   data-testid="button-logout"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => window.location.href = '/api/login'}
-                  data-testid="button-login"
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Login
-                </Button>
+                <Link href="/login">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    data-testid="button-login"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Login
+                  </Button>
+                </Link>
               )}
               <ThemeToggle />
             </div>

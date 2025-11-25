@@ -66,9 +66,11 @@ export default function FavoritesPage() {
           <p className="text-muted-foreground mb-4">
             Please log in to view and manage your favorite schools.
           </p>
-          <Button onClick={() => window.location.href = "/api/login"} data-testid="button-login-favorites">
-            Login to Continue
-          </Button>
+          <Link href="/login">
+            <Button data-testid="button-login-favorites">
+              Login to Continue
+            </Button>
+          </Link>
         </Card>
       </div>
     );

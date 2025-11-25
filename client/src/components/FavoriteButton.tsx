@@ -57,7 +57,7 @@ export function FavoriteButton({
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }, 1500);
         return;
       }
@@ -76,7 +76,7 @@ export function FavoriteButton({
         size={size}
         onClick={(e) => {
           e.stopPropagation();
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }}
         data-testid={`button-favorite-login-${schoolDbn}`}
       >
