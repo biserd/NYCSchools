@@ -1,10 +1,9 @@
 import { db } from "../server/db";
 import { schools } from "../shared/schema";
 import { eq } from "drizzle-orm";
-import * as XLSX from "xlsx";
-import * as fs from "fs";
-import * as https from "https";
-import * as path from "path";
+import XLSX from "xlsx";
+import fs from "fs";
+import https from "https";
 
 const ELEMENTARY_DIRECTORY_URL = "https://infohub.nyced.org/docs/default-source/default-document-library/ose/fall-2025---es-directory-data.xlsx";
 const DOWNLOAD_PATH = "/tmp/es-directory-3k.xlsx";
