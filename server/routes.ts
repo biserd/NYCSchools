@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/favorites/check/:schoolDbn", async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      if (!req.session.userId) {
         return res.json({ isFavorite: false });
       }
 
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/schools/:dbn/reviews/user", async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      if (!req.session.userId) {
         return res.json(null);
       }
 
