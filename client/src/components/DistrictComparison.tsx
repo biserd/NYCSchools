@@ -272,16 +272,17 @@ export function InlineComparison({ value, districtAvg, unit = "%", higherIsBette
   const absDiff = Math.abs(diff);
   const threshold = 2;
   const isNeutral = absDiff < threshold;
-  const isPositive = higherIsBetter ? diff > 0 : diff < 0;
+  const isAboveAverage = diff > 0;
+  const isGood = higherIsBetter ? isAboveAverage : !isAboveAverage;
   
   const getColor = () => {
     if (isNeutral) return "text-yellow-600 dark:text-yellow-400";
-    return isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
+    return isGood ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
   };
 
   const getIcon = () => {
     if (isNeutral) return <Minus className="w-3 h-3" />;
-    return isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />;
+    return isAboveAverage ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />;
   };
 
   return (
@@ -296,6 +297,7 @@ export function InlineComparison({ value, districtAvg, unit = "%", higherIsBette
         <div className="text-xs">
           <div>School: {value}{unit}</div>
           <div>District avg: {districtAvg.toFixed(1)}{unit}</div>
+          {!higherIsBetter && <div className="text-muted-foreground italic">Lower is better</div>}
         </div>
       </TooltipContent>
     </Tooltip>
