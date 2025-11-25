@@ -19,7 +19,7 @@ import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages } from "@/components/DistrictComparison";
+import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { 
   ArrowLeft, 
   GraduationCap, 
@@ -416,12 +416,16 @@ export default function SchoolDetail() {
                   value={`${schoolWithScore.ela_proficiency}%`}
                   tooltip={METRIC_TOOLTIPS.elaProficiency.tooltip}
                   testId="ela"
+                  numericValue={schoolWithScore.ela_proficiency}
+                  districtAvg={districtAverages?.elaProficiency}
                 />
                 <MetricCard
                   label="Math Proficiency"
                   value={`${schoolWithScore.math_proficiency}%`}
                   tooltip={METRIC_TOOLTIPS.mathProficiency.tooltip}
                   testId="math"
+                  numericValue={schoolWithScore.math_proficiency}
+                  districtAvg={districtAverages?.mathProficiency}
                 />
               </div>
             </CardContent>
@@ -458,7 +462,11 @@ export default function SchoolDetail() {
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Student Voice</h4>
                     <div className="grid gap-2">
-                      <SurveyMetric label="Safety & Respect" value={schoolWithScore.student_safety} />
+                      <SurveyMetric 
+                        label="Safety & Respect" 
+                        value={schoolWithScore.student_safety} 
+                        districtAvg={districtAverages?.studentSafety}
+                      />
                     </div>
                   </div>
                 )}
@@ -467,7 +475,11 @@ export default function SchoolDetail() {
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Teacher Perspective</h4>
                     <div className="grid gap-2">
-                      <SurveyMetric label="Instruction Quality" value={schoolWithScore.teacher_quality} />
+                      <SurveyMetric 
+                        label="Instruction Quality" 
+                        value={schoolWithScore.teacher_quality} 
+                        districtAvg={districtAverages?.teacherQuality}
+                      />
                     </div>
                   </div>
                 )}
@@ -476,7 +488,11 @@ export default function SchoolDetail() {
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Parent Feedback</h4>
                     <div className="grid gap-2">
-                      <SurveyMetric label="Overall Satisfaction" value={schoolWithScore.guardian_satisfaction} />
+                      <SurveyMetric 
+                        label="Overall Satisfaction" 
+                        value={schoolWithScore.guardian_satisfaction} 
+                        districtAvg={districtAverages?.guardianSatisfaction}
+                      />
                     </div>
                   </div>
                 )}
@@ -538,6 +554,11 @@ export default function SchoolDetail() {
                         <div data-testid="container-economic-need">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-2xl font-bold tabular-nums" data-testid="text-economic-need">{schoolWithScore.economic_need_index}%</p>
+                            <InlineComparison 
+                              value={schoolWithScore.economic_need_index} 
+                              districtAvg={districtAverages?.economicNeedIndex}
+                              higherIsBetter={false}
+                            />
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Economic need information">
@@ -556,6 +577,10 @@ export default function SchoolDetail() {
                         <div data-testid="container-ell">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-2xl font-bold tabular-nums" data-testid="text-ell">{schoolWithScore.ell_percent}%</p>
+                            <InlineComparison 
+                              value={schoolWithScore.ell_percent} 
+                              districtAvg={districtAverages?.ellPercent}
+                            />
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELL information">
@@ -574,6 +599,10 @@ export default function SchoolDetail() {
                         <div data-testid="container-iep">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-2xl font-bold tabular-nums" data-testid="text-iep">{schoolWithScore.iep_percent}%</p>
+                            <InlineComparison 
+                              value={schoolWithScore.iep_percent} 
+                              districtAvg={districtAverages?.iepPercent}
+                            />
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="IEP information">
@@ -822,7 +851,15 @@ function ScoreBar({ label, score, tooltip, testId }: { label: string; score: num
   );
 }
 
-function MetricCard({ label, value, tooltip, testId }: { label: string; value: string; tooltip: string; testId: string }) {
+function MetricCard({ label, value, tooltip, testId, numericValue, districtAvg, unit = "%" }: { 
+  label: string; 
+  value: string; 
+  tooltip: string; 
+  testId: string;
+  numericValue?: number;
+  districtAvg?: number | null;
+  unit?: string;
+}) {
   return (
     <div className="bg-muted/50 rounded-lg p-4 space-y-1" data-testid={`container-${testId}`}>
       <div className="flex items-center gap-1">
@@ -844,16 +881,26 @@ function MetricCard({ label, value, tooltip, testId }: { label: string; value: s
           </TooltipContent>
         </Tooltip>
       </div>
-      <dd className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{value}</dd>
+      <div className="flex items-center gap-2">
+        <dd className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{value}</dd>
+        {numericValue !== undefined && districtAvg !== undefined && districtAvg !== null && (
+          <InlineComparison value={numericValue} districtAvg={districtAvg} unit={unit} />
+        )}
+      </div>
     </div>
   );
 }
 
-function SurveyMetric({ label, value }: { label: string; value: number }) {
+function SurveyMetric({ label, value, districtAvg }: { label: string; value: number; districtAvg?: number | null }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-semibold tabular-nums">{value}%</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold tabular-nums">{value}%</span>
+        {districtAvg !== undefined && districtAvg !== null && (
+          <InlineComparison value={value} districtAvg={districtAvg} unit="%" />
+        )}
+      </div>
     </div>
   );
 }
