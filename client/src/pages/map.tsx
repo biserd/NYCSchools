@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import L from "leaflet";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
+import { MapPin } from "lucide-react";
 import { School, calculateOverallScore, getScoreColor, getSchoolSlug } from "@shared/schema";
 
 export default function MapPage() {
@@ -200,27 +200,16 @@ export default function MapPage() {
         keywords="NYC school map, kindergarten school locations, school finder map, NYC school districts, elementary school map"
         canonicalPath="/map"
       />
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-home">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Schools
-            </Link>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                <h1 className="text-xl font-semibold" data-testid="text-map-title">School Map</h1>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="container mx-auto px-4 py-4">
-        <Card className="mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <MapPin className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-semibold" data-testid="text-map-title">School Map</h2>
+        </div>
+        <Card className="mb-4 relative z-20">
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <label htmlFor="district-filter" className="text-sm font-medium whitespace-nowrap">
                 Filter by District:
               </label>
@@ -228,7 +217,7 @@ export default function MapPage() {
                 <SelectTrigger id="district-filter" className="w-48" data-testid="select-map-district">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]">
                   <SelectItem value="all">All Districts</SelectItem>
                   {Array.from({ length: 32 }, (_, i) => i + 1).map((d) => (
                     <SelectItem key={d} value={d.toString()}>
