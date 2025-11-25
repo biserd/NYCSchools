@@ -68,6 +68,10 @@ export const schools = pgTable("schools", {
   has_3k: boolean("has_3k").default(false),
   has_prek: boolean("has_prek").default(false),
   
+  // Gifted & Talented Programs
+  has_gifted_talented: boolean("has_gifted_talented").default(false),
+  gt_program_type: varchar("gt_program_type"), // 'district', 'citywide', or null
+  
   // Metadata
   last_updated: timestamp("last_updated").defaultNow(),
 });
