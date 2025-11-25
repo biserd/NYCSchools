@@ -72,6 +72,20 @@ export const schools = pgTable("schools", {
   has_gifted_talented: boolean("has_gifted_talented").default(false),
   gt_program_type: varchar("gt_program_type"), // 'district', 'citywide', or null
   
+  // High School Metrics
+  graduation_rate_4yr: integer("graduation_rate_4yr"), // 4-year graduation rate percentage
+  graduation_rate_6yr: integer("graduation_rate_6yr"), // 6-year graduation rate percentage
+  college_readiness_rate: integer("college_readiness_rate"), // College & career readiness percentage
+  college_enrollment_rate: integer("college_enrollment_rate"), // College enrollment rate percentage
+  sat_avg_reading: integer("sat_avg_reading"), // SAT average reading/writing score
+  sat_avg_math: integer("sat_avg_math"), // SAT average math score
+  sat_avg_total: integer("sat_avg_total"), // SAT total average score
+  regents_pass_rate: integer("regents_pass_rate"), // Overall Regents exam pass rate
+  ap_course_count: integer("ap_course_count"), // Number of AP courses offered
+  ap_pass_rate: integer("ap_pass_rate"), // AP exam pass rate (3+ score)
+  is_specialized_hs: boolean("is_specialized_hs").default(false), // Is specialized high school
+  hs_admission_method: varchar("hs_admission_method"), // screened, unscreened, limited unscreened, audition, test
+  
   // Metadata
   last_updated: timestamp("last_updated").defaultNow(),
 });
