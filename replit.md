@@ -39,6 +39,7 @@ I prefer detailed explanations. Ask before making major changes.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews.
 - **Public Commute Time Calculator**: Calculates transit times and distances using Google Maps APIs, storing addresses in localStorage and database for authenticated users.
 - **Legal Pages**: Dedicated Privacy Policy and Terms of Service pages.
+- **Data-Driven Blog**: Blog section at `/blog` featuring analytical articles about NYC school data with interactive Recharts visualizations. First article analyzes 2023-24 DOE data with district performance charts, proficiency tier breakdowns, economic need correlation, and G&T program impact. SEO-optimized with structured data.
 
 ### School Scoring Methodology
 The **Overall Score** (transparent and data-driven) is calculated as:
