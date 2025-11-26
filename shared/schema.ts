@@ -202,6 +202,53 @@ export function isHighSchool(school: Pick<School, 'grade_band' | 'name'>): boole
          name.includes('high school');
 }
 
+// Check if school is a pure high school (9-12 only, no lower grades)
+export function isPureHighSchool(school: Pick<School, 'grade_band' | 'name'>): boolean {
+  const gradeBand = school.grade_band?.toLowerCase() || '';
+  
+  // Pure high school patterns: exactly "9-12", "9 to 12"
+  const isPure9to12 = gradeBand === '9-12' || gradeBand === '9 to 12';
+  
+  // Has lower grades if it contains K, PK, or starts with a number less than 9
+  const hasLowerGrades = gradeBand.includes('k') || 
+                         gradeBand.includes('pk') ||
+                         gradeBand.startsWith('6-') ||
+                         gradeBand.startsWith('5-') ||
+                         gradeBand.startsWith('3-') ||
+                         gradeBand.includes('k-12') ||
+                         gradeBand.includes('6-12') ||
+                         gradeBand.includes('5-12');
+  
+  return isPure9to12 && !hasLowerGrades;
+}
+
+// Check if school serves multiple grade levels including both elementary/middle AND high school
+export function isCombinedSchool(school: Pick<School, 'grade_band' | 'name'>): boolean {
+  const gradeBand = school.grade_band?.toLowerCase() || '';
+  
+  // Combined school patterns: K-12, 6-12, PK-12, etc.
+  return (gradeBand.includes('12') && 
+         (gradeBand.includes('k') || 
+          gradeBand.startsWith('6-') || 
+          gradeBand.startsWith('5-') ||
+          gradeBand.startsWith('pk') ||
+          gradeBand.startsWith('3-')));
+}
+
+// Check if school has grades 3-8 students (who take state tests)
+export function hasGrades3to8(school: Pick<School, 'grade_band'>): boolean {
+  const gradeBand = school.grade_band?.toLowerCase() || '';
+  
+  // Schools with K-5, K-8, 6-8, K-12, 6-12, etc. have students taking state tests
+  return gradeBand.includes('k-') || 
+         gradeBand.includes('pk-') ||
+         gradeBand.includes('3-') ||
+         gradeBand.includes('5-') ||
+         gradeBand.includes('6-8') ||
+         gradeBand.includes('6-12') ||
+         gradeBand.includes('-8');
+}
+
 export function calculateOverallScore(school: School): number {
   // High schools use different metrics
   if (isHighSchool(school) && school.graduation_rate_4yr !== null && school.graduation_rate_4yr !== undefined) {
