@@ -207,6 +207,11 @@ export default function Home() {
             school.grade_band?.match(/^[0-5]-[0-5]$/)
           );
           break;
+        case "Middle":
+          filtered = filtered.filter((school) => 
+            school.grade_band === "6-8"
+          );
+          break;
         case "K-8":
           filtered = filtered.filter((school) => 
             school.grade_band?.includes("K-8") || 

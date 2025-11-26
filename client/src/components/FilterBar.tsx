@@ -42,6 +42,7 @@ const GRADE_BAND_OPTIONS = [
   { value: "PreK", label: "Pre-K Programs" },
   { value: "3K", label: "3-K Programs" },
   { value: "Elementary", label: "Elementary (K-5)" },
+  { value: "Middle", label: "Middle School (6-8)" },
   { value: "K-8", label: "K-8 Schools" },
   { value: "HighSchool", label: "High School (9-12)" },
 ];
