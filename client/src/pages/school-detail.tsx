@@ -38,7 +38,8 @@ import {
   BookOpen,
   Award,
   Star,
-  History
+  History,
+  Languages
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -225,6 +226,16 @@ export default function SchoolDetail() {
                   >
                     <Star className="w-3 h-3 mr-1" />
                     Specialized HS
+                  </Badge>
+                )}
+                {schoolWithScore.has_dual_language && (
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700" 
+                    data-testid="badge-dual-language"
+                  >
+                    <Languages className="w-3 h-3 mr-1" />
+                    Dual Language
                   </Badge>
                 )}
                 {borough && (
@@ -437,6 +448,66 @@ export default function SchoolDetail() {
                     numericValue={schoolWithScore.math_proficiency}
                     districtAvg={districtAverages?.mathProficiency}
                   />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Special Programs Section */}
+          {(schoolWithScore.has_dual_language || schoolWithScore.has_gifted_talented) && (
+            <Card data-testid="card-programs">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Languages className="w-5 h-5" />
+                  Special Programs
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {schoolWithScore.has_dual_language && (
+                    <div data-testid="container-dual-language-detail">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
+                          Dual Language Program
+                        </Badge>
+                      </div>
+                      {schoolWithScore.dual_language_languages && schoolWithScore.dual_language_languages.length > 0 && (
+                        <div className="ml-1">
+                          <p className="text-sm text-muted-foreground mb-2">Languages offered:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {schoolWithScore.dual_language_languages.map((lang) => (
+                              <Badge key={lang} variant="secondary" className="text-xs" data-testid={`badge-lang-${lang.toLowerCase().replace(/\s+/g, '-')}`}>
+                                {lang}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Students learn academic content in two languages, developing bilingual and biliterate skills.
+                      </p>
+                    </div>
+                  )}
+                  {schoolWithScore.has_gifted_talented && (
+                    <div data-testid="container-gt-detail">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge 
+                          variant="outline" 
+                          className={schoolWithScore.gt_program_type === 'citywide' 
+                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
+                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                          }
+                        >
+                          {schoolWithScore.gt_program_type === 'citywide' ? 'Citywide G&T Program' : 'District G&T Program'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {schoolWithScore.gt_program_type === 'citywide' 
+                          ? 'Citywide program accepting students from across NYC through a competitive process.'
+                          : 'District program serving academically advanced students within the district.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
