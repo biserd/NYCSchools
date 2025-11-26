@@ -1,4 +1,4 @@
-import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination } from "@shared/schema";
+import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import {
@@ -275,6 +275,102 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               </div>
             </div>
           </Card>
+
+          {isHighSchool(school) && school.graduation_rate_4yr !== null && (
+            <Card className="p-6" data-testid="card-high-school-metrics">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-hs-metrics-title">
+                  <Award className="w-5 h-5" data-testid="icon-hs-metrics" />
+                  High School Performance
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0" aria-label="High school metrics information">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm" data-testid="tooltip-hs-metrics">
+                    <p className="text-sm">Key metrics for evaluating high school success: graduation rates, standardized test performance, and college preparation.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4" data-testid="grid-graduation">
+                  {school.graduation_rate_4yr !== null && (
+                    <div data-testid="container-grad-4yr">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-3 h-3 rounded-full ${colorMap[getMetricColor(school.graduation_rate_4yr)]}`} />
+                        <p className="text-3xl font-bold tabular-nums">{school.graduation_rate_4yr}%</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">4-Year Grad Rate</p>
+                    </div>
+                  )}
+                  {school.graduation_rate_6yr !== null && (
+                    <div data-testid="container-grad-6yr">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-3 h-3 rounded-full ${colorMap[getMetricColor(school.graduation_rate_6yr)]}`} />
+                        <p className="text-3xl font-bold tabular-nums">{school.graduation_rate_6yr}%</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">6-Year Grad Rate</p>
+                    </div>
+                  )}
+                </div>
+
+                {(school.sat_avg_reading !== null || school.sat_avg_total !== null) && (
+                  <div data-testid="container-sat-scores">
+                    <h4 className="font-semibold mb-3">SAT Scores</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      {school.sat_avg_reading !== null && (
+                        <div>
+                          <p className="text-2xl font-bold tabular-nums">{school.sat_avg_reading}</p>
+                          <p className="text-xs text-muted-foreground">Reading</p>
+                        </div>
+                      )}
+                      {school.sat_avg_math !== null && (
+                        <div>
+                          <p className="text-2xl font-bold tabular-nums">{school.sat_avg_math}</p>
+                          <p className="text-xs text-muted-foreground">Math</p>
+                        </div>
+                      )}
+                      {school.sat_avg_total !== null && (
+                        <div>
+                          <p className="text-2xl font-bold tabular-nums text-primary">{school.sat_avg_total}</p>
+                          <p className="text-xs text-muted-foreground">Total</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {(school.college_readiness_rate !== null || school.ap_course_count !== null) && (
+                  <div className="grid grid-cols-2 gap-4" data-testid="container-college-prep">
+                    {school.college_readiness_rate !== null && (
+                      <div data-testid="container-college-ready">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-3 h-3 rounded-full ${colorMap[getMetricColor(school.college_readiness_rate)]}`} />
+                          <p className="text-3xl font-bold tabular-nums">{school.college_readiness_rate}%</p>
+                        </div>
+                        <p className="text-sm text-muted-foreground">College Ready</p>
+                      </div>
+                    )}
+                    {school.ap_course_count !== null && (
+                      <div data-testid="container-ap-courses">
+                        <p className="text-3xl font-bold tabular-nums mb-1">{school.ap_course_count}</p>
+                        <p className="text-sm text-muted-foreground">AP Courses</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {isCombinedSchool(school) && (
+                <p className="text-xs text-muted-foreground mt-4 border-t pt-3">
+                  This K-12 school serves all grade levels. ELA and Math scores above reflect grades 3-8 state test results.
+                </p>
+              )}
+            </Card>
+          )}
 
           <Card className="p-6" data-testid="card-climate">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-climate-title">
@@ -874,43 +970,39 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </Card>
           )}
 
-          {/* @ts-ignore - TypeScript has issues with complex conditional rendering */}
-          {school.middle_schools_pipeline && Array.isArray(school.middle_schools_pipeline) && school.middle_schools_pipeline.length > 0 && (() => {
-            const pipeline = school.middle_schools_pipeline as MiddleSchoolDestination[];
-            return (
-              <Card className="p-6" data-testid="card-middle-schools">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-middle-schools-title">
-                    <School className="w-5 h-5" data-testid="icon-middle-schools" />
-                    Middle School Pipeline
-                  </h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 p-0" aria-label="Middle school pipeline information">
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{METRIC_TOOLTIPS.middleSchoolsPipeline.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="space-y-3" data-testid="container-middle-schools">
-                  {pipeline.map((ms, idx) => (
-                    <div key={idx} className="flex items-center justify-between" data-testid={`middle-school-${idx}`}>
-                      <div>
-                        <p className="font-medium" data-testid={`middle-school-name-${idx}`}>{ms.name}</p>
-                        {ms.dbn && <p className="text-xs text-muted-foreground" data-testid={`middle-school-dbn-${idx}`}>{ms.dbn}</p>}
-                      </div>
-                      {ms.percent && (
-                        <Badge variant="secondary" data-testid={`middle-school-percent-${idx}`}>{ms.percent}%</Badge>
-                      )}
+          {school.middle_schools_pipeline && Array.isArray(school.middle_schools_pipeline) && school.middle_schools_pipeline.length > 0 && (
+            <Card className="p-6" data-testid="card-middle-schools">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-middle-schools-title">
+                  <School className="w-5 h-5" data-testid="icon-middle-schools" />
+                  Middle School Pipeline
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0" aria-label="Middle school pipeline information">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">{METRIC_TOOLTIPS.middleSchoolsPipeline.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div className="space-y-3" data-testid="container-middle-schools">
+                {(school.middle_schools_pipeline as MiddleSchoolDestination[]).map((ms, idx) => (
+                  <div key={idx} className="flex items-center justify-between" data-testid={`middle-school-${idx}`}>
+                    <div>
+                      <p className="font-medium" data-testid={`middle-school-name-${idx}`}>{ms.name}</p>
+                      {ms.dbn && <p className="text-xs text-muted-foreground" data-testid={`middle-school-dbn-${idx}`}>{ms.dbn}</p>}
                     </div>
-                  ))}
-                </div>
-              </Card>
-            );
-          })()}
+                    {ms.percent && (
+                      <Badge variant="secondary" data-testid={`middle-school-percent-${idx}`}>{ms.percent}%</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           <Card className="p-6" data-testid="card-details">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-details-title">
