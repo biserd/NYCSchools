@@ -82,6 +82,11 @@ export const schools = pgTable("schools", {
   dual_language_languages: text("dual_language_languages").array(), // Languages offered in dual language program
   has_transitional_bilingual: boolean("has_transitional_bilingual").default(false),
   
+  // PTA Fundraising Data (from NYC DOE Local Law 171 reports)
+  pta_fundraising_total: integer("pta_fundraising_total"), // Total income reported by PTA
+  pta_fundraising_year: varchar("pta_fundraising_year"), // School year (e.g., "2023-24")
+  pta_per_student: integer("pta_per_student"), // Calculated: total / enrollment
+  
   // High School Metrics
   graduation_rate_4yr: integer("graduation_rate_4yr"), // 4-year graduation rate percentage
   graduation_rate_6yr: integer("graduation_rate_6yr"), // 6-year graduation rate percentage
