@@ -17,6 +17,8 @@ import SettingsPage from "@/pages/settings";
 import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
 import FAQPage from "@/pages/faq";
+import FeaturesPage from "@/pages/features";
+import ReleaseNotesPage from "@/pages/release-notes";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import NotFound from "@/pages/not-found";
@@ -63,6 +65,8 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/faq" component={FAQPage} />
+      <Route path="/features" component={FeaturesPage} />
+      <Route path="/release-notes" component={ReleaseNotesPage} />
       <Route path="/school/:slug" component={SchoolDetail} />
       <Route component={NotFound} />
     </Switch>

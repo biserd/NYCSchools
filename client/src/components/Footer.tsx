@@ -8,7 +8,15 @@ export function Footer() {
           <div className="flex items-center gap-2">
             <span>© 2025 NYC School Ratings</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            <Link href="/features" className="hover:text-foreground transition-colors" data-testid="link-features">
+              Features
+            </Link>
+            <span className="text-muted-foreground/50">•</span>
+            <Link href="/release-notes" className="hover:text-foreground transition-colors" data-testid="link-release-notes">
+              Release Notes
+            </Link>
+            <span className="text-muted-foreground/50">•</span>
             <Link href="/faq" className="hover:text-foreground transition-colors" data-testid="link-faq">
               FAQ
             </Link>
