@@ -21,6 +21,11 @@ export const schools = pgTable("schools", {
   enrollment: integer("enrollment").notNull(),
   student_teacher_ratio: real("student_teacher_ratio").notNull(),
   
+  // Enrollment by Grade Level
+  elementary_enrollment: integer("elementary_enrollment"), // K-5 students
+  middle_enrollment: integer("middle_enrollment"), // 6-8 students
+  high_school_enrollment: integer("high_school_enrollment"), // 9-12 students
+  
   // NYC DOE Snapshot Data
   economic_need_index: integer("economic_need_index"),
   attendance_rate: integer("attendance_rate"),
