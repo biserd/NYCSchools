@@ -33,6 +33,8 @@ interface FilterBarProps {
   onGiftedTalentedFilterChange?: (value: string) => void;
   trendFilter?: string;
   onTrendFilterChange?: (value: string) => void;
+  dualLanguageFilter?: string;
+  onDualLanguageFilterChange?: (value: string) => void;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -49,6 +51,15 @@ const GRADE_BAND_OPTIONS = [
 
 const EARLY_CHILDHOOD_OPTIONS = ["All", "Pre-K", "3-K"];
 
+const DUAL_LANGUAGE_OPTIONS = [
+  { value: "All", label: "All Schools" },
+  { value: "DualLanguage", label: "Has Dual Language" },
+  { value: "Spanish", label: "Spanish Dual Language" },
+  { value: "Chinese", label: "Chinese Dual Language" },
+  { value: "French", label: "French Dual Language" },
+  { value: "Other", label: "Other Languages" },
+];
+
 export function FilterBar({
   searchQuery,
   onSearchChange,
@@ -64,6 +75,8 @@ export function FilterBar({
   onGiftedTalentedFilterChange,
   trendFilter = "All",
   onTrendFilterChange,
+  dualLanguageFilter = "All",
+  onDualLanguageFilterChange,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -73,6 +86,7 @@ export function FilterBar({
     earlyChildhoodFilter !== "All" ? 1 : 0,
     giftedTalentedFilter !== "All" ? 1 : 0,
     trendFilter !== "All" ? 1 : 0,
+    dualLanguageFilter !== "All" ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   const FilterDropdowns = () => (
@@ -137,6 +151,20 @@ export function FilterBar({
             <SelectItem data-testid="option-trend-improving" value="Improving">Improving</SelectItem>
             <SelectItem data-testid="option-trend-stable" value="Stable">Stable</SelectItem>
             <SelectItem data-testid="option-trend-declining" value="Declining">Declining</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+      {onDualLanguageFilterChange && (
+        <Select value={dualLanguageFilter} onValueChange={onDualLanguageFilterChange}>
+          <SelectTrigger data-testid="select-dual-language" className="w-full md:w-48 h-10">
+            <SelectValue placeholder="Dual Language" />
+          </SelectTrigger>
+          <SelectContent>
+            {DUAL_LANGUAGE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} data-testid={`option-dl-${option.value.toLowerCase()}`} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       )}

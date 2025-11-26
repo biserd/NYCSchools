@@ -28,6 +28,7 @@ function getInitialFiltersFromURL(): {
   earlyChildhood: string;
   giftedTalented: string;
   trend: string;
+  dualLanguage: string;
   sort: SortOption;
 } {
   if (typeof window === "undefined") {
@@ -38,6 +39,7 @@ function getInitialFiltersFromURL(): {
       earlyChildhood: "All",
       giftedTalented: "All",
       trend: "All",
+      dualLanguage: "All",
       sort: "overall",
     };
   }
@@ -49,6 +51,7 @@ function getInitialFiltersFromURL(): {
     earlyChildhood: params.get("ec") || "All",
     giftedTalented: params.get("gt") || "All",
     trend: params.get("trend") || "All",
+    dualLanguage: params.get("dl") || "All",
     sort: (params.get("sort") as SortOption) || "overall",
   };
 }
@@ -63,6 +66,7 @@ export default function Home() {
   const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState(initialFilters.earlyChildhood);
   const [giftedTalentedFilter, setGiftedTalentedFilter] = useState(initialFilters.giftedTalented);
   const [trendFilter, setTrendFilter] = useState(initialFilters.trend);
+  const [dualLanguageFilter, setDualLanguageFilter] = useState(initialFilters.dualLanguage);
   const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sort);
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -80,6 +84,7 @@ export default function Home() {
         ec: "All",
         gt: "All",
         trend: "All",
+        dl: "All",
         sort: "overall",
       };
       
@@ -122,6 +127,11 @@ export default function Home() {
   const handleTrendChange = useCallback((value: string) => {
     setTrendFilter(value);
     updateURLParams({ trend: value });
+  }, [updateURLParams]);
+
+  const handleDualLanguageChange = useCallback((value: string) => {
+    setDualLanguageFilter(value);
+    updateURLParams({ dl: value });
   }, [updateURLParams]);
 
   const handleSortChange = useCallback((value: SortOption) => {
@@ -266,6 +276,38 @@ export default function Home() {
       });
     }
 
+    // Filter by dual language programs
+    if (dualLanguageFilter !== "All") {
+      switch (dualLanguageFilter) {
+        case "DualLanguage":
+          filtered = filtered.filter((school) => school.has_dual_language === true);
+          break;
+        case "Spanish":
+          filtered = filtered.filter((school) => 
+            school.has_dual_language && school.dual_language_languages?.includes("Spanish")
+          );
+          break;
+        case "Chinese":
+          filtered = filtered.filter((school) => 
+            school.has_dual_language && school.dual_language_languages?.includes("Chinese")
+          );
+          break;
+        case "French":
+          filtered = filtered.filter((school) => 
+            school.has_dual_language && school.dual_language_languages?.includes("French")
+          );
+          break;
+        case "Other":
+          filtered = filtered.filter((school) => 
+            school.has_dual_language && 
+            school.dual_language_languages?.some(lang => 
+              !["Spanish", "Chinese", "French"].includes(lang)
+            )
+          );
+          break;
+      }
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -284,7 +326,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -514,6 +556,8 @@ export default function Home() {
         onGiftedTalentedFilterChange={handleGiftedTalentedChange}
         trendFilter={trendFilter}
         onTrendFilterChange={handleTrendChange}
+        dualLanguageFilter={dualLanguageFilter}
+        onDualLanguageFilterChange={handleDualLanguageChange}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
