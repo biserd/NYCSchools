@@ -91,6 +91,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Historical scores API (public) - for individual school
+  app.get("/api/schools/:dbn/history", async (req: Request, res: Response) => {
+    try {
+      const trend = await storage.getSchoolTrend(req.params.dbn);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching school history:", error);
+      res.status(500).json({ error: "Failed to fetch school history" });
+    }
+  });
+
+  // All school trends API (public) with caching
+  app.get("/api/schools-trends", async (req: Request, res: Response) => {
+    try {
+      const cacheKey = "all-school-trends";
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
+      const trendsMap = await storage.getAllSchoolTrends();
+      const trendsObject = Object.fromEntries(trendsMap);
+      setCache(cacheKey, trendsObject);
+      res.json(trendsObject);
+    } catch (error) {
+      console.error("Error fetching school trends:", error);
+      res.status(500).json({ error: "Failed to fetch school trends" });
+    }
+  });
+
   // District Averages API (public) with caching
   app.get("/api/districts/averages", async (req: Request, res: Response) => {
     try {

@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages } from "@shared/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend } from "@shared/schema";
+import { eq, and, sql, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for standalone auth
@@ -43,6 +43,11 @@ export interface IStorage {
   addChatMessage(message: InsertAiChatMessage): Promise<AiChatMessage>;
   getChatMessages(sessionId: number): Promise<AiChatMessage[]>;
   getChatSessionWithMessages(sessionId: number): Promise<AiChatSessionWithMessages | undefined>;
+  
+  // Historical scores operations
+  getSchoolHistoricalScores(dbn: string): Promise<HistoricalScore[]>;
+  getSchoolTrend(dbn: string): Promise<SchoolTrend>;
+  getAllSchoolTrends(): Promise<Map<string, SchoolTrend>>;
 }
 
 export interface DistrictAverages {
@@ -636,6 +641,40 @@ export class DbStorage implements IStorage {
     
     const messages = await this.getChatMessages(sessionId);
     return { ...session, messages };
+  }
+
+  // Historical Scores operations
+  async getSchoolHistoricalScores(dbn: string): Promise<HistoricalScore[]> {
+    return db
+      .select()
+      .from(schoolHistoricalScores)
+      .where(eq(schoolHistoricalScores.dbn, dbn.toUpperCase()))
+      .orderBy(asc(schoolHistoricalScores.year));
+  }
+
+  async getSchoolTrend(dbn: string): Promise<SchoolTrend> {
+    const scores = await this.getSchoolHistoricalScores(dbn);
+    return calculateTrend(scores);
+  }
+
+  async getAllSchoolTrends(): Promise<Map<string, SchoolTrend>> {
+    const allScores = await db.select().from(schoolHistoricalScores);
+    
+    // Group scores by DBN
+    const scoresByDbn = new Map<string, HistoricalScore[]>();
+    for (const score of allScores) {
+      const existing = scoresByDbn.get(score.dbn) || [];
+      existing.push(score);
+      scoresByDbn.set(score.dbn, existing);
+    }
+
+    // Calculate trends for each school
+    const trends = new Map<string, SchoolTrend>();
+    for (const [dbn, scores] of scoresByDbn) {
+      trends.set(dbn, calculateTrend(scores));
+    }
+    
+    return trends;
   }
 }
 
