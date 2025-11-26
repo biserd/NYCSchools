@@ -11,8 +11,15 @@ import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu } from "lucide-react";
 import { Link } from "wouter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function getInitialFiltersFromURL(): {
   search: string;
@@ -340,17 +347,18 @@ export default function Home() {
       <StructuredData data={organizationSchema} />
       <StructuredData data={websiteSchema} />
       <header className="bg-background border-b" data-testid="header-main">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-page-title">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold" data-testid="text-page-title">
                 NYC School Ratings
               </h1>
-              <p className="text-muted-foreground" data-testid="text-page-subtitle">
+              <p className="text-muted-foreground text-sm hidden sm:block" data-testid="text-page-subtitle">
                 Find and compare NYC public and charter elementary schools
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            
+            <div className="hidden md:flex items-center gap-2">
               <Button
                 variant="default"
                 size="sm"
@@ -362,64 +370,33 @@ export default function Home() {
                 className="bg-primary hover:bg-primary/90"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Ask AI Assistant
+                Ask AI
               </Button>
-              <Link href="/recommendations">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-recommendations-nav"
-                >
+              <Button variant="outline" size="sm" asChild data-testid="button-recommendations-nav">
+                <Link href="/recommendations">
                   <Sparkles className="w-4 h-4 mr-2" />
                   Find My Match
-                </Button>
-              </Link>
-              <Link href="/map">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-map-nav"
-                >
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild data-testid="button-map-nav">
+                <Link href="/map">
                   <Map className="w-4 h-4 mr-2" />
                   Map View
-                </Button>
-              </Link>
-              <Link href="/settings">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-settings-nav"
-                >
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
+                <Link href="/settings">
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               {isAuthenticated && user && (
-                <>
+                <Button variant="outline" size="sm" asChild data-testid="button-favorites-nav">
                   <Link href="/favorites">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid="button-favorites-nav"
-                    >
-                      <Heart className="w-4 h-4 mr-2" />
-                      My Favorites
-                    </Button>
+                    <Heart className="w-4 h-4 mr-2" />
+                    Favorites
                   </Link>
-                  <div className="flex items-center gap-2 mr-2" data-testid="container-user-info">
-                    {user.profileImageUrl && (
-                      <img 
-                        src={user.profileImageUrl} 
-                        alt={`${user.firstName || 'User'}'s profile`} 
-                        className="w-8 h-8 rounded-full object-cover"
-                        data-testid="img-user-avatar"
-                      />
-                    )}
-                    <span className="text-sm text-muted-foreground" data-testid="text-user-name">
-                      {user.firstName || user.email || 'User'}
-                    </span>
-                  </div>
-                </>
+                </Button>
               )}
               {isAuthenticated ? (
                 <Button
@@ -435,18 +412,83 @@ export default function Home() {
                   Logout
                 </Button>
               ) : (
-                <Link href="/login">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    data-testid="button-login"
-                  >
+                <Button variant="default" size="sm" asChild data-testid="button-login">
+                  <Link href="/login">
                     <LogIn className="w-4 h-4 mr-2" />
                     Login
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
               <ThemeToggle />
+            </div>
+
+            <div className="flex md:hidden items-center gap-2">
+              {isAuthenticated ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = '/';
+                  }}
+                  data-testid="button-logout-mobile"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button variant="default" size="sm" asChild data-testid="button-login-mobile">
+                  <Link href="/login">
+                    <LogIn className="w-4 h-4" />
+                  </Link>
+                </Button>
+              )}
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" data-testid="button-mobile-menu">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
+                      if (chatButton) chatButton.click();
+                    }}
+                    data-testid="menu-item-ai"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Ask AI Assistant
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/recommendations" data-testid="menu-item-match">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Find My Match
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/map" data-testid="menu-item-map">
+                      <Map className="w-4 h-4 mr-2" />
+                      Map View
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {isAuthenticated && user && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/favorites" data-testid="menu-item-favorites">
+                        <Heart className="w-4 h-4 mr-2" />
+                        My Favorites
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" data-testid="menu-item-settings">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
