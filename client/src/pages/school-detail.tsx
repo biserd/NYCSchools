@@ -773,8 +773,31 @@ export default function SchoolDetail() {
             <CardContent>
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <dt className="text-sm text-muted-foreground">Enrollment</dt>
-                  <dd className="text-lg font-semibold" data-testid="text-enrollment">{schoolWithScore.enrollment}</dd>
+                  <dt className="text-sm text-muted-foreground">Total Enrollment</dt>
+                  <dd className="text-lg font-semibold" data-testid="text-enrollment">{schoolWithScore.enrollment.toLocaleString()}</dd>
+                  {/* Enrollment Breakdown by Grade Level */}
+                  {(schoolWithScore.elementary_enrollment || schoolWithScore.middle_enrollment || schoolWithScore.high_school_enrollment) && (
+                    <div className="mt-2 space-y-1 text-sm" data-testid="enrollment-breakdown">
+                      {schoolWithScore.elementary_enrollment && schoolWithScore.elementary_enrollment > 0 && (
+                        <div className="flex justify-between" data-testid="elementary-enrollment">
+                          <span className="text-muted-foreground">K-5 (Elementary)</span>
+                          <span className="font-medium tabular-nums">{schoolWithScore.elementary_enrollment.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {schoolWithScore.middle_enrollment && schoolWithScore.middle_enrollment > 0 && (
+                        <div className="flex justify-between" data-testid="middle-enrollment">
+                          <span className="text-muted-foreground">6-8 (Middle)</span>
+                          <span className="font-medium tabular-nums">{schoolWithScore.middle_enrollment.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {schoolWithScore.high_school_enrollment && schoolWithScore.high_school_enrollment > 0 && (
+                        <div className="flex justify-between" data-testid="hs-enrollment">
+                          <span className="text-muted-foreground">9-12 (High School)</span>
+                          <span className="font-medium tabular-nums">{schoolWithScore.high_school_enrollment.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <dt className="text-sm text-muted-foreground">Grade Span</dt>
