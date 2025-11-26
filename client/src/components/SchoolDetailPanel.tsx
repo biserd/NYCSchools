@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -85,6 +85,23 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               {school.has_prek && (
                 <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700" data-testid="badge-detail-prek">
                   Pre-K
+                </Badge>
+              )}
+              {school.has_gifted_talented && (
+                <Badge 
+                  variant="outline" 
+                  className={school.gt_program_type === 'citywide' 
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
+                    : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                  } 
+                  data-testid="badge-detail-gt"
+                >
+                  {school.gt_program_type === 'citywide' ? 'Citywide G&T' : 'G&T'}
+                </Badge>
+              )}
+              {school.has_dual_language && (
+                <Badge variant="outline" className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700" data-testid="badge-detail-dual-language">
+                  Dual Language
                 </Badge>
               )}
             </div>
@@ -275,6 +292,62 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                     </Tooltip>
                   </div>
                 </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Programs Section - shows when school has dual language or G&T */}
+          {(school.has_dual_language || school.has_gifted_talented) && (
+            <Card className="p-6" data-testid="card-programs">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-programs-title">
+                <Languages className="w-5 h-5" data-testid="icon-programs" />
+                Special Programs
+              </h3>
+              <div className="space-y-4">
+                {school.has_dual_language && (
+                  <div data-testid="container-dual-language-detail">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
+                        Dual Language Program
+                      </Badge>
+                    </div>
+                    {school.dual_language_languages && school.dual_language_languages.length > 0 && (
+                      <div className="ml-1">
+                        <p className="text-sm text-muted-foreground mb-2">Languages offered:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {school.dual_language_languages.map((lang) => (
+                            <Badge key={lang} variant="secondary" className="text-xs" data-testid={`badge-lang-${lang.toLowerCase().replace(/\s+/g, '-')}`}>
+                              {lang}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Students learn academic content in two languages, developing bilingual and biliterate skills.
+                    </p>
+                  </div>
+                )}
+                {school.has_gifted_talented && (
+                  <div data-testid="container-gt-detail">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge 
+                        variant="outline" 
+                        className={school.gt_program_type === 'citywide' 
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
+                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                        }
+                      >
+                        {school.gt_program_type === 'citywide' ? 'Citywide G&T Program' : 'District G&T Program'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {school.gt_program_type === 'citywide' 
+                        ? 'Citywide program accepting students from across NYC through a competitive process.'
+                        : 'District program serving academically advanced students within the district.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </Card>
           )}

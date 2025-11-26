@@ -151,6 +151,28 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                   Specialized HS
                 </Badge>
               )}
+              {school.has_dual_language && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700" 
+                        data-testid={`badge-dual-language-${school.dbn}`}
+                      >
+                        Dual Language
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid={`tooltip-dual-language-${school.dbn}`}>
+                    <p className="text-sm">
+                      {school.dual_language_languages?.length 
+                        ? `Dual Language: ${school.dual_language_languages.join(', ')}`
+                        : 'Dual Language Program Available'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {school.economic_need_index !== null && (
                 <Tooltip>
                   <TooltipTrigger asChild>
