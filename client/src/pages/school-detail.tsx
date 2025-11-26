@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -20,12 +20,15 @@ import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 import { 
   GraduationCap, 
   Users, 
   MapPin, 
   Info,
   TrendingUp,
+  TrendingDown,
+  Minus,
   MessageSquare,
   MessageCircle,
   Sparkles,
@@ -34,7 +37,8 @@ import {
   LogIn,
   BookOpen,
   Award,
-  Star
+  Star,
+  History
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -58,6 +62,13 @@ export default function SchoolDetail() {
 
   // Fetch district averages for comparison
   const { districtAverages, citywideAverages, isLoading: districtLoading } = useDistrictAverages(school?.district || 0);
+  
+  // Fetch historical trends
+  const { data: historicalTrend, isLoading: trendLoading } = useQuery<SchoolTrend>({
+    queryKey: ["/api/schools", dbn, "history"],
+    enabled: !!dbn,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
 
   if (isLoading) {
     return (
@@ -427,6 +438,118 @@ export default function SchoolDetail() {
                     districtAvg={districtAverages?.mathProficiency}
                   />
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Historical Trends - Only shown for schools with historical data (not pure high schools) */}
+          {historicalTrend && historicalTrend.direction !== 'insufficient_data' && historicalTrend.historicalData.length >= 2 && !isPureHighSchool(schoolWithScore) && (
+            <Card data-testid="card-historical-trends">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5 text-primary" />
+                    <CardTitle>Historical Trends</CardTitle>
+                  </div>
+                  <Badge 
+                    variant="outline"
+                    className={`text-xs gap-1 ${
+                      historicalTrend.direction === 'improving' 
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                        : historicalTrend.direction === 'declining'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700'
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                    }`}
+                    data-testid="badge-trend-direction"
+                  >
+                    {historicalTrend.direction === 'improving' && <TrendingUp className="w-3 h-3" />}
+                    {historicalTrend.direction === 'declining' && <TrendingDown className="w-3 h-3" />}
+                    {historicalTrend.direction === 'stable' && <Minus className="w-3 h-3" />}
+                    {historicalTrend.direction === 'improving' && `Improving +${Math.abs(historicalTrend.changePercent)}%`}
+                    {historicalTrend.direction === 'declining' && `Declining ${historicalTrend.changePercent}%`}
+                    {historicalTrend.direction === 'stable' && 'Stable'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  ELA and Math proficiency trends from NYS grades 3-8 standardized tests over {historicalTrend.yearsAnalyzed} years.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64" data-testid="chart-historical">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={historicalTrend.historicalData.map(d => ({
+                        year: d.year,
+                        ELA: d.ela_proficiency,
+                        Math: d.math_proficiency,
+                      }))}
+                      margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="year" 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis 
+                        domain={[0, 100]} 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="ELA" 
+                        stroke="hsl(var(--chart-1))" 
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2 }}
+                        name="ELA Proficiency"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="Math" 
+                        stroke="hsl(var(--chart-2))" 
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }}
+                        name="Math Proficiency"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {/* Historical Data Table */}
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-sm" data-testid="table-historical-data">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-2 font-medium">Year</th>
+                        {historicalTrend.historicalData.map(d => (
+                          <th key={d.year} className="text-center py-2 px-2 font-medium">{d.year}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="py-2 px-2 text-muted-foreground">ELA</td>
+                        {historicalTrend.historicalData.map(d => (
+                          <td key={d.year} className="text-center py-2 px-2 font-medium">{d.ela_proficiency ?? 'N/A'}%</td>
+                        ))}
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-2 text-muted-foreground">Math</td>
+                        {historicalTrend.historicalData.map(d => (
+                          <td key={d.year} className="text-center py-2 px-2 font-medium">{d.math_proficiency ?? 'N/A'}%</td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                
+                <p className="text-xs text-muted-foreground mt-4 italic">
+                  Note: 2020-2021 data unavailable due to COVID-19 testing cancellations. 
+                  Trend calculated by comparing earliest and most recent available years ({historicalTrend.historicalData[0]?.year}-{historicalTrend.historicalData[historicalTrend.historicalData.length - 1]?.year}).
+                </p>
               </CardContent>
             </Card>
           )}

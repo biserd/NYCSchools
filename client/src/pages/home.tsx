@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
-import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ export default function Home() {
   const [selectedGradeBand, setSelectedGradeBand] = useState("All");
   const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState("All");
   const [giftedTalentedFilter, setGiftedTalentedFilter] = useState("All");
+  const [trendFilter, setTrendFilter] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("overall");
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -39,6 +40,12 @@ export default function Home() {
 
   const { data: rawSchools, isLoading } = useQuery<School[]>({
     queryKey: ["/api/schools"],
+  });
+
+  // Fetch all school trends for filtering
+  const { data: trends } = useQuery<Record<string, SchoolTrend>>({
+    queryKey: ['/api/schools-trends'],
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   const schools = useMemo(() => {
@@ -133,6 +140,25 @@ export default function Home() {
       }
     }
 
+    // Filter by historical trend
+    if (trendFilter !== "All" && trends) {
+      filtered = filtered.filter((school) => {
+        const trend = trends[school.dbn];
+        if (!trend || trend.direction === 'insufficient_data') return false;
+        
+        switch (trendFilter) {
+          case "Improving":
+            return trend.direction === 'improving';
+          case "Stable":
+            return trend.direction === 'stable';
+          case "Declining":
+            return trend.direction === 'declining';
+          default:
+            return true;
+        }
+      });
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -151,7 +177,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -344,6 +370,8 @@ export default function Home() {
         onEarlyChildhoodFilterChange={setEarlyChildhoodFilter}
         giftedTalentedFilter={giftedTalentedFilter}
         onGiftedTalentedFilterChange={setGiftedTalentedFilter}
+        trendFilter={trendFilter}
+        onTrendFilterChange={setTrendFilter}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">

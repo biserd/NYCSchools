@@ -24,6 +24,8 @@ interface FilterBarProps {
   onEarlyChildhoodFilterChange?: (value: string) => void;
   giftedTalentedFilter?: string;
   onGiftedTalentedFilterChange?: (value: string) => void;
+  trendFilter?: string;
+  onTrendFilterChange?: (value: string) => void;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -52,6 +54,8 @@ export function FilterBar({
   onEarlyChildhoodFilterChange,
   giftedTalentedFilter = "All",
   onGiftedTalentedFilterChange,
+  trendFilter = "All",
+  onTrendFilterChange,
 }: FilterBarProps) {
   return (
     <div className="sticky top-0 z-50 bg-background border-b">
@@ -116,6 +120,19 @@ export function FilterBar({
                   <SelectItem data-testid="option-gt-any" value="G&T">Has G&T Program</SelectItem>
                   <SelectItem data-testid="option-gt-citywide" value="Citywide">Citywide G&T</SelectItem>
                   <SelectItem data-testid="option-gt-district" value="District">District G&T</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {onTrendFilterChange && (
+              <Select value={trendFilter} onValueChange={onTrendFilterChange}>
+                <SelectTrigger data-testid="select-trend" className="w-full md:w-44 h-12">
+                  <SelectValue placeholder="Score Trends" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem data-testid="option-trend-all" value="All">All Trends</SelectItem>
+                  <SelectItem data-testid="option-trend-improving" value="Improving">Improving</SelectItem>
+                  <SelectItem data-testid="option-trend-stable" value="Stable">Stable</SelectItem>
+                  <SelectItem data-testid="option-trend-declining" value="Declining">Declining</SelectItem>
                 </SelectContent>
               </Select>
             )}
