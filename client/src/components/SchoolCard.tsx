@@ -1,4 +1,4 @@
-import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
@@ -26,9 +26,20 @@ export function SchoolCard({ school }: SchoolCardProps) {
   const canAddMore = comparedSchools.length < 4;
   
   const isHS = isHighSchool(school);
+  const isPureHS = isPureHighSchool(school);
+  const isCombined = isCombinedSchool(school);
   const hasHSData = isHS && school.graduation_rate_4yr !== null;
   const gradRateColor = hasHSData ? getMetricColor(school.graduation_rate_4yr!) : 'gray';
   const collegeReadyColor = hasHSData && school.college_readiness_rate ? getMetricColor(school.college_readiness_rate) : 'gray';
+  
+  // Determine if ELA/Math scores are valid (not placeholder 50/50 values)
+  const hasValidELAMath = school.ela_proficiency !== 50 || school.math_proficiency !== 50;
+  
+  // For cards: Show ELA/Math if school has valid scores AND is not a pure high school
+  // For pure high schools (9-12 only): Show Graduation Rate and SAT/College Readiness
+  // For combined schools (K-12, 6-12) with valid ELA/Math: Show ELA/Math on card (detail panel shows both)
+  const showELAMathOnCard = !isPureHS && hasValidELAMath;
+  const showHSMetricsOnCard = isPureHS || (!hasValidELAMath && isHS);
 
   const colorMap: Record<string, string> = {
     green: "bg-emerald-500",
@@ -181,7 +192,7 @@ export function SchoolCard({ school }: SchoolCardProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {hasHSData ? (
+          {showHSMetricsOnCard && hasHSData ? (
             <>
               <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-gradrate-${school.dbn}`}>
                 <div className={`w-2 h-2 rounded-full ${colorMap[gradRateColor]} shrink-0`} data-testid={`indicator-gradrate-${school.dbn}`} />
