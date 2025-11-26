@@ -26,7 +26,8 @@ I prefer detailed explanations. Ask before making major changes.
 ### Feature Specifications
 - **School Data**: Comprehensive data for 1,533 NYC schools, including academic, climate, and progress scores, NYC School Survey results, demographics (Economic Need Index, ELL, IEP, Race/Ethnicity Breakdown), and realistic student-teacher ratios. Includes 3-K/Pre-K program information and Gifted & Talented program data with badges and filtering.
 - **Gifted & Talented Programs**: 130 schools with G&T programs (5 citywide, 125 district). Filter by "Has G&T", "Citywide G&T", or "District G&T". Citywide schools: NEST+M, Anderson School, TAG Young Scholars, Brooklyn School of Inquiry, The 30th Avenue School.
-- **Filtering & Sorting**: Live search, district, grade band, early childhood, and G&T filters, plus sorting by various metrics.
+- **Filtering & Sorting**: Live search, district, grade band, early childhood, G&T, and historical trend filters, plus sorting by various metrics.
+- **Historical Trends**: Shows 3-5 year score changes using real NYC DOE data (2018-2025). Trend badges on school cards indicate Improving (>5% gain, green), Declining (>5% loss, red), or Stable (within ±5%, yellow). Detail pages show year-over-year ELA/Math line charts. Filter by "Improving Schools" to find schools with upward trajectories. Data covers 1,125 schools with 6,623 historical records. COVID gap (2020-2021) is noted in charts.
 - **School Display**: Responsive grid of school cards, commute times, and a detailed side panel (`SchoolDetailPanel`).
 - **Authentication**: Email/password authentication with registration, login, bcrypt hashing, PostgreSQL-backed sessions, and protected routes.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated page, and compare them.
