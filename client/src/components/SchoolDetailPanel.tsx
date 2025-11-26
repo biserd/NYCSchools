@@ -1025,8 +1025,31 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </h3>
             <div className="grid grid-cols-2 gap-4" data-testid="grid-details">
               <div data-testid="container-enrollment">
-                <p className="text-sm text-muted-foreground mb-1" data-testid="label-enrollment">Enrollment</p>
-                <p className="text-xl font-bold tabular-nums" data-testid="text-detail-enrollment">{school.enrollment}</p>
+                <p className="text-sm text-muted-foreground mb-1" data-testid="label-enrollment">Total Enrollment</p>
+                <p className="text-xl font-bold tabular-nums" data-testid="text-detail-enrollment">{school.enrollment.toLocaleString()}</p>
+                {/* Enrollment Breakdown by Grade Level */}
+                {(school.elementary_enrollment || school.middle_enrollment || school.high_school_enrollment) && (
+                  <div className="mt-2 space-y-1 text-sm" data-testid="enrollment-breakdown">
+                    {school.elementary_enrollment && school.elementary_enrollment > 0 && (
+                      <div className="flex justify-between" data-testid="elementary-enrollment">
+                        <span className="text-muted-foreground">K-5 (Elementary)</span>
+                        <span className="font-medium tabular-nums">{school.elementary_enrollment.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {school.middle_enrollment && school.middle_enrollment > 0 && (
+                      <div className="flex justify-between" data-testid="middle-enrollment">
+                        <span className="text-muted-foreground">6-8 (Middle)</span>
+                        <span className="font-medium tabular-nums">{school.middle_enrollment.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {school.high_school_enrollment && school.high_school_enrollment > 0 && (
+                      <div className="flex justify-between" data-testid="hs-enrollment">
+                        <span className="text-muted-foreground">9-12 (High School)</span>
+                        <span className="font-medium tabular-nums">{school.high_school_enrollment.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div data-testid="container-grade-span">
                 <p className="text-sm text-muted-foreground mb-1" data-testid="label-grade-span">Grade Span</p>
