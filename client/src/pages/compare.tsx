@@ -8,7 +8,7 @@ import { Link } from "wouter";
 import { 
   X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus, Scale,
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
-  Globe, Percent
+  Globe, Percent, Languages
 } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
@@ -121,6 +121,41 @@ function GTCell({ hasGT, programType }: { hasGT: boolean | null | undefined; pro
     ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
     : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
   return <Badge variant="secondary" className={className}>{label}</Badge>;
+}
+
+function DualLanguageCell({ hasDualLanguage, languages }: { hasDualLanguage: boolean | null | undefined; languages: string[] | null | undefined }) {
+  if (!hasDualLanguage) {
+    return <span className="text-muted-foreground">No</span>;
+  }
+  const langList = languages && languages.length > 0 ? languages : [];
+  if (langList.length === 0) {
+    return (
+      <Badge variant="secondary" className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300">
+        Yes
+      </Badge>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <Badge variant="secondary" className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300">
+        {langList.length === 1 ? langList[0] : `${langList.length} languages`}
+      </Badge>
+      {langList.length > 1 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-xs text-muted-foreground cursor-help underline decoration-dotted">View all</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="text-xs">
+              {langList.map(lang => (
+                <div key={lang}>{lang}</div>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  );
 }
 
 export default function ComparePage() {
@@ -467,6 +502,22 @@ export default function ComparePage() {
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center" data-testid={`cell-prek-${school.dbn}`}>
                           <BooleanCell value={school.has_prek} yesLabel="Available" noLabel="No" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Languages className="w-4 h-4 text-muted-foreground" />
+                          Dual Language
+                        </div>
+                      </TableCell>
+                      {schoolsWithScores.map((school) => (
+                        <TableCell key={school.dbn} className="text-center" data-testid={`cell-dual-lang-${school.dbn}`}>
+                          <DualLanguageCell 
+                            hasDualLanguage={school.has_dual_language} 
+                            languages={school.dual_language_languages} 
+                          />
                         </TableCell>
                       ))}
                     </TableRow>
