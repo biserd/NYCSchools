@@ -1,10 +1,10 @@
-import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type SchoolTrend, type TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home, TrendingUp, BookOpen, Award } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home, TrendingUp, TrendingDown, Minus, BookOpen, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
@@ -13,10 +13,37 @@ import { CommuteTime } from "./CommuteTime";
 
 interface SchoolCardProps {
   school: School;
+  trend?: SchoolTrend;
 }
 
-export function SchoolCard({ school }: SchoolCardProps) {
+function getTrendBadgeConfig(direction: TrendDirection) {
+  switch (direction) {
+    case 'improving':
+      return {
+        icon: TrendingUp,
+        label: 'Improving',
+        className: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
+      };
+    case 'declining':
+      return {
+        icon: TrendingDown,
+        label: 'Declining',
+        className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700',
+      };
+    case 'stable':
+      return {
+        icon: Minus,
+        label: 'Stable',
+        className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+      };
+    default:
+      return null;
+  }
+}
+
+export function SchoolCard({ school, trend }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
+  const trendConfig = trend && trend.direction !== 'insufficient_data' ? getTrendBadgeConfig(trend.direction) : null;
   const scoreColor = getScoreColor(overallScore);
   const elaColor = getMetricColor(school.ela_proficiency);
   const mathColor = getMetricColor(school.math_proficiency);
@@ -155,6 +182,32 @@ export function SchoolCard({ school }: SchoolCardProps) {
                   <TooltipContent className="max-w-xs" data-testid={`tooltip-quality-${school.dbn}`}>
                     <p className="text-sm">
                       Best Quality Rating: {bestRating.value} for {bestRating.type === 'instruction' ? 'Instruction' : bestRating.type === 'safety' ? 'Safety' : 'Family Engagement'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {trendConfig && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Badge 
+                        variant="outline"
+                        className={`text-xs gap-1 ${trendConfig.className}`}
+                        data-testid={`badge-trend-${school.dbn}`}
+                      >
+                        <trendConfig.icon className="w-3 h-3" />
+                        {trendConfig.label}
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid={`tooltip-trend-${school.dbn}`}>
+                    <p className="text-sm">
+                      {trend!.direction === 'improving' 
+                        ? `Test scores improved by ${Math.abs(trend!.changePercent)}% over ${trend!.yearsAnalyzed} years`
+                        : trend!.direction === 'declining'
+                        ? `Test scores declined by ${Math.abs(trend!.changePercent)}% over ${trend!.yearsAnalyzed} years`
+                        : `Test scores remained stable over ${trend!.yearsAnalyzed} years (±5% change)`
+                      }
                     </p>
                   </TooltipContent>
                 </Tooltip>

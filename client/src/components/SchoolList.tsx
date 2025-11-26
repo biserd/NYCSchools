@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { SchoolWithOverallScore } from "@shared/schema";
+import { SchoolWithOverallScore, type SchoolTrend } from "@shared/schema";
 import { SchoolCard } from "./SchoolCard";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 interface SchoolListProps {
   schools: SchoolWithOverallScore[];
@@ -13,6 +14,12 @@ const LOAD_MORE_INCREMENT = 20;
 
 export function SchoolList({ schools }: SchoolListProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
+
+  // Fetch all school trends
+  const { data: trends } = useQuery<Record<string, SchoolTrend>>({
+    queryKey: ['/api/schools-trends'],
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
 
   // Reset display count when schools change (filtering, etc.)
   useEffect(() => {
@@ -43,6 +50,7 @@ export function SchoolList({ schools }: SchoolListProps) {
           <SchoolCard
             key={school.dbn}
             school={school}
+            trend={trends?.[school.dbn]}
           />
         ))}
       </div>
