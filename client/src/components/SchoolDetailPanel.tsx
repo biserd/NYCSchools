@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target, Languages } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target, Languages, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SchoolDetailPanelProps {
@@ -103,6 +103,34 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                 <Badge variant="outline" className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700" data-testid="badge-detail-dual-language">
                   Dual Language
                 </Badge>
+              )}
+              {school.pta_fundraising_total && school.pta_fundraising_total > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Badge 
+                        variant="outline" 
+                        className="gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700" 
+                        data-testid="badge-detail-pta"
+                      >
+                        <DollarSign className="w-3 h-3" />
+                        PTA ${school.pta_fundraising_total >= 1000000 
+                          ? `${(school.pta_fundraising_total / 1000000).toFixed(1)}M`
+                          : school.pta_fundraising_total >= 1000 
+                          ? `${Math.round(school.pta_fundraising_total / 1000)}K`
+                          : school.pta_fundraising_total.toLocaleString()}
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid="tooltip-detail-pta">
+                    <p className="text-sm font-medium mb-1">PTA Fundraising ({school.pta_fundraising_year})</p>
+                    <p className="text-sm">Total: ${school.pta_fundraising_total.toLocaleString()}</p>
+                    {school.pta_per_student && (
+                      <p className="text-sm">${school.pta_per_student.toLocaleString()} per student</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">Source: NYC DOE Local Law 171 Report</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>
@@ -349,6 +377,40 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                   </div>
                 )}
               </div>
+            </Card>
+          )}
+
+          {/* PTA Fundraising Section */}
+          {school.pta_fundraising_total && school.pta_fundraising_total > 0 && (
+            <Card className="p-6" data-testid="card-pta-fundraising">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold flex items-center gap-2" data-testid="text-pta-title">
+                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" data-testid="icon-pta" />
+                  PTA Fundraising
+                </h3>
+                <Badge variant="outline" className="text-xs" data-testid="badge-pta-year">
+                  {school.pta_fundraising_year}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div data-testid="container-pta-total">
+                  <p className="text-3xl font-bold tabular-nums text-green-600 dark:text-green-400" data-testid="text-pta-total">
+                    ${school.pta_fundraising_total.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Raised</p>
+                </div>
+                {school.pta_per_student && (
+                  <div data-testid="container-pta-per-student">
+                    <p className="text-3xl font-bold tabular-nums" data-testid="text-pta-per-student">
+                      ${school.pta_per_student.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Per Student</p>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Source: NYC DOE Local Law 171 Report. Self-reported PTA/PA income data.
+              </p>
             </Card>
           )}
 

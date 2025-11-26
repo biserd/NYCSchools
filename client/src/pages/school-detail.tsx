@@ -39,7 +39,8 @@ import {
   Award,
   Star,
   History,
-  Languages
+  Languages,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -509,6 +510,44 @@ export default function SchoolDetail() {
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* PTA Fundraising Section */}
+          {schoolWithScore.pta_fundraising_total && schoolWithScore.pta_fundraising_total > 0 && (
+            <Card data-testid="card-pta-fundraising">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    PTA Fundraising
+                  </CardTitle>
+                  <Badge variant="outline" className="text-xs" data-testid="badge-pta-year">
+                    {schoolWithScore.pta_fundraising_year}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div data-testid="container-pta-total">
+                    <p className="text-3xl font-bold tabular-nums text-green-600 dark:text-green-400" data-testid="text-pta-total">
+                      ${schoolWithScore.pta_fundraising_total.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Total Raised</p>
+                  </div>
+                  {schoolWithScore.pta_per_student && (
+                    <div data-testid="container-pta-per-student">
+                      <p className="text-3xl font-bold tabular-nums" data-testid="text-pta-per-student">
+                        ${schoolWithScore.pta_per_student.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Per Student</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Source: NYC DOE Local Law 171 Report. Self-reported PTA/PA income data for the {schoolWithScore.pta_fundraising_year} school year.
+                </p>
               </CardContent>
             </Card>
           )}

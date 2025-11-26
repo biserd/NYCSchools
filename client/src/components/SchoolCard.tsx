@@ -4,7 +4,7 @@ import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home, TrendingUp, TrendingDown, Minus, BookOpen, Award } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home, TrendingUp, TrendingDown, Minus, BookOpen, Award, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
@@ -170,6 +170,36 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                         ? `Dual Language: ${school.dual_language_languages.join(', ')}`
                         : 'Dual Language Program Available'}
                     </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {school.pta_fundraising_total && school.pta_fundraising_total > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700" 
+                        data-testid={`badge-pta-${school.dbn}`}
+                      >
+                        <DollarSign className="w-3 h-3" />
+                        {school.pta_fundraising_total >= 1000000 
+                          ? `${(school.pta_fundraising_total / 1000000).toFixed(1)}M`
+                          : school.pta_fundraising_total >= 1000 
+                          ? `${Math.round(school.pta_fundraising_total / 1000)}K`
+                          : school.pta_fundraising_total.toLocaleString()}
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid={`tooltip-pta-${school.dbn}`}>
+                    <p className="text-sm font-medium mb-1">PTA Fundraising ({school.pta_fundraising_year})</p>
+                    <p className="text-sm">
+                      Total: ${school.pta_fundraising_total.toLocaleString()}
+                      {school.pta_per_student && (
+                        <> (${school.pta_per_student.toLocaleString()}/student)</>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Source: NYC DOE Local Law 171 Report</p>
                   </TooltipContent>
                 </Tooltip>
               )}
