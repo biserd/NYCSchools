@@ -16,7 +16,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-export type SortOption = "overall" | "academics" | "climate" | "progress" | "name";
+export type SortOption = "overall" | "academics" | "climate" | "progress" | "name" | "pta" | "pta-per-student";
 
 interface FilterBarProps {
   searchQuery: string;
@@ -35,6 +35,8 @@ interface FilterBarProps {
   onTrendFilterChange?: (value: string) => void;
   dualLanguageFilter?: string;
   onDualLanguageFilterChange?: (value: string) => void;
+  ptaFilter?: string;
+  onPtaFilterChange?: (value: string) => void;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -60,6 +62,14 @@ const DUAL_LANGUAGE_OPTIONS = [
   { value: "Other", label: "Other Languages" },
 ];
 
+const PTA_FILTER_OPTIONS = [
+  { value: "All", label: "All Schools" },
+  { value: "HasPTA", label: "Has PTA Data" },
+  { value: "100k+", label: "$100K+ Raised" },
+  { value: "500k+", label: "$500K+ Raised" },
+  { value: "1m+", label: "$1M+ Raised" },
+];
+
 export function FilterBar({
   searchQuery,
   onSearchChange,
@@ -77,6 +87,8 @@ export function FilterBar({
   onTrendFilterChange,
   dualLanguageFilter = "All",
   onDualLanguageFilterChange,
+  ptaFilter = "All",
+  onPtaFilterChange,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -87,6 +99,7 @@ export function FilterBar({
     giftedTalentedFilter !== "All" ? 1 : 0,
     trendFilter !== "All" ? 1 : 0,
     dualLanguageFilter !== "All" ? 1 : 0,
+    ptaFilter !== "All" ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   const FilterDropdowns = () => (
@@ -168,6 +181,20 @@ export function FilterBar({
           </SelectContent>
         </Select>
       )}
+      {onPtaFilterChange && (
+        <Select value={ptaFilter} onValueChange={onPtaFilterChange}>
+          <SelectTrigger data-testid="select-pta" className="w-full md:w-40 h-10">
+            <SelectValue placeholder="PTA Fundraising" />
+          </SelectTrigger>
+          <SelectContent>
+            {PTA_FILTER_OPTIONS.map((option) => (
+              <SelectItem key={option.value} data-testid={`option-pta-${option.value.toLowerCase()}`} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </>
   );
 
@@ -213,6 +240,14 @@ export function FilterBar({
         onClick={() => onSortChange("name")}
       >
         A-Z
+      </Button>
+      <Button
+        data-testid="button-sort-pta"
+        variant={sortBy === "pta" ? "default" : "outline"}
+        size="sm"
+        onClick={() => onSortChange("pta")}
+      >
+        PTA $
       </Button>
     </div>
   );

@@ -29,6 +29,7 @@ function getInitialFiltersFromURL(): {
   giftedTalented: string;
   trend: string;
   dualLanguage: string;
+  pta: string;
   sort: SortOption;
 } {
   if (typeof window === "undefined") {
@@ -40,6 +41,7 @@ function getInitialFiltersFromURL(): {
       giftedTalented: "All",
       trend: "All",
       dualLanguage: "All",
+      pta: "All",
       sort: "overall",
     };
   }
@@ -52,6 +54,7 @@ function getInitialFiltersFromURL(): {
     giftedTalented: params.get("gt") || "All",
     trend: params.get("trend") || "All",
     dualLanguage: params.get("dl") || "All",
+    pta: params.get("pta") || "All",
     sort: (params.get("sort") as SortOption) || "overall",
   };
 }
@@ -67,6 +70,7 @@ export default function Home() {
   const [giftedTalentedFilter, setGiftedTalentedFilter] = useState(initialFilters.giftedTalented);
   const [trendFilter, setTrendFilter] = useState(initialFilters.trend);
   const [dualLanguageFilter, setDualLanguageFilter] = useState(initialFilters.dualLanguage);
+  const [ptaFilter, setPtaFilter] = useState(initialFilters.pta);
   const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sort);
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -85,6 +89,7 @@ export default function Home() {
         gt: "All",
         trend: "All",
         dl: "All",
+        pta: "All",
         sort: "overall",
       };
       
@@ -132,6 +137,11 @@ export default function Home() {
   const handleDualLanguageChange = useCallback((value: string) => {
     setDualLanguageFilter(value);
     updateURLParams({ dl: value });
+  }, [updateURLParams]);
+
+  const handlePtaChange = useCallback((value: string) => {
+    setPtaFilter(value);
+    updateURLParams({ pta: value });
   }, [updateURLParams]);
 
   const handleSortChange = useCallback((value: SortOption) => {
@@ -308,6 +318,24 @@ export default function Home() {
       }
     }
 
+    // Filter by PTA fundraising
+    if (ptaFilter !== "All") {
+      switch (ptaFilter) {
+        case "HasPTA":
+          filtered = filtered.filter((school) => school.pta_fundraising_total && school.pta_fundraising_total > 0);
+          break;
+        case "100k+":
+          filtered = filtered.filter((school) => school.pta_fundraising_total && school.pta_fundraising_total >= 100000);
+          break;
+        case "500k+":
+          filtered = filtered.filter((school) => school.pta_fundraising_total && school.pta_fundraising_total >= 500000);
+          break;
+        case "1m+":
+          filtered = filtered.filter((school) => school.pta_fundraising_total && school.pta_fundraising_total >= 1000000);
+          break;
+      }
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -320,13 +348,17 @@ export default function Home() {
           return b.progress_score - a.progress_score;
         case "name":
           return a.name.localeCompare(b.name);
+        case "pta":
+          return (b.pta_fundraising_total || 0) - (a.pta_fundraising_total || 0);
+        case "pta-per-student":
+          return (b.pta_per_student || 0) - (a.pta_per_student || 0);
         default:
           return 0;
       }
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -558,6 +590,8 @@ export default function Home() {
         onTrendFilterChange={handleTrendChange}
         dualLanguageFilter={dualLanguageFilter}
         onDualLanguageFilterChange={handleDualLanguageChange}
+        ptaFilter={ptaFilter}
+        onPtaFilterChange={handlePtaChange}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
