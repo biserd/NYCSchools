@@ -1,4 +1,4 @@
-import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool } from "@shared/schema";
+import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import {
@@ -229,52 +229,55 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </div>
           </Card>
 
-          <Card className="p-6" data-testid="card-academics">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-academics-title">
-              <GraduationCap className="w-5 h-5" data-testid="icon-academics" />
-              Academics
-            </h3>
-            <div className="grid grid-cols-2 gap-4" data-testid="grid-academics">
-              <div data-testid="container-ela-proficiency">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-3 h-3 rounded-full ${colorMap[elaColor]}`} data-testid="indicator-ela-detail" />
-                  <p className="text-3xl font-bold tabular-nums" data-testid="text-detail-ela">{school.ela_proficiency}%</p>
+          {/* Only show ELA/Math Academics card for non-pure-high-schools (schools with grades 3-8 students who take state tests) */}
+          {!isPureHighSchool(school) && (
+            <Card className="p-6" data-testid="card-academics-ela-math">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-academics-title">
+                <GraduationCap className="w-5 h-5" data-testid="icon-academics" />
+                Academics
+              </h3>
+              <div className="grid grid-cols-2 gap-4" data-testid="grid-academics">
+                <div data-testid="container-ela-proficiency">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-3 h-3 rounded-full ${colorMap[elaColor]}`} data-testid="indicator-ela-detail" />
+                    <p className="text-3xl font-bold tabular-nums" data-testid="text-detail-ela">{school.ela_proficiency}%</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground" data-testid="label-ela-proficiency">ELA Proficient</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELA proficiency information">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">{METRIC_TOOLTIPS.elaProficiency.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <p className="text-sm text-muted-foreground" data-testid="label-ela-proficiency">ELA Proficient</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="ELA proficiency information">
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{METRIC_TOOLTIPS.elaProficiency.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                <div data-testid="container-math-proficiency">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-3 h-3 rounded-full ${colorMap[mathColor]}`} data-testid="indicator-math-detail" />
+                    <p className="text-3xl font-bold tabular-nums" data-testid="text-detail-math">{school.math_proficiency}%</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground" data-testid="label-math-proficiency">Math Proficient</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Math proficiency information">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">{METRIC_TOOLTIPS.mathProficiency.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
-              <div data-testid="container-math-proficiency">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-3 h-3 rounded-full ${colorMap[mathColor]}`} data-testid="indicator-math-detail" />
-                  <p className="text-3xl font-bold tabular-nums" data-testid="text-detail-math">{school.math_proficiency}%</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <p className="text-sm text-muted-foreground" data-testid="label-math-proficiency">Math Proficient</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Math proficiency information">
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{METRIC_TOOLTIPS.mathProficiency.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          )}
 
           {isHighSchool(school) && (
             school.graduation_rate_4yr !== null || 

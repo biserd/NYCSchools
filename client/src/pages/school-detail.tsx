@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, getMetricColor } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -399,38 +399,47 @@ export default function SchoolDetail() {
             />
           </div>
 
-          {/* Academic Performance */}
-          <Card data-testid="card-academics">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5" />
-                Academic Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <MetricCard
-                  label="ELA Proficiency"
-                  value={`${schoolWithScore.ela_proficiency}%`}
-                  tooltip={METRIC_TOOLTIPS.elaProficiency.tooltip}
-                  testId="ela"
-                  numericValue={schoolWithScore.ela_proficiency}
-                  districtAvg={districtAverages?.elaProficiency}
-                />
-                <MetricCard
-                  label="Math Proficiency"
-                  value={`${schoolWithScore.math_proficiency}%`}
-                  tooltip={METRIC_TOOLTIPS.mathProficiency.tooltip}
-                  testId="math"
-                  numericValue={schoolWithScore.math_proficiency}
-                  districtAvg={districtAverages?.mathProficiency}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Academic Performance with ELA/Math - Only shown for schools with grades 3-8 (not pure high schools like 9-12) */}
+          {!isPureHighSchool(schoolWithScore) && (
+            <Card data-testid="card-academics-ela-math">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5" />
+                  Academic Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <MetricCard
+                    label="ELA Proficiency"
+                    value={`${schoolWithScore.ela_proficiency}%`}
+                    tooltip={METRIC_TOOLTIPS.elaProficiency.tooltip}
+                    testId="ela"
+                    numericValue={schoolWithScore.ela_proficiency}
+                    districtAvg={districtAverages?.elaProficiency}
+                  />
+                  <MetricCard
+                    label="Math Proficiency"
+                    value={`${schoolWithScore.math_proficiency}%`}
+                    tooltip={METRIC_TOOLTIPS.mathProficiency.tooltip}
+                    testId="math"
+                    numericValue={schoolWithScore.math_proficiency}
+                    districtAvg={districtAverages?.mathProficiency}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* High School Metrics - Only shown for high schools with data */}
-          {isHighSchool(schoolWithScore) && schoolWithScore.graduation_rate_4yr !== null && (
+          {/* High School Metrics - Only shown for high schools with any HS data */}
+          {isHighSchool(schoolWithScore) && (
+            schoolWithScore.graduation_rate_4yr !== null ||
+            schoolWithScore.graduation_rate_6yr !== null ||
+            schoolWithScore.sat_avg_total !== null ||
+            schoolWithScore.sat_avg_reading !== null ||
+            schoolWithScore.college_readiness_rate !== null ||
+            schoolWithScore.ap_course_count !== null
+          ) && (
             <Card data-testid="card-high-school-metrics">
               <CardHeader>
                 <div className="flex items-center gap-2">
