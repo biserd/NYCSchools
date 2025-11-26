@@ -8,7 +8,7 @@ import { Link } from "wouter";
 import { 
   X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus, Scale,
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
-  Globe, Percent, Languages
+  Globe, Percent, Languages, DollarSign
 } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
@@ -153,6 +153,36 @@ function DualLanguageCell({ hasDualLanguage, languages }: { hasDualLanguage: boo
             </div>
           </TooltipContent>
         </Tooltip>
+      )}
+    </div>
+  );
+}
+
+function formatPTAAmount(amount: number | null | undefined): string {
+  if (!amount) return "";
+  if (amount >= 1000000) {
+    return `$${(amount / 1000000).toFixed(1)}M`;
+  }
+  if (amount >= 1000) {
+    return `$${Math.round(amount / 1000)}K`;
+  }
+  return `$${amount.toLocaleString()}`;
+}
+
+function PTACell({ total, perStudent }: { total: number | null | undefined; perStudent: number | null | undefined }) {
+  if (!total || total === 0) {
+    return <span className="text-muted-foreground">No data</span>;
+  }
+  
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+        {formatPTAAmount(total)}
+      </Badge>
+      {perStudent && perStudent > 0 && (
+        <span className="text-xs text-muted-foreground">
+          ${Math.round(perStudent).toLocaleString()}/student
+        </span>
       )}
     </div>
   );
@@ -517,6 +547,22 @@ export default function ComparePage() {
                           <DualLanguageCell 
                             hasDualLanguage={school.has_dual_language} 
                             languages={school.dual_language_languages} 
+                          />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-muted-foreground" />
+                          PTA Fundraising
+                        </div>
+                      </TableCell>
+                      {schoolsWithScores.map((school) => (
+                        <TableCell key={school.dbn} className="text-center" data-testid={`cell-pta-${school.dbn}`}>
+                          <PTACell 
+                            total={school.pta_fundraising_total} 
+                            perStudent={school.pta_per_student} 
                           />
                         </TableCell>
                       ))}

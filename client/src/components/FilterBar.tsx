@@ -16,7 +16,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-export type SortOption = "overall" | "academics" | "climate" | "progress" | "name" | "pta" | "pta-per-student";
+export type SortOption = "overall" | "academics" | "climate" | "progress" | "name" | "pta";
 
 interface FilterBarProps {
   searchQuery: string;

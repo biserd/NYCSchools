@@ -350,8 +350,6 @@ export default function Home() {
           return a.name.localeCompare(b.name);
         case "pta":
           return (b.pta_fundraising_total || 0) - (a.pta_fundraising_total || 0);
-        case "pta-per-student":
-          return (b.pta_per_student || 0) - (a.pta_per_student || 0);
         default:
           return 0;
       }
