@@ -95,6 +95,88 @@ export const insertSchoolSchema = createInsertSchema(schools);
 export type InsertSchool = z.infer<typeof insertSchoolSchema>;
 export type School = typeof schools.$inferSelect;
 
+// Historical Scores Table - stores year-over-year data for trend analysis
+export const schoolHistoricalScores = pgTable("school_historical_scores", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  year: integer("year").notNull(),
+  ela_proficiency: integer("ela_proficiency"), // ELA % Level 3+4
+  math_proficiency: integer("math_proficiency"), // Math % Level 3+4
+}, (table) => ({
+  dbnYearIdx: index("historical_dbn_year_idx").on(table.dbn, table.year),
+}));
+
+export const insertHistoricalScoreSchema = createInsertSchema(schoolHistoricalScores).omit({ id: true });
+export type InsertHistoricalScore = z.infer<typeof insertHistoricalScoreSchema>;
+export type HistoricalScore = typeof schoolHistoricalScores.$inferSelect;
+
+// Trend types for historical analysis
+export type TrendDirection = 'improving' | 'declining' | 'stable' | 'insufficient_data';
+
+export interface SchoolTrend {
+  direction: TrendDirection;
+  changePercent: number; // Percentage change from oldest to newest year
+  yearsAnalyzed: number;
+  historicalData: HistoricalScore[];
+}
+
+// Calculate trend from historical scores
+export function calculateTrend(scores: HistoricalScore[]): SchoolTrend {
+  if (scores.length < 2) {
+    return {
+      direction: 'insufficient_data',
+      changePercent: 0,
+      yearsAnalyzed: scores.length,
+      historicalData: scores,
+    };
+  }
+
+  // Sort by year ascending
+  const sorted = [...scores].sort((a, b) => a.year - b.year);
+  
+  // Calculate average proficiency for first and last available years
+  const getAvgProficiency = (score: HistoricalScore) => {
+    const ela = score.ela_proficiency ?? 0;
+    const math = score.math_proficiency ?? 0;
+    const count = (score.ela_proficiency ? 1 : 0) + (score.math_proficiency ? 1 : 0);
+    return count > 0 ? (ela + math) / count : 0;
+  };
+
+  const oldest = sorted[0];
+  const newest = sorted[sorted.length - 1];
+  
+  const oldestAvg = getAvgProficiency(oldest);
+  const newestAvg = getAvgProficiency(newest);
+  
+  if (oldestAvg === 0) {
+    return {
+      direction: 'insufficient_data',
+      changePercent: 0,
+      yearsAnalyzed: scores.length,
+      historicalData: sorted,
+    };
+  }
+
+  const changePercent = ((newestAvg - oldestAvg) / oldestAvg) * 100;
+  
+  // Threshold: 5% change is considered significant
+  let direction: TrendDirection;
+  if (changePercent >= 5) {
+    direction = 'improving';
+  } else if (changePercent <= -5) {
+    direction = 'declining';
+  } else {
+    direction = 'stable';
+  }
+
+  return {
+    direction,
+    changePercent: Math.round(changePercent * 10) / 10,
+    yearsAnalyzed: scores.length,
+    historicalData: sorted,
+  };
+}
+
 export interface SchoolWithOverallScore extends School {
   overall_score: number;
 }
