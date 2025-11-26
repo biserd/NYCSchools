@@ -77,6 +77,11 @@ export const schools = pgTable("schools", {
   has_gifted_talented: boolean("has_gifted_talented").default(false),
   gt_program_type: varchar("gt_program_type"), // 'district', 'citywide', or null
   
+  // Dual Language & Bilingual Programs
+  has_dual_language: boolean("has_dual_language").default(false),
+  dual_language_languages: text("dual_language_languages").array(), // Languages offered in dual language program
+  has_transitional_bilingual: boolean("has_transitional_bilingual").default(false),
+  
   // High School Metrics
   graduation_rate_4yr: integer("graduation_rate_4yr"), // 4-year graduation rate percentage
   graduation_rate_6yr: integer("graduation_rate_6yr"), // 6-year graduation rate percentage
