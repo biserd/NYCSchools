@@ -20,7 +20,7 @@ import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
 import { 
   GraduationCap, 
   Users, 
@@ -496,6 +496,25 @@ export default function SchoolDetail() {
                         tick={{ fontSize: 12 }}
                         className="text-muted-foreground"
                         tickFormatter={(v) => `${v}%`}
+                      />
+                      <RechartsTooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                        labelStyle={{ 
+                          color: 'hsl(var(--foreground))',
+                          fontWeight: 600,
+                          marginBottom: '4px'
+                        }}
+                        itemStyle={{ 
+                          color: 'hsl(var(--foreground))',
+                          padding: '2px 0'
+                        }}
+                        formatter={(value: number) => [`${value}%`, undefined]}
+                        labelFormatter={(label) => `Year: ${label}`}
                       />
                       <Legend />
                       <Line 
