@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
 import { SchoolList } from "@/components/SchoolList";
@@ -14,29 +14,124 @@ import { Button } from "@/components/ui/button";
 import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 
+function getInitialFiltersFromURL(): {
+  search: string;
+  district: string;
+  gradeBand: string;
+  earlyChildhood: string;
+  giftedTalented: string;
+  trend: string;
+  sort: SortOption;
+} {
+  if (typeof window === "undefined") {
+    return {
+      search: "",
+      district: "2",
+      gradeBand: "All",
+      earlyChildhood: "All",
+      giftedTalented: "All",
+      trend: "All",
+      sort: "overall",
+    };
+  }
+  const params = new URLSearchParams(window.location.search);
+  return {
+    search: params.get("q") || "",
+    district: params.get("district") || "2",
+    gradeBand: params.get("grade") || "All",
+    earlyChildhood: params.get("ec") || "All",
+    giftedTalented: params.get("gt") || "All",
+    trend: params.get("trend") || "All",
+    sort: (params.get("sort") as SortOption) || "overall",
+  };
+}
+
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [selectedDistrict, setSelectedDistrict] = useState("2");
-  const [selectedGradeBand, setSelectedGradeBand] = useState("All");
-  const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState("All");
-  const [giftedTalentedFilter, setGiftedTalentedFilter] = useState("All");
-  const [trendFilter, setTrendFilter] = useState("All");
-  const [sortBy, setSortBy] = useState<SortOption>("overall");
+  const initialFilters = useMemo(() => getInitialFiltersFromURL(), []);
+  
+  const [searchQuery, setSearchQuery] = useState(initialFilters.search);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialFilters.search);
+  const [selectedDistrict, setSelectedDistrict] = useState(initialFilters.district);
+  const [selectedGradeBand, setSelectedGradeBand] = useState(initialFilters.gradeBand);
+  const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState(initialFilters.earlyChildhood);
+  const [giftedTalentedFilter, setGiftedTalentedFilter] = useState(initialFilters.giftedTalented);
+  const [trendFilter, setTrendFilter] = useState(initialFilters.trend);
+  const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sort);
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  const updateURLParams = useCallback((updates: Record<string, string>) => {
+    const params = new URLSearchParams(window.location.search);
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      const defaultValues: Record<string, string> = {
+        q: "",
+        district: "2",
+        grade: "All",
+        ec: "All",
+        gt: "All",
+        trend: "All",
+        sort: "overall",
+      };
+      
+      if (value === defaultValues[key]) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+    
+    const newSearch = params.toString();
+    const newURL = newSearch ? `/?${newSearch}` : "/";
+    window.history.replaceState(null, "", newURL);
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+  }, []);
+
+  const handleDistrictChange = useCallback((value: string) => {
+    setSelectedDistrict(value);
+    updateURLParams({ district: value });
+  }, [updateURLParams]);
+
+  const handleGradeBandChange = useCallback((value: string) => {
+    setSelectedGradeBand(value);
+    updateURLParams({ grade: value });
+  }, [updateURLParams]);
+
+  const handleEarlyChildhoodChange = useCallback((value: string) => {
+    setEarlyChildhoodFilter(value);
+    updateURLParams({ ec: value });
+  }, [updateURLParams]);
+
+  const handleGiftedTalentedChange = useCallback((value: string) => {
+    setGiftedTalentedFilter(value);
+    updateURLParams({ gt: value });
+  }, [updateURLParams]);
+
+  const handleTrendChange = useCallback((value: string) => {
+    setTrendFilter(value);
+    updateURLParams({ trend: value });
+  }, [updateURLParams]);
+
+  const handleSortChange = useCallback((value: SortOption) => {
+    setSortBy(value);
+    updateURLParams({ sort: value });
+  }, [updateURLParams]);
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
+      updateURLParams({ q: searchQuery });
     }, 300);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [searchQuery]);
+  }, [searchQuery, updateURLParams]);
 
   const { data: rawSchools, isLoading } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -359,19 +454,19 @@ export default function Home() {
 
       <FilterBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         selectedDistrict={selectedDistrict}
-        onDistrictChange={setSelectedDistrict}
+        onDistrictChange={handleDistrictChange}
         selectedGradeBand={selectedGradeBand}
-        onGradeBandChange={setSelectedGradeBand}
+        onGradeBandChange={handleGradeBandChange}
         sortBy={sortBy}
-        onSortChange={setSortBy}
+        onSortChange={handleSortChange}
         earlyChildhoodFilter={earlyChildhoodFilter}
-        onEarlyChildhoodFilterChange={setEarlyChildhoodFilter}
+        onEarlyChildhoodFilterChange={handleEarlyChildhoodChange}
         giftedTalentedFilter={giftedTalentedFilter}
-        onGiftedTalentedFilterChange={setGiftedTalentedFilter}
+        onGiftedTalentedFilterChange={handleGiftedTalentedChange}
         trendFilter={trendFilter}
-        onTrendFilterChange={setTrendFilter}
+        onTrendFilterChange={handleTrendChange}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
