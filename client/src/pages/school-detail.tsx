@@ -40,7 +40,8 @@ import {
   Star,
   History,
   Languages,
-  DollarSign
+  DollarSign,
+  AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -107,9 +108,11 @@ export default function SchoolDetail() {
     yellow: "bg-yellow-500",
     amber: "bg-amber-500",
     red: "bg-red-500",
+    gray: "bg-gray-400",
   };
 
   const getScoreLabel = (score: number) => {
+    if (score === -1) return "Insufficient Data";
     if (score >= 80) return "Outstanding";
     if (score >= 60) return "Strong";
     if (score >= 40) return "Average";
@@ -263,7 +266,7 @@ export default function SchoolDetail() {
           <Card data-testid="card-overall-score">
             <CardHeader>
               <CardTitle>Overall Snapshot</CardTitle>
-              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground" data-testid="score-legend">
+              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap" data-testid="score-legend">
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                   <span>90+ Outstanding</span>
@@ -280,6 +283,10 @@ export default function SchoolDetail() {
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
                   <span>&lt;70 Needs Work</span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                  <span>N/A Insufficient Data</span>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -288,7 +295,7 @@ export default function SchoolDetail() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <div className="text-5xl font-bold tabular-nums" data-testid="score-overall">
-                      {schoolWithScore.overall_score}
+                      {schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}
                     </div>
                     {districtAverages && (
                       <DistrictComparisonBadge 
@@ -400,27 +407,45 @@ export default function SchoolDetail() {
             </CardContent>
           </Card>
 
-          {/* Component Scores */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ScoreBar
-              label="Academics"
-              score={schoolWithScore.academics_score}
-              tooltip={METRIC_TOOLTIPS.academics.tooltip}
-              testId="academics"
-            />
-            <ScoreBar
-              label="Climate"
-              score={schoolWithScore.climate_score}
-              tooltip={METRIC_TOOLTIPS.climate.tooltip}
-              testId="climate"
-            />
-            <ScoreBar
-              label="Progress"
-              score={schoolWithScore.progress_score}
-              tooltip={METRIC_TOOLTIPS.progress.tooltip}
-              testId="progress"
-            />
-          </div>
+          {/* Component Scores - Only show when reliable data is available */}
+          {schoolWithScore.overall_score >= 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ScoreBar
+                label="Academics"
+                score={schoolWithScore.academics_score}
+                tooltip={METRIC_TOOLTIPS.academics.tooltip}
+                testId="academics"
+              />
+              <ScoreBar
+                label="Climate"
+                score={schoolWithScore.climate_score}
+                tooltip={METRIC_TOOLTIPS.climate.tooltip}
+                testId="climate"
+              />
+              <ScoreBar
+                label="Progress"
+                score={schoolWithScore.progress_score}
+                tooltip={METRIC_TOOLTIPS.progress.tooltip}
+                testId="progress"
+              />
+            </div>
+          ) : (
+            <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" data-testid="card-insufficient-data-notice">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-amber-800 dark:text-amber-200">Why is there insufficient data?</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                      This high school lacks the graduation rate, college readiness, or test proficiency data needed to calculate a reliable overall score. 
+                      This may occur for newer schools, schools with small cohorts, or schools where data was not reported to NYC DOE. 
+                      Available metrics are still shown below.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Academic Performance with ELA/Math - Only shown for schools with grades 3-8 (not pure high schools like 9-12) */}
           {!isPureHighSchool(schoolWithScore) && (
@@ -731,38 +756,42 @@ export default function SchoolDetail() {
                   </div>
                 </div>
 
-                {/* SAT Scores */}
+                {/* SAT Scores - Historical Data */}
                 {(schoolWithScore.sat_avg_reading !== null || schoolWithScore.sat_avg_total !== null) && (
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" />
-                      SAT Performance
-                    </h4>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Average SAT scores for students at this school. National average is approximately 1050 total.
-                    </p>
+                  <div className="opacity-60">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        SAT Performance
+                      </h4>
+                      <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                        2012 Data
+                      </Badge>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        This SAT data is from 2012 and may not reflect current school performance. NYC DOE no longer publishes school-level SAT data.
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {schoolWithScore.sat_avg_reading !== null && (
                         <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-reading">
-                          <p className="text-2xl font-bold tabular-nums" data-testid="text-sat-reading">{schoolWithScore.sat_avg_reading}</p>
+                          <p className="text-2xl font-bold tabular-nums text-muted-foreground" data-testid="text-sat-reading">{schoolWithScore.sat_avg_reading}</p>
                           <p className="text-xs text-muted-foreground">Reading</p>
                         </div>
                       )}
                       {schoolWithScore.sat_avg_math !== null && (
                         <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-math">
-                          <p className="text-2xl font-bold tabular-nums" data-testid="text-sat-math">{schoolWithScore.sat_avg_math}</p>
+                          <p className="text-2xl font-bold tabular-nums text-muted-foreground" data-testid="text-sat-math">{schoolWithScore.sat_avg_math}</p>
                           <p className="text-xs text-muted-foreground">Math</p>
                         </div>
                       )}
                       {schoolWithScore.sat_avg_total !== null && (
-                        <div className="bg-primary/10 rounded-lg p-3 text-center border border-primary/20" data-testid="container-sat-total">
-                          <p className="text-2xl font-bold tabular-nums text-primary" data-testid="text-sat-total">{schoolWithScore.sat_avg_total}</p>
-                          <p className="text-xs font-medium">Total</p>
+                        <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-total">
+                          <p className="text-2xl font-bold tabular-nums text-muted-foreground" data-testid="text-sat-total">{schoolWithScore.sat_avg_total}</p>
+                          <p className="text-xs text-muted-foreground">Total</p>
                         </div>
                       )}
-                    </div>
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      <span className="font-medium">Score Guide:</span> 1200+ Excellent | 1000-1199 Solid | 800-999 Average
                     </div>
                   </div>
                 )}

@@ -348,20 +348,29 @@ export function hasGrades3to8(school: Pick<School, 'grade_band'>): boolean {
 
 export function calculateOverallScore(school: School): number {
   // High schools use different metrics
-  if (isHighSchool(school) && school.graduation_rate_4yr !== null && school.graduation_rate_4yr !== undefined) {
-    // High School Score = Graduation Rate (40%) + College Readiness (30%) + Progress (30%)
-    const gradRate = school.graduation_rate_4yr;
-    const collegeReadiness = school.college_readiness_rate ?? school.progress_score;
-    const progressScore = school.progress_score;
-    
-    return Math.round(
-      0.4 * gradRate +
-      0.3 * collegeReadiness +
-      0.3 * progressScore
-    );
+  if (isHighSchool(school)) {
+    // High schools need graduation rate data for proper scoring
+    if (school.graduation_rate_4yr !== null && school.graduation_rate_4yr !== undefined) {
+      // High School Score = Graduation Rate (40%) + College Readiness (30%) + Progress (30%)
+      const gradRate = school.graduation_rate_4yr;
+      const collegeReadiness = school.college_readiness_rate ?? school.progress_score;
+      const progressScore = school.progress_score;
+      
+      return Math.round(
+        0.4 * gradRate +
+        0.3 * collegeReadiness +
+        0.3 * progressScore
+      );
+    }
+    // High school without graduation data - return -1 to indicate insufficient data
+    // This prevents using default 50% proficiency which creates misleading scores
+    return -1;
   }
   
   // Elementary/Middle schools use test proficiency
+  // Check if using placeholder values (50/50 with no real test data)
+  const isPlaceholderData = school.ela_proficiency === 50 && school.math_proficiency === 50;
+  
   // Calculate test proficiency as average of ELA and Math
   const testProficiency = (school.ela_proficiency + school.math_proficiency) / 2;
   
@@ -373,7 +382,17 @@ export function calculateOverallScore(school: School): number {
   );
 }
 
+// Check if a school has insufficient data for proper scoring
+export function hasInsufficientData(school: School): boolean {
+  if (isHighSchool(school)) {
+    return school.graduation_rate_4yr === null || school.graduation_rate_4yr === undefined;
+  }
+  // Elementary/Middle with placeholder proficiency data
+  return school.ela_proficiency === 50 && school.math_proficiency === 50;
+}
+
 export function getScoreLabel(score: number): string {
+  if (score < 0) return "Insufficient Data";
   if (score >= 90) return "Outstanding";
   if (score >= 80) return "Strong";
   if (score >= 70) return "Average";
@@ -398,7 +417,8 @@ export function getSchoolUrl(school: Pick<School, 'name' | 'dbn'>): string {
   return `/school/${getSchoolSlug(school)}`;
 }
 
-export function getScoreColor(score: number): "green" | "yellow" | "amber" | "red" {
+export function getScoreColor(score: number): "green" | "yellow" | "amber" | "red" | "gray" {
+  if (score < 0) return "gray"; // Insufficient data
   if (score >= 90) return "green";
   if (score >= 80) return "yellow";
   if (score >= 70) return "amber";

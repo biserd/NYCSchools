@@ -33,11 +33,12 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
   const climateColor = getMetricColor(school.climate_score);
   const progressColor = getMetricColor(school.progress_score);
 
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     green: "bg-emerald-500",
     yellow: "bg-yellow-500",
     amber: "bg-amber-500",
     red: "bg-red-500",
+    gray: "bg-gray-400",
   };
 
   const getBarWidth = (score: number) => `${score}%`;
@@ -171,6 +172,10 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                       <div className="w-2 h-2 rounded-full bg-red-500" />
                       <span>{METRIC_TOOLTIPS.colorLegend.red.label} (&lt;60)</span>
                     </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 rounded-full bg-gray-400" />
+                      <span>{METRIC_TOOLTIPS.colorLegend.gray.label} (N/A)</span>
+                    </div>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -179,15 +184,24 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
               <div className="flex items-center gap-3">
                 <div className={`w-4 h-4 rounded-full ${colorMap[scoreColor]}`} data-testid="indicator-detail-score" />
                 <span className="text-5xl font-bold tabular-nums" data-testid="text-detail-overall-score">
-                  {school.overall_score}
+                  {school.overall_score < 0 ? "N/A" : school.overall_score}
                 </span>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground" data-testid="label-overall-score">Overall Score</p>
+                <p className="text-sm text-muted-foreground" data-testid="label-overall-score">
+                  {school.overall_score < 0 ? "Insufficient Data" : "Overall Score"}
+                </p>
                 <p className="text-base font-medium" data-testid="text-detail-score-label">{scoreLabel}</p>
               </div>
             </div>
 
+            {school.overall_score < 0 ? (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-4" data-testid="container-insufficient-data-notice">
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  <strong>Why is there insufficient data?</strong> This high school lacks the graduation rate, college readiness, or test proficiency data needed to calculate a reliable overall score. This may occur for newer schools, schools with small cohorts, or schools where data was not reported to NYC DOE.
+                </p>
+              </div>
+            ) : (
             <div className="space-y-4" data-testid="container-bars">
               <div data-testid="row-bar-academics">
                 <div className="flex justify-between mb-2">
@@ -272,6 +286,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                 </div>
               </div>
             </div>
+            )}
           </Card>
 
           {/* Only show ELA/Math Academics card for non-pure-high-schools (schools with grades 3-8 students who take state tests) */}
@@ -463,28 +478,36 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                 </div>
 
                 {(school.sat_avg_reading !== null || school.sat_avg_total !== null) && (
-                  <div data-testid="container-sat-scores">
-                    <h4 className="font-semibold mb-3">SAT Scores</h4>
+                  <div data-testid="container-sat-scores" className="opacity-60">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h4 className="font-semibold">SAT Scores</h4>
+                      <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                        2012 Data
+                      </Badge>
+                    </div>
                     <div className="grid grid-cols-3 gap-4">
                       {school.sat_avg_reading !== null && (
                         <div>
-                          <p className="text-2xl font-bold tabular-nums">{school.sat_avg_reading}</p>
+                          <p className="text-2xl font-bold tabular-nums text-muted-foreground">{school.sat_avg_reading}</p>
                           <p className="text-xs text-muted-foreground">Reading</p>
                         </div>
                       )}
                       {school.sat_avg_math !== null && (
                         <div>
-                          <p className="text-2xl font-bold tabular-nums">{school.sat_avg_math}</p>
+                          <p className="text-2xl font-bold tabular-nums text-muted-foreground">{school.sat_avg_math}</p>
                           <p className="text-xs text-muted-foreground">Math</p>
                         </div>
                       )}
                       {school.sat_avg_total !== null && (
                         <div>
-                          <p className="text-2xl font-bold tabular-nums text-primary">{school.sat_avg_total}</p>
+                          <p className="text-2xl font-bold tabular-nums text-muted-foreground">{school.sat_avg_total}</p>
                           <p className="text-xs text-muted-foreground">Total</p>
                         </div>
                       )}
                     </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      Historical data from 2012. May not reflect current school performance.
+                    </p>
                   </div>
                 )}
 

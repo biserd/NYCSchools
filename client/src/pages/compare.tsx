@@ -243,6 +243,7 @@ export default function ComparePage() {
     yellow: "text-yellow-500",
     amber: "text-amber-500",
     red: "text-red-500",
+    gray: "text-muted-foreground",
   };
 
   // Helper to check if a school is a high school
@@ -330,9 +331,11 @@ export default function ComparePage() {
                   <CardContent>
                     <div className="text-center mb-4">
                       <div className={`text-5xl font-bold tabular-nums mb-1 ${colorMap[school.scoreColor]}`} data-testid={`score-overall-${school.dbn}`}>
-                        {school.overall_score}
+                        {school.overall_score === -1 ? 'N/A' : school.overall_score}
                       </div>
-                      <div className="text-xs text-muted-foreground">Overall Score</div>
+                      <div className="text-xs text-muted-foreground">
+                        {school.overall_score === -1 ? 'Insufficient Data' : 'Overall Score'}
+                      </div>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
@@ -914,26 +917,47 @@ export default function ComparePage() {
                           </TableCell>
                         ))}
                       </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">SAT Total (Avg)</TableCell>
+                      <TableRow className="bg-amber-50/50 dark:bg-amber-900/10">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            SAT Total (Avg)
+                            <Badge variant="outline" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                              2012
+                            </Badge>
+                          </div>
+                        </TableCell>
                         {schoolsWithScores.map((school) => (
-                          <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-sat-${school.dbn}`}>
+                          <TableCell key={school.dbn} className="text-center tabular-nums text-muted-foreground" data-testid={`cell-sat-${school.dbn}`}>
                             {school.sat_avg_total || <span className="text-muted-foreground">N/A</span>}
                           </TableCell>
                         ))}
                       </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">SAT Reading/Writing</TableCell>
+                      <TableRow className="bg-amber-50/50 dark:bg-amber-900/10">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            SAT Reading/Writing
+                            <Badge variant="outline" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                              2012
+                            </Badge>
+                          </div>
+                        </TableCell>
                         {schoolsWithScores.map((school) => (
-                          <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-sat-reading-${school.dbn}`}>
+                          <TableCell key={school.dbn} className="text-center tabular-nums text-muted-foreground" data-testid={`cell-sat-reading-${school.dbn}`}>
                             {school.sat_avg_reading || <span className="text-muted-foreground">N/A</span>}
                           </TableCell>
                         ))}
                       </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">SAT Math</TableCell>
+                      <TableRow className="bg-amber-50/50 dark:bg-amber-900/10">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            SAT Math
+                            <Badge variant="outline" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                              2012
+                            </Badge>
+                          </div>
+                        </TableCell>
                         {schoolsWithScores.map((school) => (
-                          <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-sat-math-${school.dbn}`}>
+                          <TableCell key={school.dbn} className="text-center tabular-nums text-muted-foreground" data-testid={`cell-sat-math-${school.dbn}`}>
                             {school.sat_avg_math || <span className="text-muted-foreground">N/A</span>}
                           </TableCell>
                         ))}

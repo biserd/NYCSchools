@@ -270,11 +270,11 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${colorMap[scoreColor]}`} data-testid={`indicator-score-${school.dbn}`} title={METRIC_TOOLTIPS.colorLegend[scoreColor].description} />
               <span className="text-4xl font-bold tabular-nums" data-testid={`score-overall-${school.dbn}`}>
-                {overallScore}
+                {overallScore < 0 ? "N/A" : overallScore}
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground" data-testid={`text-score-label-${school.dbn}`}>Overall</span>
+              <span className="text-xs text-muted-foreground" data-testid={`text-score-label-${school.dbn}`}>{overallScore < 0 ? "Insufficient Data" : "Overall"}</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -289,7 +289,11 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs" data-testid={`tooltip-overall-${school.dbn}`}>
-                  <p className="text-sm">{METRIC_TOOLTIPS.overallScore.tooltip}</p>
+                  <p className="text-sm">
+                    {overallScore < 0 
+                      ? "This high school doesn't have sufficient graduation rate data available to calculate a reliable overall score."
+                      : METRIC_TOOLTIPS.overallScore.tooltip}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -326,16 +330,7 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
               </div>
               
               <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-sat-${school.dbn}`}>
-                {school.sat_avg_total ? (
-                  <>
-                    <div className={`w-2 h-2 rounded-full ${colorMap[school.sat_avg_total >= 1200 ? 'green' : school.sat_avg_total >= 1000 ? 'yellow' : school.sat_avg_total >= 800 ? 'amber' : 'red']} shrink-0`} data-testid={`indicator-sat-${school.dbn}`} />
-                    <BookOpen className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-sat-${school.dbn}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium tabular-nums" data-testid={`score-sat-${school.dbn}`}>{school.sat_avg_total}</div>
-                      <div className="text-xs text-muted-foreground truncate" data-testid={`label-sat-${school.dbn}`}>SAT Avg</div>
-                    </div>
-                  </>
-                ) : school.college_readiness_rate ? (
+                {school.college_readiness_rate ? (
                   <>
                     <div className={`w-2 h-2 rounded-full ${colorMap[collegeReadyColor]} shrink-0`} data-testid={`indicator-college-${school.dbn}`} />
                     <TrendingUp className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-college-${school.dbn}`} />
@@ -344,13 +339,22 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                       <div className="text-xs text-muted-foreground truncate" data-testid={`label-college-${school.dbn}`}>College Ready</div>
                     </div>
                   </>
+                ) : school.sat_avg_total ? (
+                  <>
+                    <div className={`w-2 h-2 rounded-full bg-amber-400 shrink-0`} data-testid={`indicator-sat-${school.dbn}`} />
+                    <BookOpen className="w-4 h-4 text-amber-600 shrink-0" data-testid={`icon-sat-${school.dbn}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium tabular-nums text-amber-600" data-testid={`score-sat-${school.dbn}`}>{school.sat_avg_total}</div>
+                      <div className="text-xs text-amber-500 truncate" data-testid={`label-sat-${school.dbn}`}>SAT (2012 - outdated)</div>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="w-2 h-2 rounded-full bg-gray-400 shrink-0" />
                     <BookOpen className="w-4 h-4 text-muted-foreground shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-muted-foreground">N/A</div>
-                      <div className="text-xs text-muted-foreground truncate">SAT/College</div>
+                      <div className="text-xs text-muted-foreground truncate">College Ready</div>
                     </div>
                   </>
                 )}
@@ -362,13 +366,19 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                       className="h-5 w-5 p-0 shrink-0"
                       data-testid={`button-tooltip-sat-${school.dbn}`}
                       onClick={(e) => e.stopPropagation()}
-                      aria-label="SAT or college readiness information"
+                      aria-label="College readiness or SAT information"
                     >
                       <Info className="h-3 w-3 text-muted-foreground" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs" data-testid={`tooltip-sat-${school.dbn}`}>
-                    <p className="text-sm">{school.sat_avg_total ? 'Average SAT score (combined reading & math). 1200+ is excellent, 1000+ is solid.' : 'College & career readiness rate: percentage of students meeting college readiness standards.'}</p>
+                    <p className="text-sm">
+                      {school.college_readiness_rate 
+                        ? 'College & career readiness rate: percentage of students meeting college readiness standards.'
+                        : school.sat_avg_total 
+                        ? 'Historical SAT data from 2012. This data is outdated and may not reflect current school performance.'
+                        : 'No college readiness data available for this school.'}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>
