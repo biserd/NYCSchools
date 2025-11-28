@@ -11,7 +11,7 @@ import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle } from "lucide-react";
 import { Link } from "wouter";
 import {
   DropdownMenu,
@@ -547,6 +547,12 @@ export default function Home() {
                     <Link href="/map" data-testid="menu-item-map">
                       <Map className="w-4 h-4 mr-2" />
                       Map View
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/lottery-simulator" data-testid="menu-item-lottery">
+                      <Shuffle className="w-4 h-4 mr-2" />
+                      Lottery Simulator
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
