@@ -32,7 +32,14 @@ I prefer detailed explanations. Ask before making major changes.
 - **Authentication**: Email/password authentication with registration, login, bcrypt hashing, PostgreSQL-backed sessions, and protected routes.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated page, and compare them.
 - **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, conversation history, and smart suggestions. **Requires authentication** - unauthenticated users see a login CTA with Sign In/Create Account buttons. All chat sessions and messages are stored in the database for history and training purposes.
-- **Smart Recommendations**: AI-powered questionnaire for personalized school recommendations.
+- **Smart Recommendations (Find My Match)**: Comprehensive AI-powered questionnaire for personalized school recommendations. Supports:
+  - **Grade Level Selection**: Early Childhood (3-K/Pre-K), Elementary (K-5), Middle School (6-8), High School (9-12)
+  - **Location Preferences**: Borough and district selection with smart district filtering based on borough
+  - **Priority Selection**: Academics, Climate, Progress, or Balanced Excellence
+  - **Special Programs**: G&T (District/Citywide), Dual Language (12+ language options), Early Childhood (3-K/Pre-K)
+  - **Historical Trends**: Option to prioritize improving schools with positive score trajectories
+  - **Class Size Preferences**: Small (<18:1), Medium (18-22:1), Large (>22:1)
+  - Results display preference badges and matched school cards
 - **Interactive Map View**: Leaflet-based map with color-coded school markers and district filtering.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics and district comparison indicators.
 - **District Comparison**: Shows how schools compare to district averages for key metrics with visual indicators.
