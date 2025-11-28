@@ -63,32 +63,33 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
             <Link href="/lottery-simulator">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="sm:w-auto sm:px-3"
                 data-testid="button-lottery-nav"
               >
-                <Shuffle className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Lottery Sim</span>
-                <span className="sm:hidden">Lottery</span>
+                <Shuffle className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Lottery</span>
               </Button>
             </Link>
             <Link href="/map">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="sm:w-auto sm:px-3"
                 data-testid="button-map-nav"
               >
-                <Map className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Map View</span>
-                <span className="sm:hidden">Map</span>
+                <Map className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Map</span>
               </Button>
             </Link>
             <Link href="/settings">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="sm:w-auto sm:px-3"
                 data-testid="button-settings-nav"
               >
-                <Settings className="w-4 h-4 mr-2" />
+                <Settings className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Settings</span>
               </Button>
             </Link>
@@ -96,10 +97,11 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
               <Link href="/favorites">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
+                  className="sm:w-auto sm:px-3"
                   data-testid="button-favorites-nav"
                 >
-                  <Heart className="w-4 h-4 mr-2" />
+                  <Heart className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Favorites</span>
                 </Button>
               </Link>
@@ -107,24 +109,26 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
             {isAuthenticated ? (
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="sm:w-auto sm:px-3"
                 onClick={async () => {
                   await fetch('/api/logout', { method: 'POST' });
                   window.location.href = '/';
                 }}
                 data-testid="button-logout"
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             ) : (
               <Link href="/login">
                 <Button
                   variant="default"
-                  size="sm"
+                  size="icon"
+                  className="sm:w-auto sm:px-3"
                   data-testid="button-login"
                 >
-                  <LogIn className="w-4 h-4 mr-2" />
+                  <LogIn className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Login</span>
                 </Button>
               </Link>
