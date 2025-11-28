@@ -28,6 +28,7 @@ import NotFound from "@/pages/not-found";
 // Lazy load heavy route components
 const RecommendationsPage = lazy(() => import("@/pages/recommendations"));
 const MapPage = lazy(() => import("@/pages/map"));
+const LotterySimulatorPage = lazy(() => import("@/pages/lottery-simulator"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -61,6 +62,11 @@ function Router() {
       <Route path="/map">
         <Suspense fallback={<PageLoader />}>
           <MapPage />
+        </Suspense>
+      </Route>
+      <Route path="/lottery-simulator">
+        <Suspense fallback={<PageLoader />}>
+          <LotterySimulatorPage />
         </Suspense>
       </Route>
       <Route path="/settings" component={SettingsPage} />

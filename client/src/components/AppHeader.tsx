@@ -10,7 +10,8 @@ import {
   Map, 
   Settings, 
   MessageCircle,
-  Home
+  Home,
+  Shuffle
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -57,6 +58,17 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                 <Sparkles className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Find My Match</span>
                 <span className="sm:hidden">Match</span>
+              </Button>
+            </Link>
+            <Link href="/lottery-simulator">
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="button-lottery-nav"
+              >
+                <Shuffle className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Lottery Sim</span>
+                <span className="sm:hidden">Lottery</span>
               </Button>
             </Link>
             <Link href="/map">
