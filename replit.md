@@ -47,6 +47,14 @@ I prefer detailed explanations. Ask before making major changes.
 - **Public Commute Time Calculator**: Calculates transit times and distances using Google Maps APIs, storing addresses in localStorage and database for authenticated users.
 - **Legal Pages**: Dedicated Privacy Policy and Terms of Service pages.
 - **Data-Driven Blog**: Blog section at `/blog` featuring analytical articles about NYC school data with interactive Recharts visualizations. First article analyzes 2023-24 DOE data with district performance charts, proficiency tier breakdowns, economic need correlation, and G&T program impact. SEO-optimized with structured data.
+- **3-K/Pre-K Lottery Simulator**: Monte Carlo simulation tool at `/lottery-simulator` helping parents understand their odds in NYC's school lottery. Features:
+  - Search and rank up to 12 elementary/early childhood schools in preference order
+  - Set priority status per school (Sibling, Zoned, District, Borough, Citywide)
+  - Realistic demand estimation based on school popularity, special programs, and estimated seat counts
+  - Priority-tier processing matching NYC DOE's deferred-acceptance algorithm (siblings and zoned applicants processed first)
+  - 1,000-iteration simulation with probability bars for each ranked school
+  - Overall match rate, waitlist rate, and unmatched rate visualization
+  - Educational explanations about how the lottery system works
 
 ### School Scoring Methodology
 The **Overall Score** (transparent and data-driven) is calculated as:
