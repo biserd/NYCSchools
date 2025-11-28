@@ -472,6 +472,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public AI Recommendations API (no auth required for Find My Match feature)
+  let cachedRecommendationSummary: string | null = null;
+  
+  app.post("/api/recommendations", async (req: Request, res: Response) => {
+    try {
+      const { message } = req.body;
+
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Initialize OpenAI with Replit AI Integrations
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      // Create or use cached school summary for recommendations
+      if (!cachedRecommendationSummary) {
+        const schools = await storage.getSchools();
+        // Get a comprehensive sample with special program info
+        const schoolSample = schools.slice(0, 200).map(s => ({
+          dbn: s.dbn,
+          name: s.name,
+          district: s.district,
+          grade_band: s.grade_band,
+          overall: Math.round(0.4 * s.academics_score + 0.3 * s.climate_score + 0.3 * s.progress_score),
+          academics: s.academics_score,
+          climate: s.climate_score,
+          progress: s.progress_score,
+          ela: s.ela_proficiency,
+          math: s.math_proficiency,
+          has_gt: s.has_gifted_talented,
+          gt_type: s.gt_program_type,
+          has_dual_language: s.has_dual_language,
+          dl_languages: s.dual_language_languages,
+          has_3k: s.has_3k,
+          has_prek: s.has_prek,
+          student_teacher_ratio: s.student_teacher_ratio,
+          enrollment: s.enrollment,
+        }));
+        cachedRecommendationSummary = JSON.stringify(schoolSample, null, 2);
+      }
+
+      const systemMessage = `You are a helpful school recommendation assistant for NYC parents. Your job is to recommend the best schools based on parent preferences.
+
+School Data Available (sample of 200 schools):
+${cachedRecommendationSummary}
+
+Key Fields:
+- dbn: Unique school identifier (format: 01M015)
+- grade_band: ES (Elementary K-5), MS (Middle 6-8), HS (High 9-12)
+- has_gt/gt_type: Gifted & Talented programs ('district' or 'citywide')
+- has_dual_language/dl_languages: Dual Language programs with languages offered
+- has_3k/has_prek: Early childhood programs
+- student_teacher_ratio: Class size indicator
+
+Districts by Borough:
+- Manhattan: 1-6
+- Bronx: 7-12
+- Brooklyn: 13-23, 32
+- Queens: 24-30
+- Staten Island: 31
+
+Score Calculation: 40% academics + 30% climate + 30% progress
+
+IMPORTANT: When recommending schools, you MUST:
+1. Start with a 2-3 sentence explanation of your approach
+2. Then list 5-8 school DBN codes, one per line
+3. Format: DBN - Brief reason (10 words max)
+
+Only recommend schools from the provided data. Use exact DBN codes.`;
+
+      // Set up streaming response
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const messages: any[] = [
+        { role: "system", content: systemMessage },
+        { role: "user", content: message },
+      ];
+
+      // Stream response from OpenAI
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        stream: true,
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || "";
+        if (content) {
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+
+      res.write("data: [DONE]\n\n");
+      res.end();
+    } catch (error) {
+      console.error("Error generating recommendations:", error);
+      res.status(500).json({ error: "Failed to generate recommendations" });
+    }
+  });
+
   // AI Chat API (authenticated)
   // Cache school summary to avoid fetching on every request
   let cachedSchoolSummary: string | null = null;

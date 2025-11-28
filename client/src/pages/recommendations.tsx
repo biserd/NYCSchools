@@ -161,14 +161,13 @@ I focused on schools with strong academics and Dual Language programs in Brookly
 02M047 - Top ELA scores, G&T program, excellent leadership
 ...`;
 
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/recommendations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: prompt,
-          conversationHistory: [],
         }),
       });
 
