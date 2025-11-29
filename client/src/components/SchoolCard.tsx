@@ -203,6 +203,32 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                   </TooltipContent>
                 </Tooltip>
               )}
+              {school.iep_percent !== null && school.iep_percent >= 20 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs gap-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700" 
+                        data-testid={`badge-iep-${school.dbn}`}
+                      >
+                        <Users className="w-3 h-3" />
+                        {school.iep_percent}% IEP
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" data-testid={`tooltip-iep-${school.dbn}`}>
+                    <p className="text-sm font-medium mb-1">Special Education (IEP)</p>
+                    <p className="text-sm">
+                      {school.iep_percent}% of students have an Individualized Education Program (IEP), 
+                      indicating experience serving students with disabilities.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Higher IEP % may indicate more special education resources and experience.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {school.economic_need_index !== null && (
                 <Tooltip>
                   <TooltipTrigger asChild>

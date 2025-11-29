@@ -55,6 +55,11 @@ I prefer detailed explanations. Ask before making major changes.
   - 1,000-iteration simulation with probability bars for each ranked school
   - Overall match rate, waitlist rate, and unmatched rate visualization
   - Educational explanations about how the lottery system works
+- **Special Education (IEP) Support**: Comprehensive features for parents of children with disabilities:
+  - **IEP Filter**: Filter schools by IEP percentage ranges (Low <15%, Medium 15-25%, High >25%)
+  - **IEP Badge on Cards**: Schools with 20%+ IEP students display a violet badge with percentage
+  - **Dedicated Special Ed Section**: School detail pages show IEP info with parent guidance including tips on visiting schools, questions to ask about services (ICT, self-contained, SETSS), and related services
+  - **Data Source**: NYC DOE demographic data (IEP percentage from school enrollment reports)
 
 ### School Scoring Methodology
 The **Overall Score** (transparent and data-driven) is calculated as:

@@ -1026,6 +1026,59 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
             </Card>
           )}
 
+          {/* Special Education Section */}
+          {school.iep_percent !== null && (
+            <Card className="p-6" data-testid="card-special-education">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-special-ed-title">
+                <Users className="w-5 h-5 text-violet-600" data-testid="icon-special-ed" />
+                Special Education
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="bg-violet-100 dark:bg-violet-900/30 rounded-lg p-4 text-center min-w-[100px]" data-testid="container-iep-highlight">
+                    <p className="text-3xl font-bold text-violet-700 dark:text-violet-300 tabular-nums" data-testid="text-iep-large">{school.iep_percent}%</p>
+                    <p className="text-sm text-violet-600 dark:text-violet-400">Students with IEP</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground" data-testid="text-iep-description">
+                      {school.iep_percent >= 25 
+                        ? "This school has significant experience serving students with disabilities, with a high percentage of students receiving special education services."
+                        : school.iep_percent >= 15
+                        ? "This school has moderate experience serving students with disabilities through Individualized Education Programs."
+                        : "This school serves some students with Individualized Education Programs (IEPs)."}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3" data-testid="container-special-ed-info">
+                  <h4 className="text-sm font-semibold" data-testid="text-parent-tips-title">For Parents of Students with Disabilities</h4>
+                  <ul className="text-sm text-muted-foreground space-y-2" data-testid="list-parent-tips">
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
+                      <span><strong>IEP Percentage</strong> indicates how many students receive special education services. Higher percentages may indicate more established programs and resources.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
+                      <span><strong>Schedule a visit</strong> to meet the special education coordinator and observe classroom settings (ICT, self-contained, or resource room).</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
+                      <span><strong>Ask about</strong> related services (speech therapy, occupational therapy, physical therapy, counseling) and staff-to-student ratios.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
+                      <span><strong>Request information</strong> about how the school implements IEPs and communicates with parents about progress.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <p className="text-xs text-muted-foreground" data-testid="text-special-ed-note">
+                  Note: NYC DOE schools are required to provide appropriate services for all students with IEPs. Contact the school directly or visit the NYC DOE Special Education page for more information.
+                </p>
+              </div>
+            </Card>
+          )}
+
           {(school.principal_experience_years !== null || school.teacher_experience_percent !== null) && (
             <Card className="p-6" data-testid="card-staff-experience">
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" data-testid="text-staff-title">

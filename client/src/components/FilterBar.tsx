@@ -37,6 +37,8 @@ interface FilterBarProps {
   onDualLanguageFilterChange?: (value: string) => void;
   ptaFilter?: string;
   onPtaFilterChange?: (value: string) => void;
+  iepFilter?: string;
+  onIepFilterChange?: (value: string) => void;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -70,6 +72,14 @@ const PTA_FILTER_OPTIONS = [
   { value: "1m+", label: "$1M+ Raised" },
 ];
 
+const IEP_FILTER_OPTIONS = [
+  { value: "All", label: "All Schools" },
+  { value: "HasIEP", label: "Has IEP Data" },
+  { value: "Low", label: "Low IEP (<15%)" },
+  { value: "Medium", label: "Medium IEP (15-25%)" },
+  { value: "High", label: "High IEP (>25%)" },
+];
+
 export function FilterBar({
   searchQuery,
   onSearchChange,
@@ -89,6 +99,8 @@ export function FilterBar({
   onDualLanguageFilterChange,
   ptaFilter = "All",
   onPtaFilterChange,
+  iepFilter = "All",
+  onIepFilterChange,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -100,6 +112,7 @@ export function FilterBar({
     trendFilter !== "All" ? 1 : 0,
     dualLanguageFilter !== "All" ? 1 : 0,
     ptaFilter !== "All" ? 1 : 0,
+    iepFilter !== "All" ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   const FilterDropdowns = () => (
@@ -189,6 +202,20 @@ export function FilterBar({
           <SelectContent>
             {PTA_FILTER_OPTIONS.map((option) => (
               <SelectItem key={option.value} data-testid={`option-pta-${option.value.toLowerCase()}`} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      {onIepFilterChange && (
+        <Select value={iepFilter} onValueChange={onIepFilterChange}>
+          <SelectTrigger data-testid="select-iep" className="w-full md:w-44 h-10">
+            <SelectValue placeholder="Special Ed (IEP)" />
+          </SelectTrigger>
+          <SelectContent>
+            {IEP_FILTER_OPTIONS.map((option) => (
+              <SelectItem key={option.value} data-testid={`option-iep-${option.value.toLowerCase()}`} value={option.value}>
                 {option.label}
               </SelectItem>
             ))}

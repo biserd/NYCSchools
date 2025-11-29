@@ -30,6 +30,7 @@ function getInitialFiltersFromURL(): {
   trend: string;
   dualLanguage: string;
   pta: string;
+  iep: string;
   sort: SortOption;
 } {
   if (typeof window === "undefined") {
@@ -42,6 +43,7 @@ function getInitialFiltersFromURL(): {
       trend: "All",
       dualLanguage: "All",
       pta: "All",
+      iep: "All",
       sort: "overall",
     };
   }
@@ -55,6 +57,7 @@ function getInitialFiltersFromURL(): {
     trend: params.get("trend") || "All",
     dualLanguage: params.get("dl") || "All",
     pta: params.get("pta") || "All",
+    iep: params.get("iep") || "All",
     sort: (params.get("sort") as SortOption) || "overall",
   };
 }
@@ -71,6 +74,7 @@ export default function Home() {
   const [trendFilter, setTrendFilter] = useState(initialFilters.trend);
   const [dualLanguageFilter, setDualLanguageFilter] = useState(initialFilters.dualLanguage);
   const [ptaFilter, setPtaFilter] = useState(initialFilters.pta);
+  const [iepFilter, setIepFilter] = useState(initialFilters.iep);
   const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sort);
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -90,6 +94,7 @@ export default function Home() {
         trend: "All",
         dl: "All",
         pta: "All",
+        iep: "All",
         sort: "overall",
       };
       
@@ -142,6 +147,11 @@ export default function Home() {
   const handlePtaChange = useCallback((value: string) => {
     setPtaFilter(value);
     updateURLParams({ pta: value });
+  }, [updateURLParams]);
+
+  const handleIepChange = useCallback((value: string) => {
+    setIepFilter(value);
+    updateURLParams({ iep: value });
   }, [updateURLParams]);
 
   const handleSortChange = useCallback((value: SortOption) => {
@@ -336,6 +346,24 @@ export default function Home() {
       }
     }
 
+    // Filter by IEP (Special Education) percentage
+    if (iepFilter !== "All") {
+      switch (iepFilter) {
+        case "HasIEP":
+          filtered = filtered.filter((school) => school.iep_percent !== null && school.iep_percent !== undefined);
+          break;
+        case "Low":
+          filtered = filtered.filter((school) => school.iep_percent !== null && school.iep_percent < 15);
+          break;
+        case "Medium":
+          filtered = filtered.filter((school) => school.iep_percent !== null && school.iep_percent >= 15 && school.iep_percent <= 25);
+          break;
+        case "High":
+          filtered = filtered.filter((school) => school.iep_percent !== null && school.iep_percent > 25);
+          break;
+      }
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -356,7 +384,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -596,6 +624,8 @@ export default function Home() {
         onDualLanguageFilterChange={handleDualLanguageChange}
         ptaFilter={ptaFilter}
         onPtaFilterChange={handlePtaChange}
+        iepFilter={iepFilter}
+        onIepFilterChange={handleIepChange}
       />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
