@@ -50,7 +50,7 @@ I prefer detailed explanations. Ask before making major changes.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics and district comparison indicators.
 - **District Comparison**: Shows how schools compare to district averages for key metrics with visual indicators.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews.
-- **Public Commute Time Calculator**: Calculates transit times and distances using Google Maps APIs, storing addresses in localStorage and database for authenticated users.
+- **Commute Time Calculator (Auth-Gated)**: Calculates transit times and distances using Google Maps APIs for authenticated users only. Unauthenticated users see a "Sign up to see commute times" prompt. Addresses stored exclusively in database `userProfiles` table (no localStorage). Settings page requires authentication. This reduces Google Distance Matrix API costs by ~99% compared to public access.
 - **Legal Pages**: Dedicated Privacy Policy and Terms of Service pages.
 - **Data-Driven Blog**: Blog section at `/blog` featuring analytical articles about NYC school data with interactive Recharts visualizations. First article analyzes 2023-24 DOE data with district performance charts, proficiency tier breakdowns, economic need correlation, and G&T program impact. SEO-optimized with structured data.
 - **3-K/Pre-K Lottery Simulator**: Monte Carlo simulation tool at `/lottery-simulator` helping parents understand their odds in NYC's school lottery. Features:
@@ -82,6 +82,7 @@ Scores are interpreted with color-coded indicators: 90+ (Green), 80-89 (Yellow),
 - **API Endpoints**: Dedicated API endpoints for data fetching and AI integration.
 - **Error Handling**: Graceful degradation and user-friendly messages.
 - **Performance Optimizations**: Load More pagination, search debounce, server-side caching, Gzip compression, code-splitting, stable query keys for commute times, and localStorage synchronization for authenticated users' addresses.
+- **Cost Optimizations**: Auth-gated commute feature eliminates unauthorized Google Distance Matrix API calls; authLoading guard prevents spurious 401 errors from race conditions.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.
