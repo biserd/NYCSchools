@@ -11,7 +11,7 @@ import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2 } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
 import {
   DropdownMenu,
@@ -175,7 +175,7 @@ export default function Home() {
   });
 
   // Fetch all school trends for filtering
-  const { data: trends } = useQuery<Record<string, SchoolTrend>>({
+  const { data: trends, isLoading: trendsLoading } = useQuery<Record<string, SchoolTrend>>({
     queryKey: ['/api/schools-trends'],
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
@@ -207,28 +207,28 @@ export default function Home() {
       s.grade_band?.includes("7-12")
     ).length;
     
-    const k8 = schools.filter(s => 
-      s.grade_band?.includes("K-8") || 
-      s.grade_band?.includes("PK-8")
-    ).length;
-    
     const earlyChildhood = schools.filter(s => s.has_3k || s.has_prek).length;
     
     const giftedTalented = schools.filter(s => s.has_gifted_talented).length;
     
     const dualLanguage = schools.filter(s => s.has_dual_language).length;
     
+    // Count improving schools (those with positive historical trends)
+    const improving = trends 
+      ? schools.filter(s => trends[s.dbn]?.direction === 'improving').length 
+      : 0;
+    
     return {
       total: schools.length,
       elementary,
       middle,
       highSchool,
-      k8,
       earlyChildhood,
       giftedTalented,
       dualLanguage,
+      improving,
     };
-  }, [schools]);
+  }, [schools, trends]);
 
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
@@ -697,10 +697,14 @@ export default function Home() {
               <span className="font-medium text-foreground">{schoolCounts.highSchool}</span>
               <span>High School</span>
             </div>
-            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-k8">
-              <SchoolIcon className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.k8}</span>
-              <span>K-8</span>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-improving">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+              {trendsLoading ? (
+                <Skeleton className="h-4 w-8" />
+              ) : (
+                <span className="font-medium text-foreground">{schoolCounts.improving}</span>
+              )}
+              <span>Improving</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-early">
               <Baby className="w-3.5 h-3.5" />
