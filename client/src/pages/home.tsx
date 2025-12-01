@@ -11,7 +11,7 @@ import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2 } from "lucide-react";
 import { Link } from "wouter";
 import {
   DropdownMenu,
@@ -188,6 +188,47 @@ export default function Home() {
       overall_score: calculateOverallScore(school),
     }));
   }, [rawSchools]);
+
+  // Calculate school counts by type for stats display
+  const schoolCounts = useMemo(() => {
+    if (!schools.length) return null;
+    
+    const elementary = schools.filter(s => 
+      s.grade_band?.includes("K-5") || 
+      s.grade_band?.includes("PK-5") ||
+      s.grade_band?.match(/^[0-5]-[0-5]$/)
+    ).length;
+    
+    const middle = schools.filter(s => s.grade_band === "6-8").length;
+    
+    const highSchool = schools.filter(s => 
+      s.grade_band?.includes("9-12") || 
+      s.grade_band?.includes("6-12") ||
+      s.grade_band?.includes("7-12")
+    ).length;
+    
+    const k8 = schools.filter(s => 
+      s.grade_band?.includes("K-8") || 
+      s.grade_band?.includes("PK-8")
+    ).length;
+    
+    const earlyChildhood = schools.filter(s => s.has_3k || s.has_prek).length;
+    
+    const giftedTalented = schools.filter(s => s.has_gifted_talented).length;
+    
+    const dualLanguage = schools.filter(s => s.has_dual_language).length;
+    
+    return {
+      total: schools.length,
+      elementary,
+      middle,
+      highSchool,
+      k8,
+      earlyChildhood,
+      giftedTalented,
+      dualLanguage,
+    };
+  }, [schools]);
 
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
@@ -627,6 +668,54 @@ export default function Home() {
         iepFilter={iepFilter}
         onIepFilterChange={handleIepChange}
       />
+
+      {/* School Database Stats */}
+      {schoolCounts && (
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6" data-testid="section-school-stats">
+          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 text-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full" data-testid="stat-total">
+              <Building2 className="w-4 h-4 text-primary" />
+              <span className="font-semibold text-primary">{schoolCounts.total.toLocaleString()}</span>
+              <span className="text-muted-foreground">Total Schools</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-elementary">
+              <SchoolIcon className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.elementary}</span>
+              <span>Elementary</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-middle">
+              <SchoolIcon className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.middle}</span>
+              <span>Middle</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-high">
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.highSchool}</span>
+              <span>High School</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-k8">
+              <SchoolIcon className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.k8}</span>
+              <span>K-8</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-early">
+              <Baby className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.earlyChildhood}</span>
+              <span>3-K/Pre-K</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-gt">
+              <Award className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.giftedTalented}</span>
+              <span>G&T</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-dl">
+              <Languages className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground">{schoolCounts.dualLanguage}</span>
+              <span>Dual Language</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
         <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 rounded-lg p-6" data-testid="banner-ai-assistant">
