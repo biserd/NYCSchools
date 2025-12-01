@@ -8,7 +8,7 @@ export const METRIC_TOOLTIPS = {
   overallScore: {
     label: "Overall Score",
     tooltip: "Overall score combines test proficiency (average of ELA and Math - 40%), school climate (30%), and student progress (30%). Scores 90+ are Outstanding, 80-89 are Strong, 70-79 are Average, below 70 need improvement, and N/A indicates insufficient data to calculate a reliable score.",
-    color: "Based on score: Green (90+), Yellow (80-89), Amber (70-79), Red (<70), Gray (N/A - Insufficient Data)",
+    color: "Based on score: Green (90+), Yellow (80-89), Purple (70-79), Red (<70), Gray (N/A - Insufficient Data)",
   },
   
   // Component Scores
@@ -210,7 +210,7 @@ export const METRIC_TOOLTIPS = {
       label: "Strong",
       description: "Score of 80-89 - Strong performance",
     },
-    amber: {
+    purple: {
       label: "Average",
       description: "Score of 70-79 - Meets expectations",
     },

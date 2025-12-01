@@ -338,7 +338,7 @@ export default function MapPage() {
         switch (color) {
           case 'green': return '#22c55e';
           case 'yellow': return '#eab308';
-          case 'amber': return '#f59e0b';
+          case 'purple': return '#8b5cf6';
           default: return '#ef4444';
         }
       };
@@ -625,7 +625,7 @@ export default function MapPage() {
               <span className="font-medium">Score Legend:</span>
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> 90+</span>
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-500"></span> 80-89</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-amber-500"></span> 70-79</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-violet-500"></span> 70-79</span>
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> &lt;70</span>
             </div>
           </CardContent>

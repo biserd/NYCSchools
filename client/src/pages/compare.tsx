@@ -241,7 +241,7 @@ export default function ComparePage() {
   const colorMap = {
     green: "text-emerald-500",
     yellow: "text-yellow-500",
-    amber: "text-amber-500",
+    purple: "text-violet-500",
     red: "text-red-500",
     gray: "text-muted-foreground",
   };

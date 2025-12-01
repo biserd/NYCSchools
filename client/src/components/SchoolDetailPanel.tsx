@@ -36,7 +36,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
   const colorMap: Record<string, string> = {
     green: "bg-emerald-500",
     yellow: "bg-yellow-500",
-    amber: "bg-amber-500",
+    purple: "bg-violet-500",
     red: "bg-red-500",
     gray: "bg-gray-400",
   };
@@ -162,15 +162,19 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center gap-2 text-xs">
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span>{METRIC_TOOLTIPS.colorLegend.green.label} (80+)</span>
+                      <span>{METRIC_TOOLTIPS.colorLegend.green.label} (90+)</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-2 h-2 rounded-full bg-amber-500" />
-                      <span>{METRIC_TOOLTIPS.colorLegend.yellow.label} (60-79)</span>
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span>{METRIC_TOOLTIPS.colorLegend.yellow.label} (80-89)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 rounded-full bg-violet-500" />
+                      <span>{METRIC_TOOLTIPS.colorLegend.purple.label} (70-79)</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <div className="w-2 h-2 rounded-full bg-red-500" />
-                      <span>{METRIC_TOOLTIPS.colorLegend.red.label} (&lt;60)</span>
+                      <span>{METRIC_TOOLTIPS.colorLegend.red.label} (&lt;70)</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <div className="w-2 h-2 rounded-full bg-gray-400" />

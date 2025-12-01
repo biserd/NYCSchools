@@ -325,14 +325,14 @@ export default function LotterySimulatorPage() {
   const getScoreColor = (score: number): string => {
     if (score >= 90) return "text-emerald-600 dark:text-emerald-400";
     if (score >= 80) return "text-yellow-600 dark:text-yellow-400";
-    if (score >= 70) return "text-amber-600 dark:text-amber-400";
+    if (score >= 70) return "text-violet-600 dark:text-violet-400";
     return "text-red-600 dark:text-red-400";
   };
 
   const getProbabilityColor = (prob: number): string => {
     if (prob >= 60) return "bg-emerald-500";
     if (prob >= 40) return "bg-yellow-500";
-    if (prob >= 20) return "bg-amber-500";
+    if (prob >= 20) return "bg-violet-500";
     return "bg-red-500";
   };
 

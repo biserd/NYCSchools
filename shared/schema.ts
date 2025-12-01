@@ -417,19 +417,19 @@ export function getSchoolUrl(school: Pick<School, 'name' | 'dbn'>): string {
   return `/school/${getSchoolSlug(school)}`;
 }
 
-export function getScoreColor(score: number): "green" | "yellow" | "amber" | "red" | "gray" {
+export function getScoreColor(score: number): "green" | "yellow" | "purple" | "red" | "gray" {
   if (score < 0) return "gray"; // Insufficient data
   if (score >= 90) return "green";
   if (score >= 80) return "yellow";
-  if (score >= 70) return "amber";
+  if (score >= 70) return "purple"; // Changed from amber for better visual distinction
   return "red";
 }
 
 // Get color for individual metrics (ELA, Math, Climate, Progress)
-export function getMetricColor(score: number): "green" | "yellow" | "amber" | "red" {
+export function getMetricColor(score: number): "green" | "yellow" | "purple" | "red" {
   if (score >= 90) return "green";
   if (score >= 80) return "yellow";
-  if (score >= 70) return "amber";
+  if (score >= 70) return "purple"; // Changed from amber for better visual distinction
   return "red";
 }
 

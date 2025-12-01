@@ -106,7 +106,7 @@ export default function SchoolDetail() {
   const colorMap = {
     green: "bg-emerald-500",
     yellow: "bg-yellow-500",
-    amber: "bg-amber-500",
+    purple: "bg-violet-500",
     red: "bg-red-500",
     gray: "bg-gray-400",
   };
@@ -276,7 +276,7 @@ export default function SchoolDetail() {
                   <span>80-89 Strong</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
                   <span>70-79 Average</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -1276,7 +1276,7 @@ function HSMetricCard({
     if (isCount) return "text-foreground";
     if (value >= 90) return "text-emerald-600 dark:text-emerald-400";
     if (value >= 80) return "text-yellow-600 dark:text-yellow-400";
-    if (value >= 70) return "text-amber-600 dark:text-amber-400";
+    if (value >= 70) return "text-violet-600 dark:text-violet-400";
     return "text-red-600 dark:text-red-400";
   };
 
@@ -1284,7 +1284,7 @@ function HSMetricCard({
     if (isCount) return "bg-primary";
     if (value >= 90) return "bg-emerald-500";
     if (value >= 80) return "bg-yellow-500";
-    if (value >= 70) return "bg-amber-500";
+    if (value >= 70) return "bg-violet-500";
     return "bg-red-500";
   };
 

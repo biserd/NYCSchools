@@ -71,7 +71,7 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
   const colorMap: Record<string, string> = {
     green: "bg-emerald-500",
     yellow: "bg-yellow-500",
-    amber: "bg-amber-500",
+    purple: "bg-violet-500",
     red: "bg-red-500",
     gray: "bg-gray-400",
   };
