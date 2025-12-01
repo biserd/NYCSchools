@@ -64,30 +64,38 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
     retry: false, // Don't retry on errors
   });
 
-  // For unauthenticated users - show sign up prompt
+  // For unauthenticated users - show sign up prompt with prominent styling
   if (!authLoading && !isAuthenticated) {
     return compact ? (
-      <Tooltip>
-        <TooltipTrigger>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <LogIn className="h-3 w-3" />
-            <span>Sign up</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Sign up to see commute times from your home</p>
-        </TooltipContent>
-      </Tooltip>
+      <Link href="/auth">
+        <Badge 
+          variant="secondary" 
+          className="flex items-center gap-1 bg-primary/10 text-primary border-primary/20 hover-elevate cursor-pointer"
+        >
+          <LogIn className="h-3 w-3" />
+          <span>Sign up for commute</span>
+        </Badge>
+      </Link>
     ) : (
-      <div className="flex items-center gap-2" data-testid="commute-signup-prompt">
-        <Clock className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Sign up to see commute times
-        </span>
+      <div 
+        className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20" 
+        data-testid="commute-signup-prompt"
+      >
+        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
+          <Clock className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-foreground">
+            See commute times from your home
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Sign up to calculate transit times to this school
+          </p>
+        </div>
         <Link href="/auth">
-          <Button variant="outline" size="sm" data-testid="button-signup-commute">
+          <Button size="sm" data-testid="button-signup-commute">
             <LogIn className="h-3 w-3 mr-1" />
-            Sign Up
+            Sign Up Free
           </Button>
         </Link>
       </div>
