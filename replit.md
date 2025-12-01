@@ -40,7 +40,13 @@ I prefer detailed explanations. Ask before making major changes.
   - **Historical Trends**: Option to prioritize improving schools with positive score trajectories
   - **Class Size Preferences**: Small (<18:1), Medium (18-22:1), Large (>22:1)
   - Results display preference badges and matched school cards
-- **Interactive Map View**: Leaflet-based map with color-coded school markers and district filtering.
+- **Interactive Map View**: Leaflet-based map with color-coded school markers and comprehensive filtering. Features:
+  - **SEO-Friendly URL Parameters**: Filter selections sync to URL (e.g., `/map?district=5&type=elementary&gt=citywide`) for shareable links
+  - **Multiple Filters**: District, Grade Level (Pre-K, 3-K, Elementary, Middle, K-8, High School), G&T (Has G&T, Citywide, District), Dual Language (by language), and IEP (Low/Medium/High)
+  - **Dynamic SEO**: Page title and meta description update based on active filters
+  - **Responsive Design**: Desktop filters always visible; mobile filters in collapsible panel
+  - **Color-Coded Markers**: Green (90+), Yellow (80-89), Amber (70-79), Red (<70) based on overall score
+  - **School Popups**: Display badges for G&T, Dual Language, and Early Ed programs
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics and district comparison indicators.
 - **District Comparison**: Shows how schools compare to district averages for key metrics with visual indicators.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews.
