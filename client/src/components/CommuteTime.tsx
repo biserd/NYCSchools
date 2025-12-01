@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, LogIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { getStoredAddress } from "@/lib/addressStorage";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CommuteTimeProps {
   schoolDbn: string;
@@ -20,26 +19,30 @@ interface CommuteData {
   error?: string;
 }
 
+interface UserProfile {
+  homeAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(() => {
-    const stored = getStoredAddress();
-    return stored ? { lat: stored.latitude, lng: stored.longitude } : null;
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Fetch user profile (address) from database - only for authenticated users
+  // Wait for auth check to complete before fetching profile
+  const { data: profile, isLoading: profileLoading } = useQuery<UserProfile | null>({
+    queryKey: ["/api/profile"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 1000 * 60 * 5, // Cache profile for 5 minutes
+    retry: false, // Don't retry on 401
   });
 
-  useEffect(() => {
-    const updateCoordinates = () => {
-      const stored = getStoredAddress();
-      if (stored) {
-        setCoordinates({ lat: stored.latitude, lng: stored.longitude });
-      } else {
-        setCoordinates(null);
-      }
-    };
+  const coordinates = profile?.latitude && profile?.longitude 
+    ? { lat: profile.latitude, lng: profile.longitude }
+    : null;
 
-    window.addEventListener('addressChanged', updateCoordinates);
-    return () => window.removeEventListener('addressChanged', updateCoordinates);
-  }, []);
-
+  // Fetch commute data - only when authenticated and has coordinates
+  // Wait for both auth check and profile to be resolved
   const { data: commuteData, isLoading, isError } = useQuery<CommuteData>({
     queryKey: ["/api/commute", schoolDbn, coordinates?.lat, coordinates?.lng],
     queryFn: async () => {
@@ -56,16 +59,52 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
         return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, error: "Network error" };
       }
     },
-    enabled: !!coordinates,
+    enabled: !authLoading && isAuthenticated && !!coordinates,
     staleTime: 1000 * 60 * 30,
-    retry: 1,
-    retryDelay: 1000,
+    retry: false, // Don't retry on errors
   });
 
-  if (!coordinates && isLoading) {
-    return null;
+  // For unauthenticated users - show sign up prompt
+  if (!authLoading && !isAuthenticated) {
+    return compact ? (
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <LogIn className="h-3 w-3" />
+            <span>Sign up</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Sign up to see commute times from your home</p>
+        </TooltipContent>
+      </Tooltip>
+    ) : (
+      <div className="flex items-center gap-2" data-testid="commute-signup-prompt">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">
+          Sign up to see commute times
+        </span>
+        <Link href="/auth">
+          <Button variant="outline" size="sm" data-testid="button-signup-commute">
+            <LogIn className="h-3 w-3 mr-1" />
+            Sign Up
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
+  // Loading state while checking auth or profile
+  if (authLoading || profileLoading) {
+    return compact ? null : (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Clock className="h-4 w-4" />
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  // Authenticated but loading commute data
   if (isLoading && coordinates) {
     return compact ? (
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -80,7 +119,8 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
     );
   }
 
-  if (commuteData?.error === "No home address set") {
+  // Authenticated but no address set
+  if (!coordinates) {
     return compact ? (
       <Tooltip>
         <TooltipTrigger>

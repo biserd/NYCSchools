@@ -8,16 +8,17 @@ import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { MapPin, Save, Settings as SettingsIcon } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
+import { MapPin, Save, Settings as SettingsIcon, LogIn } from "lucide-react";
 import { UserProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
-import { getStoredAddress, setStoredAddress, clearStoredAddress } from "@/lib/addressStorage";
+import { Link, useLocation } from "wouter";
 
 export default function Settings() {
   const { toast } = useToast();
   const [address, setAddress] = useState("");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
   const { data: profile, isLoading } = useQuery<UserProfile | null>({
     queryKey: ["/api/profile"],
@@ -25,15 +26,10 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    if (isAuthenticated && profile?.homeAddress) {
+    if (profile?.homeAddress) {
       setAddress(profile.homeAddress);
-    } else if (!isAuthenticated) {
-      const stored = getStoredAddress();
-      if (stored) {
-        setAddress(stored.address);
-      }
     }
-  }, [profile, isAuthenticated]);
+  }, [profile]);
 
   const geocodeMutation = useMutation({
     mutationFn: async (address: string) => {
@@ -65,25 +61,16 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
       
       if (variables.homeAddress === null) {
-        // Clear both database and localStorage
-        clearStoredAddress();
         setAddress("");
         toast({
           title: "Address cleared",
           description: "Your home address has been removed.",
         });
       } else {
-        // Sync to localStorage for CommuteTime components
-        setStoredAddress({
-          address: variables.homeAddress,
-          latitude: variables.latitude!,
-          longitude: variables.longitude!,
-        });
         toast({
           title: "Address saved",
-          description: "Your home address has been updated.",
+          description: "Your home address has been updated. Commute times will now be calculated from this location.",
         });
-        window.dispatchEvent(new CustomEvent('addressChanged'));
       }
     },
     onError: () => {
@@ -107,25 +94,11 @@ export default function Settings() {
 
     try {
       const coords = await geocodeMutation.mutateAsync(address);
-      
-      if (isAuthenticated) {
-        await saveProfileMutation.mutateAsync({
-          homeAddress: address,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        });
-      } else {
-        setStoredAddress({
-          address,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        });
-        toast({
-          title: "Address saved",
-          description: "Your home address has been saved locally.",
-        });
-        window.dispatchEvent(new CustomEvent('addressChanged'));
-      }
+      await saveProfileMutation.mutateAsync({
+        homeAddress: address,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
     } catch (error: any) {
       toast({
         title: "Geocoding failed",
@@ -136,26 +109,88 @@ export default function Settings() {
   };
 
   const handleClearAddress = () => {
-    if (isAuthenticated) {
-      // For authenticated users, clear from database
-      saveProfileMutation.mutate({
-        homeAddress: null,
-        latitude: null,
-        longitude: null,
-      });
-    } else {
-      // For non-authenticated users, clear from localStorage
-      clearStoredAddress();
-      setAddress("");
-      toast({
-        title: "Address cleared",
-        description: "Your home address has been removed.",
-      });
-    }
+    saveProfileMutation.mutate({
+      homeAddress: null,
+      latitude: null,
+      longitude: null,
+    });
   };
 
-  const currentAddress = isAuthenticated ? profile?.homeAddress : getStoredAddress()?.address;
+  const currentAddress = profile?.homeAddress;
   const isProcessing = geocodeMutation.isPending || saveProfileMutation.isPending;
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SEOHead 
+          title="Settings"
+          description="Configure your NYC School Ratings experience. Set your home address for commute time calculations."
+          keywords="settings, commute calculator, home address, NYC schools"
+          canonicalPath="/settings"
+        />
+        <AppHeader />
+        <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Require authentication - show login prompt for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SEOHead 
+          title="Settings"
+          description="Configure your NYC School Ratings experience. Set your home address for commute time calculations."
+          keywords="settings, commute calculator, home address, NYC schools"
+          canonicalPath="/settings"
+        />
+        <AppHeader />
+        <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+          <div className="flex items-center gap-2 mb-6">
+            <SettingsIcon className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold">Settings</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LogIn className="w-5 h-5" />
+                Sign In Required
+              </CardTitle>
+              <CardDescription>
+                Create an account or sign in to save your home address and see personalized commute times to schools.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                With an account, you can:
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                <li>Save your home address for commute calculations</li>
+                <li>See transit times to every school</li>
+                <li>Save favorite schools</li>
+                <li>Get personalized AI recommendations</li>
+              </ul>
+              <div className="flex gap-2 pt-4">
+                <Link href="/auth">
+                  <Button data-testid="button-login-settings">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In / Create Account
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

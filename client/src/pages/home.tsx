@@ -530,12 +530,14 @@ export default function Home() {
                   Map View
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
-                <Link href="/settings">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Link>
-              </Button>
+              {isAuthenticated && user && (
+                <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
+                  <Link href="/settings">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                </Button>
+              )}
               {isAuthenticated && user && (
                 <Button variant="outline" size="sm" asChild data-testid="button-favorites-nav">
                   <Link href="/favorites">
@@ -633,12 +635,14 @@ export default function Home() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings" data-testid="menu-item-settings">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
+                  {isAuthenticated && user && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" data-testid="menu-item-settings">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

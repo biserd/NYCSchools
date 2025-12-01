@@ -82,17 +82,19 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                 <span className="hidden sm:inline">Map</span>
               </Button>
             </Link>
-            <Link href="/settings">
-              <Button
-                variant="outline"
-                size="icon"
-                className="sm:w-auto sm:px-3"
-                data-testid="button-settings-nav"
-              >
-                <Settings className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Settings</span>
-              </Button>
-            </Link>
+            {isAuthenticated && user && (
+              <Link href="/settings">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="sm:w-auto sm:px-3"
+                  data-testid="button-settings-nav"
+                >
+                  <Settings className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
+              </Link>
+            )}
             {isAuthenticated && user && (
               <Link href="/favorites">
                 <Button
