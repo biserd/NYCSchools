@@ -4,9 +4,16 @@ import { SchoolCard } from "./SchoolCard";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SchoolListProps {
   schools: SchoolWithOverallScore[];
+}
+
+interface UserProfile {
+  homeAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const INITIAL_LOAD = 20;
@@ -14,11 +21,20 @@ const LOAD_MORE_INCREMENT = 20;
 
 export function SchoolList({ schools }: SchoolListProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Fetch all school trends
   const { data: trends } = useQuery<Record<string, SchoolTrend>>({
     queryKey: ['/api/schools-trends'],
     staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  // Fetch user profile for proximity badge
+  const { data: profile } = useQuery<UserProfile | null>({
+    queryKey: ["/api/profile"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 
   // Reset display count when schools change (filtering, etc.)
@@ -51,6 +67,8 @@ export function SchoolList({ schools }: SchoolListProps) {
             key={school.dbn}
             school={school}
             trend={trends?.[school.dbn]}
+            userLat={profile?.latitude}
+            userLng={profile?.longitude}
           />
         ))}
       </div>

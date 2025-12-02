@@ -31,6 +31,7 @@ function getInitialFiltersFromURL(): {
   dualLanguage: string;
   pta: string;
   iep: string;
+  zipCode: string;
   sort: SortOption;
 } {
   if (typeof window === "undefined") {
@@ -44,6 +45,7 @@ function getInitialFiltersFromURL(): {
       dualLanguage: "All",
       pta: "All",
       iep: "All",
+      zipCode: "",
       sort: "overall",
     };
   }
@@ -58,6 +60,7 @@ function getInitialFiltersFromURL(): {
     dualLanguage: params.get("dl") || "All",
     pta: params.get("pta") || "All",
     iep: params.get("iep") || "All",
+    zipCode: params.get("zip") || "",
     sort: (params.get("sort") as SortOption) || "overall",
   };
 }
@@ -75,6 +78,8 @@ export default function Home() {
   const [dualLanguageFilter, setDualLanguageFilter] = useState(initialFilters.dualLanguage);
   const [ptaFilter, setPtaFilter] = useState(initialFilters.pta);
   const [iepFilter, setIepFilter] = useState(initialFilters.iep);
+  const [zipCodeFilter, setZipCodeFilter] = useState(initialFilters.zipCode);
+  const [debouncedZipCode, setDebouncedZipCode] = useState(initialFilters.zipCode);
   const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sort);
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -95,6 +100,7 @@ export default function Home() {
         dl: "All",
         pta: "All",
         iep: "All",
+        zip: "",
         sort: "overall",
       };
       
@@ -154,6 +160,15 @@ export default function Home() {
     updateURLParams({ iep: value });
   }, [updateURLParams]);
 
+  const handleZipCodeChange = useCallback((value: string) => {
+    setZipCodeFilter(value);
+    // When entering a zip code, switch to "All Districts" for better UX
+    if (value.length === 5 && selectedDistrict !== "all") {
+      setSelectedDistrict("all");
+      updateURLParams({ district: "all" });
+    }
+  }, [selectedDistrict, updateURLParams]);
+
   const handleSortChange = useCallback((value: SortOption) => {
     setSortBy(value);
     updateURLParams({ sort: value });
@@ -169,6 +184,19 @@ export default function Home() {
       clearTimeout(handler);
     };
   }, [searchQuery, updateURLParams]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedZipCode(zipCodeFilter);
+      if (zipCodeFilter.length === 5 || zipCodeFilter.length === 0) {
+        updateURLParams({ zip: zipCodeFilter });
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [zipCodeFilter, updateURLParams]);
 
   const { data: rawSchools, isLoading } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -405,6 +433,11 @@ export default function Home() {
       }
     }
 
+    // Filter by zip code (only apply when 5 digits entered)
+    if (debouncedZipCode && debouncedZipCode.length === 5) {
+      filtered = filtered.filter((school) => school.zip_code === debouncedZipCode);
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -425,7 +458,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -671,6 +704,8 @@ export default function Home() {
         onPtaFilterChange={handlePtaChange}
         iepFilter={iepFilter}
         onIepFilterChange={handleIepChange}
+        zipCode={zipCodeFilter}
+        onZipCodeChange={handleZipCodeChange}
       />
 
       {/* School Database Stats */}

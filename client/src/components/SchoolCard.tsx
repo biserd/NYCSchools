@@ -10,10 +10,13 @@ import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
 import { Link } from "wouter";
 import { CommuteTime } from "./CommuteTime";
+import { ProximityBadge } from "./ProximityBadge";
 
 interface SchoolCardProps {
   school: School;
   trend?: SchoolTrend;
+  userLat?: number | null;
+  userLng?: number | null;
 }
 
 function getTrendBadgeConfig(direction: TrendDirection) {
@@ -41,7 +44,7 @@ function getTrendBadgeConfig(direction: TrendDirection) {
   }
 }
 
-export function SchoolCard({ school, trend }: SchoolCardProps) {
+export function SchoolCard({ school, trend, userLat, userLng }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
   const trendConfig = trend && trend.direction !== 'insufficient_data' ? getTrendBadgeConfig(trend.direction) : null;
   const scoreColor = getScoreColor(overallScore);
@@ -290,6 +293,12 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                   </TooltipContent>
                 </Tooltip>
               )}
+              <ProximityBadge 
+                schoolLat={school.latitude} 
+                schoolLng={school.longitude}
+                userLat={userLat}
+                userLng={userLng}
+              />
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">

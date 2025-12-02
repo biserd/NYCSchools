@@ -11,7 +11,7 @@ I prefer detailed explanations. Ask before making major changes.
 ### UI/UX Decisions
 - **Design System**: Clean, modern design following `design_guidelines.md`, using Inter typeface, and a vibrant primary blue color scheme with specific success, warning, and metric indicator colors.
 - **Responsiveness & Accessibility**: Optimized for all devices with proper ARIA labels and keyboard navigation.
-- **Visual Cues**: Color-coded indicators (Emerald, Yellow, Amber, Red) for all scores and metrics. On-screen explanations for all metrics, rather than hidden tooltips.
+- **Visual Cues**: Color-coded indicators (Emerald for 90+, Yellow for 80-89, Purple/Violet for 70-79, Red for <70) for all scores and metrics. On-screen explanations for all metrics, rather than hidden tooltips.
 - **AI Assistant Prominence**: Multiple entry points and a pulsing animation on the floating AI chat button.
 - **Consistent Navigation**: Shared `AppHeader` and `Footer` components across all pages for consistent navigation and access to legal information.
 - **Icons**: Home icon (🏠) for Economic Need Index and demographics.
@@ -26,7 +26,7 @@ I prefer detailed explanations. Ask before making major changes.
 ### Feature Specifications
 - **School Data**: Comprehensive data for 1,533 NYC schools, including academic, climate, and progress scores, NYC School Survey results, demographics (Economic Need Index, ELL, IEP, Race/Ethnicity Breakdown), and realistic student-teacher ratios. Includes 3-K/Pre-K program information and Gifted & Talented program data with badges and filtering.
 - **Gifted & Talented Programs**: 130 schools with G&T programs (5 citywide, 125 district). Filter by "Has G&T", "Citywide G&T", or "District G&T". Citywide schools: NEST+M, Anderson School, TAG Young Scholars, Brooklyn School of Inquiry, The 30th Avenue School.
-- **Filtering & Sorting**: Live search, district, grade band, early childhood, G&T, and historical trend filters, plus sorting by various metrics.
+- **Filtering & Sorting**: Live search, district, grade band, early childhood, G&T, historical trend, dual language, PTA, IEP, and **zip code** filters, plus sorting by various metrics. Zip code filter (223 NYC zip codes) auto-switches to "All Districts" when entering a 5-digit zip for better UX.
 - **Historical Trends**: Shows 3-5 year score changes using real NYC DOE data (2018-2025). Trend badges on school cards indicate Improving (>5% gain, green), Declining (>5% loss, red), or Stable (within ±5%, yellow). Detail pages show year-over-year ELA/Math line charts. Filter by "Improving Schools" to find schools with upward trajectories. Data covers 1,125 schools with 6,623 historical records. COVID gap (2020-2021) is noted in charts.
 - **School Display**: Responsive grid of school cards, commute times, and a detailed side panel (`SchoolDetailPanel`).
 - **Authentication**: Email/password authentication with registration, login, bcrypt hashing, PostgreSQL-backed sessions, and protected routes.
@@ -75,7 +75,7 @@ Overall Score = Test Proficiency (40%) + Climate Score (30%) + Progress Score (3
 - **Test Proficiency**: Average of ELA and Math proficiency from NYS grades 3-8 standardized tests.
 - **Climate Score**: NYC DOE metric measuring school environment via NYC School Survey.
 - **Progress Score**: NYC DOE metric tracking year-over-year student academic growth.
-Scores are interpreted with color-coded indicators: 90+ (Green), 80-89 (Yellow), 70-79 (Amber), <70 (Red).
+Scores are interpreted with color-coded indicators: 90+ (Emerald/Green), 80-89 (Yellow), 70-79 (Purple/Violet), <70 (Red).
 
 ### System Design Choices
 - **Database**: PostgreSQL with Drizzle ORM.

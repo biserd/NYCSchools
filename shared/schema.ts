@@ -68,6 +68,7 @@ export const schools = pgTable("schools", {
   // Geographic Coordinates
   latitude: real("latitude"),
   longitude: real("longitude"),
+  zip_code: varchar("zip_code"), // NYC zip code derived from lat/lng
   
   // Early Childhood Programs
   has_3k: boolean("has_3k").default(false),

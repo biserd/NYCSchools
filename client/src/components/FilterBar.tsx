@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, SlidersHorizontal, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,6 +39,9 @@ interface FilterBarProps {
   onPtaFilterChange?: (value: string) => void;
   iepFilter?: string;
   onIepFilterChange?: (value: string) => void;
+  zipCode?: string;
+  onZipCodeChange?: (value: string) => void;
+  availableZipCodes?: string[];
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -101,6 +104,9 @@ export function FilterBar({
   onPtaFilterChange,
   iepFilter = "All",
   onIepFilterChange,
+  zipCode = "",
+  onZipCodeChange,
+  availableZipCodes = [],
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -113,6 +119,7 @@ export function FilterBar({
     dualLanguageFilter !== "All" ? 1 : 0,
     ptaFilter !== "All" ? 1 : 0,
     iepFilter !== "All" ? 1 : 0,
+    zipCode && zipCode.length === 5 ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   const FilterDropdowns = () => (
@@ -221,6 +228,25 @@ export function FilterBar({
             ))}
           </SelectContent>
         </Select>
+      )}
+      {onZipCodeChange && (
+        <div className="relative w-full md:w-36">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            data-testid="input-zip-code"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={5}
+            placeholder="Zip Code"
+            value={zipCode}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+              onZipCodeChange(value);
+            }}
+            className="pl-9 h-10"
+          />
+        </div>
       )}
     </>
   );
