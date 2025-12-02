@@ -612,10 +612,63 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
   app.post("/api/chat", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.session.userId;
-      const { message, conversationHistory, sessionId } = req.body;
+      const { message, conversationHistory, sessionId, currentSchoolDbn } = req.body;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Fetch current school details if a DBN is provided
+      let currentSchoolContext = "";
+      if (currentSchoolDbn && typeof currentSchoolDbn === "string") {
+        const currentSchool = await storage.getSchool(currentSchoolDbn);
+        if (currentSchool) {
+          const academics = typeof currentSchool.academics_score === 'number' ? currentSchool.academics_score : 0;
+          const climate = typeof currentSchool.climate_score === 'number' ? currentSchool.climate_score : 0;
+          const progress = typeof currentSchool.progress_score === 'number' ? currentSchool.progress_score : 0;
+          const overallScore = Math.round(0.4 * academics + 0.3 * climate + 0.3 * progress);
+          const dualLangInfo = currentSchool.has_dual_language && currentSchool.dual_language_languages?.length 
+            ? 'Yes - ' + currentSchool.dual_language_languages.join(', ')
+            : currentSchool.has_dual_language ? 'Yes' : 'No';
+          currentSchoolContext = `
+IMPORTANT: The user is currently viewing this school's page:
+School: ${currentSchool.name} (DBN: ${currentSchool.dbn})
+District: ${currentSchool.district}
+Grade Band: ${currentSchool.grade_band}
+Address: ${currentSchool.address || 'Not available'}
+
+Scores:
+- Overall Score: ${overallScore}
+- Academics Score: ${academics}
+- Climate Score: ${climate}
+- Progress Score: ${progress}
+- ELA Proficiency: ${currentSchool.ela_proficiency ?? 'N/A'}${currentSchool.ela_proficiency != null ? '%' : ''}
+- Math Proficiency: ${currentSchool.math_proficiency ?? 'N/A'}${currentSchool.math_proficiency != null ? '%' : ''}
+
+Demographics:
+- Enrollment: ${currentSchool.enrollment ?? 'N/A'} students
+- Student-Teacher Ratio: ${currentSchool.student_teacher_ratio ?? 'N/A'}
+- Economic Need Index: ${currentSchool.economic_need_index ?? 'N/A'}
+- ELL Students: ${currentSchool.ell_percent != null ? currentSchool.ell_percent + '%' : 'N/A'}
+- IEP Students: ${currentSchool.iep_percent != null ? currentSchool.iep_percent + '%' : 'N/A'}
+
+Programs:
+- Gifted & Talented: ${currentSchool.has_gifted_talented ? 'Yes' + (currentSchool.gt_program_type ? ' (' + currentSchool.gt_program_type + ')' : '') : 'No'}
+- Dual Language: ${dualLangInfo}
+- Has 3K/Pre-K: ${currentSchool.has_prek ? 'Yes' : 'No'}
+- PTA Fundraising: ${currentSchool.pta_fundraising_total != null ? '$' + currentSchool.pta_fundraising_total.toLocaleString() : 'N/A'}
+
+NYC School Survey Results:
+- Student Safety: ${currentSchool.student_safety ?? 'N/A'}
+- Student-Teacher Trust: ${currentSchool.student_teacher_trust ?? 'N/A'}
+- Teacher Leadership: ${currentSchool.teacher_leadership ?? 'N/A'}
+- Guardian Satisfaction: ${currentSchool.guardian_satisfaction ?? 'N/A'}
+- Guardian Communication: ${currentSchool.guardian_communication ?? 'N/A'}
+
+When the user asks about "this school", "the school", or uses phrases like "here" or "it", they are referring to ${currentSchool.name}.
+Prioritize answering questions about this specific school. If they ask comparison questions, compare this school against others.
+`;
+        }
       }
 
       // Initialize OpenAI with Replit AI Integrations
@@ -668,7 +721,7 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
       }
 
       const systemMessage = `You are a helpful assistant for parents looking for schools in NYC. You have access to data from NYC public and charter schools across all 5 boroughs (Manhattan, Bronx, Brooklyn, Queens, Staten Island).
-
+${currentSchoolContext}
 School Data Overview:
 - Districts: 1-32 (community school districts)
 - Metrics available: Overall Score, Academics Score, Climate Score, Progress Score, ELA Proficiency, Math Proficiency, Enrollment, Student-Teacher Ratio, NYC School Survey scores
@@ -682,16 +735,15 @@ Score Ranges:
 - 70-79: Average (Amber)
 - Below 70: Needs Improvement (Red)
 
-Here's a sample of schools to help you answer questions:
+Here's a sample of other schools for comparison:
 ${cachedSchoolSummary}
 
 When answering questions:
 1. Be specific and helpful
 2. Reference actual school names, districts, and scores when possible
 3. Explain what metrics mean in parent-friendly language
-4. Suggest viewing individual school pages for detailed information at /school/{DBN}
-5. If asked to compare schools, focus on key differences
-6. If you don't have exact data for a specific question, acknowledge the limitation
+4. If asked to compare schools, focus on key differences
+5. If you don't have exact data for a specific question, acknowledge the limitation
 
 Remember: Schools are in the database, but you're seeing a sample. For comprehensive searches across all schools, suggest using the search and filter tools on the website.`;
 

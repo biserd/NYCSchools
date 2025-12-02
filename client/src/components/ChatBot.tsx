@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, X, Send, Loader2, Sparkles, LogIn } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { School } from "@shared/schema";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,14 +16,72 @@ interface Message {
 
 export function ChatBot() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
+  const queryClient = useQueryClient();
+
+  // Detect if we're on a school detail page and extract DBN
+  const currentSchoolDbn = useMemo(() => {
+    const schoolMatch = location.match(/^\/school\/([^/]+)/);
+    if (schoolMatch) {
+      return schoolMatch[1].split('-')[0].toUpperCase();
+    }
+    return null;
+  }, [location]);
+
+  // Fetch school data when on a school page - only run query when we have a DBN
+  const { data: currentSchool } = useQuery<School>({
+    queryKey: ["/api/schools", currentSchoolDbn],
+    enabled: !!currentSchoolDbn,
+  });
+
+  const getInitialMessage = (): string => {
+    if (currentSchool) {
+      return `Hi! I'm your NYC School Ratings assistant. I see you're viewing ${currentSchool.name}. I can answer questions about this school's scores, programs, and how it compares to others. What would you like to know?`;
+    }
+    return "Hi! I'm your NYC School Ratings assistant. I can help you find schools, compare options, and answer questions about NYC public and charter schools. What would you like to know?";
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! I'm your NYC School Ratings assistant. I can help you find schools, compare options, and answer questions about NYC public and charter schools. What would you like to know?",
+      content: getInitialMessage(),
     },
   ]);
+
+  // Track previous school DBN to detect navigation
+  const [prevSchoolDbn, setPrevSchoolDbn] = useState<string | null>(null);
+
+  // Handle navigation between pages - reset context first to prevent stale data issues
+  useEffect(() => {
+    // Navigated away from school page - reset immediately before stale data can be used
+    if (!currentSchoolDbn && prevSchoolDbn) {
+      // Invalidate the old school query cache
+      queryClient.removeQueries({ queryKey: ["/api/schools", prevSchoolDbn] });
+      setPrevSchoolDbn(null);
+      // Reset to generic greeting
+      setMessages([{
+        role: "assistant",
+        content: "Hi! I'm your NYC School Ratings assistant. I can help you find schools, compare options, and answer questions about NYC public and charter schools. What would you like to know?",
+      }]);
+      setSessionId(null);
+    }
+  }, [currentSchoolDbn, prevSchoolDbn, queryClient]);
+
+  // Handle navigation to a new school page - only after school data loads
+  useEffect(() => {
+    if (currentSchool && currentSchoolDbn && currentSchoolDbn !== prevSchoolDbn) {
+      setPrevSchoolDbn(currentSchoolDbn);
+      // Reset conversation with school-specific greeting
+      setMessages([{
+        role: "assistant",
+        content: `Hi! I'm your NYC School Ratings assistant. I see you're viewing ${currentSchool.name}. I can answer questions about this school's scores, programs, and how it compares to others. What would you like to know?`,
+      }]);
+      // Reset session for new school context
+      setSessionId(null);
+    }
+  }, [currentSchool, currentSchoolDbn, prevSchoolDbn]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -63,6 +123,7 @@ export function ChatBot() {
           message: userMessage,
           conversationHistory,
           sessionId,
+          currentSchoolDbn,
         }),
       });
 
