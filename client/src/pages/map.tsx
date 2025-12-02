@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { MapPin, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Filter, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { School, calculateOverallScore, getScoreColor, getSchoolSlug } from "@shared/schema";
@@ -59,37 +60,58 @@ export default function MapPage() {
   const urlParams = useMemo(() => new URLSearchParams(searchString), [searchString]);
   
   // Initialize state from URL parameters
-  const [selectedDistrict, setSelectedDistrict] = useState(() => urlParams.get("district") || "all");
+  // If zip is provided without district, default to "all" to show all schools in that zip
+  // Otherwise, default to District 2
+  const [selectedDistrict, setSelectedDistrict] = useState(() => {
+    const district = urlParams.get("district");
+    const zip = urlParams.get("zip");
+    if (district) return district;
+    if (zip && zip.length === 5) return "all"; // Zip provided but no district = show all districts
+    return "2"; // Default to District 2
+  });
   const [selectedType, setSelectedType] = useState(() => urlParams.get("type") || "all");
   const [selectedGT, setSelectedGT] = useState(() => urlParams.get("gt") || "all");
   const [selectedDL, setSelectedDL] = useState(() => urlParams.get("dl") || "all");
   const [selectedIEP, setSelectedIEP] = useState(() => urlParams.get("iep") || "all");
+  const [selectedZipCode, setSelectedZipCode] = useState(() => urlParams.get("zip") || "");
   
-  // Track if we're updating from URL to prevent loops
-  const isUpdatingFromURL = useRef(false);
+  // Track initial URL parameters - we only sync FROM URL once on mount
+  const initialUrlParamsRef = useRef(urlParams);
+  const hasInitializedFromURL = useRef(false);
 
-  // Sync state FROM URL when URL changes (e.g., navigation with params)
+  // Sync state FROM URL only on first mount or when navigating via browser back/forward
   useEffect(() => {
-    isUpdatingFromURL.current = true;
-    setSelectedDistrict(urlParams.get("district") || "all");
-    setSelectedType(urlParams.get("type") || "all");
-    setSelectedGT(urlParams.get("gt") || "all");
-    setSelectedDL(urlParams.get("dl") || "all");
-    setSelectedIEP(urlParams.get("iep") || "all");
-    // Reset flag after state updates settle
-    setTimeout(() => {
-      isUpdatingFromURL.current = false;
-    }, 0);
-  }, [urlParams]);
-
-  // Update URL when filters change (only when user interacts, not from URL sync)
-  const updateURL = useCallback((params: Record<string, string>) => {
-    if (isUpdatingFromURL.current) return;
+    // Skip if we've already initialized and this isn't a real navigation
+    if (hasInitializedFromURL.current) return;
     
+    hasInitializedFromURL.current = true;
+    const district = initialUrlParamsRef.current.get("district");
+    const type = initialUrlParamsRef.current.get("type");
+    const gt = initialUrlParamsRef.current.get("gt");
+    const dl = initialUrlParamsRef.current.get("dl");
+    const iep = initialUrlParamsRef.current.get("iep");
+    const zip = initialUrlParamsRef.current.get("zip");
+    
+    if (district) setSelectedDistrict(district);
+    if (type) setSelectedType(type);
+    if (gt) setSelectedGT(gt);
+    if (dl) setSelectedDL(dl);
+    if (iep) setSelectedIEP(iep);
+    if (zip) setSelectedZipCode(zip);
+  }, []);
+
+  // Update URL when filters change
+  const updateURL = useCallback((params: Record<string, string>) => {
     const newParams = new URLSearchParams();
     
     Object.entries(params).forEach(([key, value]) => {
-      if (value && value !== "all") {
+      // Don't add default values to URL
+      const isDefault = 
+        (key === "district" && (value === "2" || value === "all")) ||
+        (key !== "district" && key !== "zip" && value === "all") ||
+        (key === "zip" && !value);
+      
+      if (!isDefault && value) {
         newParams.set(key, value);
       }
     });
@@ -109,8 +131,9 @@ export default function MapPage() {
       gt: selectedGT,
       dl: selectedDL,
       iep: selectedIEP,
+      zip: selectedZipCode,
     });
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, updateURL]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, updateURL]);
 
   const { data: allSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -222,19 +245,25 @@ export default function MapPage() {
       });
     }
     
+    // Zip code filter
+    if (selectedZipCode && selectedZipCode.length === 5) {
+      result = result.filter(school => school.zip_code === selectedZipCode);
+    }
+    
     return result;
-  }, [schoolsWithCoords, selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP]);
+  }, [schoolsWithCoords, selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode]);
 
-  // Count active filters
+  // Count active filters (District 2 is the default, so only count as active if changed to something else)
   const activeFilterCount = useMemo(() => {
     return [
-      selectedDistrict !== "all" ? 1 : 0,
+      selectedDistrict !== "2" ? 1 : 0,
       selectedType !== "all" ? 1 : 0,
       selectedGT !== "all" ? 1 : 0,
       selectedDL !== "all" ? 1 : 0,
       selectedIEP !== "all" ? 1 : 0,
+      selectedZipCode && selectedZipCode.length === 5 ? 1 : 0,
     ].reduce((a, b) => a + b, 0);
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode]);
 
   // Generate dynamic SEO title, description, and canonical path from active filter state
   const seoContent = useMemo(() => {
@@ -262,8 +291,12 @@ export default function MapPage() {
       parts.push(iepLabel);
     }
     
-    if (selectedDistrict !== "all") {
+    if (selectedDistrict !== "all" && selectedDistrict !== "2") {
       parts.push(`District ${selectedDistrict}`);
+    }
+    
+    if (selectedZipCode && selectedZipCode.length === 5) {
+      parts.push(`Zip ${selectedZipCode}`);
     }
     
     let title = "NYC School Map";
@@ -276,16 +309,17 @@ export default function MapPage() {
     
     // Build canonical path from active filter state
     const canonicalParams = new URLSearchParams();
-    if (selectedDistrict !== "all") canonicalParams.set("district", selectedDistrict);
+    if (selectedDistrict !== "all" && selectedDistrict !== "2") canonicalParams.set("district", selectedDistrict);
     if (selectedType !== "all") canonicalParams.set("type", selectedType);
     if (selectedGT !== "all") canonicalParams.set("gt", selectedGT);
     if (selectedDL !== "all") canonicalParams.set("dl", selectedDL);
     if (selectedIEP !== "all") canonicalParams.set("iep", selectedIEP);
+    if (selectedZipCode && selectedZipCode.length === 5) canonicalParams.set("zip", selectedZipCode);
     const canonicalQuery = canonicalParams.toString();
     const canonicalPath = canonicalQuery ? `/map?${canonicalQuery}` : "/map";
     
     return { title, description, canonicalPath };
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, filteredSchools.length, schoolsWithCoords.length]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, filteredSchools.length, schoolsWithCoords.length]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -459,20 +493,31 @@ export default function MapPage() {
     };
   }, [filteredSchools, setLocation]);
 
-  // Clear all filters
+  // Clear all filters (reset to defaults)
   const clearFilters = () => {
-    setSelectedDistrict("all");
+    setSelectedDistrict("2");
     setSelectedType("all");
     setSelectedGT("all");
     setSelectedDL("all");
     setSelectedIEP("all");
+    setSelectedZipCode("");
   };
 
-  const FilterDropdowns = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+  // Handle zip code input changes - switches to All Districts when 5 digits entered
+  const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+    setSelectedZipCode(value);
+    // When entering a 5-digit zip code, always switch to "All Districts" for better UX
+    if (value.length === 5) {
+      setSelectedDistrict("all");
+    }
+  };
+
+  const filterDropdownsContent = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
       <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
         <SelectTrigger data-testid="select-map-district" className="h-9">
-          <SelectValue placeholder="All Districts" />
+          <SelectValue placeholder="District 2" />
         </SelectTrigger>
         <SelectContent className="z-[9999]">
           <SelectItem value="all">All Districts</SelectItem>
@@ -535,6 +580,21 @@ export default function MapPage() {
           ))}
         </SelectContent>
       </Select>
+
+      <div className="relative">
+        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          data-testid="input-map-zip-code"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={5}
+          placeholder="Zip Code"
+          value={selectedZipCode}
+          onChange={handleZipChange}
+          className="pl-9 h-9"
+        />
+      </div>
     </div>
   );
 
@@ -584,7 +644,7 @@ export default function MapPage() {
                   </Button>
                 )}
               </div>
-              <FilterDropdowns />
+              {filterDropdownsContent}
             </div>
 
             {/* Mobile filters - collapsible */}
@@ -615,7 +675,7 @@ export default function MapPage() {
                   )}
                 </div>
                 <CollapsibleContent className="pt-4">
-                  <FilterDropdowns />
+                  {filterDropdownsContent}
                 </CollapsibleContent>
               </Collapsible>
             </div>
