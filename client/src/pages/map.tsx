@@ -75,30 +75,47 @@ export default function MapPage() {
   const [selectedIEP, setSelectedIEP] = useState(() => urlParams.get("iep") || "all");
   const [selectedZipCode, setSelectedZipCode] = useState(() => urlParams.get("zip") || "");
   
-  // Track initial URL parameters - we only sync FROM URL once on mount
-  const initialUrlParamsRef = useRef(urlParams);
-  const hasInitializedFromURL = useRef(false);
+  // Track if we're currently updating the URL programmatically
+  const isUpdatingURL = useRef(false);
+  const lastUrlParams = useRef(searchString);
 
-  // Sync state FROM URL only on first mount or when navigating via browser back/forward
+  // Sync state FROM URL when URL changes externally (navigation, back/forward, link clicks)
   useEffect(() => {
-    // Skip if we've already initialized and this isn't a real navigation
-    if (hasInitializedFromURL.current) return;
+    // Skip if this URL change was caused by our own updateURL call
+    if (isUpdatingURL.current) {
+      isUpdatingURL.current = false;
+      lastUrlParams.current = searchString;
+      return;
+    }
     
-    hasInitializedFromURL.current = true;
-    const district = initialUrlParamsRef.current.get("district");
-    const type = initialUrlParamsRef.current.get("type");
-    const gt = initialUrlParamsRef.current.get("gt");
-    const dl = initialUrlParamsRef.current.get("dl");
-    const iep = initialUrlParamsRef.current.get("iep");
-    const zip = initialUrlParamsRef.current.get("zip");
+    // Skip if URL hasn't actually changed
+    if (lastUrlParams.current === searchString) return;
+    lastUrlParams.current = searchString;
     
-    if (district) setSelectedDistrict(district);
-    if (type) setSelectedType(type);
-    if (gt) setSelectedGT(gt);
-    if (dl) setSelectedDL(dl);
-    if (iep) setSelectedIEP(iep);
-    if (zip) setSelectedZipCode(zip);
-  }, []);
+    // Parse new URL params and update state
+    const newParams = new URLSearchParams(searchString);
+    const district = newParams.get("district");
+    const type = newParams.get("type");
+    const gt = newParams.get("gt");
+    const dl = newParams.get("dl");
+    const iep = newParams.get("iep");
+    const zip = newParams.get("zip");
+    
+    // Set district: explicit district > infer from zip > default
+    if (district) {
+      setSelectedDistrict(district);
+    } else if (zip && zip.length === 5) {
+      setSelectedDistrict("all");
+    } else {
+      setSelectedDistrict("2");
+    }
+    
+    setSelectedType(type || "all");
+    setSelectedGT(gt || "all");
+    setSelectedDL(dl || "all");
+    setSelectedIEP(iep || "all");
+    setSelectedZipCode(zip || "");
+  }, [searchString]);
 
   // Update URL when filters change
   const updateURL = useCallback((params: Record<string, string>) => {
@@ -118,6 +135,9 @@ export default function MapPage() {
     
     const queryString = newParams.toString();
     const newPath = queryString ? `/map?${queryString}` : "/map";
+    
+    // Mark that we're updating URL programmatically (to avoid loop with URL sync effect)
+    isUpdatingURL.current = true;
     
     // Use replaceState to update URL without navigation
     window.history.replaceState(null, "", newPath);

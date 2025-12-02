@@ -41,8 +41,10 @@ I prefer detailed explanations. Ask before making major changes.
   - **Class Size Preferences**: Small (<18:1), Medium (18-22:1), Large (>22:1)
   - Results display preference badges and matched school cards
 - **Interactive Map View**: Leaflet-based map with color-coded school markers and comprehensive filtering. Features:
-  - **SEO-Friendly URL Parameters**: Filter selections sync to URL (e.g., `/map?district=5&type=elementary&gt=citywide`) for shareable links
-  - **Multiple Filters**: District, Grade Level (Pre-K, 3-K, Elementary, Middle, K-8, High School), G&T (Has G&T, Citywide, District), Dual Language (by language), and IEP (Low/Medium/High)
+  - **SEO-Friendly URL Parameters**: Filter selections sync to URL (e.g., `/map?district=5&type=elementary&gt=citywide&zip=10021`) for shareable links
+  - **Default District 2**: Map defaults to District 2 (Manhattan core) instead of all schools for faster initial load
+  - **Zip Code Filter**: Filter by NYC zip code (223 zip codes supported). Entering a 5-digit zip auto-switches district to "All Districts" for better UX
+  - **Multiple Filters**: District, Grade Level (Pre-K, 3-K, Elementary, Middle, K-8, High School), G&T (Has G&T, Citywide, District), Dual Language (by language), IEP (Low/Medium/High), and Zip Code
   - **Dynamic SEO**: Page title and meta description update based on active filters
   - **Responsive Design**: Desktop filters always visible; mobile filters in collapsible panel
   - **Color-Coded Markers**: Green (90+), Yellow (80-89), Amber (70-79), Red (<70) based on overall score
