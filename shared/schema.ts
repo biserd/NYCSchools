@@ -526,8 +526,28 @@ export const userProfiles = pgTable("user_profiles", {
   homeAddress: text("home_address"),
   latitude: real("latitude"),
   longitude: real("longitude"),
+  // Cached zoned schools from NYC DOE official zone boundaries
+  zonedElementaryDbn: varchar("zoned_elementary_dbn"), // User's zoned elementary school DBN
+  zonedMiddleDbn: varchar("zoned_middle_dbn"), // User's zoned middle school DBN
+  zonedHighDbn: varchar("zoned_high_dbn"), // User's zoned high school DBN (if applicable)
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// NYC DOE School Zone Boundaries - stores official zone polygons from NYC Open Data
+export const schoolZones = pgTable("school_zones", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(), // School DBN
+  schoolName: text("school_name"),
+  district: integer("district"),
+  gradeLevel: varchar("grade_level").notNull(), // 'elementary', 'middle', 'high'
+  geometry: jsonb("geometry").notNull(), // GeoJSON geometry (Polygon or MultiPolygon)
+  remarks: text("remarks"), // Any special notes from DOE
+  lastUpdated: timestamp("last_updated").defaultNow(),
+}, (table) => [
+  index("idx_school_zones_dbn").on(table.dbn),
+  index("idx_school_zones_grade").on(table.gradeLevel),
+  index("idx_school_zones_district").on(table.district),
+]);
 
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   updatedAt: true,
@@ -535,6 +555,14 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
 
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
+
+export const insertSchoolZoneSchema = createInsertSchema(schoolZones).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+export type InsertSchoolZone = z.infer<typeof insertSchoolZoneSchema>;
+export type SchoolZone = typeof schoolZones.$inferSelect;
 
 // AI Chat Sessions - stores conversation sessions for training and history
 export const aiChatSessions = pgTable("ai_chat_sessions", {

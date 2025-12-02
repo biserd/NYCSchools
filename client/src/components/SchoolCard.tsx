@@ -10,13 +10,11 @@ import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
 import { Link } from "wouter";
 import { CommuteTime } from "./CommuteTime";
-import { ProximityBadge } from "./ProximityBadge";
+import { ZonedSchoolBadge } from "./ZonedSchoolBadge";
 
 interface SchoolCardProps {
   school: School;
   trend?: SchoolTrend;
-  userLat?: number | null;
-  userLng?: number | null;
 }
 
 function getTrendBadgeConfig(direction: TrendDirection) {
@@ -44,7 +42,28 @@ function getTrendBadgeConfig(direction: TrendDirection) {
   }
 }
 
-export function SchoolCard({ school, trend, userLat, userLng }: SchoolCardProps) {
+function getSchoolGradeLevelForZoning(school: School): "elementary" | "middle" | "high" | "combined" {
+  const gradeBand = school.grade_band?.toLowerCase() || '';
+  
+  if (isCombinedSchool(school)) {
+    return "combined";
+  }
+  
+  if (isPureHighSchool(school)) {
+    return "high";
+  }
+  
+  if (gradeBand.includes('06') || gradeBand.includes('07') || gradeBand.includes('08') ||
+      gradeBand.includes('6-') || gradeBand.includes('middle')) {
+    if (!gradeBand.includes('k') && !gradeBand.includes('pk') && !gradeBand.includes('01') && !gradeBand.includes('02')) {
+      return "middle";
+    }
+  }
+  
+  return "elementary";
+}
+
+export function SchoolCard({ school, trend }: SchoolCardProps) {
   const overallScore = calculateOverallScore(school);
   const trendConfig = trend && trend.direction !== 'insufficient_data' ? getTrendBadgeConfig(trend.direction) : null;
   const scoreColor = getScoreColor(overallScore);
@@ -293,11 +312,9 @@ export function SchoolCard({ school, trend, userLat, userLng }: SchoolCardProps)
                   </TooltipContent>
                 </Tooltip>
               )}
-              <ProximityBadge 
-                schoolLat={school.latitude} 
-                schoolLng={school.longitude}
-                userLat={userLat}
-                userLng={userLng}
+              <ZonedSchoolBadge 
+                schoolDbn={school.dbn}
+                gradeLevel={getSchoolGradeLevelForZoning(school)}
               />
             </div>
           </div>

@@ -5,6 +5,7 @@ import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema } fro
 import { setupAuth, isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import compression from "compression";
+import { updateUserZonedSchools, getUserZonedSchools } from "./services/zoning";
 
 // Simple in-memory cache
 interface CacheEntry<T> {
@@ -324,10 +325,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const profile = await storage.upsertUserProfile(parsed.data);
+      
+      if (parsed.data.latitude && parsed.data.longitude) {
+        try {
+          const zonedSchools = await updateUserZonedSchools(
+            userId, 
+            parsed.data.latitude, 
+            parsed.data.longitude
+          );
+          console.log(`Updated zoned schools for user ${userId}:`, zonedSchools);
+        } catch (zoneError) {
+          console.error("Error calculating zoned schools:", zoneError);
+        }
+      }
+      
       res.json(profile);
     } catch (error) {
       console.error("Error saving profile:", error);
       res.status(500).json({ error: "Failed to save profile" });
+    }
+  });
+  
+  app.get("/api/user-zones", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const zones = await getUserZonedSchools(userId);
+      res.json(zones || { elementary: null, middle: null, high: null });
+    } catch (error) {
+      console.error("Error fetching user zones:", error);
+      res.status(500).json({ error: "Failed to fetch zoned schools" });
     }
   });
 

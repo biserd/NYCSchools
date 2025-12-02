@@ -66,6 +66,13 @@ I prefer detailed explanations. Ask before making major changes.
   - **IEP Badge on Cards**: Schools with 20%+ IEP students display a violet badge with percentage
   - **Dedicated Special Ed Section**: School detail pages show IEP info with parent guidance including tips on visiting schools, questions to ask about services (ICT, self-contained, SETSS), and related services
   - **Data Source**: NYC DOE demographic data (IEP percentage from school enrollment reports)
+- **Official School Zone Detection**: School zoning based on NYC DOE official zone boundaries:
+  - **Data Source**: NYC Open Data official school zone shapefiles (2024-2025) - elementary (740 zones), middle (243 zones), high school (32 zones)
+  - **"Your Zoned School" Badge**: Shows on school cards when a user's home address falls within that school's official zone
+  - **Point-in-Polygon Matching**: Uses turf.js `booleanPointInPolygon` for accurate geographic matching
+  - **Cached Results**: Zoned school DBNs cached in user profile for fast lookups
+  - **Zone Types**: Supports elementary, middle, and high school zones; combined schools (K-8, 6-12) check multiple zone types
+  - **API Endpoint**: `/api/user-zones` returns user's zoned schools after address is saved
 
 ### School Scoring Methodology
 The **Overall Score** (transparent and data-driven) is calculated as:
@@ -91,4 +98,6 @@ Scores are interpreted with color-coded indicators: 90+ (Emerald/Green), 80-89 (
 - **Leaflet**: JavaScript library for interactive maps.
 - **NYC School Survey Data**: CSV data for school survey results.
 - **NYC Open Data (School Point Locations)**: For geocoding.
+- **NYC Open Data (School Zone Boundaries)**: Official DOE zone polygons for elementary, middle, and high school zones (2024-2025).
+- **turf.js**: For point-in-polygon geographic matching of user addresses to school zones.
 - **Google Maps APIs**: Geocoding API and Distance Matrix API for commute time calculator.
