@@ -78,22 +78,24 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
       </Link>
     ) : (
       <div 
-        className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20" 
+        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20" 
         data-testid="commute-signup-prompt"
       >
-        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
-          <Clock className="h-4 w-4 text-primary" />
+        <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center justify-center h-8 w-8 shrink-0 rounded-full bg-primary/10">
+            <Clock className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              See commute times from your home
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Sign up to calculate transit times to this school
+            </p>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground">
-            See commute times from your home
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Sign up to calculate transit times to this school
-          </p>
-        </div>
-        <Link href="/auth">
-          <Button size="sm" data-testid="button-signup-commute">
+        <Link href="/auth" className="w-full sm:w-auto">
+          <Button size="sm" className="w-full sm:w-auto" data-testid="button-signup-commute">
             <LogIn className="h-3 w-3 mr-1" />
             Sign Up Free
           </Button>
