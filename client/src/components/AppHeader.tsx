@@ -11,7 +11,8 @@ import {
   Settings, 
   MessageCircle,
   Home,
-  Shuffle
+  Shuffle,
+  Gift
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -63,12 +64,12 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
             <Link href="/lottery-simulator">
               <Button
                 variant="outline"
-                size="icon"
-                className="sm:w-auto sm:px-3"
+                size="sm"
                 data-testid="button-lottery-nav"
               >
-                <Shuffle className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Lottery</span>
+                <Shuffle className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Lottery Simulator</span>
+                <span className="sm:hidden">Lottery</span>
               </Button>
             </Link>
             <Link href="/map">
@@ -123,17 +124,30 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             ) : (
-              <Link href="/login">
-                <Button
-                  variant="default"
-                  size="icon"
-                  className="sm:w-auto sm:px-3"
-                  data-testid="button-login"
-                >
-                  <LogIn className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Login</span>
-                </Button>
-              </Link>
+              <>
+                <Link href="/benefits">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-benefits-nav"
+                  >
+                    <Gift className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Why Register?</span>
+                    <span className="sm:hidden">Benefits</span>
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="sm:w-auto sm:px-3"
+                    data-testid="button-login"
+                  >
+                    <LogIn className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Login</span>
+                  </Button>
+                </Link>
+              </>
             )}
             <ThemeToggle />
           </div>
