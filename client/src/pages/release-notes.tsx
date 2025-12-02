@@ -19,6 +19,25 @@ interface ReleaseNote {
 
 const releaseNotes: ReleaseNote[] = [
   {
+    version: "1.5.0",
+    date: "December 2025",
+    title: "Map View Zip Code Filter & Default District",
+    highlights: [
+      "Filter schools by zip code on the interactive map",
+      "Map now defaults to District 2 for faster loading",
+    ],
+    features: [
+      "Zip code filter on Map View - search by any of 223 NYC zip codes",
+      "Smart auto-switch: entering a zip code automatically shows all districts",
+      "URL parameter support for zip codes (e.g., /map?zip=10021)",
+    ],
+    improvements: [
+      "Map View defaults to District 2 (Manhattan core) for faster initial load",
+      "Clear All button resets to default filters",
+      "URL navigation properly syncs all filter states",
+    ],
+  },
+  {
     version: "1.4.0",
     date: "November 2025",
     title: "Filter Persistence & Enrollment Details",
