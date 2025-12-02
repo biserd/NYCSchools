@@ -7,11 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { MapPin, Filter, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { School, calculateOverallScore, getScoreColor, getSchoolSlug } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
+
+interface UserZones {
+  elementary: string | null;
+  middle: string | null;
+  high: string | null;
+}
 
 const GRADE_BAND_OPTIONS = [
   { value: "all", label: "All Grade Levels" },
@@ -74,6 +81,22 @@ export default function MapPage() {
   const [selectedDL, setSelectedDL] = useState(() => urlParams.get("dl") || "all");
   const [selectedIEP, setSelectedIEP] = useState(() => urlParams.get("iep") || "all");
   const [selectedZipCode, setSelectedZipCode] = useState(() => urlParams.get("zip") || "");
+  const [selectedZoned, setSelectedZoned] = useState(() => urlParams.get("zoned") || "all");
+  
+  // Auth hook for zoned schools
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Fetch user's zoned schools
+  const { data: userZones } = useQuery<UserZones>({
+    queryKey: ["/api/user-zones"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 1000 * 60 * 10,
+    retry: false,
+  });
+
+  const hasZonedSchools = useMemo(() => {
+    return !!(userZones?.elementary || userZones?.middle || userZones?.high);
+  }, [userZones]);
   
   // Track if we're currently updating the URL programmatically
   const isUpdatingURL = useRef(false);
@@ -100,6 +123,7 @@ export default function MapPage() {
     const dl = newParams.get("dl");
     const iep = newParams.get("iep");
     const zip = newParams.get("zip");
+    const zoned = newParams.get("zoned");
     
     // Set district: explicit district > infer from zip > default
     if (district) {
@@ -115,6 +139,7 @@ export default function MapPage() {
     setSelectedDL(dl || "all");
     setSelectedIEP(iep || "all");
     setSelectedZipCode(zip || "");
+    setSelectedZoned(zoned || "all");
   }, [searchString]);
 
   // Update URL when filters change
@@ -152,8 +177,9 @@ export default function MapPage() {
       dl: selectedDL,
       iep: selectedIEP,
       zip: selectedZipCode,
+      zoned: selectedZoned,
     });
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, updateURL]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, updateURL]);
 
   const { data: allSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -270,8 +296,47 @@ export default function MapPage() {
       result = result.filter(school => school.zip_code === selectedZipCode);
     }
     
+    // Zoned schools filter
+    if (selectedZoned !== "all" && userZones) {
+      switch (selectedZoned) {
+        case "elementary":
+          if (userZones.elementary) {
+            result = result.filter(school => school.dbn === userZones.elementary);
+          } else {
+            result = [];
+          }
+          break;
+        case "middle":
+          if (userZones.middle) {
+            result = result.filter(school => school.dbn === userZones.middle);
+          } else {
+            result = [];
+          }
+          break;
+        case "high":
+          if (userZones.high) {
+            result = result.filter(school => school.dbn === userZones.high);
+          } else {
+            result = [];
+          }
+          break;
+        case "any":
+          const zonedDbns = [
+            userZones.elementary,
+            userZones.middle,
+            userZones.high,
+          ].filter((dbn): dbn is string => dbn !== null);
+          if (zonedDbns.length > 0) {
+            result = result.filter(school => zonedDbns.includes(school.dbn));
+          } else {
+            result = [];
+          }
+          break;
+      }
+    }
+    
     return result;
-  }, [schoolsWithCoords, selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode]);
+  }, [schoolsWithCoords, selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, userZones]);
 
   // Count active filters (District 2 is the default, so only count as active if changed to something else)
   const activeFilterCount = useMemo(() => {
@@ -282,8 +347,9 @@ export default function MapPage() {
       selectedDL !== "all" ? 1 : 0,
       selectedIEP !== "all" ? 1 : 0,
       selectedZipCode && selectedZipCode.length === 5 ? 1 : 0,
+      selectedZoned !== "all" ? 1 : 0,
     ].reduce((a, b) => a + b, 0);
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned]);
 
   // Generate dynamic SEO title, description, and canonical path from active filter state
   const seoContent = useMemo(() => {
@@ -521,6 +587,7 @@ export default function MapPage() {
     setSelectedDL("all");
     setSelectedIEP("all");
     setSelectedZipCode("");
+    setSelectedZoned("all");
   };
 
   // Handle zip code input changes - switches to All Districts when 5 digits entered
@@ -615,6 +682,42 @@ export default function MapPage() {
           className="pl-9 h-9"
         />
       </div>
+
+      {hasZonedSchools && (
+        <Select value={selectedZoned} onValueChange={setSelectedZoned}>
+          <SelectTrigger data-testid="select-map-zoned" className="h-9">
+            <Home className="h-4 w-4 mr-2 text-primary" />
+            <SelectValue placeholder="My Zoned Schools" />
+          </SelectTrigger>
+          <SelectContent className="z-[9999]">
+            <SelectItem value="all">All Schools</SelectItem>
+            <SelectItem value="elementary">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                My Elementary Zone
+              </span>
+            </SelectItem>
+            <SelectItem value="middle">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                My Middle School Zone
+              </span>
+            </SelectItem>
+            <SelectItem value="high">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                My High School Zone
+              </span>
+            </SelectItem>
+            <SelectItem value="any">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                All My Zoned Schools
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 

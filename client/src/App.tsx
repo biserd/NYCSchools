@@ -18,6 +18,7 @@ import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
 import FAQPage from "@/pages/faq";
 import FeaturesPage from "@/pages/features";
+import BenefitsPage from "@/pages/benefits";
 import ReleaseNotesPage from "@/pages/release-notes";
 import BlogPage from "@/pages/blog";
 import BlogPostPage from "@/pages/blog-post";
@@ -74,6 +75,7 @@ function Router() {
       <Route path="/terms" component={TermsPage} />
       <Route path="/faq" component={FAQPage} />
       <Route path="/features" component={FeaturesPage} />
+      <Route path="/benefits" component={BenefitsPage} />
       <Route path="/release-notes" component={ReleaseNotesPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />

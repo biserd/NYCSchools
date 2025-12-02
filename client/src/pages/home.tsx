@@ -11,8 +11,14 @@ import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp } from "lucide-react";
+import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon } from "lucide-react";
 import { Link } from "wouter";
+
+interface UserZones {
+  elementary: string | null;
+  middle: string | null;
+  high: string | null;
+}
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +38,7 @@ function getInitialFiltersFromURL(): {
   pta: string;
   iep: string;
   zipCode: string;
+  zoned: string;
   sort: SortOption;
 } {
   if (typeof window === "undefined") {
@@ -46,6 +53,7 @@ function getInitialFiltersFromURL(): {
       pta: "All",
       iep: "All",
       zipCode: "",
+      zoned: "all",
       sort: "overall",
     };
   }
@@ -61,6 +69,7 @@ function getInitialFiltersFromURL(): {
     pta: params.get("pta") || "All",
     iep: params.get("iep") || "All",
     zipCode: params.get("zip") || "",
+    zoned: params.get("zoned") || "all",
     sort: (params.get("sort") as SortOption) || "overall",
   };
 }
@@ -80,11 +89,24 @@ export default function Home() {
   const [iepFilter, setIepFilter] = useState(initialFilters.iep);
   const [zipCodeFilter, setZipCodeFilter] = useState(initialFilters.zipCode);
   const [debouncedZipCode, setDebouncedZipCode] = useState(initialFilters.zipCode);
+  const [zonedFilter, setZonedFilter] = useState(initialFilters.zoned);
   const [sortBy, setSortBy] = useState<SortOption>(initialFilters.sort);
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Fetch user's zoned schools
+  const { data: userZones } = useQuery<UserZones>({
+    queryKey: ["/api/user-zones"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 1000 * 60 * 10,
+    retry: false,
+  });
+
+  const hasZonedSchools = useMemo(() => {
+    return !!(userZones?.elementary || userZones?.middle || userZones?.high);
+  }, [userZones]);
 
   const updateURLParams = useCallback((updates: Record<string, string>) => {
     const params = new URLSearchParams(window.location.search);
@@ -101,6 +123,7 @@ export default function Home() {
         pta: "All",
         iep: "All",
         zip: "",
+        zoned: "all",
         sort: "overall",
       };
       
@@ -164,6 +187,11 @@ export default function Home() {
     setZipCodeFilter(value);
     // District auto-switch is handled in the debounce effect to prevent re-renders
   }, []);
+
+  const handleZonedFilterChange = useCallback((value: string) => {
+    setZonedFilter(value);
+    updateURLParams({ zoned: value });
+  }, [updateURLParams]);
 
   const handleSortChange = useCallback((value: SortOption) => {
     setSortBy(value);
@@ -439,6 +467,45 @@ export default function Home() {
       filtered = filtered.filter((school) => school.zip_code === debouncedZipCode);
     }
 
+    // Filter by user's zoned schools
+    if (zonedFilter !== "all" && userZones) {
+      switch (zonedFilter) {
+        case "elementary":
+          if (userZones.elementary) {
+            filtered = filtered.filter((school) => school.dbn === userZones.elementary);
+          } else {
+            filtered = [];
+          }
+          break;
+        case "middle":
+          if (userZones.middle) {
+            filtered = filtered.filter((school) => school.dbn === userZones.middle);
+          } else {
+            filtered = [];
+          }
+          break;
+        case "high":
+          if (userZones.high) {
+            filtered = filtered.filter((school) => school.dbn === userZones.high);
+          } else {
+            filtered = [];
+          }
+          break;
+        case "any":
+          const zonedDbns = [
+            userZones.elementary,
+            userZones.middle,
+            userZones.high,
+          ].filter((dbn): dbn is string => dbn !== null);
+          if (zonedDbns.length > 0) {
+            filtered = filtered.filter((school) => zonedDbns.includes(school.dbn));
+          } else {
+            filtered = [];
+          }
+          break;
+      }
+    }
+
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
@@ -459,7 +526,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, zonedFilter, userZones, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -707,6 +774,9 @@ export default function Home() {
         onIepFilterChange={handleIepChange}
         zipCode={zipCodeFilter}
         onZipCodeChange={handleZipCodeChange}
+        zonedFilter={zonedFilter}
+        onZonedFilterChange={handleZonedFilterChange}
+        hasZonedSchools={hasZonedSchools}
       />
 
       {/* School Database Stats */}

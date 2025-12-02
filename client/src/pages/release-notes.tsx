@@ -19,6 +19,29 @@ interface ReleaseNote {
 
 const releaseNotes: ReleaseNote[] = [
   {
+    version: "1.6.0",
+    date: "December 2025",
+    title: "Zoned School Detection & Enhanced Personalization",
+    highlights: [
+      "See your official NYC DOE zoned schools based on your home address",
+      "Filter by 'My Zoned Schools' across Dashboard and Map View",
+      "Zoned schools are auto-prioritized in Find My Match and Lottery Simulator",
+    ],
+    features: [
+      "Zoned School Filter on Dashboard - filter to show only your zoned elementary, middle, or high school",
+      "Zoned School Filter on Map View - same filtering options with visual map markers",
+      "Find My Match now includes your zoned schools in AI recommendations",
+      "Lottery Simulator auto-detects zoned schools and sets priority automatically",
+      "New 'Why Register?' page explaining all account benefits",
+      "'Your Zoned School' badge appears on school cards for your designated schools",
+    ],
+    improvements: [
+      "Zoned filter only appears for logged-in users with saved home address",
+      "Clearer priority indicators in Lottery Simulator for zoned vs non-zoned schools",
+      "Enhanced AI prompts to consider zoned school status in recommendations",
+    ],
+  },
+  {
     version: "1.5.0",
     date: "December 2025",
     title: "Map View Zip Code Filter & Default District",

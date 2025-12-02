@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { Sparkles, Loader2, GraduationCap, Languages, Award, Baby, TrendingUp, MapPin, School as SchoolIcon, Building2 } from "lucide-react";
+import { Sparkles, Loader2, GraduationCap, Languages, Award, Baby, TrendingUp, MapPin, School as SchoolIcon, Building2, Home } from "lucide-react";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { SchoolCard } from "@/components/SchoolCard";
+import { useAuth } from "@/hooks/useAuth";
+
+interface UserZones {
+  elementary: string | null;
+  middle: string | null;
+  high: string | null;
+}
 
 type Priority = "academics" | "climate" | "progress" | "balanced";
 type ClassSize = "small" | "medium" | "large" | "any";
@@ -60,6 +67,7 @@ const BOROUGH_DISTRICTS: Record<string, number[]> = {
 };
 
 export default function RecommendationsPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [step, setStep] = useState<"questionnaire" | "results">("questionnaire");
   const [preferences, setPreferences] = useState<Preferences>({
     priority: "balanced",
@@ -83,6 +91,45 @@ export default function RecommendationsPage() {
   const { data: allSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
   });
+
+  const { data: userZones } = useQuery<UserZones>({
+    queryKey: ["/api/user-zones"],
+    enabled: !!user && !authLoading,
+  });
+
+  const hasZonedSchools = useMemo(() => {
+    return !!(userZones?.elementary || userZones?.middle || userZones?.high);
+  }, [userZones]);
+
+  const getZonedSchoolsInfo = useMemo(() => {
+    if (!hasZonedSchools || !allSchools) return null;
+    
+    const zonedDbns: string[] = [];
+    const zonedInfo: string[] = [];
+    
+    if (userZones?.elementary) {
+      zonedDbns.push(userZones.elementary);
+      const school = allSchools.find(s => s.dbn === userZones.elementary);
+      if (school) zonedInfo.push(`Elementary: ${school.name} (${school.dbn})`);
+    }
+    if (userZones?.middle) {
+      zonedDbns.push(userZones.middle);
+      const school = allSchools.find(s => s.dbn === userZones.middle);
+      if (school) zonedInfo.push(`Middle: ${school.name} (${school.dbn})`);
+    }
+    if (userZones?.high) {
+      zonedDbns.push(userZones.high);
+      const school = allSchools.find(s => s.dbn === userZones.high);
+      if (school) zonedInfo.push(`High: ${school.name} (${school.dbn})`);
+    }
+    
+    return { dbns: zonedDbns, info: zonedInfo };
+  }, [userZones, allSchools, hasZonedSchools]);
+
+  const isZonedSchool = (dbn: string) => {
+    if (!userZones) return false;
+    return dbn === userZones.elementary || dbn === userZones.middle || dbn === userZones.high;
+  };
 
   const getDistrictsForBorough = () => {
     if (preferences.borough === "any") {
@@ -131,6 +178,15 @@ export default function RecommendationsPage() {
         specialProgramsText.push(ecText);
       }
 
+      const zonedSchoolsContext = getZonedSchoolsInfo 
+        ? `
+IMPORTANT - User's Zoned Schools (HIGHLY PRIORITIZE):
+The parent has the following NYC DOE zoned schools based on their home address. These should be strongly considered and included in recommendations if they meet the grade level preference:
+${getZonedSchoolsInfo.info.join("\n")}
+
+Zoned schools are guaranteed admission schools - this is extremely valuable for parents. Always include relevant zoned schools in your recommendations if they match the grade level, even if other metrics aren't perfect.`
+        : "";
+
       const prompt = `Based on a parent's preferences, recommend the top 5-8 NYC schools from our database.
 
 Parent Preferences:
@@ -141,6 +197,7 @@ Parent Preferences:
 ${specialProgramsText.length > 0 ? `- Special Programs Wanted: ${specialProgramsText.join(", ")}` : ""}
 ${preferences.wantsImprovingSchools ? "- Preference for improving schools with positive score trends over recent years" : ""}
 ${preferences.specificNeeds ? `- Additional Needs: ${preferences.specificNeeds}` : ""}
+${zonedSchoolsContext}
 
 Important context about our data:
 - Schools have has_gifted_talented (boolean) and gt_program_type ('district' or 'citywide') fields
@@ -151,7 +208,7 @@ Important context about our data:
 - Overall scores combine: Test Proficiency (40%), Climate (30%), Progress (30%)
 
 Please provide:
-1. A brief paragraph explaining your recommendation approach (2-3 sentences)
+1. A brief paragraph explaining your recommendation approach (2-3 sentences)${getZonedSchoolsInfo ? " Mention if you included their zoned school(s)." : ""}
 2. Then list 5-8 school DBN codes, one per line, in format: DBN - Brief reason (10 words max)
 
 Example format:
@@ -396,6 +453,20 @@ I focused on schools with strong academics and Dual Language programs in Brookly
             Answer a few questions and we'll recommend schools tailored to your family's needs
           </p>
         </div>
+
+        {hasZonedSchools && (
+          <div className="mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20" data-testid="zoned-schools-notice">
+            <div className="flex items-start gap-3">
+              <Home className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Your zoned schools will be prioritized</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on your saved home address, we'll include your NYC DOE zoned schools in our recommendations when they match your selected grade level.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Grade Level Selection */}

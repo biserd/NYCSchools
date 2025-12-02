@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,11 +26,19 @@ import {
   GraduationCap,
   Users,
   Building2,
-  MapPin
+  MapPin,
+  Home
 } from "lucide-react";
 import { School, calculateOverallScore } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
+
+interface UserZones {
+  elementary: string | null;
+  middle: string | null;
+  high: string | null;
+}
 
 type PriorityType = "sibling" | "zoned" | "district" | "borough" | "citywide";
 
@@ -236,6 +244,7 @@ function runMonteCarloSimulation(
 }
 
 export default function LotterySimulatorPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [rankedSchools, setRankedSchools] = useState<RankedSchool[]>([]);
   const [simulationResults, setSimulationResults] = useState<{
@@ -248,6 +257,71 @@ export default function LotterySimulatorPage() {
   const { data: allSchools, isLoading } = useQuery<School[]>({
     queryKey: ["/api/schools"],
   });
+
+  const { data: userZones } = useQuery<UserZones>({
+    queryKey: ["/api/user-zones"],
+    enabled: !!user && !authLoading,
+  });
+
+  const isZonedSchool = (dbn: string): boolean => {
+    if (!userZones) return false;
+    return dbn === userZones.elementary || dbn === userZones.middle || dbn === userZones.high;
+  };
+
+  const zonedSchoolInfo = useMemo(() => {
+    if (!userZones || !allSchools) return null;
+    
+    const zonedSchools: { dbn: string; name: string; type: string }[] = [];
+    
+    if (userZones.elementary) {
+      const school = allSchools.find(s => s.dbn === userZones.elementary);
+      if (school) zonedSchools.push({ dbn: school.dbn, name: school.name, type: "Elementary" });
+    }
+    if (userZones.middle) {
+      const school = allSchools.find(s => s.dbn === userZones.middle);
+      if (school) zonedSchools.push({ dbn: school.dbn, name: school.name, type: "Middle" });
+    }
+    
+    return zonedSchools.length > 0 ? zonedSchools : null;
+  }, [userZones, allSchools]);
+
+  const hasUnaddedZonedSchool = useMemo(() => {
+    if (!zonedSchoolInfo) return false;
+    const rankedDbns = new Set(rankedSchools.map(rs => rs.school.dbn));
+    return zonedSchoolInfo.some(z => !rankedDbns.has(z.dbn));
+  }, [zonedSchoolInfo, rankedSchools]);
+
+  const appliedZonedDbnsRef = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+    if (!userZones || rankedSchools.length === 0) return;
+    
+    const zonedDbns = new Set([
+      userZones.elementary,
+      userZones.middle,
+      userZones.high,
+    ].filter((dbn): dbn is string => dbn !== null));
+    
+    if (zonedDbns.size === 0) return;
+    
+    let hasChanges = false;
+    const updatedRanked = rankedSchools.map(rs => {
+      if (zonedDbns.has(rs.school.dbn) && 
+          rs.priority !== "zoned" && 
+          rs.priority !== "sibling" &&
+          !appliedZonedDbnsRef.current.has(rs.school.dbn)) {
+        hasChanges = true;
+        appliedZonedDbnsRef.current.add(rs.school.dbn);
+        return { ...rs, priority: "zoned" as PriorityType };
+      }
+      return rs;
+    });
+    
+    if (hasChanges) {
+      setRankedSchools(updatedRanked);
+      setSimulationResults(null);
+    }
+  }, [userZones, rankedSchools]);
 
   // Filter schools to only show 3-K and Pre-K eligible (elementary schools)
   const eligibleSchools = useMemo(() => {
@@ -283,11 +357,16 @@ export default function LotterySimulatorPage() {
 
   const addSchool = (school: School) => {
     if (rankedSchools.length >= 12) return;
-    setRankedSchools([...rankedSchools, { school, priority: "district" }]);
+    const priority: PriorityType = isZonedSchool(school.dbn) ? "zoned" : "district";
+    setRankedSchools([...rankedSchools, { school, priority }]);
     setSimulationResults(null);
   };
 
   const removeSchool = (index: number) => {
+    const removedSchool = rankedSchools[index];
+    if (removedSchool) {
+      appliedZonedDbnsRef.current.delete(removedSchool.school.dbn);
+    }
     setRankedSchools(rankedSchools.filter((_, i) => i !== index));
     setSimulationResults(null);
   };
@@ -369,6 +448,21 @@ export default function LotterySimulatorPage() {
           </AlertDescription>
         </Alert>
 
+        {zonedSchoolInfo && hasUnaddedZonedSchool && (
+          <div className="mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20" data-testid="zoned-school-suggestion">
+            <div className="flex items-start gap-3">
+              <Home className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Your Zoned School Detected</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on your saved address, you have priority at: {zonedSchoolInfo.map(z => z.name).join(", ")}. 
+                  Zoned schools are automatically set to "Zoned" priority when added, giving you near-guaranteed admission.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: School Search */}
           <div className="space-y-4">
@@ -416,13 +510,22 @@ export default function LotterySimulatorPage() {
                     <div className="divide-y">
                       {filteredSchools.map(school => {
                         const score = calculateOverallScore(school);
+                        const isZoned = isZonedSchool(school.dbn);
                         return (
                           <div 
                             key={school.dbn} 
                             className="p-3 hover-elevate flex items-center justify-between gap-2"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{school.name}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium truncate">{school.name}</span>
+                                {isZoned && (
+                                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                    <Home className="h-3 w-3 mr-1" />
+                                    Zoned
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <span>{school.dbn}</span>
                                 <span>•</span>

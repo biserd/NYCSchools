@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Search, SlidersHorizontal, ChevronDown, ChevronUp, MapPin } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown, ChevronUp, MapPin, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -42,6 +42,9 @@ interface FilterBarProps {
   zipCode?: string;
   onZipCodeChange?: (value: string) => void;
   availableZipCodes?: string[];
+  zonedFilter?: string;
+  onZonedFilterChange?: (value: string) => void;
+  hasZonedSchools?: boolean;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -107,6 +110,9 @@ export function FilterBar({
   zipCode = "",
   onZipCodeChange,
   availableZipCodes = [],
+  zonedFilter = "all",
+  onZonedFilterChange,
+  hasZonedSchools = false,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -120,6 +126,7 @@ export function FilterBar({
     ptaFilter !== "All" ? 1 : 0,
     iepFilter !== "All" ? 1 : 0,
     zipCode && zipCode.length === 5 ? 1 : 0,
+    zonedFilter !== "all" ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   // Memoize the zip code change handler to prevent input re-renders
@@ -252,6 +259,41 @@ export function FilterBar({
             className="pl-9 h-10"
           />
         </div>
+      )}
+      {onZonedFilterChange && hasZonedSchools && (
+        <Select value={zonedFilter} onValueChange={onZonedFilterChange}>
+          <SelectTrigger data-testid="select-zoned" className="w-full md:w-44 h-10">
+            <Home className="h-4 w-4 mr-2 text-primary" />
+            <SelectValue placeholder="My Zoned Schools" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem data-testid="option-zoned-all" value="all">All Schools</SelectItem>
+            <SelectItem data-testid="option-zoned-elementary" value="elementary">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                My Elementary Zone
+              </span>
+            </SelectItem>
+            <SelectItem data-testid="option-zoned-middle" value="middle">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                My Middle School Zone
+              </span>
+            </SelectItem>
+            <SelectItem data-testid="option-zoned-high" value="high">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                My High School Zone
+              </span>
+            </SelectItem>
+            <SelectItem data-testid="option-zoned-any" value="any">
+              <span className="flex items-center gap-2">
+                <Home className="h-3 w-3 text-primary" />
+                All My Zoned Schools
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       )}
     </>
   );
