@@ -833,7 +833,7 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       // Add static pages
       staticPages.forEach(page => {
         xml += '  <url>\n';
-        xml += `    <loc>https://nyc-kindergarten-school-finder.replit.app${page.url}</loc>\n`;
+        xml += `    <loc>https://nycschoolsratings.com${page.url}</loc>\n`;
         xml += `    <lastmod>${today}</lastmod>\n`;
         xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
         xml += `    <priority>${page.priority}</priority>\n`;
@@ -844,7 +844,7 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       schools.forEach(school => {
         const slug = `${school.dbn.toLowerCase()}-${school.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}`;
         xml += '  <url>\n';
-        xml += `    <loc>https://nyc-kindergarten-school-finder.replit.app/school/${slug}</loc>\n`;
+        xml += `    <loc>https://nycschoolsratings.com/school/${slug}</loc>\n`;
         xml += `    <lastmod>${today}</lastmod>\n`;
         xml += `    <changefreq>weekly</changefreq>\n`;
         xml += `    <priority>0.9</priority>\n`;
@@ -866,7 +866,7 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     const robotsTxt = `User-agent: *
 Allow: /
 
-Sitemap: https://nyc-kindergarten-school-finder.replit.app/sitemap.xml`;
+Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     
     res.header('Content-Type', 'text/plain');
     res.send(robotsTxt);

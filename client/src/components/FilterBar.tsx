@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Search, SlidersHorizontal, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -122,7 +122,15 @@ export function FilterBar({
     zipCode && zipCode.length === 5 ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
-  const FilterDropdowns = () => (
+  // Memoize the zip code change handler to prevent input re-renders
+  const handleZipChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onZipCodeChange) {
+      const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+      onZipCodeChange(value);
+    }
+  }, [onZipCodeChange]);
+
+  const filterDropdownsContent = (
     <>
       <Select value={selectedDistrict} onValueChange={onDistrictChange}>
         <SelectTrigger data-testid="select-district" className="w-full md:w-48 h-10">
@@ -240,10 +248,7 @@ export function FilterBar({
             maxLength={5}
             placeholder="Zip Code"
             value={zipCode}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-              onZipCodeChange(value);
-            }}
+            onChange={handleZipChange}
             className="pl-9 h-10"
           />
         </div>
@@ -251,7 +256,7 @@ export function FilterBar({
     </>
   );
 
-  const SortButtons = () => (
+  const sortButtonsContent = (
     <div className="flex flex-wrap gap-2">
       <span className="text-sm text-muted-foreground self-center mr-2" data-testid="text-sort-label">Sort:</span>
       <Button
@@ -344,16 +349,16 @@ export function FilterBar({
           </div>
 
           <div className="hidden md:flex md:flex-row gap-2 flex-wrap">
-            <FilterDropdowns />
+            {filterDropdownsContent}
           </div>
 
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen} className="md:hidden">
             <CollapsibleContent className="space-y-2">
-              <FilterDropdowns />
+              {filterDropdownsContent}
             </CollapsibleContent>
           </Collapsible>
 
-          <SortButtons />
+          {sortButtonsContent}
         </div>
       </div>
     </div>

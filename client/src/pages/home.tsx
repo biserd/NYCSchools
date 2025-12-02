@@ -162,12 +162,8 @@ export default function Home() {
 
   const handleZipCodeChange = useCallback((value: string) => {
     setZipCodeFilter(value);
-    // When entering a zip code, switch to "All Districts" for better UX
-    if (value.length === 5 && selectedDistrict !== "all") {
-      setSelectedDistrict("all");
-      updateURLParams({ district: "all" });
-    }
-  }, [selectedDistrict, updateURLParams]);
+    // District auto-switch is handled in the debounce effect to prevent re-renders
+  }, []);
 
   const handleSortChange = useCallback((value: SortOption) => {
     setSortBy(value);
@@ -190,13 +186,18 @@ export default function Home() {
       setDebouncedZipCode(zipCodeFilter);
       if (zipCodeFilter.length === 5 || zipCodeFilter.length === 0) {
         updateURLParams({ zip: zipCodeFilter });
+        // When entering a 5-digit zip code, switch to "All Districts" for better UX
+        if (zipCodeFilter.length === 5 && selectedDistrict !== "all") {
+          setSelectedDistrict("all");
+          updateURLParams({ district: "all" });
+        }
       }
     }, 300);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [zipCodeFilter, updateURLParams]);
+  }, [zipCodeFilter, selectedDistrict, updateURLParams]);
 
   const { data: rawSchools, isLoading } = useQuery<School[]>({
     queryKey: ["/api/schools"],
