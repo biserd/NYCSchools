@@ -84,6 +84,14 @@ I prefer detailed explanations. Ask before making major changes.
   - **Map Markers**: Color-coded by center type (orange=NYCEEC, blue=DOE, purple=Charter) with popup details
   - **URL Parameters**: `/map?source=nyceec&centerType=NYCEEC` for direct linking
   - **Navigation**: Accessible from Footer navigation
+  - **Detail Pages**: Individual center pages at `/early-childhood/{locCode}-{slug}` with:
+    - Hero section with center name, type badge, and location
+    - Contact info (phone, email, address with Google Maps link)
+    - Program details (seats, day length, extended hours, meals)
+    - Interactive Leaflet map showing center location
+    - AI-generated insights (auth-gated): Overview, considerations, tour questions, neighborhood context
+    - Parent reviews and ratings (auth-gated for writing, public for reading)
+    - SEO-optimized with schema.org Preschool structured data
 
 ### School Scoring Methodology
 The **Overall Score** (transparent and data-driven) is calculated as:
