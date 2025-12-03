@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
-import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend, type NyceecCenter } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -237,6 +237,12 @@ export default function Home() {
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
+  // Fetch NYCEEC centers count
+  const { data: nyceecCenters, isLoading: nyceecLoading } = useQuery<NyceecCenter[]>({
+    queryKey: ['/api/nyceec-centers'],
+    staleTime: 1000 * 60 * 30, // 30 minutes cache
+  });
+
   const schools = useMemo(() => {
     if (!rawSchools) return [];
     
@@ -284,8 +290,9 @@ export default function Home() {
       giftedTalented,
       dualLanguage,
       improving,
+      nyceecCenters: nyceecCenters?.length || 0,
     };
-  }, [schools, trends]);
+  }, [schools, trends, nyceecCenters]);
 
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
@@ -827,6 +834,15 @@ export default function Home() {
               <span className="font-medium text-foreground">{schoolCounts.dualLanguage}</span>
               <span>Dual Language</span>
             </div>
+            <Link href="/early-childhood" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-nyceec">
+              <HomeIcon className="w-3.5 h-3.5 text-orange-500" />
+              {nyceecLoading ? (
+                <Skeleton className="h-4 w-8" />
+              ) : (
+                <span className="font-medium text-foreground">{schoolCounts.nyceecCenters.toLocaleString()}</span>
+              )}
+              <span>Early Ed Centers</span>
+            </Link>
           </div>
         </div>
       )}
