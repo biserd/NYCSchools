@@ -75,6 +75,15 @@ I prefer detailed explanations. Ask before making major changes.
   - **Cached Results**: Zoned school DBNs cached in user profile for fast lookups
   - **Zone Types**: Supports elementary, middle, and high school zones; combined schools (K-8, 6-12) check multiple zone types
   - **API Endpoint**: `/api/user-zones` returns user's zoned schools after address is saved
+- **NYCEEC Early Childhood Centers**: Comprehensive browsing for NYC Early Education Centers:
+  - **Data Source**: NYC Open Data API (dataset `kiyv-ks3f`) with 1,885+ centers
+  - **Center Types**: Community-Based (NYCEEC), DOE Schools, and Charter Schools with color-coded badges
+  - **Browse Page**: Dedicated page at `/early-childhood` with filtering by borough, district, center type, and search
+  - **Statistics Dashboard**: Total centers, seats available, centers with extended day programs
+  - **Map Integration**: Data source toggle on `/map` page switches between K-12 schools and early childhood centers
+  - **Map Markers**: Color-coded by center type (orange=NYCEEC, blue=DOE, purple=Charter) with popup details
+  - **URL Parameters**: `/map?source=nyceec&centerType=NYCEEC` for direct linking
+  - **Navigation**: Accessible from Footer navigation
 
 ### School Scoring Methodology
 The **Overall Score** (transparent and data-driven) is calculated as:
@@ -103,3 +112,4 @@ Scores are interpreted with color-coded indicators: 90+ (Emerald/Green), 80-89 (
 - **NYC Open Data (School Zone Boundaries)**: Official DOE zone polygons for elementary, middle, and high school zones (2024-2025).
 - **turf.js**: For point-in-polygon geographic matching of user addresses to school zones.
 - **Google Maps APIs**: Geocoding API and Distance Matrix API for commute time calculator.
+- **NYC Open Data (NYCEEC)**: Early childhood center data (dataset `kiyv-ks3f`) for the Early Childhood Centers feature.
