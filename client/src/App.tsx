@@ -31,6 +31,7 @@ const RecommendationsPage = lazy(() => import("@/pages/recommendations"));
 const MapPage = lazy(() => import("@/pages/map"));
 const LotterySimulatorPage = lazy(() => import("@/pages/lottery-simulator"));
 const EarlyChildhoodPage = lazy(() => import("@/pages/early-childhood"));
+const NyceecDetailPage = lazy(() => import("@/pages/nyceec-detail"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -74,6 +75,11 @@ function Router() {
       <Route path="/early-childhood">
         <Suspense fallback={<PageLoader />}>
           <EarlyChildhoodPage />
+        </Suspense>
+      </Route>
+      <Route path="/early-childhood/:slug">
+        <Suspense fallback={<PageLoader />}>
+          <NyceecDetailPage />
         </Suspense>
       </Route>
       <Route path="/settings" component={SettingsPage} />

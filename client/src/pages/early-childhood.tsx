@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, MapPin, Phone, Mail, Users, Building2, Baby, ChevronRight, ExternalLink } from "lucide-react";
-import { type NyceecCenter, getBoroughName } from "@shared/schema";
+import { type NyceecCenter, getBoroughName, getNyceecUrl } from "@shared/schema";
 
 const NYC_BOROUGHS = [
   { value: "all", label: "All Boroughs" },
@@ -275,97 +275,73 @@ export default function EarlyChildhood() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedCenters.map((center) => (
-                <Card
-                  key={center.id}
-                  className="hover-elevate cursor-pointer transition-shadow"
-                  data-testid={`card-center-${center.locCode}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <h3 className="font-semibold text-foreground line-clamp-2">
-                        {center.name}
-                      </h3>
-                      <Badge className={getCenterTypeColor(center.centerType)} variant="outline">
-                        {getCenterTypeLabel(center.centerType)}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span className="line-clamp-2">
-                          {center.address}, {getBoroughName(center.borough)} {center.zipCode}
-                        </span>
+                <Link key={center.id} href={getNyceecUrl(center)}>
+                  <Card
+                    className="hover-elevate cursor-pointer transition-shadow h-full"
+                    data-testid={`card-center-${center.locCode}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <h3 className="font-semibold text-foreground line-clamp-2">
+                          {center.name}
+                        </h3>
+                        <Badge className={getCenterTypeColor(center.centerType)} variant="outline">
+                          {getCenterTypeLabel(center.centerType)}
+                        </Badge>
                       </div>
 
-                      {center.district && (
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 shrink-0" />
-                          <span>District {center.district}</span>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+                          <span className="line-clamp-2">
+                            {center.address}, {getBoroughName(center.borough)} {center.zipCode}
+                          </span>
                         </div>
-                      )}
 
-                      {center.seats && (
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 shrink-0" />
-                          <span>{center.seats} Pre-K seats</span>
-                        </div>
-                      )}
+                        {center.district && (
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 shrink-0" />
+                            <span>District {center.district}</span>
+                          </div>
+                        )}
 
-                      {center.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 shrink-0" />
-                          <a
-                            href={`tel:${center.phone}`}
-                            className="hover:text-primary transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {center.phone}
-                          </a>
-                        </div>
-                      )}
-                    </div>
+                        {center.seats && (
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 shrink-0" />
+                            <span>{center.seats} Pre-K seats</span>
+                          </div>
+                        )}
 
-                    <div className="flex items-center gap-2 mt-4 pt-3 border-t">
-                      {center.extendedDay && (
-                        <Badge variant="secondary" className="text-xs">
-                          Extended Day
-                        </Badge>
-                      )}
-                      {center.mealsProvided && (
-                        <Badge variant="secondary" className="text-xs">
-                          Meals
-                        </Badge>
-                      )}
-                    </div>
+                        {center.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 shrink-0" />
+                            <span>{center.phone}</span>
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                      {center.website ? (
-                        <a
-                          href={center.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline flex items-center gap-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Visit Website
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <span />
-                      )}
-                      {center.email && (
-                        <a
-                          href={`mailto:${center.email}`}
-                          className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Mail className="w-4 h-4" />
-                        </a>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                        {center.extendedDay && (
+                          <Badge variant="secondary" className="text-xs">
+                            Extended Day
+                          </Badge>
+                        )}
+                        {center.mealsProvided && (
+                          <Badge variant="secondary" className="text-xs">
+                            Meals
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-end mt-3 pt-3 border-t">
+                        <span className="text-sm text-primary flex items-center gap-1">
+                          View Details
+                          <ChevronRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
 

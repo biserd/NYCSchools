@@ -11,7 +11,7 @@ import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-rea
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 
@@ -665,6 +665,7 @@ export default function MapPage() {
           badges.push(`<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px;">Extended Day</span>`);
         }
 
+        const centerUrl = getNyceecUrl(center);
         marker.bindPopup(`
           <div style="min-width: 220px;">
             <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${center.name}</h3>
@@ -675,7 +676,7 @@ export default function MapPage() {
             ${center.seats ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Pre-K Seats:</strong> ${center.seats}</p>` : ''}
             ${center.phone ? `<p style="margin: 4px 0; font-size: 12px;"><a href="tel:${center.phone}" style="color: #2563eb;">${center.phone}</a></p>` : ''}
             <a 
-              href="/early-childhood" 
+              href="${centerUrl}" 
               style="
                 display: inline-block;
                 margin-top: 8px;
@@ -689,7 +690,7 @@ export default function MapPage() {
                 cursor: pointer;
               "
             >
-              Browse All Centers
+              View Details
             </a>
           </div>
         `);

@@ -172,6 +172,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // NYCEEC AI Insights endpoint (authenticated)
+  app.post("/api/nyceec-centers/ai-insights", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { locCode, name, centerType, borough, district, address, seats, extendedDay, dayLength } = req.body;
+      
+      if (!locCode || !name) {
+        return res.status(400).json({ error: "Missing required center information" });
+      }
+
+      const boroughName = borough === "M" ? "Manhattan" : 
+                          borough === "X" ? "Bronx" : 
+                          borough === "K" ? "Brooklyn" : 
+                          borough === "Q" ? "Queens" : 
+                          borough === "R" ? "Staten Island" : borough;
+      
+      const centerTypeLabel = centerType === "NYCEEC" ? "Community-Based (NYCEEC)" :
+                              centerType === "DOE" ? "DOE School" : "Charter";
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      });
+
+      const systemPrompt = `You are an expert early childhood education advisor helping NYC parents evaluate preschool and Pre-K programs. You provide helpful, balanced information without making claims about quality ratings (since none exist for these programs).
+
+Your role is to help parents know what questions to ask, what to observe, and how to evaluate if a center is right for their child. Be warm, supportive, and practical.
+
+IMPORTANT: You should NOT make up specific details about the center that you don't know. Focus on general guidance relevant to the center type and location.`;
+
+      const userPrompt = `Generate helpful insights for parents considering this NYC early childhood center:
+
+Center Name: ${name}
+Type: ${centerTypeLabel}
+Location: ${boroughName}, District ${district || 'N/A'}
+Address: ${address || 'N/A'}
+Pre-K Seats: ${seats || 'Not specified'}
+Extended Day: ${extendedDay ? 'Yes' : 'No'}
+Day Length: ${dayLength || 'Not specified'}
+
+Please provide a JSON response with the following structure:
+{
+  "overview": "A 2-3 sentence overview of what parents should know about this type of center in this area. Don't claim to know specifics you weren't given.",
+  "considerations": ["5-7 practical considerations specific to this type of program (${centerTypeLabel}) that parents should think about"],
+  "tourQuestions": ["5-7 specific questions parents should ask when visiting this center, tailored to the program type"],
+  "neighborhoodContext": "1-2 sentences about what families should consider regarding the ${boroughName} District ${district || ''} area for early childhood education. Be general and helpful."
+}
+
+Focus on practical, actionable advice. Don't make claims about the center's quality since there are no official ratings.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+        response_format: { type: "json_object" },
+      });
+
+      const responseText = completion.choices[0]?.message?.content;
+      if (!responseText) {
+        throw new Error("No response from AI");
+      }
+
+      const insights = JSON.parse(responseText);
+      res.json(insights);
+    } catch (error) {
+      console.error("Error generating NYCEEC AI insights:", error);
+      res.status(500).json({ error: "Failed to generate AI insights" });
+    }
+  });
+
   // All school trends API (public) with caching
   app.get("/api/schools-trends", async (req: Request, res: Response) => {
     try {
