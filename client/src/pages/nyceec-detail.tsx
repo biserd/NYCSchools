@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { type NyceecCenter, getBoroughName, getNyceecUrl } from "@shared/schema";
+import { type NyceecCenter, type NyceecReviewWithUser, getBoroughName, getNyceecUrl } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,10 @@ import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { NyceecReviewForm } from "@/components/NyceecReviewForm";
+import { StarRating } from "@/components/StarRating";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { format } from "date-fns";
 import {
   MapPin,
   Phone,
@@ -31,6 +35,7 @@ import {
   RefreshCw,
   MessageCircle,
   LogIn,
+  Star,
 } from "lucide-react";
 
 interface AiInsightsResponse {
@@ -76,6 +81,21 @@ export default function NyceecDetail() {
     setShowAiInsights(true);
     aiInsightsMutation.mutate();
   };
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery<NyceecReviewWithUser[]>({
+    queryKey: ["/api/nyceec-centers", locCode, "reviews"],
+    enabled: !!locCode,
+  });
+
+  const { data: reviewStats } = useQuery<{ averageRating: number; totalReviews: number }>({
+    queryKey: ["/api/nyceec-centers", locCode, "reviews", "stats"],
+    enabled: !!locCode,
+  });
+
+  const { data: userReview } = useQuery({
+    queryKey: ["/api/nyceec-centers", locCode, "reviews", "user"],
+    enabled: !!locCode && isAuthenticated,
+  });
 
   if (isLoading) {
     return (
@@ -494,6 +514,98 @@ export default function NyceecDetail() {
                   </ul>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-reviews">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Star className="w-5 h-5" />
+                Parent Reviews
+                {reviewStats && reviewStats.totalReviews > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {reviewStats.averageRating.toFixed(1)} ({reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? 's' : ''})
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!authLoading && !isAuthenticated ? (
+                <div className="bg-muted/50 rounded-lg p-6 text-center space-y-3">
+                  <LogIn className="w-8 h-8 mx-auto text-muted-foreground" />
+                  <p className="text-muted-foreground">Sign in to share your experience with this center</p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/login">
+                      <Button variant="outline" data-testid="button-review-login">Sign In</Button>
+                    </Link>
+                    <Link href="/register">
+                      <Button data-testid="button-review-register">Create Account</Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : isAuthenticated && !userReview ? (
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-4">Share Your Experience</h4>
+                  <NyceecReviewForm locCode={locCode} />
+                </div>
+              ) : userReview ? (
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground mb-2">Your review:</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <StarRating rating={(userReview as any).rating} size="sm" readonly />
+                    <span className="text-sm text-muted-foreground">
+                      {format(new Date((userReview as any).createdAt), "MMM d, yyyy")}
+                    </span>
+                  </div>
+                  {(userReview as any).reviewText && (
+                    <p className="text-sm">{(userReview as any).reviewText}</p>
+                  )}
+                </div>
+              ) : null}
+
+              {reviewsLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-20" />
+                  <Skeleton className="h-20" />
+                </div>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-4">
+                  <h4 className="font-medium">What Parents Say</h4>
+                  {reviews
+                    .filter(r => r.userId !== user?.id)
+                    .slice(0, 5)
+                    .map((review) => (
+                      <div key={review.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={review.user?.profileImageUrl || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {review.user?.firstName?.[0] || review.user?.lastName?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm">
+                                {review.user?.firstName || 'Anonymous'}
+                              </span>
+                              <StarRating rating={review.rating} size="sm" readonly />
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(review.createdAt), "MMM d, yyyy")}
+                              </span>
+                            </div>
+                            {review.reviewText && (
+                              <p className="text-sm text-muted-foreground mt-1">{review.reviewText}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No reviews yet. Be the first to share your experience!
+                </p>
+              )}
             </CardContent>
           </Card>
 

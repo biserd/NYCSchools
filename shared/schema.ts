@@ -661,6 +661,42 @@ export const insertNyceecCenterSchema = createInsertSchema(nyceecCenters).omit({
 export type InsertNyceecCenter = z.infer<typeof insertNyceecCenterSchema>;
 export type NyceecCenter = typeof nyceecCenters.$inferSelect;
 
+// NYCEEC Reviews - Parent reviews for early childhood centers
+export const nyceecReviews = pgTable("nyceec_reviews", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  locCode: varchar("loc_code").notNull().references(() => nyceecCenters.locCode, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
+  reviewText: text("review_text"),
+  helpfulCount: integer("helpful_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_nyceec_reviews_center").on(table.locCode),
+  index("idx_nyceec_reviews_user").on(table.userId),
+]);
+
+export const insertNyceecReviewSchema = createInsertSchema(nyceecReviews).omit({
+  id: true,
+  helpfulCount: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  rating: z.number().min(1).max(5),
+  reviewText: z.string().optional(),
+});
+
+export type InsertNyceecReview = z.infer<typeof insertNyceecReviewSchema>;
+export type NyceecReview = typeof nyceecReviews.$inferSelect;
+
+export interface NyceecReviewWithUser extends NyceecReview {
+  user: {
+    firstName: string | null;
+    lastName: string | null;
+    profileImageUrl: string | null;
+  } | null;
+}
+
 // Helper function to get borough full name
 export function getBoroughName(code: string | null): string {
   if (!code) return "Unknown";

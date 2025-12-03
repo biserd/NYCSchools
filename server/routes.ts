@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import compression from "compression";
@@ -241,6 +241,98 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     } catch (error) {
       console.error("Error generating NYCEEC AI insights:", error);
       res.status(500).json({ error: "Failed to generate AI insights" });
+    }
+  });
+
+  // NYCEEC Reviews endpoints
+  app.get("/api/nyceec-centers/:locCode/reviews", async (req: Request, res: Response) => {
+    try {
+      const reviews = await storage.getNyceecReviews(req.params.locCode);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching NYCEEC reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.get("/api/nyceec-centers/:locCode/reviews/stats", async (req: Request, res: Response) => {
+    try {
+      const stats = await storage.getNyceecRatingStats(req.params.locCode);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching NYCEEC review stats:", error);
+      res.status(500).json({ error: "Failed to fetch review stats" });
+    }
+  });
+
+  app.get("/api/nyceec-centers/:locCode/reviews/user", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const review = await storage.getUserNyceecReview(req.user.id, req.params.locCode);
+      res.json(review || null);
+    } catch (error) {
+      console.error("Error fetching user NYCEEC review:", error);
+      res.status(500).json({ error: "Failed to fetch user review" });
+    }
+  });
+
+  app.post("/api/nyceec-centers/:locCode/reviews", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const parsed = insertNyceecReviewSchema.safeParse({
+        ...req.body,
+        userId: req.user.id,
+        locCode: req.params.locCode,
+      });
+      
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid review data", details: parsed.error.errors });
+      }
+      
+      // Check if user already has a review for this center
+      const existingReview = await storage.getUserNyceecReview(req.user.id, req.params.locCode);
+      if (existingReview) {
+        return res.status(400).json({ error: "You have already reviewed this center" });
+      }
+      
+      const review = await storage.createNyceecReview(parsed.data);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating NYCEEC review:", error);
+      res.status(500).json({ error: "Failed to create review" });
+    }
+  });
+
+  app.patch("/api/nyceec-reviews/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { rating, reviewText } = req.body;
+      if (typeof rating !== "number" || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+      
+      const review = await storage.updateNyceecReview(
+        parseInt(req.params.id),
+        req.user.id,
+        rating,
+        reviewText
+      );
+      
+      if (!review) {
+        return res.status(404).json({ error: "Review not found or unauthorized" });
+      }
+      
+      res.json(review);
+    } catch (error) {
+      console.error("Error updating NYCEEC review:", error);
+      res.status(500).json({ error: "Failed to update review" });
+    }
+  });
+
+  app.delete("/api/nyceec-reviews/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      await storage.deleteNyceecReview(parseInt(req.params.id), req.user.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting NYCEEC review:", error);
+      res.status(500).json({ error: "Failed to delete review" });
     }
   });
 

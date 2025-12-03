@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
@@ -54,6 +54,14 @@ export interface IStorage {
   getNyceecCenter(locCode: string): Promise<NyceecCenter | undefined>;
   upsertNyceecCenter(center: InsertNyceecCenter): Promise<NyceecCenter>;
   upsertNyceecCenters(centers: InsertNyceecCenter[]): Promise<void>;
+  
+  // NYCEEC Reviews
+  getNyceecReviews(locCode: string): Promise<NyceecReviewWithUser[]>;
+  getUserNyceecReview(userId: string, locCode: string): Promise<NyceecReview | undefined>;
+  createNyceecReview(review: InsertNyceecReview): Promise<NyceecReview>;
+  updateNyceecReview(id: number, userId: string, rating: number, reviewText?: string): Promise<NyceecReview>;
+  deleteNyceecReview(id: number, userId: string): Promise<void>;
+  getNyceecRatingStats(locCode: string): Promise<{ averageRating: number; totalReviews: number }>;
 }
 
 export interface NyceecFilters {
@@ -790,6 +798,91 @@ export class DbStorage implements IStorage {
           },
         });
     }
+  }
+  
+  // NYCEEC Reviews implementation
+  async getNyceecReviews(locCode: string): Promise<NyceecReviewWithUser[]> {
+    const reviewsData = await db
+      .select({
+        id: nyceecReviews.id,
+        userId: nyceecReviews.userId,
+        locCode: nyceecReviews.locCode,
+        rating: nyceecReviews.rating,
+        reviewText: nyceecReviews.reviewText,
+        helpfulCount: nyceecReviews.helpfulCount,
+        createdAt: nyceecReviews.createdAt,
+        updatedAt: nyceecReviews.updatedAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userProfileImage: users.profileImageUrl,
+      })
+      .from(nyceecReviews)
+      .leftJoin(users, eq(nyceecReviews.userId, users.id))
+      .where(eq(nyceecReviews.locCode, locCode))
+      .orderBy(desc(nyceecReviews.createdAt));
+    
+    return reviewsData.map(r => ({
+      id: r.id,
+      userId: r.userId,
+      locCode: r.locCode,
+      rating: r.rating,
+      reviewText: r.reviewText,
+      helpfulCount: r.helpfulCount,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      user: {
+        firstName: r.userFirstName,
+        lastName: r.userLastName,
+        profileImageUrl: r.userProfileImage,
+      },
+    }));
+  }
+  
+  async getUserNyceecReview(userId: string, locCode: string): Promise<NyceecReview | undefined> {
+    const [review] = await db
+      .select()
+      .from(nyceecReviews)
+      .where(and(eq(nyceecReviews.userId, userId), eq(nyceecReviews.locCode, locCode)));
+    return review;
+  }
+  
+  async createNyceecReview(review: InsertNyceecReview): Promise<NyceecReview> {
+    const [created] = await db.insert(nyceecReviews).values(review).returning();
+    return created;
+  }
+  
+  async updateNyceecReview(id: number, userId: string, rating: number, reviewText?: string): Promise<NyceecReview> {
+    const [updated] = await db
+      .update(nyceecReviews)
+      .set({
+        rating,
+        reviewText,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(nyceecReviews.id, id), eq(nyceecReviews.userId, userId)))
+      .returning();
+    return updated;
+  }
+  
+  async deleteNyceecReview(id: number, userId: string): Promise<void> {
+    await db
+      .delete(nyceecReviews)
+      .where(and(eq(nyceecReviews.id, id), eq(nyceecReviews.userId, userId)));
+  }
+  
+  async getNyceecRatingStats(locCode: string): Promise<{ averageRating: number; totalReviews: number }> {
+    const result = await db
+      .select({
+        avgRating: sql<number>`COALESCE(AVG(${nyceecReviews.rating}), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(nyceecReviews)
+      .where(eq(nyceecReviews.locCode, locCode));
+    
+    return {
+      averageRating: Number(result[0]?.avgRating) || 0,
+      totalReviews: Number(result[0]?.count) || 0,
+    };
   }
 }
 
