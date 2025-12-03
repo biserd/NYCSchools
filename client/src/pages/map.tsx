@@ -11,8 +11,9 @@ import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-rea
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { School, calculateOverallScore, getScoreColor, getSchoolSlug } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 
 interface UserZones {
   elementary: string | null;
@@ -53,6 +54,18 @@ const IEP_OPTIONS = [
   { value: "high", label: "High IEP (>25%)" },
 ];
 
+const DATA_SOURCE_OPTIONS = [
+  { value: "schools", label: "K-12 Schools" },
+  { value: "nyceec", label: "Early Childhood Centers" },
+];
+
+const NYCEEC_TYPE_OPTIONS = [
+  { value: "all", label: "All Center Types" },
+  { value: "NYCEEC", label: "Community-Based (NYCEEC)" },
+  { value: "DOE", label: "DOE Schools" },
+  { value: "CHARTER", label: "Charter Schools" },
+];
+
 export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -82,6 +95,8 @@ export default function MapPage() {
   const [selectedIEP, setSelectedIEP] = useState(() => urlParams.get("iep") || "all");
   const [selectedZipCode, setSelectedZipCode] = useState(() => urlParams.get("zip") || "");
   const [selectedZoned, setSelectedZoned] = useState(() => urlParams.get("zoned") || "all");
+  const [dataSource, setDataSource] = useState(() => urlParams.get("source") || "schools");
+  const [selectedNyceecType, setSelectedNyceecType] = useState(() => urlParams.get("centerType") || "all");
   
   // Auth hook for zoned schools
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -124,6 +139,8 @@ export default function MapPage() {
     const iep = newParams.get("iep");
     const zip = newParams.get("zip");
     const zoned = newParams.get("zoned");
+    const source = newParams.get("source");
+    const centerType = newParams.get("centerType");
     
     // Set district: explicit district > infer from zip > default
     if (district) {
@@ -140,6 +157,8 @@ export default function MapPage() {
     setSelectedIEP(iep || "all");
     setSelectedZipCode(zip || "");
     setSelectedZoned(zoned || "all");
+    setDataSource(source || "schools");
+    setSelectedNyceecType(centerType || "all");
   }, [searchString]);
 
   // Update URL when filters change
@@ -150,7 +169,8 @@ export default function MapPage() {
       // Don't add default values to URL
       const isDefault = 
         (key === "district" && (value === "2" || value === "all")) ||
-        (key !== "district" && key !== "zip" && value === "all") ||
+        (key === "source" && value === "schools") ||
+        (key !== "district" && key !== "zip" && key !== "source" && value === "all") ||
         (key === "zip" && !value);
       
       if (!isDefault && value) {
@@ -178,11 +198,19 @@ export default function MapPage() {
       iep: selectedIEP,
       zip: selectedZipCode,
       zoned: selectedZoned,
+      source: dataSource,
+      centerType: selectedNyceecType,
     });
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, updateURL]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, dataSource, selectedNyceecType, updateURL]);
 
   const { data: allSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
+    enabled: dataSource === "schools",
+  });
+
+  const { data: allNyceecCenters } = useQuery<NyceecCenter[]>({
+    queryKey: ["/api/nyceec-centers"],
+    enabled: dataSource === "nyceec",
   });
 
   // Filter schools that have geocoded coordinates
@@ -338,6 +366,32 @@ export default function MapPage() {
     return result;
   }, [schoolsWithCoords, selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, userZones]);
 
+  // Filter NYCEEC centers with coordinates
+  const filteredNyceecCenters = useMemo(() => {
+    if (!allNyceecCenters) return [];
+    
+    let result = allNyceecCenters.filter(
+      center => center.latitude !== null && center.longitude !== null
+    );
+    
+    // District filter
+    if (selectedDistrict !== "all") {
+      result = result.filter(c => c.district === parseInt(selectedDistrict));
+    }
+    
+    // Center type filter
+    if (selectedNyceecType !== "all") {
+      result = result.filter(c => c.centerType === selectedNyceecType);
+    }
+    
+    // Zip code filter
+    if (selectedZipCode && selectedZipCode.length === 5) {
+      result = result.filter(c => c.zipCode === selectedZipCode);
+    }
+    
+    return result;
+  }, [allNyceecCenters, selectedDistrict, selectedNyceecType, selectedZipCode]);
+
   // Count active filters (District 2 is the default, so only count as active if changed to something else)
   const activeFilterCount = useMemo(() => {
     return [
@@ -437,7 +491,7 @@ export default function MapPage() {
     };
   }, []);
 
-  // Update markers when filtered schools change
+  // Update markers when filtered data changes
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -449,127 +503,210 @@ export default function MapPage() {
     popupListenersRef.current.forEach(cleanup => cleanup());
     popupListenersRef.current.clear();
 
-    // Add markers for filtered schools
-    filteredSchools.forEach(school => {
-      const scoreColor = getScoreColor(school.overall_score);
-      
-      // Create custom colored marker with 4-tier color system
-      const getMarkerColor = (color: string) => {
-        switch (color) {
-          case 'green': return '#22c55e';
-          case 'yellow': return '#eab308';
-          case 'purple': return '#8b5cf6';
-          default: return '#ef4444';
-        }
-      };
-      
-      const markerHtml = `
-        <div style="
-          background-color: ${getMarkerColor(scoreColor)};
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        "></div>
-      `;
+    // Create custom colored marker with 4-tier color system for schools
+    const getMarkerColor = (color: string) => {
+      switch (color) {
+        case 'green': return '#22c55e';
+        case 'yellow': return '#eab308';
+        case 'purple': return '#8b5cf6';
+        default: return '#ef4444';
+      }
+    };
 
-      const marker = L.marker([school.lat, school.lng], {
-        icon: L.divIcon({
-          className: 'custom-marker',
-          html: markerHtml,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        }),
+    if (dataSource === "schools") {
+      // Add markers for filtered schools
+      filteredSchools.forEach(school => {
+        const scoreColor = getScoreColor(school.overall_score);
+        
+        const markerHtml = `
+          <div style="
+            background-color: ${getMarkerColor(scoreColor)};
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          "></div>
+        `;
+
+        const marker = L.marker([school.lat, school.lng], {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: markerHtml,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+        });
+
+        // Build badges for popup
+        const badges: string[] = [];
+        if (school.has_gifted_talented) {
+          badges.push(`<span style="background: #8b5cf6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">G&T</span>`);
+        }
+        if (school.has_dual_language) {
+          badges.push(`<span style="background: #0ea5e9; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">Dual Lang</span>`);
+        }
+        if (school.has_3k || school.has_prek) {
+          badges.push(`<span style="background: #f97316; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Early Ed</span>`);
+        }
+
+        marker.bindPopup(`
+          <div style="min-width: 220px;">
+            <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${school.name}</h3>
+            ${badges.length > 0 ? `<div style="margin-bottom: 8px;">${badges.join('')}</div>` : ''}
+            <p style="margin: 0; font-size: 12px; color: #666;">DBN: ${school.dbn}</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #666;">District ${school.district} | ${school.grade_band || 'N/A'}</p>
+            <p style="margin: 4px 0; font-size: 14px;">
+              <strong>Overall Score:</strong> 
+              <span style="color: ${getMarkerColor(scoreColor)}; font-weight: 600;">
+                ${school.overall_score}
+              </span>
+            </p>
+            <p style="margin: 4px 0 8px 0; font-size: 12px;">
+              ELA: ${school.ela_proficiency}% | Math: ${school.math_proficiency}%
+            </p>
+            <a 
+              href="/school/${getSchoolSlug(school)}" 
+              data-school-dbn="${school.dbn}"
+              style="
+                display: inline-block;
+                padding: 6px 12px;
+                background: #2563eb;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+              "
+            >
+              View Details
+            </a>
+          </div>
+        `);
+
+        // Setup popup event listeners with proper cleanup
+        const handlePopupOpen = () => {
+          const popupElement = marker.getPopup()?.getElement();
+          const link = popupElement?.querySelector(`a[data-school-dbn="${school.dbn}"]`) as HTMLElement;
+          
+          if (link) {
+            const handleClick = (e: Event) => {
+              e.preventDefault();
+              setLocation(`/school/${getSchoolSlug(school)}`);
+            };
+            
+            link.addEventListener('click', handleClick);
+            
+            // Store cleanup function
+            popupListenersRef.current.set(school.dbn, () => {
+              link.removeEventListener('click', handleClick);
+            });
+          }
+        };
+
+        const handlePopupClose = () => {
+          // Clean up listener when popup closes
+          const cleanup = popupListenersRef.current.get(school.dbn);
+          if (cleanup) {
+            cleanup();
+            popupListenersRef.current.delete(school.dbn);
+          }
+        };
+
+        marker.on('popupopen', handlePopupOpen);
+        marker.on('popupclose', handlePopupClose);
+
+        marker.addTo(mapInstanceRef.current!);
+        markersRef.current.push(marker);
       });
 
-      // Build badges for popup
-      const badges: string[] = [];
-      if (school.has_gifted_talented) {
-        badges.push(`<span style="background: #8b5cf6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">G&T</span>`);
+      // Fit map to show all markers if any exist
+      if (filteredSchools.length > 0) {
+        const bounds = L.latLngBounds(filteredSchools.map(s => [s.lat, s.lng]));
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
       }
-      if (school.has_dual_language) {
-        badges.push(`<span style="background: #0ea5e9; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">Dual Lang</span>`);
-      }
-      if (school.has_3k || school.has_prek) {
-        badges.push(`<span style="background: #f97316; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Early Ed</span>`);
-      }
-
-      marker.bindPopup(`
-        <div style="min-width: 220px;">
-          <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${school.name}</h3>
-          ${badges.length > 0 ? `<div style="margin-bottom: 8px;">${badges.join('')}</div>` : ''}
-          <p style="margin: 0; font-size: 12px; color: #666;">DBN: ${school.dbn}</p>
-          <p style="margin: 4px 0; font-size: 12px; color: #666;">District ${school.district} | ${school.grade_band || 'N/A'}</p>
-          <p style="margin: 4px 0; font-size: 14px;">
-            <strong>Overall Score:</strong> 
-            <span style="color: ${getMarkerColor(scoreColor)}; font-weight: 600;">
-              ${school.overall_score}
-            </span>
-          </p>
-          <p style="margin: 4px 0 8px 0; font-size: 12px;">
-            ELA: ${school.ela_proficiency}% | Math: ${school.math_proficiency}%
-          </p>
-          <a 
-            href="/school/${getSchoolSlug(school)}" 
-            data-school-dbn="${school.dbn}"
-            style="
-              display: inline-block;
-              padding: 6px 12px;
-              background: #2563eb;
-              color: white;
-              text-decoration: none;
-              border-radius: 4px;
-              font-size: 12px;
-              font-weight: 500;
-              cursor: pointer;
-            "
-          >
-            View Details
-          </a>
-        </div>
-      `);
-
-      // Setup popup event listeners with proper cleanup
-      const handlePopupOpen = () => {
-        const popupElement = marker.getPopup()?.getElement();
-        const link = popupElement?.querySelector(`a[data-school-dbn="${school.dbn}"]`) as HTMLElement;
+    } else {
+      // Add markers for NYCEEC centers (orange markers)
+      filteredNyceecCenters.forEach(center => {
+        const centerTypeColor = center.centerType === "NYCEEC" ? "#f97316" : 
+                                 center.centerType === "DOE" ? "#3b82f6" : "#8b5cf6";
         
-        if (link) {
-          const handleClick = (e: Event) => {
-            e.preventDefault();
-            setLocation(`/school/${getSchoolSlug(school)}`);
-          };
-          
-          link.addEventListener('click', handleClick);
-          
-          // Store cleanup function
-          popupListenersRef.current.set(school.dbn, () => {
-            link.removeEventListener('click', handleClick);
-          });
+        const markerHtml = `
+          <div style="
+            background-color: ${centerTypeColor};
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            cursor: pointer;
+            pointer-events: auto;
+          "></div>
+        `;
+
+        const marker = L.marker([center.latitude!, center.longitude!], {
+          icon: L.divIcon({
+            className: 'custom-marker nyceec-marker',
+            html: markerHtml,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+          interactive: true,
+        });
+
+        // Build badges for popup
+        const badges: string[] = [];
+        const typeLabel = center.centerType === "NYCEEC" ? "Community-Based" :
+                          center.centerType === "DOE" ? "DOE School" : "Charter";
+        badges.push(`<span style="background: ${centerTypeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${typeLabel}</span>`);
+        
+        if (center.extendedDay) {
+          badges.push(`<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px;">Extended Day</span>`);
         }
-      };
 
-      const handlePopupClose = () => {
-        // Clean up listener when popup closes
-        const cleanup = popupListenersRef.current.get(school.dbn);
-        if (cleanup) {
-          cleanup();
-          popupListenersRef.current.delete(school.dbn);
-        }
-      };
+        marker.bindPopup(`
+          <div style="min-width: 220px;">
+            <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${center.name}</h3>
+            <div style="margin-bottom: 8px;">${badges.join('')}</div>
+            <p style="margin: 0; font-size: 12px; color: #666;">${center.address}</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #666;">${getBoroughName(center.borough)} ${center.zipCode || ''}</p>
+            ${center.district ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">District ${center.district}</p>` : ''}
+            ${center.seats ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Pre-K Seats:</strong> ${center.seats}</p>` : ''}
+            ${center.phone ? `<p style="margin: 4px 0; font-size: 12px;"><a href="tel:${center.phone}" style="color: #2563eb;">${center.phone}</a></p>` : ''}
+            <a 
+              href="/early-childhood" 
+              style="
+                display: inline-block;
+                margin-top: 8px;
+                padding: 6px 12px;
+                background: #f97316;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+              "
+            >
+              Browse All Centers
+            </a>
+          </div>
+        `);
 
-      marker.on('popupopen', handlePopupOpen);
-      marker.on('popupclose', handlePopupClose);
+        marker.addTo(mapInstanceRef.current!);
+        markersRef.current.push(marker);
+      });
 
-      marker.addTo(mapInstanceRef.current!);
-      markersRef.current.push(marker);
-    });
-
-    // Fit map to show all markers if any exist
-    if (filteredSchools.length > 0) {
-      const bounds = L.latLngBounds(filteredSchools.map(s => [s.lat, s.lng]));
-      mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+      // Fit map to show all NYCEEC markers if any exist
+      if (filteredNyceecCenters.length > 0) {
+        const bounds = L.latLngBounds(
+          filteredNyceecCenters
+            .filter(c => c.latitude && c.longitude)
+            .map(c => [c.latitude!, c.longitude!])
+        );
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
     }
 
     // Cleanup function for effect
@@ -577,7 +714,7 @@ export default function MapPage() {
       popupListenersRef.current.forEach(cleanup => cleanup());
       popupListenersRef.current.clear();
     };
-  }, [filteredSchools, setLocation]);
+  }, [filteredSchools, filteredNyceecCenters, dataSource, setLocation]);
 
   // Clear all filters (reset to defaults)
   const clearFilters = () => {
@@ -588,6 +725,8 @@ export default function MapPage() {
     setSelectedIEP("all");
     setSelectedZipCode("");
     setSelectedZoned("all");
+    setDataSource("schools");
+    setSelectedNyceecType("all");
   };
 
   // Handle zip code input changes - switches to All Districts when 5 digits entered
@@ -602,6 +741,19 @@ export default function MapPage() {
 
   const filterDropdownsContent = (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+      <Select value={dataSource} onValueChange={setDataSource}>
+        <SelectTrigger data-testid="select-map-data-source" className="h-9 border-primary/50 bg-primary/5">
+          <SelectValue placeholder="K-12 Schools" />
+        </SelectTrigger>
+        <SelectContent className="z-[9999]">
+          {DATA_SOURCE_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
         <SelectTrigger data-testid="select-map-district" className="h-9">
           <SelectValue placeholder="District 2" />
@@ -616,57 +768,76 @@ export default function MapPage() {
         </SelectContent>
       </Select>
 
-      <Select value={selectedType} onValueChange={setSelectedType}>
-        <SelectTrigger data-testid="select-map-type" className="h-9">
-          <SelectValue placeholder="All Grade Levels" />
-        </SelectTrigger>
-        <SelectContent className="z-[9999]">
-          {GRADE_BAND_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {dataSource === "nyceec" && (
+        <Select value={selectedNyceecType} onValueChange={setSelectedNyceecType}>
+          <SelectTrigger data-testid="select-map-nyceec-type" className="h-9">
+            <SelectValue placeholder="All Center Types" />
+          </SelectTrigger>
+          <SelectContent className="z-[9999]">
+            {NYCEEC_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
-      <Select value={selectedGT} onValueChange={setSelectedGT}>
-        <SelectTrigger data-testid="select-map-gt" className="h-9">
-          <SelectValue placeholder="G&T Programs" />
-        </SelectTrigger>
-        <SelectContent className="z-[9999]">
-          {GT_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {dataSource === "schools" && (
+        <>
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger data-testid="select-map-type" className="h-9">
+              <SelectValue placeholder="All Grade Levels" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              {GRADE_BAND_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <Select value={selectedDL} onValueChange={setSelectedDL}>
-        <SelectTrigger data-testid="select-map-dl" className="h-9">
-          <SelectValue placeholder="Dual Language" />
-        </SelectTrigger>
-        <SelectContent className="z-[9999]">
-          {DUAL_LANGUAGE_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          <Select value={selectedGT} onValueChange={setSelectedGT}>
+            <SelectTrigger data-testid="select-map-gt" className="h-9">
+              <SelectValue placeholder="G&T Programs" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              {GT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <Select value={selectedIEP} onValueChange={setSelectedIEP}>
-        <SelectTrigger data-testid="select-map-iep" className="h-9">
-          <SelectValue placeholder="Special Ed" />
-        </SelectTrigger>
-        <SelectContent className="z-[9999]">
-          {IEP_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          <Select value={selectedDL} onValueChange={setSelectedDL}>
+            <SelectTrigger data-testid="select-map-dl" className="h-9">
+              <SelectValue placeholder="Dual Language" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              {DUAL_LANGUAGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedIEP} onValueChange={setSelectedIEP}>
+            <SelectTrigger data-testid="select-map-iep" className="h-9">
+              <SelectValue placeholder="Special Ed" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              {IEP_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
+      )}
 
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -683,7 +854,7 @@ export default function MapPage() {
         />
       </div>
 
-      {hasZonedSchools && (
+      {dataSource === "schools" && hasZonedSchools && (
         <Select value={selectedZoned} onValueChange={setSelectedZoned}>
           <SelectTrigger data-testid="select-map-zoned" className="h-9">
             <Home className="h-4 w-4 mr-2 text-primary" />
