@@ -19,6 +19,33 @@ interface ReleaseNote {
 
 const releaseNotes: ReleaseNote[] = [
   {
+    version: "1.7.0",
+    date: "December 2025",
+    title: "Early Childhood Center Detail Pages",
+    highlights: [
+      "Individual detail pages for all 1,885+ NYC Early Education Centers",
+      "AI-generated insights with tour questions and neighborhood context",
+      "Parent reviews and ratings for early childhood centers",
+    ],
+    features: [
+      "NYCEEC Detail Pages at /early-childhood/{center} with full center information",
+      "Hero section with center name, type badge, seat count, and location",
+      "Contact information with clickable phone, email, and Google Maps directions",
+      "Program details including seats, day length, extended hours, and meals",
+      "Interactive Leaflet map showing center location",
+      "AI-generated insights (for logged-in users): overview, considerations, tour questions",
+      "Parent reviews and ratings with 5-star system and written feedback",
+      "Parent's Guide section with tips for evaluating early childhood centers",
+      "SEO-optimized with schema.org Preschool structured data",
+    ],
+    improvements: [
+      "Browse page cards now link directly to center detail pages",
+      "Map markers for early childhood centers link to detail pages",
+      "Sitemap now includes all early childhood center pages for better SEO",
+      "Reviews clearly separated between school reviews and NYCEEC reviews in database",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "December 2025",
     title: "Zoned School Detection & Enhanced Personalization",

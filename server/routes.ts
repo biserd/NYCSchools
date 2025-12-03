@@ -1106,6 +1106,11 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         { url: '/favorites', changefreq: 'weekly', priority: '0.7' },
         { url: '/compare', changefreq: 'weekly', priority: '0.7' },
         { url: '/recommendations', changefreq: 'weekly', priority: '0.8' },
+        { url: '/early-childhood', changefreq: 'weekly', priority: '0.8' },
+        { url: '/lottery-simulator', changefreq: 'monthly', priority: '0.7' },
+        { url: '/blog', changefreq: 'weekly', priority: '0.7' },
+        { url: '/features', changefreq: 'monthly', priority: '0.6' },
+        { url: '/release-notes', changefreq: 'weekly', priority: '0.5' },
         { url: '/faq', changefreq: 'monthly', priority: '0.6' },
         { url: '/privacy', changefreq: 'monthly', priority: '0.3' },
         { url: '/terms', changefreq: 'monthly', priority: '0.3' },
@@ -1135,6 +1140,27 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         xml += `    <priority>0.9</priority>\n`;
         xml += '  </url>\n';
       });
+      
+      // Add NYCEEC early childhood center pages
+      try {
+        const nyceecResponse = await fetch('https://data.cityofnewyork.us/resource/kiyv-ks3f.json?$limit=2000');
+        if (nyceecResponse.ok) {
+          const nyceecCenters = await nyceecResponse.json();
+          nyceecCenters.forEach((center: any) => {
+            if (center.loccode && center.locname) {
+              const slug = `${center.loccode.toLowerCase()}-${center.locname.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}`;
+              xml += '  <url>\n';
+              xml += `    <loc>https://nycschoolsratings.com/early-childhood/${slug}</loc>\n`;
+              xml += `    <lastmod>${today}</lastmod>\n`;
+              xml += `    <changefreq>monthly</changefreq>\n`;
+              xml += `    <priority>0.7</priority>\n`;
+              xml += '  </url>\n';
+            }
+          });
+        }
+      } catch (nyceecError) {
+        console.error("Error fetching NYCEEC data for sitemap:", nyceecError);
+      }
       
       xml += '</urlset>';
       
