@@ -103,6 +103,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // NYCEEC Early Childhood Centers API (public) with caching
+  app.get("/api/nyceec-centers", async (req: Request, res: Response) => {
+    try {
+      const { borough, district, centerType, zipCode, search } = req.query;
+      
+      const filters: {
+        borough?: string;
+        district?: number;
+        centerType?: string;
+        zipCode?: string;
+        search?: string;
+      } = {};
+      
+      if (borough && typeof borough === 'string') {
+        filters.borough = borough;
+      }
+      if (district && typeof district === 'string') {
+        const districtNum = parseInt(district, 10);
+        if (!isNaN(districtNum)) {
+          filters.district = districtNum;
+        }
+      }
+      if (centerType && typeof centerType === 'string') {
+        filters.centerType = centerType;
+      }
+      if (zipCode && typeof zipCode === 'string') {
+        filters.zipCode = zipCode;
+      }
+      if (search && typeof search === 'string') {
+        filters.search = search;
+      }
+      
+      // Only cache if no filters (full list)
+      const hasFilters = Object.keys(filters).length > 0;
+      const cacheKey = "all-nyceec-centers";
+      
+      if (!hasFilters) {
+        const cachedData = getCached(cacheKey);
+        if (cachedData) {
+          return res.json(cachedData);
+        }
+      }
+
+      const centers = await storage.getNyceecCenters(hasFilters ? filters : undefined);
+      
+      if (!hasFilters) {
+        setCache(cacheKey, centers);
+      }
+      
+      res.json(centers);
+    } catch (error) {
+      console.error("Error fetching NYCEEC centers:", error);
+      res.status(500).json({ error: "Failed to fetch early childhood centers" });
+    }
+  });
+
+  app.get("/api/nyceec-centers/:locCode", async (req: Request, res: Response) => {
+    try {
+      const center = await storage.getNyceecCenter(req.params.locCode);
+      if (!center) {
+        return res.status(404).json({ error: "Early childhood center not found" });
+      }
+      res.json(center);
+    } catch (error) {
+      console.error("Error fetching NYCEEC center:", error);
+      res.status(500).json({ error: "Failed to fetch early childhood center" });
+    }
+  });
+
   // All school trends API (public) with caching
   app.get("/api/schools-trends", async (req: Request, res: Response) => {
     try {

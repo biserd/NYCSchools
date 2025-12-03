@@ -28,6 +28,11 @@ export function Footer() {
                   My Favorites
                 </Link>
               </li>
+              <li>
+                <Link href="/early-childhood" className="hover:text-foreground transition-colors" data-testid="footer-link-early-childhood">
+                  Early Childhood Centers
+                </Link>
+              </li>
             </ul>
           </div>
           

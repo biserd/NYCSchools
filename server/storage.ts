@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend } from "@shared/schema";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter } from "@shared/schema";
+import { eq, and, sql, desc, asc, like, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for standalone auth
@@ -48,6 +48,20 @@ export interface IStorage {
   getSchoolHistoricalScores(dbn: string): Promise<HistoricalScore[]>;
   getSchoolTrend(dbn: string): Promise<SchoolTrend>;
   getAllSchoolTrends(): Promise<Map<string, SchoolTrend>>;
+  
+  // NYCEEC Center operations
+  getNyceecCenters(filters?: NyceecFilters): Promise<NyceecCenter[]>;
+  getNyceecCenter(locCode: string): Promise<NyceecCenter | undefined>;
+  upsertNyceecCenter(center: InsertNyceecCenter): Promise<NyceecCenter>;
+  upsertNyceecCenters(centers: InsertNyceecCenter[]): Promise<void>;
+}
+
+export interface NyceecFilters {
+  borough?: string;
+  district?: number;
+  centerType?: string;
+  zipCode?: string;
+  search?: string;
 }
 
 export interface DistrictAverages {
@@ -675,6 +689,107 @@ export class DbStorage implements IStorage {
     }
     
     return trends;
+  }
+
+  // NYCEEC Center operations
+  async getNyceecCenters(filters?: NyceecFilters): Promise<NyceecCenter[]> {
+    let query = db.select().from(nyceecCenters);
+    
+    const conditions = [];
+    
+    if (filters?.borough) {
+      conditions.push(eq(nyceecCenters.borough, filters.borough.toUpperCase()));
+    }
+    
+    if (filters?.district) {
+      conditions.push(eq(nyceecCenters.district, filters.district));
+    }
+    
+    if (filters?.centerType) {
+      conditions.push(eq(nyceecCenters.centerType, filters.centerType));
+    }
+    
+    if (filters?.zipCode) {
+      conditions.push(eq(nyceecCenters.zipCode, filters.zipCode));
+    }
+    
+    if (filters?.search) {
+      conditions.push(
+        or(
+          ilike(nyceecCenters.name, `%${filters.search}%`),
+          ilike(nyceecCenters.address, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    if (conditions.length > 0) {
+      return db.select().from(nyceecCenters).where(and(...conditions)).orderBy(nyceecCenters.name);
+    }
+    
+    return db.select().from(nyceecCenters).orderBy(nyceecCenters.name);
+  }
+
+  async getNyceecCenter(locCode: string): Promise<NyceecCenter | undefined> {
+    const [center] = await db
+      .select()
+      .from(nyceecCenters)
+      .where(eq(nyceecCenters.locCode, locCode.toUpperCase()))
+      .limit(1);
+    return center;
+  }
+
+  async upsertNyceecCenter(center: InsertNyceecCenter): Promise<NyceecCenter> {
+    const [upserted] = await db
+      .insert(nyceecCenters)
+      .values(center)
+      .onConflictDoUpdate({
+        target: nyceecCenters.locCode,
+        set: {
+          ...center,
+          lastUpdated: new Date(),
+        },
+      })
+      .returning();
+    return upserted;
+  }
+
+  async upsertNyceecCenters(centers: InsertNyceecCenter[]): Promise<void> {
+    if (centers.length === 0) return;
+    
+    // Batch upsert in chunks of 100
+    const chunkSize = 100;
+    for (let i = 0; i < centers.length; i += chunkSize) {
+      const chunk = centers.slice(i, i + chunkSize);
+      await db
+        .insert(nyceecCenters)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: nyceecCenters.locCode,
+          set: {
+            name: sql`EXCLUDED.name`,
+            centerType: sql`EXCLUDED.center_type`,
+            borough: sql`EXCLUDED.borough`,
+            district: sql`EXCLUDED.district`,
+            address: sql`EXCLUDED.address`,
+            zipCode: sql`EXCLUDED.zip_code`,
+            latitude: sql`EXCLUDED.latitude`,
+            longitude: sql`EXCLUDED.longitude`,
+            nta: sql`EXCLUDED.nta`,
+            phone: sql`EXCLUDED.phone`,
+            email: sql`EXCLUDED.email`,
+            website: sql`EXCLUDED.website`,
+            seats: sql`EXCLUDED.seats`,
+            dayLength: sql`EXCLUDED.day_length`,
+            extendedDay: sql`EXCLUDED.extended_day`,
+            mealsProvided: sql`EXCLUDED.meals_provided`,
+            indoorOutdoor: sql`EXCLUDED.indoor_outdoor`,
+            semsCode: sql`EXCLUDED.sems_code`,
+            communityBoard: sql`EXCLUDED.community_board`,
+            councilDistrict: sql`EXCLUDED.council_district`,
+            lastUpdated: new Date(),
+          },
+        });
+    }
   }
 }
 

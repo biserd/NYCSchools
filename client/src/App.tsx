@@ -30,6 +30,7 @@ import NotFound from "@/pages/not-found";
 const RecommendationsPage = lazy(() => import("@/pages/recommendations"));
 const MapPage = lazy(() => import("@/pages/map"));
 const LotterySimulatorPage = lazy(() => import("@/pages/lottery-simulator"));
+const EarlyChildhoodPage = lazy(() => import("@/pages/early-childhood"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -68,6 +69,11 @@ function Router() {
       <Route path="/lottery-simulator">
         <Suspense fallback={<PageLoader />}>
           <LotterySimulatorPage />
+        </Suspense>
+      </Route>
+      <Route path="/early-childhood">
+        <Suspense fallback={<PageLoader />}>
+          <EarlyChildhoodPage />
         </Suspense>
       </Route>
       <Route path="/settings" component={SettingsPage} />

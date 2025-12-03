@@ -608,3 +608,85 @@ export type AiChatMessage = typeof aiChatMessages.$inferSelect;
 export interface AiChatSessionWithMessages extends AiChatSession {
   messages: AiChatMessage[];
 }
+
+// NYCEEC Centers - NYC Early Education Centers (community-based Pre-K/3-K providers)
+export const nyceecCenters = pgTable("nyceec_centers", {
+  id: serial("id").primaryKey(),
+  locCode: varchar("loc_code").unique().notNull(), // Location code (e.g., "KCPY")
+  
+  // Basic Info
+  name: text("name").notNull(), // Center name
+  centerType: varchar("center_type").notNull(), // 'NYCEEC', 'DOE', 'Charter'
+  borough: varchar("borough").notNull(), // K=Brooklyn, M=Manhattan, X=Bronx, Q=Queens, R=Staten Island
+  district: integer("district"), // Extracted from sems_code
+  
+  // Location
+  address: text("address").notNull(),
+  zipCode: varchar("zip_code"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  nta: varchar("nta"), // Neighborhood Tabulation Area
+  
+  // Contact
+  phone: varchar("phone"),
+  email: varchar("email"),
+  website: varchar("website"),
+  
+  // Program Details
+  seats: integer("seats"), // Number of Pre-K seats
+  dayLength: varchar("day_length"), // Full day, half day
+  extendedDay: boolean("extended_day").default(false), // Offers extended hours
+  mealsProvided: boolean("meals_provided").default(false), // Offers meals
+  indoorOutdoor: varchar("indoor_outdoor"), // Play space type
+  
+  // Additional fields
+  semsCode: varchar("sems_code"), // DOE organizational code
+  communityBoard: varchar("community_board"),
+  councilDistrict: varchar("council_district"),
+  
+  // Metadata
+  lastUpdated: timestamp("last_updated").defaultNow(),
+}, (table) => [
+  index("idx_nyceec_borough").on(table.borough),
+  index("idx_nyceec_district").on(table.district),
+  index("idx_nyceec_type").on(table.centerType),
+  index("idx_nyceec_zip").on(table.zipCode),
+]);
+
+export const insertNyceecCenterSchema = createInsertSchema(nyceecCenters).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+export type InsertNyceecCenter = z.infer<typeof insertNyceecCenterSchema>;
+export type NyceecCenter = typeof nyceecCenters.$inferSelect;
+
+// Helper function to get borough full name
+export function getBoroughName(code: string | null): string {
+  if (!code) return "Unknown";
+  switch (code.toUpperCase()) {
+    case "M": return "Manhattan";
+    case "X": return "Bronx";
+    case "K": return "Brooklyn";
+    case "Q": return "Queens";
+    case "R": return "Staten Island";
+    default: return code;
+  }
+}
+
+// Helper function to generate URL-friendly slug from NYCEEC center
+export function getNyceecSlug(center: Pick<NyceecCenter, 'name' | 'locCode'>): string {
+  const nameSlug = center.name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  
+  return `${center.locCode.toLowerCase()}-${nameSlug}`;
+}
+
+// Helper function to get NYCEEC center URL path
+export function getNyceecUrl(center: Pick<NyceecCenter, 'name' | 'locCode'>): string {
+  return `/early-childhood/${getNyceecSlug(center)}`;
+}
