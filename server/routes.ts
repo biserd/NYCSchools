@@ -172,13 +172,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NYCEEC AI Insights endpoint (authenticated)
+  // NYCEEC AI Insights endpoint (authenticated) - with caching
   app.post("/api/nyceec-centers/ai-insights", isAuthenticated, async (req: any, res: Response) => {
     try {
       const { locCode, name, centerType, borough, district, address, seats, extendedDay, dayLength } = req.body;
       
       if (!locCode || !name) {
         return res.status(400).json({ error: "Missing required center information" });
+      }
+
+      // Check cache first for instant response
+      const cachedInsight = await storage.getNyceecAiInsight(locCode);
+      if (cachedInsight) {
+        return res.json({
+          overview: cachedInsight.overview,
+          considerations: cachedInsight.considerations,
+          tourQuestions: cachedInsight.tourQuestions,
+          neighborhoodContext: cachedInsight.neighborhoodContext,
+          cached: true,
+        });
       }
 
       const boroughName = borough === "M" ? "Manhattan" : 
@@ -228,7 +240,7 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
           { role: "user", content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 700,
         response_format: { type: "json_object" },
       });
 
@@ -238,7 +250,33 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
       }
 
       const insights = JSON.parse(responseText);
-      res.json(insights);
+      
+      // Validate AI response structure before caching
+      const isValidInsights = 
+        typeof insights.overview === 'string' && insights.overview.length > 0 &&
+        Array.isArray(insights.considerations) && insights.considerations.length > 0 &&
+        Array.isArray(insights.tourQuestions) && insights.tourQuestions.length > 0 &&
+        typeof insights.neighborhoodContext === 'string' && insights.neighborhoodContext.length > 0;
+      
+      if (isValidInsights) {
+        // Save to cache for future requests (gracefully handle DB errors)
+        try {
+          await storage.saveNyceecAiInsight({
+            locCode,
+            overview: insights.overview,
+            considerations: insights.considerations,
+            tourQuestions: insights.tourQuestions,
+            neighborhoodContext: insights.neighborhoodContext,
+          });
+        } catch (cacheError) {
+          console.error("Failed to cache AI insights (non-fatal):", cacheError);
+          // Continue - still return the insights even if caching failed
+        }
+      } else {
+        console.warn("AI response invalid, not caching:", insights);
+      }
+
+      res.json({ ...insights, cached: false });
     } catch (error) {
       console.error("Error generating NYCEEC AI insights:", error);
       res.status(500).json({ error: "Failed to generate AI insights" });
