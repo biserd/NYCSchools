@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
@@ -62,6 +62,10 @@ export interface IStorage {
   updateNyceecReview(id: number, userId: string, rating: number, reviewText?: string): Promise<NyceecReview>;
   deleteNyceecReview(id: number, userId: string): Promise<void>;
   getNyceecRatingStats(locCode: string): Promise<{ averageRating: number; totalReviews: number }>;
+  
+  // NYCEEC AI Insights Cache
+  getNyceecAiInsight(locCode: string): Promise<NyceecAiInsight | undefined>;
+  saveNyceecAiInsight(insight: InsertNyceecAiInsight): Promise<NyceecAiInsight>;
 }
 
 export interface NyceecFilters {
@@ -883,6 +887,33 @@ export class DbStorage implements IStorage {
       averageRating: Number(result[0]?.avgRating) || 0,
       totalReviews: Number(result[0]?.count) || 0,
     };
+  }
+  
+  async getNyceecAiInsight(locCode: string): Promise<NyceecAiInsight | undefined> {
+    const [insight] = await db
+      .select()
+      .from(nyceecAiInsights)
+      .where(eq(nyceecAiInsights.locCode, locCode))
+      .limit(1);
+    return insight;
+  }
+  
+  async saveNyceecAiInsight(insight: InsertNyceecAiInsight): Promise<NyceecAiInsight> {
+    const [saved] = await db
+      .insert(nyceecAiInsights)
+      .values(insight)
+      .onConflictDoUpdate({
+        target: nyceecAiInsights.locCode,
+        set: {
+          overview: insight.overview,
+          considerations: insight.considerations,
+          tourQuestions: insight.tourQuestions,
+          neighborhoodContext: insight.neighborhoodContext,
+          createdAt: sql`now()`,
+        },
+      })
+      .returning();
+    return saved;
   }
 }
 

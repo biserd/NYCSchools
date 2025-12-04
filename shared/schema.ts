@@ -697,6 +697,22 @@ export interface NyceecReviewWithUser extends NyceecReview {
   } | null;
 }
 
+// NYCEEC AI Insights Cache - Store generated AI insights per center
+export const nyceecAiInsights = pgTable("nyceec_ai_insights", {
+  id: serial("id").primaryKey(),
+  locCode: varchar("loc_code").unique().notNull().references(() => nyceecCenters.locCode, { onDelete: "cascade" }),
+  overview: text("overview").notNull(),
+  considerations: text("considerations").array().notNull(),
+  tourQuestions: text("tour_questions").array().notNull(),
+  neighborhoodContext: text("neighborhood_context").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_nyceec_insights_loccode").on(table.locCode),
+]);
+
+export type NyceecAiInsight = typeof nyceecAiInsights.$inferSelect;
+export type InsertNyceecAiInsight = typeof nyceecAiInsights.$inferInsert;
+
 // Helper function to get borough full name
 export function getBoroughName(code: string | null): string {
   if (!code) return "Unknown";
