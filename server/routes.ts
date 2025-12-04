@@ -172,6 +172,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET cached NYCEEC AI Insights (no generation - just check cache)
+  app.get("/api/nyceec-centers/:locCode/ai-insights", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { locCode } = req.params;
+      const cachedInsight = await storage.getNyceecAiInsight(locCode);
+      
+      if (cachedInsight) {
+        return res.json({
+          overview: cachedInsight.overview,
+          considerations: cachedInsight.considerations,
+          tourQuestions: cachedInsight.tourQuestions,
+          neighborhoodContext: cachedInsight.neighborhoodContext,
+          cached: true,
+        });
+      }
+      
+      // No cached insights - return null (frontend will show generate button)
+      return res.json(null);
+    } catch (error) {
+      console.error("Error fetching cached NYCEEC AI insights:", error);
+      res.status(500).json({ error: "Failed to fetch AI insights" });
+    }
+  });
+
   // NYCEEC AI Insights endpoint (authenticated) - with caching
   app.post("/api/nyceec-centers/ai-insights", isAuthenticated, async (req: any, res: Response) => {
     try {

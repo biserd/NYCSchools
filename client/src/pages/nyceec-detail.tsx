@@ -58,7 +58,11 @@ export default function NyceecDetail() {
     retry: 1,
   });
 
-  const [showAiInsights, setShowAiInsights] = useState(false);
+  // Auto-fetch cached AI insights on page load (for authenticated users)
+  const { data: cachedInsights, isLoading: insightsLoading, refetch: refetchInsights } = useQuery<AiInsightsResponse | null>({
+    queryKey: ["/api/nyceec-centers", locCode, "ai-insights"],
+    enabled: !!locCode && isAuthenticated && !authLoading,
+  });
 
   const aiInsightsMutation = useMutation({
     mutationFn: async () => {
@@ -75,12 +79,18 @@ export default function NyceecDetail() {
       });
       return response.json();
     },
+    onSuccess: () => {
+      // Refetch cached insights after successful generation
+      refetchInsights();
+    },
   });
 
   const handleGenerateInsights = () => {
-    setShowAiInsights(true);
     aiInsightsMutation.mutate();
   };
+
+  // Use cached insights if available, otherwise use mutation result
+  const aiInsights = cachedInsights || aiInsightsMutation.data;
 
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery<NyceecReviewWithUser[]>({
     queryKey: ["/api/nyceec-centers", locCode, "reviews"],
@@ -385,22 +395,11 @@ export default function NyceecDetail() {
                     </Link>
                   </div>
                 </div>
-              ) : !showAiInsights ? (
-                <div className="text-center py-6 space-y-4">
-                  <p className="text-muted-foreground">
-                    Get AI-generated insights about this center, including what to look for
-                    and questions to ask during a tour.
-                  </p>
-                  <Button onClick={handleGenerateInsights} data-testid="button-generate-insights">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate AI Insights
-                  </Button>
-                </div>
-              ) : aiInsightsMutation.isPending ? (
+              ) : insightsLoading || aiInsightsMutation.isPending ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Generating insights...</span>
+                    <span>{aiInsightsMutation.isPending ? 'Generating insights...' : 'Loading insights...'}</span>
                   </div>
                   <Skeleton className="h-20" />
                   <Skeleton className="h-32" />
@@ -416,22 +415,22 @@ export default function NyceecDetail() {
                     Try Again
                   </Button>
                 </div>
-              ) : aiInsightsMutation.data ? (
+              ) : aiInsights ? (
                 <div className="space-y-6">
                   <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
                     <p className="text-sm leading-relaxed" data-testid="text-ai-overview">
-                      {aiInsightsMutation.data.overview}
+                      {aiInsights.overview}
                     </p>
                   </div>
 
-                  {aiInsightsMutation.data.considerations?.length > 0 && (
+                  {aiInsights.considerations?.length > 0 && (
                     <div>
                       <h4 className="font-medium mb-3 flex items-center gap-2">
                         <HelpCircle className="w-4 h-4" />
                         Key Considerations
                       </h4>
                       <ul className="space-y-2">
-                        {aiInsightsMutation.data.considerations.map((item: string, i: number) => (
+                        {aiInsights.considerations.map((item: string, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
                             <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                             <span>{item}</span>
@@ -441,14 +440,14 @@ export default function NyceecDetail() {
                     </div>
                   )}
 
-                  {aiInsightsMutation.data.tourQuestions?.length > 0 && (
+                  {aiInsights.tourQuestions?.length > 0 && (
                     <div>
                       <h4 className="font-medium mb-3 flex items-center gap-2">
                         <MessageCircle className="w-4 h-4" />
                         Questions to Ask During a Tour
                       </h4>
                       <ul className="space-y-2">
-                        {aiInsightsMutation.data.tourQuestions.map((question: string, i: number) => (
+                        {aiInsights.tourQuestions.map((question: string, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
                             <span className="font-medium text-primary shrink-0">{i + 1}.</span>
                             <span>{question}</span>
@@ -458,14 +457,14 @@ export default function NyceecDetail() {
                     </div>
                   )}
 
-                  {aiInsightsMutation.data.neighborhoodContext && (
+                  {aiInsights.neighborhoodContext && (
                     <div>
                       <h4 className="font-medium mb-3 flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         Neighborhood Context
                       </h4>
                       <p className="text-sm text-muted-foreground" data-testid="text-neighborhood">
-                        {aiInsightsMutation.data.neighborhoodContext}
+                        {aiInsights.neighborhoodContext}
                       </p>
                     </div>
                   )}
@@ -475,7 +474,18 @@ export default function NyceecDetail() {
                     Always visit the center in person and speak with staff to make informed decisions.
                   </p>
                 </div>
-              ) : null}
+              ) : (
+                <div className="text-center py-6 space-y-4">
+                  <p className="text-muted-foreground">
+                    Get AI-generated insights about this center, including what to look for
+                    and questions to ask during a tour.
+                  </p>
+                  <Button onClick={handleGenerateInsights} data-testid="button-generate-insights">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate AI Insights
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
