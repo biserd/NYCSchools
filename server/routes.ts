@@ -192,6 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
       const systemPrompt = `You are an expert early childhood education advisor helping NYC parents evaluate preschool and Pre-K programs. You provide helpful, balanced information without making claims about quality ratings (since none exist for these programs).
