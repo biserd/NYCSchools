@@ -89,7 +89,7 @@ I prefer detailed explanations. Ask before making major changes.
     - Contact info (phone, email, address with Google Maps link)
     - Program details (seats, day length, extended hours, meals)
     - Interactive Leaflet map showing center location
-    - AI-generated insights (auth-gated): Overview, considerations, tour questions, neighborhood context
+    - AI-generated insights (auth-gated, cached): Overview, considerations, tour questions, neighborhood context. First user generates (~5-8s), subsequent users get instant cached results from `nyceec_ai_insights` table
     - Parent reviews and ratings (auth-gated for writing, public for reading)
     - SEO-optimized with schema.org Preschool structured data
 
