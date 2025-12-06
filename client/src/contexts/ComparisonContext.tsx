@@ -1,17 +1,22 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { School } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+
+// Premium tier limits
+const FREE_MAX_COMPARE = 2;
+const PREMIUM_MAX_COMPARE = 4;
 
 interface ComparisonContextType {
   comparedSchools: School[];
-  addToComparison: (school: School) => void;
+  addToComparison: (school: School) => { success: boolean; error?: string };
   removeFromComparison: (dbn: string) => void;
   clearComparison: () => void;
   isInComparison: (dbn: string) => boolean;
+  maxCompare: number;
+  isPremium: boolean;
 }
 
 const ComparisonContext = createContext<ComparisonContextType | undefined>(undefined);
-
-const MAX_COMPARE = 4;
 
 export function ComparisonProvider({ children }: { children: ReactNode }) {
   const [comparedSchools, setComparedSchools] = useState<School[]>(() => {
@@ -25,6 +30,16 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  // Check subscription status
+  const { data: subscriptionData } = useQuery<{ isSubscribed: boolean }>({
+    queryKey: ["/api/subscription-status"],
+    retry: false,
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  const isPremium = subscriptionData?.isSubscribed ?? false;
+  const maxCompare = isPremium ? PREMIUM_MAX_COMPARE : FREE_MAX_COMPARE;
+
   useEffect(() => {
     if (typeof window === 'undefined' || !window.localStorage) return;
     try {
@@ -34,27 +49,31 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     }
   }, [comparedSchools]);
 
-  const addToComparison = (school: School) => {
-    if (comparedSchools.length >= MAX_COMPARE) {
-      console.warn(`Cannot add more than ${MAX_COMPARE} schools to comparison`);
-      return;
+  const addToComparison = useCallback((school: School): { success: boolean; error?: string } => {
+    if (comparedSchools.length >= maxCompare) {
+      const message = isPremium 
+        ? `Cannot add more than ${PREMIUM_MAX_COMPARE} schools to comparison`
+        : `Free accounts can compare up to ${FREE_MAX_COMPARE} schools. Upgrade to Premium to compare up to ${PREMIUM_MAX_COMPARE} schools.`;
+      return { success: false, error: message };
     }
-    if (!comparedSchools.find(s => s.dbn === school.dbn)) {
-      setComparedSchools([...comparedSchools, school]);
+    if (comparedSchools.find(s => s.dbn === school.dbn)) {
+      return { success: false, error: "School is already in comparison" };
     }
-  };
+    setComparedSchools(prev => [...prev, school]);
+    return { success: true };
+  }, [comparedSchools, maxCompare, isPremium]);
 
-  const removeFromComparison = (dbn: string) => {
-    setComparedSchools(comparedSchools.filter(s => s.dbn !== dbn));
-  };
+  const removeFromComparison = useCallback((dbn: string) => {
+    setComparedSchools(prev => prev.filter(s => s.dbn !== dbn));
+  }, []);
 
-  const clearComparison = () => {
+  const clearComparison = useCallback(() => {
     setComparedSchools([]);
-  };
+  }, []);
 
-  const isInComparison = (dbn: string) => {
+  const isInComparison = useCallback((dbn: string) => {
     return comparedSchools.some(s => s.dbn === dbn);
-  };
+  }, [comparedSchools]);
 
   return (
     <ComparisonContext.Provider
@@ -64,6 +83,8 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
         removeFromComparison,
         clearComparison,
         isInComparison,
+        maxCompare,
+        isPremium,
       }}
     >
       {children}

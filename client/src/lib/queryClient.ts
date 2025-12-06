@@ -1,9 +1,37 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Custom error class to preserve structured error data from API responses
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  details?: any;
+  
+  constructor(status: number, message: string, code?: string, details?: any) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
+    this.name = "ApiError";
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    let errorCode: string | undefined;
+    let errorDetails: any;
+    
+    try {
+      const data = await res.json();
+      errorMessage = data.message || data.error || res.statusText;
+      errorCode = data.code;
+      errorDetails = data;
+    } catch {
+      const text = await res.text().catch(() => "");
+      errorMessage = text || res.statusText;
+    }
+    
+    throw new ApiError(res.status, errorMessage, errorCode, errorDetails);
   }
 }
 

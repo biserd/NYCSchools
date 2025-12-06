@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, ApiError } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
@@ -49,7 +48,9 @@ export function FavoriteButton({
           : "School added to your favorites list",
       });
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const apiError = error as ApiError;
+      
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Please log in",
@@ -61,9 +62,20 @@ export function FavoriteButton({
         }, 1500);
         return;
       }
+      
+      // Handle favorite limit error
+      if (apiError?.code === "FAVORITE_LIMIT_REACHED" || apiError?.status === 403) {
+        toast({
+          title: "Favorite limit reached",
+          description: "Free accounts can save up to 5 schools. Upgrade to Premium for unlimited favorites.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to update favorite status",
+        description: apiError?.message || "Failed to update favorite status",
         variant: "destructive",
       });
     },

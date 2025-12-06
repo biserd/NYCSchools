@@ -128,8 +128,19 @@ export function ChatBot() {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = await response.text();
+        }
         console.error("Chat API error:", response.status, errorData);
+        
+        // Handle daily question limit
+        if (response.status === 403 && errorData?.code === "AI_QUESTION_LIMIT_REACHED") {
+          throw new Error("DAILY_LIMIT_REACHED");
+        }
+        
         throw new Error(`Failed to get response: ${response.status}`);
       }
 
@@ -192,8 +203,16 @@ export function ChatBot() {
       if (newSessionId) {
         setSessionId(newSessionId);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
+      
+      let errorMessage = "Sorry, I encountered an error. Please try again.";
+      
+      // Handle daily question limit
+      if (error?.message === "DAILY_LIMIT_REACHED") {
+        errorMessage = "You've reached your daily AI question limit (5 questions/day for free accounts). Upgrade to Premium for unlimited questions! [View Pricing](/pricing)";
+      }
+      
       setMessages((prev) => {
         // Remove the empty assistant message if it exists
         const filtered = prev.filter(m => m.content !== "" || m.role !== "assistant");
@@ -201,7 +220,7 @@ export function ChatBot() {
           ...filtered,
           {
             role: "assistant",
-            content: "Sorry, I encountered an error. Please try again.",
+            content: errorMessage,
           },
         ];
       });

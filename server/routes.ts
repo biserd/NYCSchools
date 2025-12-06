@@ -39,6 +39,50 @@ function setCache<T>(key: string, data: T): void {
   });
 }
 
+// Premium subscription limits
+const FREE_TIER_LIMITS = {
+  MAX_FAVORITES: 5,
+  MAX_AI_QUESTIONS_PER_DAY: 5,
+  MAX_COMPARISON_SCHOOLS: 2,
+};
+
+const PREMIUM_TIER_LIMITS = {
+  MAX_FAVORITES: Infinity,
+  MAX_AI_QUESTIONS_PER_DAY: Infinity,
+  MAX_COMPARISON_SCHOOLS: 4,
+};
+
+// Helper to check if user has an active premium subscription
+async function isPremiumUser(userId: string): Promise<boolean> {
+  try {
+    const user = await storage.getUser(userId);
+    if (!user?.stripeSubscriptionId) {
+      return false;
+    }
+    
+    // Check subscription status from Stripe service
+    const subscription = await stripeService.getSubscriptionWithDetails(user.stripeSubscriptionId);
+    if (!subscription) {
+      return false;
+    }
+    
+    // Active, trialing, or past_due subscriptions count as premium
+    return ['active', 'trialing', 'past_due'].includes(subscription.status);
+  } catch (error) {
+    console.error("Error checking premium status:", error);
+    return false;
+  }
+}
+
+// Get user's tier limits
+async function getUserLimits(userId: string | undefined): Promise<typeof FREE_TIER_LIMITS> {
+  if (!userId) {
+    return FREE_TIER_LIMITS;
+  }
+  const isPremium = await isPremiumUser(userId);
+  return isPremium ? PREMIUM_TIER_LIMITS : FREE_TIER_LIMITS;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add compression middleware
   app.use(compression());
@@ -176,13 +220,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET cached NYCEEC AI Insights (no generation - just check cache)
+  // GET cached NYCEEC AI Insights (reading cached is free, generation is premium)
   app.get("/api/nyceec-centers/:locCode/ai-insights", isAuthenticated, async (req: any, res: Response) => {
     try {
       const { locCode } = req.params;
       const cachedInsight = await storage.getNyceecAiInsight(locCode);
       
       if (cachedInsight) {
+        // Cached insights are available to all authenticated users
         return res.json({
           overview: cachedInsight.overview,
           considerations: cachedInsight.considerations,
@@ -200,9 +245,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NYCEEC AI Insights endpoint (authenticated) - with caching
+  // NYCEEC AI Insights endpoint (authenticated) - with caching - PREMIUM ONLY
   app.post("/api/nyceec-centers/ai-insights", isAuthenticated, async (req: any, res: Response) => {
     try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({
+          error: "Premium feature",
+          code: "PREMIUM_REQUIRED",
+          message: "Early childhood AI insights are available for Premium subscribers. Upgrade to access personalized center analysis.",
+        });
+      }
+      
       const { locCode, name, centerType, borough, district, address, seats, extendedDay, dayLength } = req.body;
       
       if (!locCode || !name) {
@@ -519,6 +576,19 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
         return res.status(409).json({ error: "School already favorited" });
       }
 
+      // Check favorites limit for free users
+      const limits = await getUserLimits(userId);
+      const currentFavorites = await storage.getUserFavorites(userId);
+      if (currentFavorites.length >= limits.MAX_FAVORITES) {
+        return res.status(403).json({ 
+          error: "Favorite limit reached",
+          code: "FAVORITE_LIMIT_REACHED",
+          message: `Free accounts can save up to ${FREE_TIER_LIMITS.MAX_FAVORITES} schools. Upgrade to Premium for unlimited favorites.`,
+          limit: limits.MAX_FAVORITES,
+          current: currentFavorites.length
+        });
+      }
+
       const favorite = await storage.addFavorite(parsed.data);
       res.status(201).json(favorite);
     } catch (error) {
@@ -661,9 +731,21 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
-  // Commute Time API (public - accepts lat/lng as query params)
-  app.get("/api/commute/:schoolDbn", async (req: Request, res: Response) => {
+  // Commute Time API - PREMIUM ONLY (requires authentication)
+  app.get("/api/commute/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
     try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({
+          error: "Premium feature",
+          code: "PREMIUM_REQUIRED", 
+          message: "Commute time calculator is available for Premium subscribers. Upgrade to see travel times to schools.",
+        });
+      }
+      
       const schoolDbn = req.params.schoolDbn;
       const originLat = req.query.lat ? parseFloat(req.query.lat as string) : null;
       const originLng = req.query.lng ? parseFloat(req.query.lng as string) : null;
@@ -802,11 +884,23 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
-  // Public AI Recommendations API (no auth required for Find My Match feature)
+  // AI Recommendations API - PREMIUM ONLY (Find My Match feature)
   let cachedRecommendationSummary: string | null = null;
   
-  app.post("/api/recommendations", async (req: Request, res: Response) => {
+  app.post("/api/recommendations", isAuthenticated, async (req: any, res: Response) => {
     try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({
+          error: "Premium feature",
+          code: "PREMIUM_REQUIRED",
+          message: "Smart school recommendations (Find My Match) is available for Premium subscribers. Upgrade to get personalized school suggestions.",
+        });
+      }
+      
       const { message } = req.body;
 
       if (!message || typeof message !== "string") {
@@ -920,6 +1014,19 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Check daily question limit for free users
+      const limits = await getUserLimits(userId);
+      const todayQuestionCount = await storage.getUserDailyQuestionCount(userId);
+      if (todayQuestionCount >= limits.MAX_AI_QUESTIONS_PER_DAY) {
+        return res.status(403).json({
+          error: "Daily question limit reached",
+          code: "AI_QUESTION_LIMIT_REACHED",
+          message: `Free accounts are limited to ${FREE_TIER_LIMITS.MAX_AI_QUESTIONS_PER_DAY} AI questions per day. Upgrade to Premium for unlimited questions.`,
+          limit: limits.MAX_AI_QUESTIONS_PER_DAY,
+          used: todayQuestionCount
+        });
       }
 
       // Fetch current school details if a DBN is provided

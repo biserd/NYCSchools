@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
 export function CompareBar() {
-  const { comparedSchools, removeFromComparison, clearComparison } = useComparison();
+  const { comparedSchools, removeFromComparison, clearComparison, maxCompare } = useComparison();
 
   if (comparedSchools.length === 0) return null;
 
@@ -17,7 +17,7 @@ export function CompareBar() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium" data-testid="text-compare-count">
-                Compare ({comparedSchools.length}/4)
+                Compare ({comparedSchools.length}/{maxCompare})
               </span>
               {comparedSchools.map((school) => (
                 <Badge

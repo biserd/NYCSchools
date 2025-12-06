@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight } from "@shared/schema";
-import { eq, and, sql, desc, asc, like, or, ilike } from "drizzle-orm";
+import { eq, and, sql, desc, asc, like, or, ilike, gte } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for standalone auth
@@ -43,6 +43,7 @@ export interface IStorage {
   addChatMessage(message: InsertAiChatMessage): Promise<AiChatMessage>;
   getChatMessages(sessionId: number): Promise<AiChatMessage[]>;
   getChatSessionWithMessages(sessionId: number): Promise<AiChatSessionWithMessages | undefined>;
+  getUserDailyQuestionCount(userId: string): Promise<number>;
   
   // Historical scores operations
   getSchoolHistoricalScores(dbn: string): Promise<HistoricalScore[]>;
@@ -681,6 +682,26 @@ export class DbStorage implements IStorage {
     
     const messages = await this.getChatMessages(sessionId);
     return { ...session, messages };
+  }
+
+  async getUserDailyQuestionCount(userId: string): Promise<number> {
+    // Count user messages from today (only 'user' role messages are questions)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(aiChatMessages)
+      .innerJoin(aiChatSessions, eq(aiChatMessages.sessionId, aiChatSessions.id))
+      .where(
+        and(
+          eq(aiChatSessions.userId, userId),
+          eq(aiChatMessages.role, 'user'),
+          gte(aiChatMessages.createdAt, today)
+        )
+      );
+    
+    return Number(result[0]?.count ?? 0);
   }
 
   // Historical Scores operations

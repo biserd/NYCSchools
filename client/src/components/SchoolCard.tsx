@@ -11,6 +11,7 @@ import { useComparison } from "@/contexts/ComparisonContext";
 import { Link } from "wouter";
 import { CommuteTime } from "./CommuteTime";
 import { ZonedSchoolBadge } from "./ZonedSchoolBadge";
+import { useToast } from "@/hooks/use-toast";
 
 interface SchoolCardProps {
   school: School;
@@ -70,9 +71,10 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
   const elaColor = getMetricColor(school.ela_proficiency);
   const mathColor = getMetricColor(school.math_proficiency);
   const borough = getBoroughFromDBN(school.dbn);
-  const { addToComparison, removeFromComparison, isInComparison, comparedSchools } = useComparison();
+  const { addToComparison, removeFromComparison, isInComparison, comparedSchools, maxCompare } = useComparison();
+  const { toast } = useToast();
   const inComparison = isInComparison(school.dbn);
-  const canAddMore = comparedSchools.length < 4;
+  const canAddMore = comparedSchools.length < maxCompare;
   
   const isHS = isHighSchool(school);
   const isPureHS = isPureHighSchool(school);
@@ -117,8 +119,15 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
     e.stopPropagation();
     if (inComparison) {
       removeFromComparison(school.dbn);
-    } else if (canAddMore) {
-      addToComparison(school);
+    } else {
+      const result = addToComparison(school);
+      if (!result.success && result.error) {
+        toast({
+          title: "Comparison limit reached",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
     }
   };
 
