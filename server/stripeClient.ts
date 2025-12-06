@@ -1,14 +1,38 @@
-// Stripe client for NYC School Ratings - handles Replit Stripe connector
+// Stripe client for NYC School Ratings - handles Replit Stripe connector with manual key fallback
+// Note: Production uses manual STRIPE_LIVE_* keys since Stripe connector is only set up for Sandbox
 import Stripe from 'stripe';
 
 let connectionSettings: any;
+let cachedCredentials: { publishableKey: string; secretKey: string } | null = null;
 
 async function getCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  // Return cached credentials if available
+  if (cachedCredentials) {
+    return cachedCredentials;
+  }
+
   const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
   const targetEnvironment = isProduction ? 'production' : 'development';
   
   console.log(`Getting Stripe credentials for ${targetEnvironment} environment`);
+  
+  // For production, use manual STRIPE_LIVE_* keys since Replit Stripe connector is only for Sandbox
+  if (isProduction) {
+    const publishableKey = process.env.STRIPE_LIVE_PUBLISHABLE_KEY;
+    const secretKey = process.env.STRIPE_LIVE_SECRET_KEY;
+    
+    if (!publishableKey || !secretKey) {
+      console.error('Production Stripe keys missing. Please set STRIPE_LIVE_PUBLISHABLE_KEY and STRIPE_LIVE_SECRET_KEY secrets.');
+      throw new Error('Production Stripe credentials not configured. Please add STRIPE_LIVE_PUBLISHABLE_KEY and STRIPE_LIVE_SECRET_KEY to secrets.');
+    }
+    
+    console.log('Stripe production credentials loaded from manual secrets');
+    cachedCredentials = { publishableKey, secretKey };
+    return cachedCredentials;
+  }
+  
+  // For development, use the Replit Stripe connector (Sandbox mode)
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -65,10 +89,11 @@ async function getCredentials() {
 
   console.log(`Stripe ${targetEnvironment} credentials loaded successfully`);
   
-  return {
+  cachedCredentials = {
     publishableKey: connectionSettings.settings.publishable,
     secretKey: connectionSettings.settings.secret,
   };
+  return cachedCredentials;
 }
 
 export async function getUncachableStripeClient() {

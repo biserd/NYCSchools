@@ -65,3 +65,23 @@ The **Overall Score** is calculated as: `Test Proficiency (40%) + Climate Score 
 - **Google Maps APIs**: Geocoding API and Distance Matrix API.
 - **NYC Open Data (NYCEEC)**: Early childhood center data.
 - **Stripe**: Payment processing and subscription management via `stripe-replit-sync`.
+
+## Stripe Configuration
+
+### Environment Setup
+- **Development (Sandbox)**: Uses Replit Stripe connector for test mode credentials
+- **Production (Live)**: Uses manual secrets `STRIPE_LIVE_PUBLISHABLE_KEY` and `STRIPE_LIVE_SECRET_KEY`
+- Environment detection: `REPLIT_DEPLOYMENT === '1'` determines production mode
+
+### Products & Pricing
+- **Premium Plan**: $4.99/month subscription
+  - Live Product ID: `prod_TYaCOkKkQ3j6Ah`
+  - Live Price ID: `price_1SbT2LRwvWaTf8xf5VAvCHPq`
+  - Test Product/Price: Managed via Replit Stripe connector (Sandbox)
+
+### Key Files
+- `server/stripeClient.ts`: Credential loading with production fallback to manual keys
+- `server/scripts/setupStripeProducts.ts`: Development/Sandbox product setup
+- `server/scripts/setupStripeProductsLive.ts`: Production/Live product setup
+- `server/stripeService.ts`: Stripe API operations (checkout, portal, customers)
+- `server/webhookHandlers.ts`: Webhook processing via stripe-replit-sync
