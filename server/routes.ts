@@ -1400,8 +1400,11 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       }
 
       // Create checkout session
-      const replitDomains = process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '';
-      const baseUrl = `https://${replitDomains.split(',')[0]}`;
+      // In production, use custom domain; in development, use Replit domains
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const baseUrl = isProduction 
+        ? 'https://nycschoolsratings.com'
+        : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
       console.log("Creating checkout session with baseUrl:", baseUrl);
       
       const session = await stripeService.createCheckoutSession(
@@ -1477,7 +1480,11 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         return res.status(400).json({ error: "No subscription found" });
       }
 
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      // In production, use custom domain; in development, use Replit domains
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const baseUrl = isProduction 
+        ? 'https://nycschoolsratings.com'
+        : `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
       const session = await stripeService.createCustomerPortalSession(
         user.stripeCustomerId,
         `${baseUrl}/settings`
