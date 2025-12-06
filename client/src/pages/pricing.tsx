@@ -168,7 +168,7 @@ export default function PricingPage() {
   // Find the premium monthly price
   const premiumProduct = products?.data?.find(p => p.name?.toLowerCase().includes("premium") || p.metadata?.plan === "premium");
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
-  const priceAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100).toFixed(2) : "9.99";
+  const priceAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100).toFixed(2) : "4.99";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

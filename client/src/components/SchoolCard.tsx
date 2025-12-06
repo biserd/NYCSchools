@@ -4,7 +4,7 @@ import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home, TrendingUp, TrendingDown, Minus, BookOpen, Award, DollarSign } from "lucide-react";
+import { ChevronRight, Users, GraduationCap, MapPin, Info, Plus, Check, Home, TrendingUp, TrendingDown, Minus, BookOpen, Award, DollarSign, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "./FavoriteButton";
 import { useComparison } from "@/contexts/ComparisonContext";
@@ -12,6 +12,8 @@ import { Link } from "wouter";
 import { CommuteTime } from "./CommuteTime";
 import { ZonedSchoolBadge } from "./ZonedSchoolBadge";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SchoolCardProps {
   school: School;
@@ -65,6 +67,20 @@ function getSchoolGradeLevelForZoning(school: School): "elementary" | "middle" |
 }
 
 export function SchoolCard({ school, trend }: SchoolCardProps) {
+  const { user } = useAuth();
+  
+  // Check subscription status for premium features
+  const { data: subscription } = useQuery<{
+    status: string;
+    plan: string;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+  
+  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  
   const overallScore = calculateOverallScore(school);
   const trendConfig = trend && trend.direction !== 'insufficient_data' ? getTrendBadgeConfig(trend.direction) : null;
   const scoreColor = getScoreColor(overallScore);
@@ -296,30 +312,58 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                 </Tooltip>
               )}
               {trendConfig && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Badge 
-                        variant="outline"
-                        className={`text-xs gap-1 ${trendConfig.className}`}
-                        data-testid={`badge-trend-${school.dbn}`}
+                isPremium ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Badge 
+                          variant="outline"
+                          className={`text-xs gap-1 ${trendConfig.className}`}
+                          data-testid={`badge-trend-${school.dbn}`}
+                        >
+                          <trendConfig.icon className="w-3 h-3" />
+                          {trendConfig.label}
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs" data-testid={`tooltip-trend-${school.dbn}`}>
+                      <p className="text-sm">
+                        {trend!.direction === 'improving' 
+                          ? `Test scores improved by ${Math.abs(trend!.changePercent)}% over ${trend!.yearsAnalyzed} years`
+                          : trend!.direction === 'declining'
+                          ? `Test scores declined by ${Math.abs(trend!.changePercent)}% over ${trend!.yearsAnalyzed} years`
+                          : `Test scores remained stable over ${trend!.yearsAnalyzed} years (±5% change)`
+                        }
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.location.href = "/pricing";
+                        }}
                       >
-                        <trendConfig.icon className="w-3 h-3" />
-                        {trendConfig.label}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs" data-testid={`tooltip-trend-${school.dbn}`}>
-                    <p className="text-sm">
-                      {trend!.direction === 'improving' 
-                        ? `Test scores improved by ${Math.abs(trend!.changePercent)}% over ${trend!.yearsAnalyzed} years`
-                        : trend!.direction === 'declining'
-                        ? `Test scores declined by ${Math.abs(trend!.changePercent)}% over ${trend!.yearsAnalyzed} years`
-                        : `Test scores remained stable over ${trend!.yearsAnalyzed} years (±5% change)`
-                      }
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+                        <Badge 
+                          variant="outline"
+                          className="text-xs gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover-elevate cursor-pointer"
+                          data-testid={`badge-trend-premium-${school.dbn}`}
+                        >
+                          <Lock className="w-3 h-3" />
+                          Trend
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs" data-testid={`tooltip-trend-premium-${school.dbn}`}>
+                      <p className="text-sm">
+                        Historical trend analysis is a Premium feature. Upgrade to see if this school's performance is improving, declining, or stable.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                )
               )}
               <ZonedSchoolBadge 
                 schoolDbn={school.dbn}

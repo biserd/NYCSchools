@@ -38,16 +38,16 @@ async function setupStripeProducts() {
     });
     
     const existingMonthlyPrice = existingPrices.data.find(
-      p => p.recurring?.interval === 'month' && p.active && p.unit_amount === 999
+      p => p.recurring?.interval === 'month' && p.active && p.unit_amount === 499
     );
 
     if (existingMonthlyPrice) {
       console.log('Monthly price already exists:', existingMonthlyPrice.id);
     } else {
-      // Create monthly price ($9.99/month)
+      // Create monthly price ($4.99/month)
       const monthlyPrice = await stripe.prices.create({
         product: premiumProduct.id,
-        unit_amount: 999, // $9.99 in cents
+        unit_amount: 499, // $4.99 in cents
         currency: 'usd',
         recurring: {
           interval: 'month',
@@ -57,7 +57,7 @@ async function setupStripeProducts() {
           interval: 'month',
         },
       });
-      console.log('Created monthly price:', monthlyPrice.id, '($9.99/month)');
+      console.log('Created monthly price:', monthlyPrice.id, '($4.99/month)');
     }
 
     console.log('\nStripe products setup complete!');
