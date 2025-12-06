@@ -105,6 +105,23 @@ export class StripeService {
     return result.rows[0] || null;
   }
 
+  async getSubscriptionWithDetails(subscriptionId: string) {
+    const stripe = await this.getStripe();
+    try {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ['items.data.price'],
+      });
+      return subscription;
+    } catch (error) {
+      console.error('Error fetching subscription from Stripe:', error);
+      return null;
+    }
+  }
+
+  private async getStripe() {
+    return await getUncachableStripeClient();
+  }
+
   async getCustomerSubscriptions(customerId: string) {
     const result = await db.execute(
       sql`SELECT * FROM stripe.subscriptions WHERE customer = ${customerId} ORDER BY created DESC`

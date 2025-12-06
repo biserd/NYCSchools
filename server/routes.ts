@@ -1301,6 +1301,52 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     }
   });
 
+  // Get user's subscription status
+  app.get("/api/subscription-status", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+
+      const subscriptionId = user?.stripeSubscriptionId;
+      if (!subscriptionId || typeof subscriptionId !== 'string') {
+        return res.json({ isSubscribed: false, subscription: null });
+      }
+
+      // Get subscription details from Stripe
+      const subscription = await stripeService.getSubscriptionWithDetails(subscriptionId);
+      
+      if (!subscription || !['active', 'trialing', 'past_due'].includes(subscription.status)) {
+        return res.json({ isSubscribed: false, subscription: null });
+      }
+
+      // Get plan/price details from the subscription
+      let planDetails = null;
+      const priceItem = subscription.items?.data?.[0]?.price;
+      if (priceItem && typeof priceItem !== 'string') {
+        planDetails = {
+          nickname: priceItem.nickname || 'Premium',
+          amount: priceItem.unit_amount || 999,
+          currency: priceItem.currency || 'usd',
+          interval: priceItem.recurring?.interval || 'month',
+        };
+      }
+
+      res.json({
+        isSubscribed: true,
+        subscription: {
+          id: subscription.id,
+          status: subscription.status,
+          current_period_end: subscription.current_period_end,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          plan: planDetails,
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ error: "Failed to fetch subscription status" });
+    }
+  });
+
   // Create customer portal session for managing subscription
   app.post("/api/customer-portal", isAuthenticated, async (req: any, res: Response) => {
     try {

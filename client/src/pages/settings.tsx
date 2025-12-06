@@ -4,15 +4,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { MapPin, Save, Settings as SettingsIcon, LogIn } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { MapPin, Save, Settings as SettingsIcon, LogIn, CreditCard, Crown, Loader2, ExternalLink } from "lucide-react";
 import { UserProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
+
+interface SubscriptionStatus {
+  isSubscribed: boolean;
+  subscription: {
+    id: string;
+    status: string;
+    current_period_end: number;
+    cancel_at_period_end: boolean;
+    plan?: {
+      nickname: string;
+      amount: number;
+      currency: string;
+      interval: string;
+    };
+  } | null;
+}
+
+function formatPrice(amount: number, currency: string): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
+}
 
 export default function Settings() {
   const { toast } = useToast();
@@ -23,6 +47,31 @@ export default function Settings() {
   const { data: profile, isLoading } = useQuery<UserProfile | null>({
     queryKey: ["/api/profile"],
     enabled: isAuthenticated,
+  });
+
+  const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription-status"],
+    enabled: isAuthenticated,
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/customer-portal");
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to open billing portal. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   useEffect(() => {
@@ -256,6 +305,124 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">
                   {currentAddress}
                 </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Subscription
+            </CardTitle>
+            <CardDescription>
+              Manage your subscription and billing settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {subscriptionLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading subscription status...
+              </div>
+            ) : subscriptionData?.isSubscribed && subscriptionData.subscription ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-orange-500">
+                    <Crown className="w-3 h-3 mr-1" />
+                    Premium
+                  </Badge>
+                  {subscriptionData.subscription.cancel_at_period_end && (
+                    <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                      Canceling
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="p-4 bg-muted rounded-md space-y-2" data-testid="subscription-details">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Plan</span>
+                    <span className="font-medium" data-testid="text-plan-name">
+                      {subscriptionData.subscription.plan 
+                        ? `${subscriptionData.subscription.plan.nickname} (${formatPrice(subscriptionData.subscription.plan.amount, subscriptionData.subscription.plan.currency)}/${subscriptionData.subscription.plan.interval})`
+                        : 'Premium'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className="font-medium capitalize" data-testid="text-subscription-status">
+                      {subscriptionData.subscription.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {subscriptionData.subscription.cancel_at_period_end ? "Access until" : "Next billing date"}
+                    </span>
+                    <span className="font-medium" data-testid="text-billing-date">
+                      {new Date(subscriptionData.subscription.current_period_end * 1000).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  {subscriptionData.subscription.cancel_at_period_end 
+                    ? "Your subscription will end at the end of the current billing period. You can reactivate anytime before then."
+                    : "You have access to all premium features including unlimited AI questions, commute calculator, and smart recommendations."}
+                </p>
+
+                <Button 
+                  onClick={() => portalMutation.mutate()}
+                  disabled={portalMutation.isPending}
+                  data-testid="button-manage-subscription"
+                >
+                  {portalMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  Manage Subscription
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4" data-testid="free-plan-section">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" data-testid="badge-free-plan">Free Plan</Badge>
+                </div>
+                
+                <p className="text-sm text-muted-foreground">
+                  You're currently on the free plan. Upgrade to Premium to unlock unlimited AI questions, 
+                  commute calculator, smart recommendations, and more.
+                </p>
+
+                <div className="p-4 bg-muted rounded-md" data-testid="premium-features-list">
+                  <p className="text-sm font-medium mb-2">Premium features include:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li className="flex items-center gap-2">
+                      <Crown className="w-3 h-3 text-amber-500" />
+                      Unlimited AI questions
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Crown className="w-3 h-3 text-amber-500" />
+                      Commute time calculator
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Crown className="w-3 h-3 text-amber-500" />
+                      Smart school recommendations
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Crown className="w-3 h-3 text-amber-500" />
+                      Historical trend analysis
+                    </li>
+                  </ul>
+                </div>
+
+                <Link href="/pricing">
+                  <Button data-testid="button-upgrade-premium">
+                    <Crown className="mr-2 h-4 w-4" />
+                    Upgrade to Premium
+                  </Button>
+                </Link>
               </div>
             )}
           </CardContent>
