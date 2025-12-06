@@ -41,14 +41,21 @@ import {
   History,
   Languages,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  Lock,
+  Crown
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+
+interface SubscriptionStatus {
+  status: string;
+  plan: string;
+}
 
 export default function SchoolDetail() {
   const { slug } = useParams();
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Extract DBN from slug (format: "02m158-ps-158-bayard-taylor" or legacy "02M158")
   const dbn = slug?.split('-')[0]?.toUpperCase() || '';
@@ -57,6 +64,15 @@ export default function SchoolDetail() {
     queryKey: ["/api/schools", dbn],
     enabled: !!dbn,
   });
+
+  // Fetch subscription status for premium features
+  const { data: subscription } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
 
   const schoolWithScore: SchoolWithOverallScore | null = school ? {
     ...school,
@@ -579,133 +595,200 @@ export default function SchoolDetail() {
 
           {/* Historical Trends - Only shown for schools with historical data (not pure high schools) */}
           {historicalTrend && historicalTrend.direction !== 'insufficient_data' && historicalTrend.historicalData.length >= 2 && !isPureHighSchool(schoolWithScore) && (
-            <Card data-testid="card-historical-trends">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-primary" />
-                    <CardTitle>Historical Trends</CardTitle>
-                  </div>
-                  <Badge 
-                    variant="outline"
-                    className={`text-xs gap-1 ${
-                      historicalTrend.direction === 'improving' 
-                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                        : historicalTrend.direction === 'declining'
-                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
-                    }`}
-                    data-testid="badge-trend-direction"
-                  >
-                    {historicalTrend.direction === 'improving' && <TrendingUp className="w-3 h-3" />}
-                    {historicalTrend.direction === 'declining' && <TrendingDown className="w-3 h-3" />}
-                    {historicalTrend.direction === 'stable' && <Minus className="w-3 h-3" />}
-                    {historicalTrend.direction === 'improving' && `Improving +${Math.abs(historicalTrend.changePercent)}%`}
-                    {historicalTrend.direction === 'declining' && `Declining ${historicalTrend.changePercent}%`}
-                    {historicalTrend.direction === 'stable' && 'Stable'}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  ELA and Math proficiency trends from NYS grades 3-8 standardized tests over {historicalTrend.yearsAnalyzed} years.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64" data-testid="chart-historical">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={historicalTrend.historicalData.map(d => ({
-                        year: d.year,
-                        ELA: d.ela_proficiency,
-                        Math: d.math_proficiency,
-                      }))}
-                      margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
+            isPremium ? (
+              <Card data-testid="card-historical-trends">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-primary" />
+                      <CardTitle>Historical Trends</CardTitle>
+                    </div>
+                    <Badge 
+                      variant="outline"
+                      className={`text-xs gap-1 ${
+                        historicalTrend.direction === 'improving' 
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                          : historicalTrend.direction === 'declining'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                      }`}
+                      data-testid="badge-trend-direction"
                     >
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis 
-                        dataKey="year" 
-                        tick={{ fontSize: 12 }}
-                        className="text-muted-foreground"
-                      />
-                      <YAxis 
-                        domain={[0, 100]} 
-                        tick={{ fontSize: 12 }}
-                        className="text-muted-foreground"
-                        tickFormatter={(v) => `${v}%`}
-                      />
-                      <RechartsTooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}
-                        labelStyle={{ 
-                          color: 'hsl(var(--foreground))',
-                          fontWeight: 600,
-                          marginBottom: '4px'
-                        }}
-                        itemStyle={{ 
-                          color: 'hsl(var(--foreground))',
-                          padding: '2px 0'
-                        }}
-                        formatter={(value: number) => [`${value}%`, undefined]}
-                        labelFormatter={(label) => `Year: ${label}`}
-                      />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="ELA" 
-                        stroke="hsl(var(--chart-1))" 
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2 }}
-                        name="ELA Proficiency"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="Math" 
-                        stroke="hsl(var(--chart-2))" 
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }}
-                        name="Math Proficiency"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {/* Historical Data Table */}
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-sm" data-testid="table-historical-data">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 px-2 font-medium">Year</th>
-                        {historicalTrend.historicalData.map(d => (
-                          <th key={d.year} className="text-center py-2 px-2 font-medium">{d.year}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b">
-                        <td className="py-2 px-2 text-muted-foreground">ELA</td>
-                        {historicalTrend.historicalData.map(d => (
-                          <td key={d.year} className="text-center py-2 px-2 font-medium">{d.ela_proficiency ?? 'N/A'}%</td>
-                        ))}
-                      </tr>
-                      <tr>
-                        <td className="py-2 px-2 text-muted-foreground">Math</td>
-                        {historicalTrend.historicalData.map(d => (
-                          <td key={d.year} className="text-center py-2 px-2 font-medium">{d.math_proficiency ?? 'N/A'}%</td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                
-                <p className="text-xs text-muted-foreground mt-4 italic">
-                  Note: 2020-2021 data unavailable due to COVID-19 testing cancellations. 
-                  Trend calculated by comparing earliest and most recent available years ({historicalTrend.historicalData[0]?.year}-{historicalTrend.historicalData[historicalTrend.historicalData.length - 1]?.year}).
-                </p>
-              </CardContent>
-            </Card>
+                      {historicalTrend.direction === 'improving' && <TrendingUp className="w-3 h-3" />}
+                      {historicalTrend.direction === 'declining' && <TrendingDown className="w-3 h-3" />}
+                      {historicalTrend.direction === 'stable' && <Minus className="w-3 h-3" />}
+                      {historicalTrend.direction === 'improving' && `Improving +${Math.abs(historicalTrend.changePercent)}%`}
+                      {historicalTrend.direction === 'declining' && `Declining ${historicalTrend.changePercent}%`}
+                      {historicalTrend.direction === 'stable' && 'Stable'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    ELA and Math proficiency trends from NYS grades 3-8 standardized tests over {historicalTrend.yearsAnalyzed} years.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64" data-testid="chart-historical">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={historicalTrend.historicalData.map(d => ({
+                          year: d.year,
+                          ELA: d.ela_proficiency,
+                          Math: d.math_proficiency,
+                        }))}
+                        margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="year" 
+                          tick={{ fontSize: 12 }}
+                          className="text-muted-foreground"
+                        />
+                        <YAxis 
+                          domain={[0, 100]} 
+                          tick={{ fontSize: 12 }}
+                          className="text-muted-foreground"
+                          tickFormatter={(v) => `${v}%`}
+                        />
+                        <RechartsTooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                          labelStyle={{ 
+                            color: 'hsl(var(--foreground))',
+                            fontWeight: 600,
+                            marginBottom: '4px'
+                          }}
+                          itemStyle={{ 
+                            color: 'hsl(var(--foreground))',
+                            padding: '2px 0'
+                          }}
+                          formatter={(value: number) => [`${value}%`, undefined]}
+                          labelFormatter={(label) => `Year: ${label}`}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="ELA" 
+                          stroke="hsl(var(--chart-1))" 
+                          strokeWidth={2}
+                          dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2 }}
+                          name="ELA Proficiency"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="Math" 
+                          stroke="hsl(var(--chart-2))" 
+                          strokeWidth={2}
+                          dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }}
+                          name="Math Proficiency"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {/* Historical Data Table */}
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm" data-testid="table-historical-data">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2 font-medium">Year</th>
+                          {historicalTrend.historicalData.map(d => (
+                            <th key={d.year} className="text-center py-2 px-2 font-medium">{d.year}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b">
+                          <td className="py-2 px-2 text-muted-foreground">ELA</td>
+                          {historicalTrend.historicalData.map(d => (
+                            <td key={d.year} className="text-center py-2 px-2 font-medium">{d.ela_proficiency ?? 'N/A'}%</td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2 text-muted-foreground">Math</td>
+                          {historicalTrend.historicalData.map(d => (
+                            <td key={d.year} className="text-center py-2 px-2 font-medium">{d.math_proficiency ?? 'N/A'}%</td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground mt-4 italic">
+                    Note: 2020-2021 data unavailable due to COVID-19 testing cancellations. 
+                    Trend calculated by comparing earliest and most recent available years ({historicalTrend.historicalData[0]?.year}-{historicalTrend.historicalData[historicalTrend.historicalData.length - 1]?.year}).
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Premium CTA with blurred preview for non-premium users */
+              <Card data-testid="card-historical-trends-premium" className="relative overflow-hidden">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-primary" />
+                      <CardTitle>Historical Trends</CardTitle>
+                    </div>
+                    <Badge 
+                      variant="outline"
+                      className="text-xs gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                    >
+                      <Crown className="w-3 h-3" />
+                      Premium
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    See how this school's ELA and Math scores have changed over the years.
+                  </p>
+                </CardHeader>
+                <CardContent className="relative">
+                  {/* Blurred preview */}
+                  <div className="h-64 relative" data-testid="chart-historical-blurred">
+                    <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={[
+                            { year: '2019', ELA: 45, Math: 42 },
+                            { year: '2022', ELA: 52, Math: 48 },
+                            { year: '2023', ELA: 58, Math: 55 },
+                            { year: '2024', ELA: 62, Math: 59 },
+                          ]}
+                          margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                          <Line type="monotone" dataKey="ELA" stroke="hsl(var(--chart-1))" strokeWidth={2} />
+                          <Line type="monotone" dataKey="Math" stroke="hsl(var(--chart-2))" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* Overlay CTA */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
+                      <div className="text-center p-6 max-w-sm">
+                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
+                          <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">Unlock Historical Trends</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          See {historicalTrend.yearsAnalyzed} years of ELA and Math performance data to understand if this school is improving, declining, or stable.
+                        </p>
+                        <Link href="/pricing">
+                          <Button className="gap-2" data-testid="button-upgrade-trends">
+                            <Crown className="w-4 h-4" />
+                            Upgrade to Premium
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
           )}
 
           {/* High School Metrics - Only shown for high schools with any HS data */}
