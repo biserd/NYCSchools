@@ -165,8 +165,12 @@ export default function PricingPage() {
   const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
   const isLoadingData = authLoading || subLoading || productsLoading;
   
-  // Find the premium monthly price
-  const premiumProduct = products?.data?.find(p => p.name?.toLowerCase().includes("premium") || p.metadata?.plan === "premium");
+  // Find the premium monthly price (support "premium" or "pro" naming)
+  const premiumProduct = products?.data?.find(p => 
+    p.name?.toLowerCase().includes("premium") || 
+    p.name?.toLowerCase().includes("pro") || 
+    p.metadata?.plan === "premium"
+  );
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
   const priceAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100).toFixed(2) : "4.99";
 
