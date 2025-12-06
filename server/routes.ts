@@ -1379,6 +1379,7 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         { url: '/early-childhood', changefreq: 'weekly', priority: '0.8' },
         { url: '/lottery-simulator', changefreq: 'monthly', priority: '0.7' },
         { url: '/blog', changefreq: 'weekly', priority: '0.7' },
+        { url: '/pricing', changefreq: 'monthly', priority: '0.7' },
         { url: '/features', changefreq: 'monthly', priority: '0.6' },
         { url: '/release-notes', changefreq: 'weekly', priority: '0.5' },
         { url: '/faq', changefreq: 'monthly', priority: '0.6' },
