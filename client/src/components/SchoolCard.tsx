@@ -14,6 +14,7 @@ import { ZonedSchoolBadge } from "./ZonedSchoolBadge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 
 interface SchoolCardProps {
   school: School;
@@ -68,6 +69,7 @@ function getSchoolGradeLevelForZoning(school: School): "elementary" | "middle" |
 
 export function SchoolCard({ school, trend }: SchoolCardProps) {
   const { user } = useAuth();
+  const { startCheckout } = useCheckout();
   
   // Check subscription status for premium features
   const { data: subscription } = useQuery<{
@@ -344,7 +346,7 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          window.location.href = "/pricing";
+                          startCheckout();
                         }}
                       >
                         <Badge 
@@ -359,7 +361,7 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs" data-testid={`tooltip-trend-premium-${school.dbn}`}>
                       <p className="text-sm">
-                        Historical trend analysis is a Premium feature. Upgrade to see if this school's performance is improving, declining, or stable.
+                        Historical trend analysis is a Premium feature. Click to upgrade and see if this school's performance is improving, declining, or stable.
                       </p>
                     </TooltipContent>
                   </Tooltip>

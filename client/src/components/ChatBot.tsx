@@ -2,9 +2,10 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2, Sparkles, LogIn } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, LogIn, Star } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { School } from "@shared/schema";
@@ -16,9 +17,11 @@ interface Message {
 
 export function ChatBot() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { startCheckout, isLoading: checkoutLoading } = useCheckout();
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const queryClient = useQueryClient();
 
   // Detect if we're on a school detail page and extract DBN
@@ -210,7 +213,8 @@ export function ChatBot() {
       
       // Handle daily question limit
       if (error?.message === "DAILY_LIMIT_REACHED") {
-        errorMessage = "You've reached your daily AI question limit (5 questions/day for free accounts). Upgrade to Premium for unlimited questions! [View Pricing](/pricing)";
+        setLimitReached(true);
+        errorMessage = "You've reached your daily AI question limit (5 questions/day for free accounts). Upgrade to Premium for unlimited questions!";
       }
       
       setMessages((prev) => {
@@ -378,31 +382,56 @@ export function ChatBot() {
         </ScrollArea>
 
         <div className="border-t p-4">
-          <div className="flex gap-2">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about schools..."
-              className="min-h-[60px] max-h-[120px] resize-none"
-              data-testid="input-chat-message"
-              disabled={isLoading}
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              size="icon"
-              className="shrink-0"
-              data-testid="button-chat-send"
-              aria-label="Send message"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Ask me anything about NYC schools!
-          </p>
+          {limitReached ? (
+            <div className="text-center space-y-3">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
+                  Daily limit reached! Upgrade for unlimited AI questions.
+                </p>
+                <Button 
+                  onClick={startCheckout}
+                  disabled={checkoutLoading}
+                  className="w-full"
+                  data-testid="button-chat-upgrade"
+                >
+                  {checkoutLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Star className="w-4 h-4 mr-2" />
+                  )}
+                  Upgrade to Premium
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask about schools..."
+                  className="min-h-[60px] max-h-[120px] resize-none"
+                  data-testid="input-chat-message"
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={!input.trim() || isLoading}
+                  size="icon"
+                  className="shrink-0"
+                  data-testid="button-chat-send"
+                  aria-label="Send message"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Ask me anything about NYC schools!
+              </p>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

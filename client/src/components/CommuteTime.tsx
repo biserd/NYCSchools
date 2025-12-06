@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MapPin, LogIn, Star } from "lucide-react";
+import { Clock, MapPin, LogIn, Star, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 
 interface CommuteTimeProps {
   schoolDbn: string;
@@ -28,6 +29,7 @@ interface UserProfile {
 
 export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { startCheckout, isLoading: checkoutLoading } = useCheckout();
 
   // Fetch user profile (address) from database - only for authenticated users
   // Wait for auth check to complete before fetching profile
@@ -176,14 +178,14 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          window.location.href = "/pricing";
+          startCheckout();
         }}
       >
         <Badge 
           variant="secondary" 
           className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover-elevate cursor-pointer"
         >
-          <Star className="h-3 w-3" />
+          {checkoutLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Star className="h-3 w-3" />}
           <span>Premium</span>
         </Badge>
       </div>
@@ -205,12 +207,16 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
             </p>
           </div>
         </div>
-        <Link href="/pricing" className="w-full sm:w-auto">
-          <Button size="sm" className="w-full sm:w-auto" data-testid="button-upgrade-commute">
-            <Star className="h-3 w-3 mr-1" />
-            Upgrade
-          </Button>
-        </Link>
+        <Button 
+          size="sm" 
+          className="w-full sm:w-auto" 
+          onClick={startCheckout}
+          disabled={checkoutLoading}
+          data-testid="button-upgrade-commute"
+        >
+          {checkoutLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Star className="h-3 w-3 mr-1" />}
+          Upgrade
+        </Button>
       </div>
     );
   }
