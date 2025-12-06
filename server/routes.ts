@@ -1579,6 +1579,8 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         { url: '/features', changefreq: 'monthly', priority: '0.6' },
         { url: '/release-notes', changefreq: 'weekly', priority: '0.5' },
         { url: '/faq', changefreq: 'monthly', priority: '0.6' },
+        { url: '/developers', changefreq: 'monthly', priority: '0.7' },
+        { url: '/developers/docs', changefreq: 'monthly', priority: '0.6' },
         { url: '/privacy', changefreq: 'monthly', priority: '0.3' },
         { url: '/terms', changefreq: 'monthly', priority: '0.3' },
       ];

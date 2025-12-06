@@ -42,6 +42,7 @@ const features: PricingFeature[] = [
   { name: "Commute Time Calculator", free: false, premium: true },
   { name: "Early Childhood AI Insights", free: false, premium: true },
   { name: "Historical Trend Analysis", free: false, premium: true },
+  { name: "API Access (10K requests/mo)", free: false, premium: true },
   { name: "Priority Support", free: false, premium: true },
 ];
 

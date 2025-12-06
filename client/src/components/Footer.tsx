@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card mt-auto">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-8">
           <div>
             <h3 className="font-semibold text-foreground mb-3">Explore</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -83,6 +83,22 @@ export function Footer() {
               <li>
                 <Link href="/release-notes" className="hover:text-foreground transition-colors" data-testid="footer-link-release-notes">
                   Release Notes
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="font-semibold text-foreground mb-3">Developers</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="/developers" className="hover:text-foreground transition-colors" data-testid="footer-link-developers">
+                  Developer Portal
+                </Link>
+              </li>
+              <li>
+                <Link href="/developers/docs" className="hover:text-foreground transition-colors" data-testid="footer-link-api-docs">
+                  API Documentation
                 </Link>
               </li>
             </ul>

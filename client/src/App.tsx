@@ -25,6 +25,8 @@ import BlogPostPage from "@/pages/blog-post";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import PricingPage from "@/pages/pricing";
+import DevelopersPage from "@/pages/developers";
+import DevelopersDocsPage from "@/pages/developers-docs";
 import NotFound from "@/pages/not-found";
 
 // Lazy load heavy route components
@@ -93,6 +95,8 @@ function Router() {
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/developers" component={DevelopersPage} />
+      <Route path="/developers/docs" component={DevelopersDocsPage} />
       <Route path="/school/:slug" component={SchoolDetail} />
       <Route component={NotFound} />
     </Switch>
