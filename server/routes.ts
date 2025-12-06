@@ -1262,30 +1262,41 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     try {
       const userId = req.session.userId;
       const { priceId } = req.body;
+      
+      console.log("Checkout request:", { userId, priceId });
 
       if (!priceId) {
+        console.error("Checkout failed: Missing priceId");
         return res.status(400).json({ error: "Price ID is required" });
       }
 
       const user = await storage.getUser(userId);
       if (!user) {
+        console.error("Checkout failed: User not found", userId);
         return res.status(404).json({ error: "User not found" });
       }
+      
+      console.log("User found:", { userId, email: user.email, hasStripeCustomer: !!user.stripeCustomerId });
 
       // Create or get Stripe customer
       let customerId = user.stripeCustomerId;
       if (!customerId) {
+        console.log("Creating new Stripe customer for user:", userId);
         const customer = await stripeService.createCustomer(
           user.email,
           userId,
           user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : undefined
         );
         customerId = customer.id;
+        console.log("Created Stripe customer:", customerId);
         await storage.updateUserStripeInfo(userId, { stripeCustomerId: customerId });
       }
 
       // Create checkout session
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const replitDomains = process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '';
+      const baseUrl = `https://${replitDomains.split(',')[0]}`;
+      console.log("Creating checkout session with baseUrl:", baseUrl);
+      
       const session = await stripeService.createCheckoutSession(
         customerId,
         priceId,
@@ -1294,10 +1305,12 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         userId
       );
 
+      console.log("Checkout session created:", session.id);
       res.json({ url: session.url });
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      res.status(500).json({ error: "Failed to create checkout session" });
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error?.message || error);
+      console.error("Full error:", JSON.stringify(error, null, 2));
+      res.status(500).json({ error: "Failed to create checkout session", details: error?.message });
     }
   });
 
