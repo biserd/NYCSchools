@@ -1493,6 +1493,29 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
   // Get available products and prices (public)
   app.get("/api/products", async (req: Request, res: Response) => {
     try {
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      
+      // In production, return hardcoded Live product data since Stripe sync only has Sandbox data
+      if (isProduction) {
+        const liveProducts = [{
+          id: 'prod_TYaCOkKkQ3j6Ah',
+          name: 'Premium',
+          description: 'Premium subscription with unlimited AI questions, commute calculator, and all features',
+          active: true,
+          metadata: { plan: 'premium' },
+          prices: [{
+            id: 'price_1SbT2LRwvWaTf8xf5VAvCHPq',
+            unit_amount: 499,
+            currency: 'usd',
+            recurring: { interval: 'month' },
+            active: true,
+            metadata: {},
+          }]
+        }];
+        return res.json({ data: liveProducts });
+      }
+      
+      // In development, use Stripe sync database (Sandbox products)
       const products = await stripeService.listProductsWithPrices();
       
       // Group prices by product
