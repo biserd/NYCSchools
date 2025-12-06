@@ -6,8 +6,15 @@ export interface IStorage {
   // User operations for standalone auth
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserStripeInfo(userId: string, stripeInfo: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string | null;
+    subscriptionStatus?: string;
+    subscriptionPlan?: string;
+  }): Promise<User | undefined>;
   
   getUserFavorites(userId: string): Promise<Favorite[]>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
@@ -122,6 +129,11 @@ export class DbStorage implements IStorage {
     return user;
   }
 
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId)).limit(1);
+    return user;
+  }
+
   async createUser(userData: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(userData).returning();
     return user;
@@ -144,7 +156,7 @@ export class DbStorage implements IStorage {
 
   async updateUserStripeInfo(userId: string, stripeInfo: {
     stripeCustomerId?: string;
-    stripeSubscriptionId?: string;
+    stripeSubscriptionId?: string | null;
     subscriptionStatus?: string;
     subscriptionPlan?: string;
   }): Promise<User | undefined> {
