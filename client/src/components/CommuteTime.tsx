@@ -72,7 +72,13 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   // For unauthenticated users - show sign up prompt with prominent styling
   if (!authLoading && !isAuthenticated) {
     return compact ? (
-      <Link href="/auth">
+      <div 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = "/auth";
+        }}
+      >
         <Badge 
           variant="secondary" 
           className="flex items-center gap-1 bg-primary/10 text-primary border-primary/20 hover-elevate cursor-pointer"
@@ -80,7 +86,7 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
           <LogIn className="h-3 w-3" />
           <span>Sign up for commute</span>
         </Badge>
-      </Link>
+      </div>
     ) : (
       <div 
         className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20" 
@@ -166,7 +172,13 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   // Premium required - show upgrade CTA
   if (commuteData?.premiumRequired) {
     return compact ? (
-      <Link href="/pricing">
+      <div 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = "/pricing";
+        }}
+      >
         <Badge 
           variant="secondary" 
           className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover-elevate cursor-pointer"
@@ -174,7 +186,7 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
           <Star className="h-3 w-3" />
           <span>Premium</span>
         </Badge>
-      </Link>
+      </div>
     ) : (
       <div 
         className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700" 

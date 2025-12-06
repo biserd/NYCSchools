@@ -41,6 +41,16 @@ async function setupStripeProducts() {
       p => p.recurring?.interval === 'month' && p.active && p.unit_amount === 499
     );
 
+    // Archive any old monthly prices that are not $4.99
+    const oldMonthlyPrices = existingPrices.data.filter(
+      p => p.recurring?.interval === 'month' && p.active && p.unit_amount !== 499
+    );
+    
+    for (const oldPrice of oldMonthlyPrices) {
+      await stripe.prices.update(oldPrice.id, { active: false });
+      console.log(`Archived old price: ${oldPrice.id} ($${(oldPrice.unit_amount || 0) / 100}/month)`);
+    }
+
     if (existingMonthlyPrice) {
       console.log('Monthly price already exists:', existingMonthlyPrice.id);
     } else {
