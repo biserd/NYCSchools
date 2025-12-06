@@ -163,6 +163,7 @@ export default function PricingPage() {
   });
 
   const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  const isLoadingData = authLoading || subLoading || productsLoading;
   
   // Find the premium monthly price
   const premiumProduct = products?.data?.find(p => p.name?.toLowerCase().includes("premium") || p.metadata?.plan === "premium");
@@ -180,6 +181,24 @@ export default function PricingPage() {
       <AppHeader />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
+        {/* User subscription status banner */}
+        {user && !subLoading && subscription && (
+          <div className="mb-6 p-4 rounded-lg bg-muted/50 text-center" data-testid="banner-subscription-status">
+            {isPremium ? (
+              <div className="flex items-center justify-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                <span className="font-medium">You're on the Premium plan</span>
+                <Badge variant="default" className="ml-2">Active</Badge>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <Heart className="w-5 h-5 text-primary" />
+                <span className="font-medium">You're on the Free plan</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="text-center mb-12">
           <Badge variant="secondary" className="mb-4">
             <Sparkles className="w-3 h-3 mr-1" />
@@ -237,7 +256,12 @@ export default function PricingPage() {
               </div>
             </CardContent>
             <CardFooter>
-              {user ? (
+              {authLoading || subLoading ? (
+                <Button variant="outline" className="w-full" disabled>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
+                </Button>
+              ) : user ? (
                 !isPremium ? (
                   <Button variant="outline" className="w-full" disabled>
                     Current Plan
