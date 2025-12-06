@@ -101,6 +101,16 @@ export function Footer() {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link href="/pricing" className="hover:text-foreground transition-colors" data-testid="footer-link-pricing">
+                  Pricing
+                </Link>
+              </li>
+              <li>
+                <a href="mailto:hello@nycschoolsratings.com" className="hover:text-foreground transition-colors" data-testid="footer-link-contact">
+                  Contact Us
+                </a>
+              </li>
             </ul>
           </div>
         </div>

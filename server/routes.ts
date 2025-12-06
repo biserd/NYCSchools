@@ -330,7 +330,8 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
 
   app.get("/api/nyceec-centers/:locCode/reviews/user", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const review = await storage.getUserNyceecReview(req.user.id, req.params.locCode);
+      const userId = req.session.userId;
+      const review = await storage.getUserNyceecReview(userId, req.params.locCode);
       res.json(review || null);
     } catch (error) {
       console.error("Error fetching user NYCEEC review:", error);
@@ -340,9 +341,10 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
 
   app.post("/api/nyceec-centers/:locCode/reviews", isAuthenticated, async (req: any, res: Response) => {
     try {
+      const userId = req.session.userId;
       const parsed = insertNyceecReviewSchema.safeParse({
         ...req.body,
-        userId: req.user.id,
+        userId: userId,
         locCode: req.params.locCode,
       });
       
@@ -351,7 +353,7 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
       }
       
       // Check if user already has a review for this center
-      const existingReview = await storage.getUserNyceecReview(req.user.id, req.params.locCode);
+      const existingReview = await storage.getUserNyceecReview(userId, req.params.locCode);
       if (existingReview) {
         return res.status(400).json({ error: "You have already reviewed this center" });
       }
@@ -366,6 +368,7 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
 
   app.patch("/api/nyceec-reviews/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
+      const userId = req.session.userId;
       const { rating, reviewText } = req.body;
       if (typeof rating !== "number" || rating < 1 || rating > 5) {
         return res.status(400).json({ error: "Rating must be between 1 and 5" });
@@ -373,7 +376,7 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
       
       const review = await storage.updateNyceecReview(
         parseInt(req.params.id),
-        req.user.id,
+        userId,
         rating,
         reviewText
       );
@@ -391,7 +394,8 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
 
   app.delete("/api/nyceec-reviews/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      await storage.deleteNyceecReview(parseInt(req.params.id), req.user.id);
+      const userId = req.session.userId;
+      await storage.deleteNyceecReview(parseInt(req.params.id), userId);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting NYCEEC review:", error);
