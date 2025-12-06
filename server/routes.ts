@@ -6,6 +6,10 @@ import { setupAuth, isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import compression from "compression";
 import { updateUserZonedSchools, getUserZonedSchools } from "./services/zoning";
+import { runMigrations } from 'stripe-replit-sync';
+import { getStripeSync, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { WebhookHandlers } from "./webhookHandlers";
+import { stripeService } from "./stripeService";
 
 // Simple in-memory cache
 interface CacheEntry<T> {
@@ -1159,6 +1163,205 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       res.status(500).json({ error: "Failed to delete chat session" });
     }
   });
+
+  // ============ STRIPE INTEGRATION ============
+  
+  // Initialize Stripe schema and sync (runs once on startup)
+  try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (databaseUrl) {
+      console.log('Initializing Stripe schema...');
+      await runMigrations({ databaseUrl });
+      console.log('Stripe schema ready');
+
+      const stripeSync = await getStripeSync();
+      
+      // Set up managed webhook
+      const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      if (webhookBaseUrl && webhookBaseUrl !== 'https://undefined') {
+        const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
+          `${webhookBaseUrl}/api/stripe/webhook`,
+          { enabled_events: ['*'], description: 'NYC School Ratings webhook' }
+        );
+        console.log(`Stripe webhook configured: ${webhook.url}`);
+        
+        // Store UUID for webhook validation
+        (app as any).stripeWebhookUuid = uuid;
+      }
+
+      // Sync existing Stripe data in background
+      stripeSync.syncBackfill()
+        .then(() => console.log('Stripe data synced'))
+        .catch((err: any) => console.error('Error syncing Stripe data:', err));
+    }
+  } catch (error) {
+    console.error('Failed to initialize Stripe:', error);
+  }
+
+  // Stripe webhook endpoint (uses rawBody from express.json verify)
+  app.post("/api/stripe/webhook/:uuid?", async (req: any, res: Response) => {
+    try {
+      const signature = req.headers['stripe-signature'];
+      if (!signature) {
+        return res.status(400).json({ error: 'Missing stripe-signature' });
+      }
+
+      const sig = Array.isArray(signature) ? signature[0] : signature;
+      const uuid = req.params.uuid || (app as any).stripeWebhookUuid;
+      
+      // Use rawBody captured by express.json verify callback
+      const payload = req.rawBody as Buffer;
+      if (!payload || !Buffer.isBuffer(payload)) {
+        return res.status(400).json({ error: 'Invalid payload' });
+      }
+
+      await WebhookHandlers.processWebhook(payload, sig, uuid);
+      res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error('Stripe webhook error:', error.message);
+      res.status(400).json({ error: 'Webhook processing error' });
+    }
+  });
+
+  // Get Stripe publishable key (public)
+  app.get("/api/stripe/config", async (req: Request, res: Response) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error) {
+      console.error("Error getting Stripe config:", error);
+      res.status(500).json({ error: "Failed to get Stripe config" });
+    }
+  });
+
+  // Get subscription status for current user
+  app.get("/api/subscription", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Return subscription info from user record
+      res.json({
+        status: user.subscriptionStatus || 'free',
+        plan: user.subscriptionPlan || 'free',
+        stripeCustomerId: user.stripeCustomerId,
+        stripeSubscriptionId: user.stripeSubscriptionId,
+      });
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      res.status(500).json({ error: "Failed to fetch subscription" });
+    }
+  });
+
+  // Create checkout session for subscription
+  app.post("/api/checkout", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const { priceId } = req.body;
+
+      if (!priceId) {
+        return res.status(400).json({ error: "Price ID is required" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Create or get Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(
+          user.email,
+          userId,
+          user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : undefined
+        );
+        customerId = customer.id;
+        await storage.updateUserStripeInfo(userId, { stripeCustomerId: customerId });
+      }
+
+      // Create checkout session
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${baseUrl}/pricing?success=true`,
+        `${baseUrl}/pricing?canceled=true`,
+        userId
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // Create customer portal session for managing subscription
+  app.post("/api/customer-portal", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ error: "No subscription found" });
+      }
+
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const session = await stripeService.createCustomerPortalSession(
+        user.stripeCustomerId,
+        `${baseUrl}/settings`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating portal session:", error);
+      res.status(500).json({ error: "Failed to create portal session" });
+    }
+  });
+
+  // Get available products and prices (public)
+  app.get("/api/products", async (req: Request, res: Response) => {
+    try {
+      const products = await stripeService.listProductsWithPrices();
+      
+      // Group prices by product
+      const productsMap = new Map();
+      for (const row of products) {
+        if (!productsMap.has(row.product_id)) {
+          productsMap.set(row.product_id, {
+            id: row.product_id,
+            name: row.product_name,
+            description: row.product_description,
+            active: row.product_active,
+            metadata: row.product_metadata,
+            prices: []
+          });
+        }
+        if (row.price_id) {
+          productsMap.get(row.product_id).prices.push({
+            id: row.price_id,
+            unit_amount: row.unit_amount,
+            currency: row.currency,
+            recurring: row.recurring,
+            active: row.price_active,
+            metadata: row.price_metadata,
+          });
+        }
+      }
+
+      res.json({ data: Array.from(productsMap.values()) });
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  // ============ END STRIPE INTEGRATION ============
 
   // SEO: Sitemap.xml endpoint
   app.get("/sitemap.xml", async (req: Request, res: Response) => {

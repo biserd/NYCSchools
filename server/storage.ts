@@ -141,6 +141,20 @@ export class DbStorage implements IStorage {
     return user;
   }
 
+  async updateUserStripeInfo(userId: string, stripeInfo: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionPlan?: string;
+  }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...stripeInfo, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   async getUserFavorites(userId: string): Promise<Favorite[]> {
     return db.select().from(favorites).where(eq(favorites.userId, userId));
   }

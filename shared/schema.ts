@@ -456,6 +456,10 @@ export const users = pgTable("users", {
   homeAddress: varchar("home_address"),
   homeLat: real("home_lat"),
   homeLng: real("home_lng"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status").default("free"),
+  subscriptionPlan: varchar("subscription_plan").default("free"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -463,6 +467,10 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   profileImageUrl: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  subscriptionStatus: true,
+  subscriptionPlan: true,
   createdAt: true,
   updatedAt: true,
 });
