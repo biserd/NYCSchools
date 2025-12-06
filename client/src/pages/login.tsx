@@ -24,6 +24,11 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Get redirect URL from query params (sanitized to same-origin paths only)
+  const params = new URLSearchParams(window.location.search);
+  const rawRedirect = params.get("redirect") || "/";
+  const redirectUrl = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/";
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -44,7 +49,7 @@ export default function LoginPage() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      setLocation("/");
+      setLocation(redirectUrl);
     },
     onError: (error: any) => {
       toast({
@@ -150,7 +155,7 @@ export default function LoginPage() {
             </Form>
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
-              <Link href="/register" className="text-primary hover:underline" data-testid="link-register">
+              <Link href={`/register${redirectUrl !== "/" ? `?redirect=${encodeURIComponent(redirectUrl)}` : ""}`} className="text-primary hover:underline" data-testid="link-register">
                 Sign up
               </Link>
             </div>

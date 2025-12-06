@@ -226,7 +226,7 @@ export default function Settings() {
                 <li>Get personalized AI recommendations</li>
               </ul>
               <div className="flex gap-2 pt-4">
-                <Link href="/auth">
+                <Link href="/login?redirect=/settings">
                   <Button data-testid="button-login-settings">
                     <LogIn className="mr-2 h-4 w-4" />
                     Sign In / Create Account

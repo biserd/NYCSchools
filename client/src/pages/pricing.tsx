@@ -280,7 +280,7 @@ export default function PricingPage() {
                   </Button>
                 )
               ) : (
-                <Link href="/auth" className="w-full">
+                <Link href="/login?redirect=/pricing" className="w-full">
                   <Button variant="outline" className="w-full" data-testid="button-get-started-free">
                     Get Started Free
                   </Button>
@@ -370,7 +370,7 @@ export default function PricingPage() {
                   </Button>
                 )
               ) : (
-                <Link href="/auth" className="w-full">
+                <Link href="/login?redirect=/pricing" className="w-full">
                   <Button className="w-full" data-testid="button-start-premium">
                     <Zap className="w-4 h-4 mr-2" />
                     Start Premium

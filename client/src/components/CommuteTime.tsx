@@ -76,7 +76,7 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          window.location.href = "/auth";
+          window.location.href = "/login?redirect=" + encodeURIComponent(window.location.pathname);
         }}
       >
         <Badge 
@@ -105,12 +105,12 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
             </p>
           </div>
         </div>
-        <Link href="/auth" className="w-full sm:w-auto">
+        <a href={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="w-full sm:w-auto">
           <Button size="sm" className="w-full sm:w-auto" data-testid="button-signup-commute">
             <LogIn className="h-3 w-3 mr-1" />
             Sign Up Free
           </Button>
-        </Link>
+        </a>
       </div>
     );
   }
