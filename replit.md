@@ -65,6 +65,34 @@ The **Overall Score** is calculated as: `Test Proficiency (40%) + Climate Score 
 - **Google Maps APIs**: Geocoding API and Distance Matrix API.
 - **NYC Open Data (NYCEEC)**: Early childhood center data.
 - **Stripe**: Payment processing and subscription management via `stripe-replit-sync`.
+- **NYSED State Report Card Database**: Official ELA/Math test score data (see Data Update section).
+
+## Data Update Process
+
+### NYSED Test Score Updates
+ELA and Math proficiency scores come from the NYS Education Department's State Report Card (SRC) database.
+
+**Data Source**: https://data.nysed.gov/files/essa/24-25/SRC2025.zip
+**Current Release**: SRC2025 (December 3, 2024)
+**Years Available**: 2018, 2019, 2022, 2023, 2024, 2025 (2020-2021 missing due to COVID test cancellations)
+
+**Update Script**: `server/scripts/updateNYSEDScores.ts`
+```bash
+# Download and extract NYSED data
+curl -o /tmp/SRC2025.zip https://data.nysed.gov/files/essa/24-25/SRC2025.zip
+unzip /tmp/SRC2025.zip -d /tmp/nysed
+
+# Export CSV from Access database (requires mdbtools)
+mdb-export /tmp/nysed/SRC2025.accdb ASSESSMENT_ELA > /tmp/nysed/ela_all.csv
+mdb-export /tmp/nysed/SRC2025.accdb ASSESSMENT_MATH > /tmp/nysed/math_all.csv
+
+# Run update script
+npx tsx server/scripts/updateNYSEDScores.ts
+```
+
+**BEDS to DBN Conversion**: NYC schools use BEDS codes (e.g., 310100010015) converted to DBN format (e.g., 01M015) using borough mapping: 01=M, 02=X, 03=K, 04=Q, 05=R.
+
+**Data Traceability**: The `data_source_release` column tracks which NYSED release each record came from (e.g., "2025-12-03").
 
 ## Stripe Configuration
 
