@@ -37,7 +37,7 @@ I prefer detailed explanations. Ask before making major changes.
 - **Commute Time Calculator (Auth-Gated)**: Calculates transit times and distances using Google Maps APIs for authenticated users only, minimizing API costs.
 - **Subscription & Pricing (Stripe)**: Freemium model with Free and Premium tiers. `stripe-replit-sync` manages Stripe schema, webhook handling, and a customer portal.
 - **Legal Pages**: Dedicated Privacy Policy and Terms of Service pages.
-- **Data-Driven Blog**: Blog section featuring analytical articles about NYC school data with interactive Recharts visualizations.
+- **Data-Driven Blog**: Blog section featuring analytical articles about NYC school data with interactive Recharts visualizations. Includes COVID Recovery analysis (2025) showing citywide trends, district recovery rankings, and top improved schools.
 - **3-K/Pre-K Lottery Simulator**: Monte Carlo simulation tool for understanding NYC's school lottery odds.
 - **Special Education (IEP) Support**: Features IEP filtering, badges on school cards, and dedicated informational sections on school detail pages.
 - **Official School Zone Detection**: Identifies a user's zoned school using NYC DOE official zone boundaries and `turf.js` for point-in-polygon matching.

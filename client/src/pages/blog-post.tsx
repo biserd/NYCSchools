@@ -7,13 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getBlogPost } from "@/lib/blog-data";
-import { Calendar, Clock, ArrowLeft, Share2, TrendingUp, AlertTriangle, CheckCircle, Home } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, Share2, TrendingUp, AlertTriangle, CheckCircle, Home, Lightbulb } from "lucide-react";
 import {
   DistrictPerformanceChart,
   ProficiencyTierChart,
   EconomicImpactChart,
   GTComparisonChart,
   KeyStatsCards,
+  CovidRecoveryStatsCards,
+  CitywideRecoveryTrendChart,
+  DistrictRecoveryChart,
+  TopImprovedSchoolsTable,
 } from "@/components/blog/DataCharts";
 
 function formatDate(dateStr: string): string {
@@ -22,6 +26,160 @@ function formatDate(dateStr: string): string {
     month: 'long',
     day: 'numeric'
   });
+}
+
+function CovidRecoveryPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        After analyzing <strong>the latest 2025 NYSED test scores</strong> for over 1,000 NYC schools, we have some encouraging news:
+        NYC students have not only recovered from COVID-era learning loss but have <strong>surpassed pre-pandemic proficiency levels</strong>.
+        Here's what the data tells us about one of the most remarkable educational recoveries in recent history.
+      </p>
+
+      <CovidRecoveryStatsCards />
+
+      <h2 id="the-covid-impact">The COVID Impact: What Happened in 2020-2021</h2>
+      
+      <p>
+        When schools closed in March 2020, NYC faced an unprecedented challenge. The 2019-2020 and 2020-2021 school years saw
+        state testing suspended entirely, leaving a gap in our data. When testing resumed in 2022, the results were sobering:
+      </p>
+
+      <ul>
+        <li><strong>ELA proficiency held relatively steady</strong> at 46.2% (2019) to 45.2% (2022) - a modest 1.0 percentage point decline</li>
+        <li><strong>Math took the harder hit</strong>, falling from 44.4% (2019) to 36.2% (2022) - a significant 8.2 percentage point decline</li>
+        <li>The math drop was <strong>eight times as severe</strong> as ELA, confirming national research that math suffered more from remote learning</li>
+      </ul>
+
+      <Card className="my-6 border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-red-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-red-700 dark:text-red-400">Why Math Suffered More</strong>
+              <p className="text-sm text-red-600/80 dark:text-red-300/80 mt-1 mb-0">
+                Research suggests math requires more structured, teacher-led instruction that was harder to replicate remotely.
+                Concepts build sequentially, so gaps in one year compound in subsequent years. ELA skills like reading
+                are more easily practiced independently at home.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <CitywideRecoveryTrendChart />
+
+      <h2 id="the-recovery">The Recovery: 2022-2025</h2>
+
+      <p>
+        What happened next is a testament to NYC's teachers, students, and families. In just three years, the city didn't just
+        recover - it <strong>exceeded pre-pandemic performance</strong>:
+      </p>
+
+      <ul>
+        <li><strong>2025 ELA: 54.9%</strong> - up 9.7 points from 2022 and 8.7 points above 2019</li>
+        <li><strong>2025 Math: 55.0%</strong> - up 18.8 points from 2022 and 10.6 points above 2019</li>
+        <li>Math's recovery was <strong>more than twice its decline</strong>, suggesting targeted interventions worked</li>
+      </ul>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">A Historic Achievement</strong>
+              <p className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-1 mb-0">
+                For the first time, more than half of NYC students are proficient in both ELA and Math.
+                This represents years of targeted intervention, summer programs, tutoring initiatives, and 
+                the dedicated work of educators across the city.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="district-recovery">Which Districts Recovered Fastest?</h2>
+
+      <p>
+        Not all districts recovered at the same pace. Some communities that were hit hardest by COVID showed
+        the most dramatic improvements, suggesting that targeted resources made a real difference:
+      </p>
+
+      <DistrictRecoveryChart />
+
+      <p>
+        <strong>District 23 (Brownsville, Brooklyn)</strong> leads the city with a combined 25.8 percentage point improvement
+        in average proficiency from 2022 to 2025. This is followed by District 16 (Bedford-Stuyvesant) and District 18 (Canarsie),
+        both historically underserved communities that received significant recovery resources.
+      </p>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Lightbulb className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">What This Means for Parents</strong>
+              <p className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-1 mb-0">
+                If you're looking at schools in these high-recovery districts, check their individual trends.
+                Many schools that struggled in 2022 are now among the city's most improved. Past performance
+                during COVID may not reflect a school's current trajectory.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-schools">Top Improved Schools</h2>
+
+      <p>
+        Some individual schools showed remarkable turnarounds. The top improvers increased their combined ELA and Math
+        proficiency by 100+ percentage points in just three years:
+      </p>
+
+      <TopImprovedSchoolsTable />
+
+      <p>
+        <em>Note: We filtered to schools with at least 20% proficiency in 2022 to focus on genuine improvement
+        rather than statistical anomalies from very small numbers.</em>
+      </p>
+
+      <h2 id="what-it-means">What This Means for Your School Search</h2>
+
+      <Card className="my-6 border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <TrendingUp className="w-6 h-6 text-primary shrink-0 mt-1" />
+            <div>
+              <strong className="text-foreground">Key Takeaways for Parents</strong>
+              <ul className="text-sm text-muted-foreground mt-2 mb-0 space-y-2">
+                <li><strong>Look at trends, not just current scores</strong> - A school that's improved 20 points may be better than one that's declined 5 points, even if the latter has a higher current score.</li>
+                <li><strong>Don't judge schools by 2022 data</strong> - The COVID low point doesn't reflect where schools are today.</li>
+                <li><strong>High-recovery districts may offer hidden gems</strong> - Schools in Districts 23, 16, and 18 have shown they can improve dramatically.</li>
+                <li><strong>Math programs matter</strong> - Schools that recovered strongly in math likely have effective intervention programs.</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="methodology">Methodology</h2>
+
+      <p>
+        This analysis uses official NYSED State Report Card data (SRC2025 release, December 2024). We analyzed
+        ELA and Math proficiency rates for NYC schools from 2018-2025, excluding the COVID gap years of 2020-2021
+        when state testing was suspended. All percentages represent the proportion of students meeting or exceeding
+        proficiency standards on New York State assessments.
+      </p>
+
+      <p>
+        <Link href="/" className="text-primary hover:underline">
+          Explore individual school data and trends in our school browser
+        </Link>
+        , where you can see historical performance for every NYC public school.
+      </p>
+    </article>
+  );
 }
 
 function DOEDataAnalysisPost() {
@@ -362,6 +520,7 @@ export default function BlogPostPage() {
         </div>
 
         {post.slug === "2023-24-doe-data-analysis" && <DOEDataAnalysisPost />}
+        {post.slug === "nyc-schools-2025-covid-recovery" && <CovidRecoveryPost />}
 
         <div className="border-t mt-12 pt-8">
           <div className="flex flex-wrap items-center justify-between gap-4">

@@ -107,7 +107,8 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
     const year = parseInt(fields[3], 10);
     const assessmentName = fields[4]?.replace(/"/g, "");
     const subgroup = fields[5]?.replace(/"/g, "");
-    const perProf = fields[19]?.replace(/"/g, "");
+    // ELA columns: ... LEVEL4_%TESTED(18), NUM_PROF(19), PER_PROF(20), ...
+    const perProf = fields[20]?.replace(/"/g, "");
     
     // Only process NYC schools (31*), 2024-2025 data, ELA3_8, All Students
     if (!entityCode?.startsWith("31")) continue;
@@ -152,8 +153,8 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
     const year = parseInt(fields[3], 10);
     const assessmentName = fields[4]?.replace(/"/g, "");
     const subgroup = fields[5]?.replace(/"/g, "");
-    // Math CSV has 2 extra columns (LEVEL5_COUNT, LEVEL5_%TESTED), so PER_PROF is at index 21
-    const perProf = fields[21]?.replace(/"/g, "");
+    // Math CSV has 2 extra columns (LEVEL5_COUNT, LEVEL5_%TESTED), so PER_PROF is at index 22
+    const perProf = fields[22]?.replace(/"/g, "");
     
     // Only process NYC schools (31*), 2024-2025 data, MATH3_8, All Students
     if (!entityCode?.startsWith("31")) continue;

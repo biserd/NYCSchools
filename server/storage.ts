@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight } from "@shared/schema";
-import { eq, and, sql, desc, asc, like, or, ilike, gte } from "drizzle-orm";
+import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for standalone auth
@@ -74,6 +74,9 @@ export interface IStorage {
   // NYCEEC AI Insights Cache
   getNyceecAiInsight(locCode: string): Promise<NyceecAiInsight | undefined>;
   saveNyceecAiInsight(insight: InsertNyceecAiInsight): Promise<NyceecAiInsight>;
+  
+  // Blog data
+  getCovidRecoveryBlogData(): Promise<CovidRecoveryBlogData>;
 }
 
 export interface NyceecFilters {
@@ -116,6 +119,37 @@ export interface DistrictAverages {
   guardianSatisfaction: number | null;
   guardianCommunication: number | null;
   guardianSchoolTrust: number | null;
+}
+
+export interface CovidRecoveryBlogData {
+  citywideYearlyTrends: Array<{
+    year: number;
+    schoolCount: number;
+    avgEla: number;
+    avgMath: number;
+  }>;
+  districtRecovery: Array<{
+    district: number;
+    ela2022: number;
+    ela2025: number;
+    elaChange: number;
+    math2022: number;
+    math2025: number;
+    mathChange: number;
+    avgChange: number;
+  }>;
+  topImprovedSchools: Array<{
+    name: string;
+    dbn: string;
+    borough: string;
+    ela2022: number;
+    ela2025: number;
+    elaChange: number;
+    math2022: number;
+    math2025: number;
+    mathChange: number;
+    totalChange: number;
+  }>;
 }
 
 export class DbStorage implements IStorage {
@@ -961,6 +995,117 @@ export class DbStorage implements IStorage {
       })
       .returning();
     return saved;
+  }
+
+  async getCovidRecoveryBlogData(): Promise<CovidRecoveryBlogData> {
+    // Get citywide yearly trends using raw SQL
+    const citywideResult = await db.execute(sql`
+      SELECT 
+        year,
+        COUNT(*) as school_count,
+        ROUND(AVG(ela_proficiency)::numeric, 1) as avg_ela,
+        ROUND(AVG(math_proficiency)::numeric, 1) as avg_math
+      FROM school_historical_scores
+      WHERE ela_proficiency IS NOT NULL AND math_proficiency IS NOT NULL
+      GROUP BY year
+      ORDER BY year
+    `);
+
+    // Get district recovery data (2022 vs 2025)
+    const districtRecoveryResult = await db.execute(sql`
+      WITH district_2022 AS (
+        SELECT 
+          CAST(SUBSTRING(dbn, 1, 2) AS integer) as district,
+          AVG(ela_proficiency) as ela_2022,
+          AVG(math_proficiency) as math_2022
+        FROM school_historical_scores
+        WHERE year = 2022 AND ela_proficiency IS NOT NULL AND math_proficiency IS NOT NULL
+        GROUP BY SUBSTRING(dbn, 1, 2)
+      ),
+      district_2025 AS (
+        SELECT 
+          CAST(SUBSTRING(dbn, 1, 2) AS integer) as district,
+          AVG(ela_proficiency) as ela_2025,
+          AVG(math_proficiency) as math_2025
+        FROM school_historical_scores
+        WHERE year = 2025 AND ela_proficiency IS NOT NULL AND math_proficiency IS NOT NULL
+        GROUP BY SUBSTRING(dbn, 1, 2)
+      )
+      SELECT 
+        d22.district,
+        ROUND(d22.ela_2022::numeric, 1) as ela_2022,
+        ROUND(d25.ela_2025::numeric, 1) as ela_2025,
+        ROUND((d25.ela_2025 - d22.ela_2022)::numeric, 1) as ela_change,
+        ROUND(d22.math_2022::numeric, 1) as math_2022,
+        ROUND(d25.math_2025::numeric, 1) as math_2025,
+        ROUND((d25.math_2025 - d22.math_2022)::numeric, 1) as math_change,
+        ROUND(((d25.ela_2025 - d22.ela_2022 + d25.math_2025 - d22.math_2022) / 2)::numeric, 1) as avg_change
+      FROM district_2022 d22
+      JOIN district_2025 d25 ON d22.district = d25.district
+      ORDER BY (d25.ela_2025 - d22.ela_2022 + d25.math_2025 - d22.math_2022) DESC
+    `);
+
+    // Get top 10 most improved schools
+    const topSchoolsResult = await db.execute(sql`
+      WITH school_2022 AS (
+        SELECT dbn, ela_proficiency as ela_2022, math_proficiency as math_2022
+        FROM school_historical_scores
+        WHERE year = 2022 AND ela_proficiency IS NOT NULL AND math_proficiency IS NOT NULL
+      ),
+      school_2025 AS (
+        SELECT dbn, ela_proficiency as ela_2025, math_proficiency as math_2025
+        FROM school_historical_scores
+        WHERE year = 2025 AND ela_proficiency IS NOT NULL AND math_proficiency IS NOT NULL
+      )
+      SELECT 
+        s.name,
+        s.dbn,
+        SUBSTRING(s.dbn, 3, 1) as borough,
+        s22.ela_2022,
+        s25.ela_2025,
+        (s25.ela_2025 - s22.ela_2022) as ela_change,
+        s22.math_2022,
+        s25.math_2025,
+        (s25.math_2025 - s22.math_2022) as math_change,
+        (s25.ela_2025 - s22.ela_2022 + s25.math_2025 - s22.math_2022) as total_change
+      FROM schools s
+      JOIN school_2022 s22 ON s.dbn = s22.dbn
+      JOIN school_2025 s25 ON s.dbn = s25.dbn
+      WHERE s22.ela_2022 >= 20 AND s22.math_2022 >= 20
+      ORDER BY (s25.ela_2025 - s22.ela_2022 + s25.math_2025 - s22.math_2022) DESC
+      LIMIT 10
+    `);
+
+    return {
+      citywideYearlyTrends: (citywideResult.rows as any[]).map(r => ({
+        year: Number(r.year),
+        schoolCount: Number(r.school_count),
+        avgEla: Number(r.avg_ela),
+        avgMath: Number(r.avg_math),
+      })),
+      districtRecovery: (districtRecoveryResult.rows as any[]).map(r => ({
+        district: Number(r.district),
+        ela2022: Number(r.ela_2022),
+        ela2025: Number(r.ela_2025),
+        elaChange: Number(r.ela_change),
+        math2022: Number(r.math_2022),
+        math2025: Number(r.math_2025),
+        mathChange: Number(r.math_change),
+        avgChange: Number(r.avg_change),
+      })),
+      topImprovedSchools: (topSchoolsResult.rows as any[]).map(r => ({
+        name: String(r.name),
+        dbn: String(r.dbn),
+        borough: String(r.borough),
+        ela2022: Number(r.ela_2022),
+        ela2025: Number(r.ela_2025),
+        elaChange: Number(r.ela_change),
+        math2022: Number(r.math_2022),
+        math2025: Number(r.math_2025),
+        mathChange: Number(r.math_change),
+        totalChange: Number(r.total_change),
+      })),
+    };
   }
 }
 

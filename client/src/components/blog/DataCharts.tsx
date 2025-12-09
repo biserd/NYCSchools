@@ -12,8 +12,13 @@ import {
   Cell,
   ScatterChart,
   Scatter,
+  LineChart,
+  Line,
+  ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { TrendingUp, Award, School } from "lucide-react";
 
 const districtPerformanceData = [
   { district: "D26", ela: 70.4, math: 73.1, location: "Queens" },
@@ -295,5 +300,356 @@ export function KeyStatsCards() {
         </Card>
       ))}
     </div>
+  );
+}
+
+// COVID Recovery Blog Charts
+interface CovidRecoveryData {
+  citywideYearlyTrends: Array<{
+    year: number;
+    schoolCount: number;
+    avgEla: number;
+    avgMath: number;
+  }>;
+  districtRecovery: Array<{
+    district: number;
+    ela2022: number;
+    ela2025: number;
+    elaChange: number;
+    math2022: number;
+    math2025: number;
+    mathChange: number;
+    avgChange: number;
+  }>;
+  topImprovedSchools: Array<{
+    name: string;
+    dbn: string;
+    borough: string;
+    ela2022: number;
+    ela2025: number;
+    elaChange: number;
+    math2022: number;
+    math2025: number;
+    mathChange: number;
+    totalChange: number;
+  }>;
+}
+
+export function useCovidRecoveryData() {
+  return useQuery<CovidRecoveryData>({
+    queryKey: ["/api/blog/covid-recovery-data"],
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+}
+
+export function CovidRecoveryStatsCards() {
+  const { data, isLoading } = useCovidRecoveryData();
+  
+  if (isLoading || !data) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardContent className="pt-6">
+              <div className="h-8 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  const trend2019 = data.citywideYearlyTrends.find(t => t.year === 2019);
+  const trend2022 = data.citywideYearlyTrends.find(t => t.year === 2022);
+  const trend2025 = data.citywideYearlyTrends.find(t => t.year === 2025);
+
+  const stats = [
+    { 
+      label: "2025 ELA Proficiency", 
+      value: `${trend2025?.avgEla}%`, 
+      subtext: `+${((trend2025?.avgEla || 0) - (trend2019?.avgEla || 0)).toFixed(1)}% vs 2019`,
+      color: "text-emerald-600" 
+    },
+    { 
+      label: "2025 Math Proficiency", 
+      value: `${trend2025?.avgMath}%`, 
+      subtext: `+${((trend2025?.avgMath || 0) - (trend2019?.avgMath || 0)).toFixed(1)}% vs 2019`,
+      color: "text-emerald-600" 
+    },
+    { 
+      label: "Math COVID Drop", 
+      value: `-${((trend2019?.avgMath || 0) - (trend2022?.avgMath || 0)).toFixed(1)}%`, 
+      subtext: "2019 → 2022",
+      color: "text-red-600" 
+    },
+    { 
+      label: "Schools Analyzed", 
+      value: trend2025?.schoolCount?.toLocaleString() || "1,000+", 
+      subtext: "With 2025 data",
+      color: "text-primary" 
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8" data-testid="covid-recovery-stats">
+      {stats.map((stat, i) => (
+        <Card key={i}>
+          <CardContent className="pt-6">
+            <div className={`text-2xl md:text-3xl font-bold ${stat.color}`}>
+              {stat.value}
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {stat.label}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {stat.subtext}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function CitywideRecoveryTrendChart() {
+  const { data, isLoading } = useCovidRecoveryData();
+
+  if (isLoading || !data) {
+    return (
+      <Card className="my-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Loading...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 bg-muted animate-pulse rounded" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const chartData = data.citywideYearlyTrends.map(t => ({
+    year: t.year,
+    ELA: t.avgEla,
+    Math: t.avgMath,
+  }));
+
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-recovery">
+          <TrendingUp className="w-5 h-5 text-emerald-600" />
+          NYC Citywide Proficiency: The Recovery Arc (2018-2025)
+        </CardTitle>
+        <CardDescription>
+          Average ELA and Math proficiency rates across all NYC schools. Note the COVID gap in 2020-2021.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="year" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                domain={[30, 70]} 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+                tickFormatter={(v) => `${v}%`}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: number) => [`${value}%`, '']}
+              />
+              <Legend />
+              <ReferenceLine 
+                x={2020} 
+                stroke="#ef4444" 
+                strokeDasharray="5 5" 
+                label={{ value: 'COVID', position: 'top', fill: '#ef4444', fontSize: 10 }} 
+              />
+              <Line 
+                type="monotone" 
+                dataKey="ELA" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 8 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Math" 
+                stroke="#8b5cf6" 
+                strokeWidth={3}
+                dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 8 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DistrictRecoveryChart() {
+  const { data, isLoading } = useCovidRecoveryData();
+
+  if (isLoading || !data) {
+    return (
+      <Card className="my-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Loading...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 bg-muted animate-pulse rounded" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Take top 10 and bottom 5 districts
+  const topDistricts = data.districtRecovery.slice(0, 10);
+
+  const chartData = topDistricts.map(d => ({
+    district: `D${d.district}`,
+    "ELA Gain": d.elaChange,
+    "Math Gain": d.mathChange,
+    avgChange: d.avgChange,
+  }));
+
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-district-recovery">
+          <Award className="w-5 h-5 text-amber-600" />
+          Top 10 Districts by Recovery (2022 → 2025)
+        </CardTitle>
+        <CardDescription>
+          Districts with the largest combined ELA and Math gains since COVID's lowest point.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="district" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+                tickFormatter={(v) => `+${v}%`}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: number) => [`+${value}%`, '']}
+              />
+              <Legend />
+              <Bar dataKey="ELA Gain" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Math Gain" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopImprovedSchoolsTable() {
+  const { data, isLoading } = useCovidRecoveryData();
+
+  const getBoroughName = (code: string) => {
+    const map: Record<string, string> = {
+      'M': 'Manhattan',
+      'X': 'Bronx',
+      'K': 'Brooklyn',
+      'Q': 'Queens',
+      'R': 'Staten Island',
+    };
+    return map[code] || code;
+  };
+
+  if (isLoading || !data) {
+    return (
+      <Card className="my-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Loading...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 bg-muted animate-pulse rounded" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-top-schools">
+          <School className="w-5 h-5 text-emerald-600" />
+          Top 10 Most Improved Schools (2022 → 2025)
+        </CardTitle>
+        <CardDescription>
+          Schools with the largest combined ELA and Math proficiency gains.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-testid="table-top-improved">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-2 font-medium">School</th>
+                <th className="text-center py-2 px-2 font-medium">Borough</th>
+                <th className="text-center py-2 px-2 font-medium">ELA Change</th>
+                <th className="text-center py-2 px-2 font-medium">Math Change</th>
+                <th className="text-center py-2 px-2 font-medium">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.topImprovedSchools.map((school, i) => (
+                <tr key={school.dbn} className="border-b hover:bg-muted/50">
+                  <td className="py-2 px-2">
+                    <a 
+                      href={`/school/${school.dbn.toLowerCase()}`}
+                      className="text-primary hover:underline"
+                    >
+                      {school.name}
+                    </a>
+                  </td>
+                  <td className="text-center py-2 px-2 text-muted-foreground">
+                    {getBoroughName(school.borough)}
+                  </td>
+                  <td className="text-center py-2 px-2 text-emerald-600 font-medium">
+                    +{school.elaChange}%
+                  </td>
+                  <td className="text-center py-2 px-2 text-emerald-600 font-medium">
+                    +{school.mathChange}%
+                  </td>
+                  <td className="text-center py-2 px-2 font-bold text-primary">
+                    +{school.totalChange}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

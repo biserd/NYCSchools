@@ -545,6 +545,25 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
+  // Blog data API - citywide historical trends for 2025 COVID recovery article
+  app.get("/api/blog/covid-recovery-data", async (req: Request, res: Response) => {
+    try {
+      const cacheKey = "blog-covid-recovery-data";
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
+      const data = await storage.getCovidRecoveryBlogData();
+      setCache(cacheKey, data);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching COVID recovery blog data:", error);
+      res.status(500).json({ error: "Failed to fetch blog data" });
+    }
+  });
+
   // Favorites API (require authentication)
   app.get("/api/favorites", isAuthenticated, async (req: any, res: Response) => {
     try {
