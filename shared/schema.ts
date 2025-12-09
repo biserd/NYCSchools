@@ -118,6 +118,7 @@ export const schoolHistoricalScores = pgTable("school_historical_scores", {
   year: integer("year").notNull(),
   ela_proficiency: integer("ela_proficiency"), // ELA % Level 3+4
   math_proficiency: integer("math_proficiency"), // Math % Level 3+4
+  data_source_release: varchar("data_source_release"), // NYSED release date, e.g., "2025-12-03"
 }, (table) => ({
   dbnYearIdx: index("historical_dbn_year_idx").on(table.dbn, table.year),
 }));
