@@ -35,7 +35,12 @@ I prefer detailed explanations. Ask before making major changes.
 - **District Comparison**: Compares schools to district averages.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews.
 - **Commute Time Calculator (Auth-Gated)**: Calculates transit times and distances using Google Maps APIs for authenticated users only, minimizing API costs.
-- **Subscription & Pricing (Stripe)**: Freemium model with Free and Premium tiers. `stripe-replit-sync` manages Stripe schema, webhook handling, and a customer portal.
+- **Subscription & Pricing (Stripe)**: Freemium model with Free and Premium tiers ($4.99/month or $47.88/year with 20% discount). `stripe-replit-sync` manages Stripe schema, webhook handling, and a customer portal.
+- **Conversion Optimization**: 
+  - Redesigned pricing page with outcome-focused messaging ("Find your child's perfect school 10x faster"), testimonials, and 7-day money-back guarantee
+  - Reusable `UpgradeModal` component triggered at feature limits (favorites, comparisons, AI chat)
+  - Premium feature teasers with locked badges for historical trends and commute calculator
+  - All upgrade prompts gated behind `subscriptionFetched` check to prevent premium users seeing upsell during loading
 - **Legal Pages**: Dedicated Privacy Policy and Terms of Service pages.
 - **Data-Driven Blog**: Blog section featuring analytical articles about NYC school data with interactive Recharts visualizations. Includes COVID Recovery analysis (2025) showing citywide trends, district recovery rankings, and top improved schools.
 - **3-K/Pre-K Lottery Simulator**: Monte Carlo simulation tool for understanding NYC's school lottery odds.
