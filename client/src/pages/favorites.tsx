@@ -8,20 +8,39 @@ import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Heart, Zap, Star, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SchoolCard } from "@/components/SchoolCard";
+import { UpgradeModal } from "@/components/UpgradeModal";
+
+const FREE_TIER_MAX_FAVORITES = 5;
 
 export default function FavoritesPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithOverallScore | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const { data: favorites, isLoading: favoritesLoading } = useQuery<Favorite[]>({
     queryKey: ["/api/favorites"],
     enabled: isAuthenticated,
   });
+
+  // Check subscription status - wait for query to complete before showing nudges
+  const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
+    status: string;
+    plan: string;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: isAuthenticated,
+  });
+
+  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Only show upgrade nudge after subscription query completes and user is NOT premium
+  const showUpgradeNudge = subscriptionFetched && !isPremium;
 
   const { data: allSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -104,6 +123,50 @@ export default function FavoritesPage() {
         </p>
       </div>
 
+      {/* Upgrade nudge for free users - only show after subscription check completes */}
+      {showUpgradeNudge && favoriteSchools.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    {favoriteSchools.length} of {FREE_TIER_MAX_FAVORITES} favorites used
+                  </span>
+                  {favoriteSchools.length >= FREE_TIER_MAX_FAVORITES && (
+                    <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                      Limit reached
+                    </Badge>
+                  )}
+                </div>
+                <Progress 
+                  value={(favoriteSchools.length / FREE_TIER_MAX_FAVORITES) * 100} 
+                  className="h-2 mb-2"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Upgrade to Premium for unlimited favorites and smarter school comparisons
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setShowUpgradeModal(true)} data-testid="button-upgrade-favorites">
+                <Zap className="w-4 h-4 mr-1" />
+                Upgrade
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Premium badge for premium users - only show after subscription check completes */}
+      {subscriptionFetched && isPremium && (
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Star className="w-4 h-4 text-yellow-500" />
+            <span>Unlimited favorites with Premium</span>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-favorites">
         {favoriteSchools.length === 0 ? (
           <Card className="p-12 text-center" data-testid="empty-favorites">
@@ -134,6 +197,12 @@ export default function FavoritesPage() {
         school={selectedSchool}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+      />
+      
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal}
+        trigger="favorites_limit"
       />
       
       <Footer />

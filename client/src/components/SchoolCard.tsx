@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type SchoolTrend, type TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
@@ -15,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface SchoolCardProps {
   school: School;
@@ -70,9 +72,10 @@ function getSchoolGradeLevelForZoning(school: School): "elementary" | "middle" |
 export function SchoolCard({ school, trend }: SchoolCardProps) {
   const { user } = useAuth();
   const { startCheckout } = useCheckout();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
-  // Check subscription status for premium features
-  const { data: subscription } = useQuery<{
+  // Check subscription status for premium features - wait for query to complete before showing upgrade prompts
+  const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
     status: string;
     plan: string;
   }>({
@@ -82,6 +85,8 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
   });
   
   const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Only show upgrade prompts after subscription query completes and user is NOT premium
+  const showUpgradePrompt = subscriptionFetched && !isPremium;
   
   const overallScore = calculateOverallScore(school);
   const trendConfig = trend && trend.direction !== 'insufficient_data' ? getTrendBadgeConfig(trend.direction) : null;
@@ -140,11 +145,25 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
     } else {
       const result = addToComparison(school);
       if (!result.success && result.error) {
-        toast({
-          title: "Comparison limit reached",
-          description: result.error,
-          variant: "destructive",
-        });
+        // Wait for subscription check before showing appropriate message
+        if (!subscriptionFetched) {
+          // Subscription still loading - show generic message
+          toast({
+            title: "Please wait",
+            description: "Checking your subscription status...",
+          });
+          return;
+        }
+        // Show upgrade modal for free users hitting limit
+        if (!isPremium && comparedSchools.length >= maxCompare) {
+          setShowUpgradeModal(true);
+        } else {
+          toast({
+            title: "Comparison limit reached",
+            description: result.error,
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -313,7 +332,7 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
                   </TooltipContent>
                 </Tooltip>
               )}
-              {trendConfig && (
+              {trendConfig && subscriptionFetched && (
                 isPremium ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -588,6 +607,11 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
           </div>
         </div>
       </Card>
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal}
+        trigger="comparison_limit"
+      />
     </Link>
   );
 }

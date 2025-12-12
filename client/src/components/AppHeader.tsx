@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { 
   LogIn, 
   LogOut, 
@@ -12,7 +13,9 @@ import {
   MessageCircle,
   Home,
   Shuffle,
-  Gift
+  Gift,
+  Zap,
+  Star
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -21,6 +24,19 @@ interface AppHeaderProps {
 
 export function AppHeader({ showAIButton = true }: AppHeaderProps) {
   const { user, isAuthenticated } = useAuth();
+
+  // Check subscription status - wait for query to complete before showing upgrade button
+  const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
+    status: string;
+    plan: string;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: isAuthenticated,
+  });
+
+  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Only show upgrade button after subscription query completes and user is NOT premium
+  const showUpgradeButton = isAuthenticated && subscriptionFetched && !isPremium;
 
   return (
     <header className="bg-background border-b" data-testid="header-main">
@@ -106,6 +122,27 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                 >
                   <Heart className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Favorites</span>
+                </Button>
+              </Link>
+            )}
+            {/* Only show premium badge or upgrade button after subscription query completes */}
+            {isAuthenticated && user && subscriptionFetched && isPremium && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium">
+                <Star className="w-3 h-3" />
+                <span className="hidden sm:inline">Premium</span>
+              </div>
+            )}
+            {showUpgradeButton && (
+              <Link href="/pricing">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-primary/80"
+                  data-testid="button-upgrade-nav"
+                >
+                  <Zap className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">Upgrade</span>
+                  <span className="sm:hidden">Pro</span>
                 </Button>
               </Link>
             )}

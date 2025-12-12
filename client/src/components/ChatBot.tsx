@@ -2,13 +2,14 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2, Sparkles, LogIn, Star } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, LogIn, Star, Zap } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { School } from "@shared/schema";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Message {
   role: "user" | "assistant";
@@ -22,7 +23,21 @@ export function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const queryClient = useQueryClient();
+
+  // Check subscription status - wait for query to complete before showing nudges
+  const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
+    status: string;
+    plan: string;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: isAuthenticated,
+  });
+
+  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Only show plan hints after subscription query completes
+  const showPlanHint = subscriptionFetched;
 
   // Detect if we're on a school detail page and extract DBN
   const currentSchoolDbn = useMemo(() => {
@@ -389,17 +404,12 @@ export function ChatBot() {
                   Daily limit reached! Upgrade for unlimited AI questions.
                 </p>
                 <Button 
-                  onClick={startCheckout}
-                  disabled={checkoutLoading}
+                  onClick={() => setShowUpgradeModal(true)}
                   className="w-full"
                   data-testid="button-chat-upgrade"
                 >
-                  {checkoutLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Star className="w-4 h-4 mr-2" />
-                  )}
-                  Upgrade to Premium
+                  <Zap className="w-4 h-4 mr-2" />
+                  Unlock Unlimited Questions
                 </Button>
               </div>
             </div>
@@ -427,13 +437,36 @@ export function ChatBot() {
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Ask me anything about NYC schools!
-              </p>
+              {showPlanHint && (
+                isPremium ? (
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Star className="w-3 h-3 text-yellow-500" />
+                    Unlimited questions with Premium
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    5 questions/day on Free plan{" "}
+                    <Link href="/pricing" className="text-primary hover:underline">
+                      Upgrade
+                    </Link>
+                  </p>
+                )
+              )}
+              {!showPlanHint && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ask me anything about NYC schools!
+                </p>
+              )}
             </>
           )}
         </div>
       </CardContent>
+      
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal}
+        trigger="ai_chat_limit"
+      />
     </Card>
   );
 }

@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MapPin, LogIn, Star, Loader2 } from "lucide-react";
+import { Clock, MapPin, LogIn, Star, Loader2, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface CommuteTimeProps {
   schoolDbn: string;
@@ -30,6 +32,7 @@ interface UserProfile {
 export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { startCheckout, isLoading: checkoutLoading } = useCheckout();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Fetch user profile (address) from database - only for authenticated users
   // Wait for auth check to complete before fetching profile
@@ -174,50 +177,63 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   // Premium required - show upgrade CTA
   if (commuteData?.premiumRequired) {
     return compact ? (
-      <div 
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          startCheckout();
-        }}
-      >
-        <Badge 
-          variant="secondary" 
-          className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover-elevate cursor-pointer"
+      <>
+        <div 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowUpgradeModal(true);
+          }}
         >
-          {checkoutLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Star className="h-3 w-3" />}
-          <span>Premium</span>
-        </Badge>
-      </div>
-    ) : (
-      <div 
-        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700" 
-        data-testid="commute-premium-prompt"
-      >
-        <div className="flex items-center gap-3 flex-1">
-          <div className="flex items-center justify-center h-8 w-8 shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/30">
-            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">
-              Commute Calculator
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Upgrade to Premium to see transit times from your home
-            </p>
-          </div>
+          <Badge 
+            variant="secondary" 
+            className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover-elevate cursor-pointer"
+          >
+            <Zap className="h-3 w-3" />
+            <span>Premium</span>
+          </Badge>
         </div>
-        <Button 
-          size="sm" 
-          className="w-full sm:w-auto" 
-          onClick={startCheckout}
-          disabled={checkoutLoading}
-          data-testid="button-upgrade-commute"
+        <UpgradeModal 
+          open={showUpgradeModal} 
+          onOpenChange={setShowUpgradeModal}
+          trigger="commute_locked"
+        />
+      </>
+    ) : (
+      <>
+        <div 
+          className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700" 
+          data-testid="commute-premium-prompt"
         >
-          {checkoutLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Star className="h-3 w-3 mr-1" />}
-          Upgrade
-        </Button>
-      </div>
+          <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center justify-center h-8 w-8 shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/30">
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                Commute Calculator
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Upgrade to Premium to see transit times from your home
+              </p>
+            </div>
+          </div>
+          <Button 
+            size="sm" 
+            className="w-full sm:w-auto" 
+            onClick={() => setShowUpgradeModal(true)}
+            data-testid="button-upgrade-commute"
+          >
+            <Zap className="h-3 w-3 mr-1" />
+            Unlock
+          </Button>
+        </div>
+        <UpgradeModal 
+          open={showUpgradeModal} 
+          onOpenChange={setShowUpgradeModal}
+          trigger="commute_locked"
+        />
+      </>
     );
   }
 

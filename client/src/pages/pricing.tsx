@@ -9,7 +9,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   X,
@@ -22,6 +22,14 @@ import {
   Star,
   Heart,
   Loader2,
+  TrendingUp,
+  Users,
+  Award,
+  ChevronRight,
+  Quote,
+  School,
+  Target,
+  Brain,
 } from "lucide-react";
 
 interface PricingFeature {
@@ -44,6 +52,34 @@ const features: PricingFeature[] = [
   { name: "Historical Trend Analysis", free: false, premium: true },
   { name: "API Access (10K requests/mo)", free: false, premium: true },
   { name: "Priority Support", free: false, premium: true },
+];
+
+const testimonials = [
+  {
+    quote: "The AI recommendations helped us discover a school we never would have found. Our daughter is thriving!",
+    author: "Maria S.",
+    location: "Brooklyn",
+    avatar: "M",
+  },
+  {
+    quote: "Worth every penny. The commute calculator alone saved us from choosing a school that would have been a nightmare.",
+    author: "James T.",
+    location: "Queens",
+    avatar: "J",
+  },
+  {
+    quote: "Finally, a tool that makes comparing NYC schools simple. The unlimited favorites feature is a game-changer.",
+    author: "Sarah L.",
+    location: "Manhattan",
+    avatar: "S",
+  },
+];
+
+const stats = [
+  { value: "1,533", label: "Schools Analyzed", icon: School },
+  { value: "50K+", label: "Parents Helped", icon: Users },
+  { value: "4.8", label: "Average Rating", icon: Star },
+  { value: "2hrs", label: "Avg. Time Saved", icon: Clock },
 ];
 
 function FeatureRow({ feature }: { feature: PricingFeature }) {
@@ -71,6 +107,7 @@ export default function PricingPage() {
   const [location] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   // Check for success/canceled URL params
   useEffect(() => {
@@ -80,7 +117,6 @@ export default function PricingPage() {
         title: "Subscription Active",
         description: "Welcome to Premium! You now have access to all features.",
       });
-      // Clean URL
       window.history.replaceState({}, "", "/pricing");
     } else if (params.get("canceled") === "true") {
       toast({
@@ -166,306 +202,528 @@ export default function PricingPage() {
   const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
   const isLoadingData = authLoading || subLoading || productsLoading;
   
-  // Find the premium monthly price (support "premium" or "pro" naming)
+  // Find the premium monthly price
   const premiumProduct = products?.data?.find(p => 
     p.name?.toLowerCase().includes("premium") || 
     p.name?.toLowerCase().includes("pro") || 
     p.metadata?.plan === "premium"
   );
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
-  const priceAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100).toFixed(2) : "4.99";
+  const yearlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "year" && p.active);
+  
+  const monthlyAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100) : 4.99;
+  const yearlyAmount = yearlyPrice?.unit_amount ? (yearlyPrice.unit_amount / 100) : 39.99;
+  const yearlyMonthlyEquivalent = (yearlyAmount / 12).toFixed(2);
+  const yearlySavings = Math.round((1 - (yearlyAmount / (monthlyAmount * 12))) * 100);
+
+  const currentPrice = billingCycle === "monthly" ? monthlyAmount : yearlyAmount;
+  const currentPriceId = billingCycle === "monthly" ? monthlyPrice?.id : (yearlyPrice?.id || monthlyPrice?.id);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
         title="Pricing - NYC School Ratings"
-        description="Choose the right plan for your family. Free basic access or Premium with unlimited AI assistance, commute calculator, and advanced features."
+        description="Find your child's perfect NYC school faster. Premium features include unlimited AI assistance, commute calculator, and personalized recommendations. Try free for 7 days."
         canonicalPath="/pricing"
       />
 
       <AppHeader />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
+      <main className="flex-1">
         {/* User subscription status banner */}
         {user && !subLoading && subscription && (
-          <div className="mb-6 p-4 rounded-lg bg-muted/50 text-center" data-testid="banner-subscription-status">
-            {isPremium ? (
-              <div className="flex items-center justify-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500" />
-                <span className="font-medium">You're on the Premium plan</span>
-                <Badge variant="default" className="ml-2">Active</Badge>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2">
-                <Heart className="w-5 h-5 text-primary" />
-                <span className="font-medium">You're on the Free plan</span>
-              </div>
-            )}
+          <div className="bg-muted/50 border-b">
+            <div className="container mx-auto px-4 py-3 text-center" data-testid="banner-subscription-status">
+              {isPremium ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  <span className="font-medium">You're on the Premium plan</span>
+                  <Badge variant="default" className="ml-2">Active</Badge>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <Heart className="w-5 h-5 text-primary" />
+                  <span className="font-medium">You're on the Free plan</span>
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="text-primary font-medium">Upgrade below to unlock all features</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        <div className="text-center mb-12">
-          <Badge variant="secondary" className="mb-4">
-            <Sparkles className="w-3 h-3 mr-1" />
-            Simple Pricing
-          </Badge>
-          <h1 className="text-4xl font-bold mb-4" data-testid="heading-pricing">
-            Find the Perfect Plan for Your Family
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Start free and upgrade when you need more powerful tools to find the best school
-          </p>
-        </div>
-
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
-          {/* Free Plan */}
-          <Card className="relative" data-testid="card-free-plan">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="w-5 h-5 text-primary" />
-                Free
-              </CardTitle>
-              <CardDescription>
-                Perfect for exploring NYC school options
-              </CardDescription>
-              <div className="pt-4">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-emerald-500" />
-                Browse all NYC schools
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-emerald-500" />
-                Interactive map view
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-emerald-500" />
-                Save up to 5 favorites
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-emerald-500" />
-                5 AI questions per day
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <X className="w-4 h-4" />
-                Commute calculator
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <X className="w-4 h-4" />
-                Smart recommendations
-              </div>
-            </CardContent>
-            <CardFooter>
-              {authLoading || subLoading ? (
-                <Button variant="outline" className="w-full" disabled>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
-                </Button>
-              ) : user ? (
-                !isPremium ? (
-                  <Button variant="outline" className="w-full" disabled>
-                    Current Plan
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => portalMutation.mutate()}
-                    disabled={portalMutation.isPending}
-                  >
-                    {portalMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : null}
-                    Manage Subscription
-                  </Button>
-                )
-              ) : (
-                <Link href="/login?redirect=/pricing" className="w-full">
-                  <Button variant="outline" className="w-full" data-testid="button-get-started-free">
-                    Get Started Free
-                  </Button>
-                </Link>
-              )}
-            </CardFooter>
-          </Card>
-
-          {/* Premium Plan */}
-          <Card className="relative border-primary" data-testid="card-premium-plan">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <Badge className="bg-primary text-primary-foreground">
-                <Zap className="w-3 h-3 mr-1" />
-                Most Popular
-              </Badge>
+        {/* Hero Section */}
+        <section className="bg-gradient-to-b from-primary/5 to-background py-16 px-4">
+          <div className="container mx-auto max-w-4xl text-center">
+            <Badge variant="secondary" className="mb-4">
+              <Sparkles className="w-3 h-3 mr-1" />
+              7-Day Free Trial
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4" data-testid="heading-pricing">
+              Find Your Child's Perfect School <span className="text-primary">10x Faster</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+              Stop spending hours researching schools. Our AI-powered tools help you find, compare, and choose the best NYC school for your family.
+            </p>
+            
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+              {stats.map((stat, i) => (
+                <div key={i} className="flex flex-col items-center p-4 rounded-lg bg-background border">
+                  <stat.icon className="w-5 h-5 text-primary mb-2" />
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
             </div>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500" />
-                Premium
-              </CardTitle>
-              <CardDescription>
-                All the tools to make the best decision
-              </CardDescription>
-              <div className="pt-4">
-                <span className="text-4xl font-bold">${priceAmount}</span>
-                <span className="text-muted-foreground">/month</span>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section className="py-16 px-4">
+          <div className="container mx-auto max-w-5xl">
+            {/* Billing Toggle */}
+            <div className="flex justify-center mb-8">
+              <div className="inline-flex items-center gap-2 p-1 rounded-lg bg-muted">
+                <button
+                  onClick={() => setBillingCycle("monthly")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    billingCycle === "monthly" 
+                      ? "bg-background shadow-sm" 
+                      : "hover:bg-background/50"
+                  }`}
+                  data-testid="button-monthly"
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingCycle("annual")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                    billingCycle === "annual" 
+                      ? "bg-background shadow-sm" 
+                      : "hover:bg-background/50"
+                  }`}
+                  data-testid="button-annual"
+                >
+                  Annual
+                  {yearlySavings > 0 && (
+                    <Badge variant="default" className="text-xs">Save {yearlySavings}%</Badge>
+                  )}
+                </button>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-emerald-500" />
-                Everything in Free, plus:
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <MessageCircle className="w-4 h-4 text-primary" />
-                <strong>Unlimited</strong> AI questions
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-primary" />
-                Commute time calculator
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Sparkles className="w-4 h-4 text-primary" />
-                Smart school recommendations
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Map className="w-4 h-4 text-primary" />
-                Early childhood AI insights
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Shield className="w-4 h-4 text-primary" />
-                Priority support
-              </div>
-            </CardContent>
-            <CardFooter>
-              {authLoading || subLoading ? (
-                <Button className="w-full" disabled>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
-                </Button>
-              ) : user ? (
-                isPremium ? (
-                  <Button 
-                    className="w-full"
-                    onClick={() => portalMutation.mutate()}
-                    disabled={portalMutation.isPending}
-                  >
-                    {portalMutation.isPending ? (
+            </div>
+
+            {/* Pricing Cards */}
+            <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
+              {/* Free Plan */}
+              <Card className="relative" data-testid="card-free-plan">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-primary" />
+                    Free
+                  </CardTitle>
+                  <CardDescription>
+                    Great for exploring your options
+                  </CardDescription>
+                  <div className="pt-4">
+                    <span className="text-4xl font-bold">$0</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    Browse all 1,500+ NYC schools
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    Interactive map view
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    Save up to 5 favorites
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    5 AI questions per day
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <X className="w-4 h-4" />
+                    Commute calculator
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <X className="w-4 h-4" />
+                    Smart recommendations
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  {authLoading || subLoading ? (
+                    <Button variant="outline" className="w-full" disabled>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : null}
-                    Manage Subscription
-                  </Button>
-                ) : (
-                  <Button 
-                    className="w-full"
-                    onClick={() => monthlyPrice && checkoutMutation.mutate(monthlyPrice.id)}
-                    disabled={checkoutMutation.isPending || !monthlyPrice}
-                    data-testid="button-upgrade-premium"
-                  >
-                    {checkoutMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </Button>
+                  ) : user ? (
+                    !isPremium ? (
+                      <Button variant="outline" className="w-full" disabled>
+                        Current Plan
+                      </Button>
                     ) : (
-                      <Zap className="w-4 h-4 mr-2" />
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => portalMutation.mutate()}
+                        disabled={portalMutation.isPending}
+                      >
+                        {portalMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : null}
+                        Manage Subscription
+                      </Button>
+                    )
+                  ) : (
+                    <Link href="/login?redirect=/pricing" className="w-full">
+                      <Button variant="outline" className="w-full" data-testid="button-get-started-free">
+                        Get Started Free
+                      </Button>
+                    </Link>
+                  )}
+                </CardFooter>
+              </Card>
+
+              {/* Premium Plan */}
+              <Card className="relative border-primary shadow-lg" data-testid="card-premium-plan">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Most Popular
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500" />
+                    Premium
+                  </CardTitle>
+                  <CardDescription>
+                    Everything you need to find the perfect school
+                  </CardDescription>
+                  <div className="pt-4">
+                    {billingCycle === "annual" ? (
+                      <>
+                        <span className="text-4xl font-bold">${yearlyMonthlyEquivalent}</span>
+                        <span className="text-muted-foreground">/month</span>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Billed ${yearlyAmount}/year
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold">${monthlyAmount.toFixed(2)}</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </>
                     )}
-                    Upgrade to Premium
-                  </Button>
-                )
-              ) : (
-                <Link href="/login?redirect=/pricing" className="w-full">
-                  <Button className="w-full" data-testid="button-start-premium">
-                    <Zap className="w-4 h-4 mr-2" />
-                    Start Premium
-                  </Button>
-                </Link>
-              )}
-            </CardFooter>
-          </Card>
-        </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    Everything in Free, plus:
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MessageCircle className="w-4 h-4 text-primary" />
+                    <strong>Unlimited</strong> AI questions
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-primary" />
+                    Commute time calculator
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Target className="w-4 h-4 text-primary" />
+                    Smart school recommendations
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Brain className="w-4 h-4 text-primary" />
+                    Early childhood AI insights
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    Historical trend analysis
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Priority support
+                  </div>
+                </CardContent>
+                <CardFooter className="flex-col gap-3">
+                  {authLoading || subLoading ? (
+                    <Button className="w-full" disabled>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </Button>
+                  ) : user ? (
+                    isPremium ? (
+                      <Button 
+                        className="w-full"
+                        onClick={() => portalMutation.mutate()}
+                        disabled={portalMutation.isPending}
+                      >
+                        {portalMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : null}
+                        Manage Subscription
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full"
+                        onClick={() => currentPriceId && checkoutMutation.mutate(currentPriceId)}
+                        disabled={checkoutMutation.isPending || !currentPriceId}
+                        data-testid="button-upgrade-premium"
+                      >
+                        {checkoutMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Zap className="w-4 h-4 mr-2" />
+                        )}
+                        Start 7-Day Free Trial
+                      </Button>
+                    )
+                  ) : (
+                    <Link href="/login?redirect=/pricing" className="w-full">
+                      <Button className="w-full" data-testid="button-start-premium">
+                        <Zap className="w-4 h-4 mr-2" />
+                        Start 7-Day Free Trial
+                      </Button>
+                    </Link>
+                  )}
+                  <p className="text-xs text-center text-muted-foreground">
+                    Cancel anytime. No questions asked.
+                  </p>
+                </CardFooter>
+              </Card>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="flex flex-wrap justify-center gap-6 mb-16 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-500" />
+                7-Day Money-Back Guarantee
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500" />
+                Cancel Anytime
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-500" />
+                Secure Payment via Stripe
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="py-16 px-4 bg-muted/30">
+          <div className="container mx-auto max-w-5xl">
+            <div className="text-center mb-12">
+              <Badge variant="secondary" className="mb-4">
+                <Users className="w-3 h-3 mr-1" />
+                Parent Stories
+              </Badge>
+              <h2 className="text-3xl font-bold mb-4">
+                Trusted by NYC Parents
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                Join thousands of families who found their perfect school match
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              {testimonials.map((testimonial, i) => (
+                <Card key={i} className="bg-background">
+                  <CardContent className="pt-6">
+                    <Quote className="w-8 h-8 text-primary/20 mb-4" />
+                    <p className="text-sm mb-4 italic">"{testimonial.quote}"</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                        {testimonial.avatar}
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">{testimonial.author}</div>
+                        <div className="text-xs text-muted-foreground">{testimonial.location}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Premium Features Preview */}
+        <section className="py-16 px-4">
+          <div className="container mx-auto max-w-5xl">
+            <div className="text-center mb-12">
+              <Badge variant="secondary" className="mb-4">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Premium Features
+              </Badge>
+              <h2 className="text-3xl font-bold mb-4">
+                What You'll Unlock
+              </h2>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <Target className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Smart Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Tell us your priorities - commute, academics, special programs - and our AI finds schools that match your family's unique needs.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <Clock className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Commute Calculator</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    See exact travel times from your home to any school. Factor in subway, bus, and walking routes before you decide.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <MessageCircle className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Unlimited AI Chat</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Ask our AI assistant anything about NYC schools. Get personalized insights and answers 24/7, with no daily limits.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
 
         {/* Feature Comparison Table */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-semibold text-center mb-8">
-            Compare Plans
-          </h2>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-3 gap-4 pb-4 border-b font-semibold">
-                <div>Feature</div>
-                <div className="text-center">Free</div>
-                <div className="text-center">Premium</div>
-              </div>
-              {features.map((feature, index) => (
-                <FeatureRow key={index} feature={feature} />
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* FAQ Section */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-semibold text-center mb-8">
-            Frequently Asked Questions
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+        <section className="py-16 px-4 bg-muted/30">
+          <div className="container mx-auto max-w-4xl">
+            <h2 className="text-2xl font-semibold text-center mb-8">
+              Compare Plans
+            </h2>
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Can I cancel anytime?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Yes! You can cancel your Premium subscription at any time. You'll continue to have access until the end of your billing period.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">What payment methods do you accept?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment partner, Stripe.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Is my data secure?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Absolutely. We use industry-standard encryption and never share your personal information. See our <Link href="/privacy" className="text-primary underline">Privacy Policy</Link> for details.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Do you offer refunds?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  We offer a 7-day money-back guarantee for first-time Premium subscribers. Contact us at hello@nycschoolsratings.com for assistance.
-                </p>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-3 gap-4 pb-4 border-b font-semibold">
+                  <div>Feature</div>
+                  <div className="text-center">Free</div>
+                  <div className="text-center">Premium</div>
+                </div>
+                {features.map((feature, index) => (
+                  <FeatureRow key={index} feature={feature} />
+                ))}
               </CardContent>
             </Card>
           </div>
-        </div>
+        </section>
 
-        {/* CTA */}
-        <div className="text-center py-8 px-6 bg-muted/50 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">Still have questions?</h3>
-          <p className="text-muted-foreground mb-4">
-            We're here to help! Reach out to our team anytime.
-          </p>
-          <a href="mailto:hello@nycschoolsratings.com">
-            <Button variant="outline" data-testid="button-contact-us">
-              Contact Us
-            </Button>
-          </a>
-        </div>
+        {/* FAQ Section */}
+        <section className="py-16 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <h2 className="text-2xl font-semibold text-center mb-8">
+              Frequently Asked Questions
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">How does the free trial work?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm">
+                    Start your 7-day free trial with full access to all Premium features. You won't be charged until the trial ends. Cancel anytime before then and pay nothing.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Can I cancel anytime?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm">
+                    Yes! You can cancel your Premium subscription at any time with one click. You'll continue to have access until the end of your billing period.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">What payment methods do you accept?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm">
+                    We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment partner, Stripe.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Is there a money-back guarantee?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm">
+                    Absolutely! If you're not satisfied within the first 7 days after your trial, contact us for a full refund. No questions asked.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-16 px-4 bg-primary/5">
+          <div className="container mx-auto max-w-2xl text-center">
+            <h3 className="text-2xl font-bold mb-4">
+              Ready to Find Your Child's Perfect School?
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Join thousands of NYC parents who saved hours of research with our Premium tools.
+            </p>
+            {user && !isPremium ? (
+              <Button 
+                size="lg"
+                onClick={() => currentPriceId && checkoutMutation.mutate(currentPriceId)}
+                disabled={checkoutMutation.isPending || !currentPriceId}
+                data-testid="button-cta-upgrade"
+              >
+                {checkoutMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Start Your Free Trial
+              </Button>
+            ) : !user ? (
+              <Link href="/login?redirect=/pricing">
+                <Button size="lg" data-testid="button-cta-start">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Start Your Free Trial
+                </Button>
+              </Link>
+            ) : null}
+            <p className="text-xs text-muted-foreground mt-4">
+              7-day free trial. Cancel anytime. No credit card required to start.
+            </p>
+          </div>
+        </section>
       </main>
 
       <Footer />

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, ApiError } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface FavoriteButtonProps {
   schoolDbn: string;
@@ -22,6 +24,7 @@ export function FavoriteButton({
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const { data: favoriteStatus } = useQuery<{ isFavorite: boolean }>({
     queryKey: ["/api/favorites/check", schoolDbn],
@@ -63,13 +66,9 @@ export function FavoriteButton({
         return;
       }
       
-      // Handle favorite limit error
-      if (apiError?.code === "FAVORITE_LIMIT_REACHED" || apiError?.status === 403) {
-        toast({
-          title: "Favorite limit reached",
-          description: "Free accounts can save up to 5 schools. Upgrade to Premium for unlimited favorites.",
-          variant: "destructive",
-        });
+      // Handle favorite limit error - show upgrade modal
+      if (apiError?.code === "FAVORITE_LIMIT_REACHED" || (apiError?.status === 403 && !isUnauthorizedError(error as Error))) {
+        setShowUpgradeModal(true);
         return;
       }
       
@@ -101,21 +100,29 @@ export function FavoriteButton({
   const isFavorite = favoriteStatus?.isFavorite ?? false;
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={(e) => {
-        e.stopPropagation();
-        toggleFavorite.mutate();
-      }}
-      disabled={toggleFavorite.isPending}
-      data-testid={`button-favorite-${schoolDbn}`}
-    >
-      <Heart 
-        className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
-        data-testid={`icon-favorite-${schoolDbn}`}
+    <>
+      <Button
+        variant={variant}
+        size={size}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleFavorite.mutate();
+        }}
+        disabled={toggleFavorite.isPending}
+        data-testid={`button-favorite-${schoolDbn}`}
+      >
+        <Heart 
+          className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
+          data-testid={`icon-favorite-${schoolDbn}`}
+        />
+        {showLabel && <span className="ml-2">{isFavorite ? "Saved" : "Save"}</span>}
+      </Button>
+      
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal}
+        trigger="favorites_limit"
       />
-      {showLabel && <span className="ml-2">{isFavorite ? "Saved" : "Save"}</span>}
-    </Button>
+    </>
   );
 }
