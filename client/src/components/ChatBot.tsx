@@ -5,11 +5,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, X, Send, Loader2, Sparkles, LogIn, Star, Zap } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { useCheckout } from "@/hooks/useCheckout";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { School } from "@shared/schema";
-import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Message {
   role: "user" | "assistant";
@@ -18,15 +16,12 @@ interface Message {
 
 export function ChatBot() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { startCheckout, isLoading: checkoutLoading } = useCheckout();
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
-  const [limitReached, setLimitReached] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const queryClient = useQueryClient();
 
-  // Check subscription status - wait for query to complete before showing nudges
+  // Check subscription status for premium gating
   const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
     status: string;
     plan: string;
@@ -38,8 +33,6 @@ export function ChatBot() {
   // Check for premium access - includes recurring subscriptions and Season Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
-  // Only show plan hints after subscription query completes
-  const showPlanHint = subscriptionFetched;
 
   // Detect if we're on a school detail page and extract DBN
   const currentSchoolDbn = useMemo(() => {
@@ -226,13 +219,7 @@ export function ChatBot() {
     } catch (error: any) {
       console.error("Chat error:", error);
       
-      let errorMessage = "Sorry, I encountered an error. Please try again.";
-      
-      // Handle daily question limit
-      if (error?.message === "DAILY_LIMIT_REACHED") {
-        setLimitReached(true);
-        errorMessage = "You've reached your daily AI question limit (5 questions/day for free accounts). Upgrade to Premium for unlimited questions!";
-      }
+      const errorMessage = "Sorry, I encountered an error. Please try again.";
       
       setMessages((prev) => {
         // Remove the empty assistant message if it exists
@@ -350,6 +337,91 @@ export function ChatBot() {
     );
   }
 
+  // Show premium upgrade prompt for non-premium authenticated users
+  if (isAuthenticated && subscriptionFetched && !isPremium) {
+    return (
+      <Card className="fixed bottom-6 right-6 w-96 h-auto shadow-2xl z-50 flex flex-col" data-testid="card-chat-premium-required">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <CardTitle className="text-lg font-semibold">AI School Assistant</CardTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            data-testid="button-chat-close"
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="p-6">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+              <Star className="w-8 h-8 text-white" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Premium Feature</h3>
+              <p className="text-sm text-muted-foreground">
+                Get unlimited access to our AI assistant. Ask questions about any school, compare options, and receive personalized recommendations.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="text-left bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <MessageCircle className="w-4 h-4 text-primary" />
+                  <span>Unlimited AI questions</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span>Personalized school recommendations</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="w-4 h-4 text-primary" />
+                  <span>Compare schools side-by-side</span>
+                </div>
+              </div>
+              <Link href="/pricing">
+                <Button className="w-full" data-testid="button-chat-upgrade">
+                  <Star className="w-4 h-4 mr-2" />
+                  Unlock for $29
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show loading state while checking subscription for authenticated users
+  if (isAuthenticated && !subscriptionFetched) {
+    return (
+      <Card className="fixed bottom-6 right-6 w-96 h-auto shadow-2xl z-50 flex flex-col" data-testid="card-chat-loading">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <CardTitle className="text-lg font-semibold">AI School Assistant</CardTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            data-testid="button-chat-close"
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </CardHeader>
+        <CardContent className="p-6 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col" data-testid="card-chat">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
@@ -399,76 +471,34 @@ export function ChatBot() {
         </ScrollArea>
 
         <div className="border-t p-4">
-          {limitReached ? (
-            <div className="text-center space-y-3">
-              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
-                <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
-                  Daily limit reached! Upgrade for unlimited AI questions.
-                </p>
-                <Button 
-                  onClick={() => setShowUpgradeModal(true)}
-                  className="w-full"
-                  data-testid="button-chat-upgrade"
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Unlock Unlimited Questions
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex gap-2">
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask about schools..."
-                  className="min-h-[60px] max-h-[120px] resize-none"
-                  data-testid="input-chat-message"
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || isLoading}
-                  size="icon"
-                  className="shrink-0"
-                  data-testid="button-chat-send"
-                  aria-label="Send message"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-              {showPlanHint && (
-                isPremium ? (
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-500" />
-                    Unlimited questions with Premium
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    5 questions/day on Free plan{" "}
-                    <Link href="/pricing" className="text-primary hover:underline">
-                      Upgrade
-                    </Link>
-                  </p>
-                )
-              )}
-              {!showPlanHint && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Ask me anything about NYC schools!
-                </p>
-              )}
-            </>
-          )}
+          <div className="flex gap-2">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about schools..."
+              className="min-h-[60px] max-h-[120px] resize-none"
+              data-testid="input-chat-message"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              className="shrink-0"
+              data-testid="button-chat-send"
+              aria-label="Send message"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+            <Star className="w-3 h-3 text-yellow-500" />
+            Premium: Unlimited AI questions
+          </p>
         </div>
       </CardContent>
-      
-      <UpgradeModal 
-        open={showUpgradeModal} 
-        onOpenChange={setShowUpgradeModal}
-        trigger="ai_chat_limit"
-      />
     </Card>
   );
 }
