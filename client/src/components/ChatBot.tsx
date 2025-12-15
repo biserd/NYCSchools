@@ -35,7 +35,9 @@ export function ChatBot() {
     enabled: isAuthenticated,
   });
 
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   // Only show plan hints after subscription query completes
   const showPlanHint = subscriptionFetched;
 

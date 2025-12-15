@@ -460,7 +460,8 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: varchar("subscription_status").default("free"),
-  subscriptionPlan: varchar("subscription_plan").default("free"),
+  subscriptionPlan: varchar("subscription_plan").default("free"), // 'free', 'season_pass', 'developer'
+  subscriptionExpiresAt: timestamp("subscription_expires_at"), // For Season Pass expiration
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

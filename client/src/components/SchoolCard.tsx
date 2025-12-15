@@ -84,7 +84,9 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
   
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   // Only show upgrade prompts after subscription query completes and user is NOT premium
   const showUpgradePrompt = subscriptionFetched && !isPremium;
   

@@ -1370,12 +1370,31 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Check if Season Pass has expired
+      let status = user.subscriptionStatus || 'free';
+      let plan = user.subscriptionPlan || 'free';
+      
+      if (user.subscriptionExpiresAt) {
+        const now = new Date();
+        if (now > user.subscriptionExpiresAt) {
+          // Season Pass has expired - revert to free
+          status = 'expired';
+          plan = 'free';
+          // Update the database to reflect expired status
+          await storage.updateUserStripeInfo(userId, {
+            subscriptionStatus: 'expired',
+            subscriptionPlan: 'free',
+          });
+        }
+      }
+
       // Return subscription info from user record
       res.json({
-        status: user.subscriptionStatus || 'free',
-        plan: user.subscriptionPlan || 'free',
+        status,
+        plan,
         stripeCustomerId: user.stripeCustomerId,
         stripeSubscriptionId: user.stripeSubscriptionId,
+        expiresAt: user.subscriptionExpiresAt?.toISOString() || null,
       });
     } catch (error) {
       console.error("Error fetching subscription:", error);
@@ -1387,9 +1406,9 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
   app.post("/api/checkout", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.session.userId;
-      const { priceId } = req.body;
+      const { priceId, mode = 'subscription' } = req.body;
       
-      console.log("Checkout request:", { userId, priceId });
+      console.log("Checkout request:", { userId, priceId, mode });
 
       if (!priceId) {
         console.error("Checkout failed: Missing priceId");
@@ -1426,15 +1445,19 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
       console.log("Creating checkout session with baseUrl:", baseUrl);
       
+      // Support both subscription and one-time payment (Season Pass) modes
+      const checkoutMode = mode === 'payment' ? 'payment' : 'subscription';
+      
       const session = await stripeService.createCheckoutSession(
         customerId,
         priceId,
         `${baseUrl}/pricing?success=true`,
         `${baseUrl}/pricing?canceled=true`,
-        userId
+        userId,
+        checkoutMode
       );
 
-      console.log("Checkout session created:", session.id);
+      console.log("Checkout session created:", session.id, "mode:", checkoutMode);
       res.json({ url: session.url });
     } catch (error: any) {
       console.error("Error creating checkout session:", error?.message || error);

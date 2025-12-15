@@ -38,7 +38,9 @@ export default function FavoritesPage() {
     enabled: isAuthenticated,
   });
 
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   // Only show upgrade nudge after subscription query completes and user is NOT premium
   const showUpgradeNudge = subscriptionFetched && !isPremium;
 
@@ -197,6 +199,7 @@ export default function FavoritesPage() {
         school={selectedSchool}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        isPremium={isPremium}
       />
       
       <UpgradeModal 

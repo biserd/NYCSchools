@@ -14,6 +14,7 @@ export interface IStorage {
     stripeSubscriptionId?: string | null;
     subscriptionStatus?: string;
     subscriptionPlan?: string;
+    subscriptionExpiresAt?: Date | null;
   }): Promise<User | undefined>;
   
   getUserFavorites(userId: string): Promise<Favorite[]>;
@@ -193,6 +194,7 @@ export class DbStorage implements IStorage {
     stripeSubscriptionId?: string | null;
     subscriptionStatus?: string;
     subscriptionPlan?: string;
+    subscriptionExpiresAt?: Date | null;
   }): Promise<User | undefined> {
     const [user] = await db
       .update(users)

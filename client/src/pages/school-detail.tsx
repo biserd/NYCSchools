@@ -72,7 +72,9 @@ export default function SchoolDetail() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 
   const schoolWithScore: SchoolWithOverallScore | null = school ? {
     ...school,
@@ -330,28 +332,43 @@ export default function SchoolDetail() {
               {districtAverages && (
                 <div className="mt-4 pt-4 border-t border-border/50">
                   <div className="text-sm font-medium mb-2 text-muted-foreground">District {schoolWithScore.district} Comparison</div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-testid="district-comparison-summary">
-                    <ComparisonStat 
-                      label="Overall" 
-                      schoolValue={schoolWithScore.overall_score} 
-                      districtAvg={districtAverages.overallScore}
-                    />
-                    <ComparisonStat 
-                      label="Academics" 
-                      schoolValue={schoolWithScore.academics_score} 
-                      districtAvg={districtAverages.academicsScore}
-                    />
-                    <ComparisonStat 
-                      label="Climate" 
-                      schoolValue={schoolWithScore.climate_score} 
-                      districtAvg={districtAverages.climateScore}
-                    />
-                    <ComparisonStat 
-                      label="Progress" 
-                      schoolValue={schoolWithScore.progress_score} 
-                      districtAvg={districtAverages.progressScore}
-                    />
-                  </div>
+                  {isPremium ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-testid="district-comparison-summary">
+                      <ComparisonStat 
+                        label="Overall" 
+                        schoolValue={schoolWithScore.overall_score} 
+                        districtAvg={districtAverages.overallScore}
+                      />
+                      <ComparisonStat 
+                        label="Academics" 
+                        schoolValue={schoolWithScore.academics_score} 
+                        districtAvg={districtAverages.academicsScore}
+                      />
+                      <ComparisonStat 
+                        label="Climate" 
+                        schoolValue={schoolWithScore.climate_score} 
+                        districtAvg={districtAverages.climateScore}
+                      />
+                      <ComparisonStat 
+                        label="Progress" 
+                        schoolValue={schoolWithScore.progress_score} 
+                        districtAvg={districtAverages.progressScore}
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-muted/30 rounded-lg p-4 text-center" data-testid="locked-district-comparison">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Lock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">District comparison is a premium feature</span>
+                      </div>
+                      <Link href="/pricing">
+                        <Button size="sm" variant="outline" className="gap-1" data-testid="button-unlock-comparison">
+                          <Lock className="w-3 h-3" />
+                          Unlock for $29
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -425,26 +442,46 @@ export default function SchoolDetail() {
 
           {/* Component Scores - Only show when reliable data is available */}
           {schoolWithScore.overall_score >= 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <ScoreBar
-                label="Academics"
-                score={schoolWithScore.academics_score}
-                tooltip={METRIC_TOOLTIPS.academics.tooltip}
-                testId="academics"
-              />
-              <ScoreBar
-                label="Climate"
-                score={schoolWithScore.climate_score}
-                tooltip={METRIC_TOOLTIPS.climate.tooltip}
-                testId="climate"
-              />
-              <ScoreBar
-                label="Progress"
-                score={schoolWithScore.progress_score}
-                tooltip={METRIC_TOOLTIPS.progress.tooltip}
-                testId="progress"
-              />
-            </div>
+            isPremium ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="component-scores">
+                <ScoreBar
+                  label="Academics"
+                  score={schoolWithScore.academics_score}
+                  tooltip={METRIC_TOOLTIPS.academics.tooltip}
+                  testId="academics"
+                />
+                <ScoreBar
+                  label="Climate"
+                  score={schoolWithScore.climate_score}
+                  tooltip={METRIC_TOOLTIPS.climate.tooltip}
+                  testId="climate"
+                />
+                <ScoreBar
+                  label="Progress"
+                  score={schoolWithScore.progress_score}
+                  tooltip={METRIC_TOOLTIPS.progress.tooltip}
+                  testId="progress"
+                />
+              </div>
+            ) : (
+              <Card data-testid="locked-component-scores">
+                <CardContent className="pt-6 text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                    <Lock className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold text-lg mb-2">Unlock Full Score Breakdown</h4>
+                  <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                    Understand what drives this school's performance with detailed Academics, Climate, and Progress metrics
+                  </p>
+                  <Link href="/pricing">
+                    <Button data-testid="button-unlock-breakdown">
+                      <Lock className="w-4 h-4 mr-2" />
+                      Unlock for $29
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )
           ) : (
             <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" data-testid="card-insufficient-data-notice">
               <CardContent className="pt-6">

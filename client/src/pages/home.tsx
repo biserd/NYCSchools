@@ -96,6 +96,19 @@ export default function Home() {
   
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  // Fetch subscription status for premium features
+  const { data: subscription } = useQuery<{
+    status: string;
+    plan: string;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: isAuthenticated,
+    staleTime: 60000,
+  });
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
+
   // Fetch user's zoned schools
   const { data: userZones } = useQuery<UserZones>({
     queryKey: ["/api/user-zones"],
@@ -892,6 +905,7 @@ export default function Home() {
         school={selectedSchool}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        isPremium={isPremium}
       />
       
       <Footer />

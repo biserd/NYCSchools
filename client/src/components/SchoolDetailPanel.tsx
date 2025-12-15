@@ -12,16 +12,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target, Languages, DollarSign } from "lucide-react";
+import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target, Languages, DollarSign, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 interface SchoolDetailPanelProps {
   school: SchoolWithOverallScore | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isPremium?: boolean;
 }
 
-export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPanelProps) {
+export function SchoolDetailPanel({ school, open, onOpenChange, isPremium = false }: SchoolDetailPanelProps) {
   if (!school) return null;
 
   const scoreColor = getScoreColor(school.overall_score);
@@ -204,6 +206,22 @@ export function SchoolDetailPanel({ school, open, onOpenChange }: SchoolDetailPa
                 <p className="text-sm text-amber-700 dark:text-amber-300">
                   <strong>Why is there insufficient data?</strong> This high school lacks the graduation rate, college readiness, or test proficiency data needed to calculate a reliable overall score. This may occur for newer schools, schools with small cohorts, or schools where data was not reported to NYC DOE.
                 </p>
+              </div>
+            ) : !isPremium ? (
+              <div className="bg-muted/30 rounded-lg p-6 text-center" data-testid="container-locked-breakdown">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                  <Lock className="w-6 h-6 text-primary" />
+                </div>
+                <h4 className="font-semibold text-lg mb-2">Unlock Full Score Breakdown</h4>
+                <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
+                  Understand what drives this school's performance with detailed Academics, Climate, and Progress metrics
+                </p>
+                <Link href="/pricing">
+                  <Button data-testid="button-unlock-breakdown">
+                    <Lock className="w-4 h-4 mr-2" />
+                    Unlock for $29
+                  </Button>
+                </Link>
               </div>
             ) : (
             <div className="space-y-4" data-testid="container-bars">

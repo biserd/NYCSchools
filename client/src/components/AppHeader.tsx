@@ -34,7 +34,9 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
     enabled: isAuthenticated,
   });
 
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   // Only show upgrade button after subscription query completes and user is NOT premium
   const showUpgradeButton = isAuthenticated && subscriptionFetched && !isPremium;
 

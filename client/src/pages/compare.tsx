@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus, Scale,
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
-  Globe, Percent, Languages, DollarSign
+  Globe, Percent, Languages, DollarSign, Lock, CheckCircle
 } from "lucide-react";
 import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
 
 function ComparisonCell({ value, districtAvg, unit = "", higherIsBetter = true }: { 
   value: number | null | undefined; 
@@ -190,6 +191,21 @@ function PTACell({ total, perStudent }: { total: number | null | undefined; perS
 
 export default function ComparePage() {
   const { comparedSchools, removeFromComparison, clearComparison } = useComparison();
+  const { user, isLoading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+  
+  // Check subscription status
+  const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
+    status: string;
+    plan: string;
+  }>({
+    queryKey: ["/api/subscription"],
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+  });
+  
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "season_pass" || subscription?.plan === "premium" || subscription?.plan === "developer");
   
   // Fetch all district averages for comparison
   const { data: allDistrictAverages } = useQuery<Record<string, DistrictAverages>>({
@@ -200,6 +216,94 @@ export default function ComparePage() {
   const { data: trends } = useQuery<Record<string, SchoolTrend>>({
     queryKey: ["/api/schools-trends"],
   });
+
+  // Premium gate: Show upgrade prompt for non-premium users
+  if (!authLoading && subscriptionFetched && !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SEOHead 
+          title="Premium Feature - Compare Schools Side-by-Side"
+          description="Upgrade to compare NYC schools side-by-side with detailed metrics, trends, and insights."
+          canonicalPath="/compare"
+        />
+        <AppHeader />
+
+        <div className="flex-1 flex items-center justify-center p-8">
+          <Card className="max-w-lg w-full">
+            <CardContent className="pt-8 text-center">
+              <div className="mb-6">
+                <div className="relative inline-block">
+                  <Scale className="w-16 h-16 text-primary" />
+                  <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1">
+                    <Lock className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold mb-3" data-testid="text-compare-locked-title">
+                Unlock Side-by-Side Comparison
+              </h2>
+              <p className="text-muted-foreground mb-6" data-testid="text-compare-locked-description">
+                Compare schools side-by-side with detailed metrics, historical trends, and district averages. 
+                Make confident enrollment decisions with comprehensive data at your fingertips.
+              </p>
+              
+              <div className="space-y-3 text-left mb-8 bg-muted/50 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span className="text-sm">Compare up to 4 schools at once</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span className="text-sm">See how schools compare to district averages</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span className="text-sm">Historical trend analysis (improving vs declining)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span className="text-sm">Demographics, programs, and PTA funding</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {!user ? (
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => navigate("/login")}
+                    data-testid="button-login-compare"
+                  >
+                    Login to Get Started
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => navigate("/pricing")}
+                    data-testid="button-upgrade-compare"
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    Unlock with Season Pass - $29
+                  </Button>
+                )}
+                <Link href="/">
+                  <Button variant="outline" className="w-full" data-testid="button-browse-schools-compare">
+                    Browse Schools First
+                  </Button>
+                </Link>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-4">
+                6 months of full access. Built by a NYC Parent for NYC Parents.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (comparedSchools.length === 0) {
     return (

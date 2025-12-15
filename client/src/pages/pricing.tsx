@@ -199,7 +199,9 @@ export default function PricingPage() {
     },
   });
 
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   const isLoadingData = authLoading || subLoading || productsLoading;
   
   // Find the premium monthly price

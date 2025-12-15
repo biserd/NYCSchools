@@ -65,7 +65,9 @@ export function useCheckout() {
   );
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
 
-  const isPremium = subscription?.status === "active" && subscription?.plan === "premium";
+  // Check for premium access - includes recurring subscriptions and Season Pass
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 
   const startCheckout = () => {
     // Wait for auth to load

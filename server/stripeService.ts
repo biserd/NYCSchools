@@ -18,18 +18,36 @@ export class StripeService {
     priceId: string, 
     successUrl: string, 
     cancelUrl: string,
-    userId: string
+    userId: string,
+    mode: 'subscription' | 'payment' = 'subscription'
   ) {
     const stripe = await getUncachableStripeClient();
     return await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      mode: 'subscription',
+      mode,
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: { userId },
     });
+  }
+
+  async createSeasonPassCheckout(
+    customerId: string,
+    priceId: string,
+    successUrl: string,
+    cancelUrl: string,
+    userId: string
+  ) {
+    return this.createCheckoutSession(
+      customerId,
+      priceId,
+      successUrl,
+      cancelUrl,
+      userId,
+      'payment'
+    );
   }
 
   async createCustomerPortalSession(customerId: string, returnUrl: string) {

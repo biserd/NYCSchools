@@ -92,34 +92,56 @@ export class WebhookHandlers {
       console.log(`Updated user ${user.id} subscription: status=${subscriptionStatus}, plan=${subscriptionPlan}`);
     }
     
-    // Handle checkout session completed (backup for subscription creation)
+    // Handle checkout session completed
     if (eventType === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       
+      const customerId = typeof session.customer === 'string' 
+        ? session.customer 
+        : session.customer?.id;
+      
+      if (!customerId) return;
+      
+      const user = await storage.getUserByStripeCustomerId(customerId);
+      if (!user) {
+        console.log(`No user found for Stripe customer ${customerId}`);
+        return;
+      }
+      
       if (session.mode === 'subscription' && session.subscription) {
-        const customerId = typeof session.customer === 'string' 
-          ? session.customer 
-          : session.customer?.id;
-        
-        if (!customerId) return;
-        
         const subscriptionId = typeof session.subscription === 'string'
           ? session.subscription
           : session.subscription.id;
         
-        console.log(`Checkout completed for customer ${customerId}, subscription ${subscriptionId}`);
+        console.log(`Subscription checkout completed for customer ${customerId}, subscription ${subscriptionId}`);
         
-        const user = await storage.getUserByStripeCustomerId(customerId);
+        await storage.updateUserStripeInfo(user.id, {
+          stripeSubscriptionId: subscriptionId,
+          subscriptionStatus: 'active',
+          subscriptionPlan: 'premium',
+        });
         
-        if (user) {
-          await storage.updateUserStripeInfo(user.id, {
-            stripeSubscriptionId: subscriptionId,
-            subscriptionStatus: 'active',
-            subscriptionPlan: 'premium',
-          });
-          
-          console.log(`Updated user ${user.id} via checkout.session.completed`);
-        }
+        console.log(`Updated user ${user.id} via subscription checkout.session.completed`);
+      } else if (session.mode === 'payment') {
+        // One-time payment (Season Pass)
+        console.log(`One-time payment completed for customer ${customerId}`);
+        
+        // Check metadata for plan type
+        const planType = session.metadata?.plan || 'season_pass';
+        const durationMonths = parseInt(session.metadata?.duration_months || '6', 10);
+        
+        // Calculate expiration date (6 months from now for Season Pass)
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+        
+        await storage.updateUserStripeInfo(user.id, {
+          stripeSubscriptionId: session.payment_intent as string | null,
+          subscriptionStatus: 'active',
+          subscriptionPlan: planType,
+          subscriptionExpiresAt: expiresAt,
+        });
+        
+        console.log(`Updated user ${user.id} with Season Pass expiring ${expiresAt.toISOString()}`);
       }
     }
   }

@@ -35,9 +35,15 @@ I prefer detailed explanations. Ask before making major changes.
 - **District Comparison**: Compares schools to district averages.
 - **Parent Reviews & Ratings**: Users can rate schools (1-5 stars) and write reviews.
 - **Commute Time Calculator (Auth-Gated)**: Calculates transit times and distances using Google Maps APIs for authenticated users only, minimizing API costs.
-- **Subscription & Pricing (Stripe)**: Freemium model with Free and Premium tiers ($4.99/month or $47.88/year with 20% discount). `stripe-replit-sync` manages Stripe schema, webhook handling, and a customer portal.
+- **Subscription & Pricing (Stripe)**: Freemium model with Free and Premium tiers. Supports both recurring subscriptions ($4.99/month) and one-time Season Pass ($29 for 6 months). `stripe-replit-sync` manages Stripe schema, webhook handling, and a customer portal.
+- **Premium Gating**: 
+  - Side-by-Side Comparison: Fully premium-only (free users see upgrade modal)
+  - Detailed Score Breakdown: Academics/Climate/Progress bars are premium-only in SchoolDetailPanel and school detail pages (free users see locked state with CTA)
+  - District Comparison: Premium-only on school detail pages
+  - Premium detection checks for both `plan === "premium"` (recurring) and `plan === "season_pass"` (one-time) via `/api/subscription` endpoint
+  - Season Pass uses `subscriptionExpiresAt` field for expiration tracking
 - **Conversion Optimization**: 
-  - Redesigned pricing page with outcome-focused messaging ("Find your child's perfect school 10x faster"), testimonials, and 7-day money-back guarantee
+  - Redesigned pricing page with outcome-focused messaging
   - Reusable `UpgradeModal` component triggered at feature limits (favorites, comparisons, AI chat)
   - Premium feature teasers with locked badges for historical trends and commute calculator
   - All upgrade prompts gated behind `subscriptionFetched` check to prevent premium users seeing upsell during loading
