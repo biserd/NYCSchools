@@ -762,6 +762,28 @@ export const nyceecAiInsights = pgTable("nyceec_ai_insights", {
 export type NyceecAiInsight = typeof nyceecAiInsights.$inferSelect;
 export type InsertNyceecAiInsight = typeof nyceecAiInsights.$inferInsert;
 
+// Contact form submissions
+export const contactSubmissions = pgTable("contact_submissions", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  read: boolean("read").default(false),
+}, (table) => [
+  index("idx_contact_created").on(table.createdAt),
+]);
+
+export const insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({
+  id: true,
+  createdAt: true,
+  read: true,
+});
+
+export type InsertContactSubmission = z.infer<typeof insertContactSubmissionSchema>;
+export type ContactSubmission = typeof contactSubmissions.$inferSelect;
+
 // Helper function to get borough full name
 export function getBoroughName(code: string | null): string {
   if (!code) return "Unknown";

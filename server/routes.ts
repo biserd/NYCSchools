@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions } from "@shared/schema";
+import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import compression from "compression";
@@ -1486,6 +1487,26 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     } catch (error) {
       console.error("Error getting Stripe config:", error);
       res.status(500).json({ error: "Failed to get Stripe config" });
+    }
+  });
+
+  // Contact form submission (public - no auth required)
+  app.post("/api/contact", async (req: Request, res: Response) => {
+    try {
+      const parsed = insertContactSubmissionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid submission data", details: parsed.error.flatten() });
+      }
+
+      const [submission] = await db.insert(contactSubmissions).values(parsed.data).returning();
+      
+      // Log for monitoring (emails sent to hello@nycschoolsratings.com can be configured via email service)
+      console.log(`Contact form submission received from ${parsed.data.email} - Subject: ${parsed.data.subject}`);
+      
+      res.status(201).json({ success: true, id: submission.id });
+    } catch (error) {
+      console.error("Error saving contact submission:", error);
+      res.status(500).json({ error: "Failed to save message" });
     }
   });
 

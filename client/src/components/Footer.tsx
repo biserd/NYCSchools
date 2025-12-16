@@ -54,11 +54,6 @@ export function Footer() {
                   Chances Calculator
                 </Link>
               </li>
-              <li>
-                <Link href="/settings" className="hover:text-foreground transition-colors" data-testid="footer-link-settings">
-                  Settings
-                </Link>
-              </li>
             </ul>
           </div>
           
@@ -128,9 +123,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:hello@nycschoolsratings.com" className="hover:text-foreground transition-colors" data-testid="footer-link-contact">
+                <Link href="/contact" className="hover:text-foreground transition-colors" data-testid="footer-link-contact">
                   Contact Us
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
