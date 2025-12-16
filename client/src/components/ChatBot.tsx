@@ -303,7 +303,7 @@ export function ChatBot() {
               </Link>
             </div>
             <p className="text-xs text-muted-foreground">
-              Free to use - no credit card required
+              Premium feature - included with Season Pass
             </p>
           </div>
         </CardContent>
