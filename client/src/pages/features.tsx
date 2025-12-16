@@ -66,7 +66,7 @@ export default function FeaturesPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
         title="Features - NYC School Ratings"
-        description="Explore all the features of NYC School Ratings - AI assistant, interactive maps, school comparison, filtering, and more to help you find the perfect school."
+        description="Explore all the features of NYC School Ratings - AI assistant, interactive maps, school comparison, filtering, and more to help you secure your child's spot at the right school."
         canonicalPath="/features"
       />
 
@@ -195,12 +195,85 @@ export default function FeaturesPage() {
           </div>
         </div>
 
+        {/* Premium Tools Section */}
+        <div className="mb-12 p-6 rounded-xl bg-primary/5 border border-primary/20">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <h2 className="text-2xl font-semibold flex items-center gap-2">
+              <Crown className="w-6 h-6 text-primary" />
+              Premium Tools
+            </h2>
+            <Link href="/pricing">
+              <Button variant="default" size="sm" data-testid="button-view-pricing">
+                Get Season Pass - $29
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+          <p className="text-muted-foreground mb-6">
+            Unlock powerful tools to stay ahead of deadlines and secure your child's spot at the right school.
+          </p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link href="/chances-calculator" className="block">
+              <Card className="h-full hover-elevate cursor-pointer" data-testid="link-chances-calculator">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold">Chances Calculator</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Estimate your K-5 admission odds based on priority groups</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/lottery-simulator" className="block">
+              <Card className="h-full hover-elevate cursor-pointer" data-testid="link-lottery-simulator">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                      <Shuffle className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold">Lottery Simulator</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Simulate 3-K/Pre-K lottery outcomes with ranked choices</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/application-tracker" className="block">
+              <Card className="h-full hover-elevate cursor-pointer" data-testid="link-application-tracker">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                      <ClipboardList className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold">Application Tracker</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Track deadlines, tours, and application status</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/compare" className="block">
+              <Card className="h-full hover-elevate cursor-pointer" data-testid="link-comparison">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                      <GitCompare className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold">Side-by-Side Comparison</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Compare up to 4 schools with detailed metrics</p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
         <div className="mb-12">
           <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-primary" />
             Coming Soon
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <FeatureCard
               icon={<Bell className="w-5 h-5" />}
               title="School Alerts"
@@ -215,18 +288,11 @@ export default function FeaturesPage() {
               badge="Coming Soon"
               badgeVariant="outline"
             />
-            <FeatureCard
-              icon={<Sparkles className="w-5 h-5" />}
-              title="Premium Features"
-              description="Advanced AI analysis, unlimited favorites, detailed admission insights, and priority support for subscribers."
-              badge="Coming Soon"
-              badgeVariant="outline"
-            />
           </div>
         </div>
 
         <div className="text-center py-8 border-t">
-          <h2 className="text-2xl font-semibold mb-4">Ready to find the perfect school?</h2>
+          <h2 className="text-2xl font-semibold mb-4">Ready to Secure Your Child's Spot?</h2>
           <div className="flex justify-center gap-4 flex-wrap">
             <Button size="lg" asChild data-testid="button-browse-schools">
               <Link href="/">Browse Schools</Link>

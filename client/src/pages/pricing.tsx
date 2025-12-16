@@ -623,11 +623,11 @@ export default function PricingPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">How does the free trial work?</CardTitle>
+                  <CardTitle className="text-lg">What's included in the Season Pass?</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
-                    Start your 7-day free trial with full access to all Premium features. You won't be charged until the trial ends. Cancel anytime before then and pay nothing.
+                    Get 6 months of full Premium access for a one-time payment of $29. Includes unlimited AI chat, side-by-side comparison, application tracker, and all premium features to help you secure your child's spot.
                   </p>
                 </CardContent>
               </Card>
@@ -669,10 +669,10 @@ export default function PricingPage() {
         <section className="py-16 px-4 bg-primary/5">
           <div className="container mx-auto max-w-2xl text-center">
             <h3 className="text-2xl font-bold mb-4">
-              Ready to Find Your Child's Perfect School?
+              Ready to Secure Your Child's Spot?
             </h3>
             <p className="text-muted-foreground mb-6">
-              Join thousands of NYC parents who saved hours of research with our Premium tools.
+              Join thousands of NYC parents who got ahead of deadlines and secured their top choice schools.
             </p>
             {user && !isPremium ? (
               <Button 
@@ -686,18 +686,18 @@ export default function PricingPage() {
                 ) : (
                   <Zap className="w-4 h-4 mr-2" />
                 )}
-                Start Your Free Trial
+                Get Season Pass - $29
               </Button>
             ) : !user ? (
               <Link href="/login?redirect=/pricing">
                 <Button size="lg" data-testid="button-cta-start">
                   <Zap className="w-4 h-4 mr-2" />
-                  Start Your Free Trial
+                  Get Started Now
                 </Button>
               </Link>
             ) : null}
             <p className="text-xs text-muted-foreground mt-4">
-              7-day free trial. Cancel anytime. No credit card required to start.
+              One-time payment. 6 months of full access. No recurring charges.
             </p>
           </div>
         </section>

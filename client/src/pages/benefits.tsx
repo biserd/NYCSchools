@@ -22,6 +22,9 @@ import {
   Bell,
   Shuffle,
   ClipboardList,
+  Target,
+  Crown,
+  Zap,
 } from "lucide-react";
 
 interface BenefitCardProps {
@@ -210,6 +213,54 @@ export default function BenefitsPage() {
           />
         </div>
 
+        {/* Premium Tools CTA Section */}
+        <Card className="mb-8 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30">
+          <CardContent className="p-6 md:p-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Crown className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">Go Premium for More Power</h2>
+            </div>
+            <p className="text-muted-foreground mb-6">
+              Unlock advanced tools to stay ahead of deadlines and secure your child's spot at the right school.
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Link href="/chances-calculator" className="block" data-testid="link-premium-chances">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-background hover-elevate cursor-pointer">
+                  <Target className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-sm">Chances Calculator</span>
+                </div>
+              </Link>
+              <Link href="/application-tracker" className="block" data-testid="link-premium-tracker">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-background hover-elevate cursor-pointer">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-sm">Application Tracker</span>
+                </div>
+              </Link>
+              <Link href="/compare" className="block" data-testid="link-premium-compare">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-background hover-elevate cursor-pointer">
+                  <GitCompare className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-sm">Side-by-Side Comparison</span>
+                </div>
+              </Link>
+              <Link href="/lottery-simulator" className="block" data-testid="link-premium-lottery">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-background hover-elevate cursor-pointer">
+                  <Shuffle className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-sm">Lottery Simulator</span>
+                </div>
+              </Link>
+            </div>
+            <div className="text-center">
+              <Link href="/pricing">
+                <Button size="lg" data-testid="button-get-premium">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Get Season Pass - $29
+                </Button>
+              </Link>
+              <p className="text-xs text-muted-foreground mt-2">One-time payment. 6 months of full access.</p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="mb-8 bg-primary/5 border-primary/20">
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -217,7 +268,7 @@ export default function BenefitsPage() {
                 <h2 className="text-2xl font-bold mb-2">All Features Are Free</h2>
                 <p className="text-muted-foreground">
                   Create an account in seconds. No credit card required, no hidden fees.
-                  Just more personalized tools to help you find the perfect school.
+                  Just more personalized tools to help you secure your child's spot.
                 </p>
               </div>
               {isAuthenticated ? (

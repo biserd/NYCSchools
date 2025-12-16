@@ -124,18 +124,36 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
     },
   });
 
-  // Find the premium monthly price
+  // Find the Season Pass price (one-time payment) or fall back to monthly
+  const seasonPassProduct = products?.data?.find(p => 
+    p.name?.toLowerCase().includes("season") || 
+    p.metadata?.plan === "season_pass"
+  );
+  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
+  
+  // Fallback to monthly premium price if no Season Pass found
   const premiumProduct = products?.data?.find(p => 
     p.name?.toLowerCase().includes("premium") || 
     p.name?.toLowerCase().includes("pro") || 
     p.metadata?.plan === "premium"
   );
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
-  const priceAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100).toFixed(2) : "4.99";
+  
+  // Prefer Season Pass, fall back to monthly
+  const currentPrice = seasonPassPrice || monthlyPrice;
+  const isSeasonPass = !!seasonPassPrice;
+  
+  // Dynamic pricing display - format based on whether there are cents
+  const rawAmount = currentPrice?.unit_amount ? currentPrice.unit_amount / 100 : isSeasonPass ? 29 : 4.99;
+  const priceAmount = rawAmount % 1 === 0 ? rawAmount.toFixed(0) : rawAmount.toFixed(2);
+  const priceLabel = isSeasonPass ? "one-time" : "/month";
+  const priceDescription = isSeasonPass ? "6 months of full Premium access" : "Cancel anytime";
+  const badgeText = isSeasonPass ? "Season Pass" : "Premium";
+  const buttonText = isSeasonPass ? "Get Season Pass" : "Upgrade to Premium";
 
   const handleUpgrade = () => {
-    if (monthlyPrice) {
-      checkoutMutation.mutate(monthlyPrice.id);
+    if (currentPrice) {
+      checkoutMutation.mutate(currentPrice.id);
     }
   };
 
@@ -166,13 +184,13 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
           <div className="text-center mb-4">
             <Badge variant="secondary" className="mb-2">
               <Zap className="w-3 h-3 mr-1" />
-              7-Day Free Trial
+              {badgeText}
             </Badge>
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-3xl font-bold">${priceAmount}</span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-muted-foreground">{priceLabel}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Cancel anytime. No questions asked.</p>
+            <p className="text-xs text-muted-foreground mt-1">{priceDescription}</p>
           </div>
 
           {/* Features */}
@@ -209,7 +227,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
             <Button 
               className="w-full" 
               onClick={handleUpgrade}
-              disabled={checkoutMutation.isPending || !monthlyPrice}
+              disabled={checkoutMutation.isPending || !currentPrice}
               data-testid="button-modal-upgrade"
             >
               {checkoutMutation.isPending ? (
@@ -217,7 +235,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
               ) : (
                 <Zap className="w-4 h-4 mr-2" />
               )}
-              Start Free Trial
+              {buttonText}
             </Button>
           ) : (
             <Link href="/login?redirect=/pricing" className="w-full">
