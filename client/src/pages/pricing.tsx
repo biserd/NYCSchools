@@ -158,8 +158,8 @@ export default function PricingPage() {
 
   // Create checkout session
   const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/checkout", { priceId });
+    mutationFn: async ({ priceId, mode }: { priceId: string; mode: 'subscription' | 'payment' }) => {
+      const res = await apiRequest("POST", "/api/checkout", { priceId, mode });
       return res.json();
     },
     onSuccess: (data) => {
@@ -217,6 +217,15 @@ export default function PricingPage() {
   
   // Use Season Pass price if available, otherwise monthly
   const currentPriceId = seasonPassPrice?.id || monthlyPrice?.id;
+  const isSeasonPass = !!seasonPassPrice;
+  
+  // Helper to start checkout with the correct mode
+  const handleCheckout = () => {
+    if (currentPriceId) {
+      const mode = isSeasonPass ? 'payment' : 'subscription';
+      checkoutMutation.mutate({ priceId: currentPriceId, mode });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -451,7 +460,7 @@ export default function PricingPage() {
                     ) : (
                       <Button 
                         className="w-full"
-                        onClick={() => currentPriceId && checkoutMutation.mutate(currentPriceId)}
+                        onClick={handleCheckout}
                         disabled={checkoutMutation.isPending || !currentPriceId}
                         data-testid="button-upgrade-premium"
                       >
@@ -677,7 +686,7 @@ export default function PricingPage() {
             {user && !isPremium ? (
               <Button 
                 size="lg"
-                onClick={() => currentPriceId && checkoutMutation.mutate(currentPriceId)}
+                onClick={handleCheckout}
                 disabled={checkoutMutation.isPending || !currentPriceId}
                 data-testid="button-cta-upgrade"
               >

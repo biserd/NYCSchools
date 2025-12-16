@@ -106,8 +106,8 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
 
   // Create checkout session
   const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/checkout", { priceId });
+    mutationFn: async ({ priceId, mode }: { priceId: string; mode: 'subscription' | 'payment' }) => {
+      const res = await apiRequest("POST", "/api/checkout", { priceId, mode });
       return res.json();
     },
     onSuccess: (data) => {
@@ -155,7 +155,9 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
 
   const handleUpgrade = () => {
     if (currentPrice) {
-      checkoutMutation.mutate(currentPrice.id);
+      // Season Pass uses 'payment' mode (one-time), monthly uses 'subscription' mode
+      const mode = isSeasonPass ? 'payment' : 'subscription';
+      checkoutMutation.mutate({ priceId: currentPrice.id, mode });
     }
   };
 

@@ -40,8 +40,8 @@ export function useCheckout() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/checkout", { priceId });
+    mutationFn: async ({ priceId, mode }: { priceId: string; mode: 'subscription' | 'payment' }) => {
+      const res = await apiRequest("POST", "/api/checkout", { priceId, mode });
       return res.json();
     },
     onSuccess: (data) => {
@@ -58,12 +58,24 @@ export function useCheckout() {
     },
   });
 
+  // Find the Season Pass product/price first
+  const seasonPassProduct = products?.data?.find(p => 
+    p.name?.toLowerCase().includes("season") || 
+    p.metadata?.plan === "season_pass"
+  );
+  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
+
+  // Fallback to premium monthly if Season Pass not found
   const premiumProduct = products?.data?.find(p => 
     p.name?.toLowerCase().includes("premium") || 
     p.name?.toLowerCase().includes("pro") || 
     p.metadata?.plan === "premium"
   );
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
+
+  // Prefer Season Pass, fallback to monthly
+  const currentPrice = seasonPassPrice || monthlyPrice;
+  const isSeasonPass = !!seasonPassPrice;
 
   // Check for premium access - includes recurring subscriptions and Season Pass
   const isPremium = subscription?.status === "active" && 
@@ -95,7 +107,7 @@ export function useCheckout() {
     }
 
     // Products loaded but price not found - show error
-    if (!monthlyPrice) {
+    if (!currentPrice) {
       toast({
         title: "Error",
         description: "Unable to load pricing. Please try again.",
@@ -104,15 +116,18 @@ export function useCheckout() {
       return;
     }
 
-    checkoutMutation.mutate(monthlyPrice.id);
+    // Season Pass uses 'payment' mode, monthly uses 'subscription' mode
+    const mode = isSeasonPass ? 'payment' : 'subscription';
+    checkoutMutation.mutate({ priceId: currentPrice.id, mode });
   };
 
   return {
     startCheckout,
     isLoading: authLoading || productsLoading || checkoutMutation.isPending,
     isPending: checkoutMutation.isPending,
-    isReady: !authLoading && !productsLoading && !!monthlyPrice,
+    isReady: !authLoading && !productsLoading && !!currentPrice,
     isPremium,
-    priceAmount: monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100).toFixed(2) : "4.99",
+    priceAmount: currentPrice?.unit_amount ? (currentPrice.unit_amount / 100).toFixed(0) : "29",
+    isSeasonPass,
   };
 }
