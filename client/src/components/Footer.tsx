@@ -50,6 +50,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/chances-calculator" className="hover:text-foreground transition-colors" data-testid="footer-link-chances">
+                  Chances Calculator
+                </Link>
+              </li>
+              <li>
                 <Link href="/settings" className="hover:text-foreground transition-colors" data-testid="footer-link-settings">
                   Settings
                 </Link>
