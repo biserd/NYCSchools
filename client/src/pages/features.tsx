@@ -21,6 +21,7 @@ import {
   GitCompare,
   Bell,
   Download,
+  ClipboardList,
 } from "lucide-react";
 
 interface FeatureCardProps {
@@ -180,6 +181,12 @@ export default function FeaturesPage() {
               icon={<Star className="w-5 h-5" />}
               title="Parent Reviews"
               description="Read reviews from other parents and share your own experiences. Star ratings and written feedback help others in their search."
+            />
+            <FeatureCard
+              icon={<ClipboardList className="w-5 h-5" />}
+              title="Application Tracker"
+              description="Track your school applications with status updates, important dates for open houses, tours, and deadlines, plus personal notes to stay organized."
+              badge="Premium"
             />
           </div>
         </div>

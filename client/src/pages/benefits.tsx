@@ -21,6 +21,7 @@ import {
   Users,
   Bell,
   Shuffle,
+  ClipboardList,
 } from "lucide-react";
 
 interface BenefitCardProps {
@@ -168,6 +169,19 @@ export default function BenefitsPage() {
               "Your zoned schools are auto-detected with higher priority",
               "Rank up to 12 schools to see acceptance probabilities",
               "Make smarter application decisions",
+            ]}
+          />
+
+          <BenefitCard
+            icon={<ClipboardList className="h-6 w-6" />}
+            title="Application Tracker"
+            description="Stay organized during enrollment"
+            highlight={true}
+            features={[
+              "Track application status for each school (researching, applied, waitlisted, accepted)",
+              "Set dates for open houses, tours, and deadlines",
+              "Add personal notes about each school",
+              "View all tracked schools in one organized dashboard",
             ]}
           />
 

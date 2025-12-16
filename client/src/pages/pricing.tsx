@@ -423,7 +423,7 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <ClipboardList className="w-4 h-4 text-primary" />
-                    Application Tracker with reminders
+                    Application Tracker
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Shield className="w-4 h-4 text-primary" />
