@@ -496,6 +496,45 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type Favorite = typeof favorites.$inferSelect;
 
+// Application Tracker - Tracked Schools for premium users
+export const trackedSchools = pgTable("tracked_schools", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  schoolDbn: varchar("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
+  // Tracking status
+  status: varchar("status").default("researching"), // 'researching', 'applied', 'waitlisted', 'accepted', 'enrolled', 'rejected'
+  notes: text("notes"), // User's personal notes about this school
+  // Important dates
+  openHouseDate: timestamp("open_house_date"),
+  tourDate: timestamp("tour_date"),
+  applicationDeadline: timestamp("application_deadline"),
+  // Notification preferences
+  notifyOpenHouse: boolean("notify_open_house").default(true),
+  notifyTour: boolean("notify_tour").default(true),
+  notifyDeadline: boolean("notify_deadline").default(true),
+  // Email notification tracking
+  openHouseNotifiedAt: timestamp("open_house_notified_at"),
+  tourNotifiedAt: timestamp("tour_notified_at"),
+  deadlineNotifiedAt: timestamp("deadline_notified_at"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userSchoolIdx: index("tracked_user_school_idx").on(table.userId, table.schoolDbn),
+}));
+
+export const insertTrackedSchoolSchema = createInsertSchema(trackedSchools).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  openHouseNotifiedAt: true,
+  tourNotifiedAt: true,
+  deadlineNotifiedAt: true,
+});
+
+export type InsertTrackedSchool = z.infer<typeof insertTrackedSchoolSchema>;
+export type TrackedSchool = typeof trackedSchools.$inferSelect;
+
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

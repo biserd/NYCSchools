@@ -15,7 +15,8 @@ import {
   Shuffle,
   Gift,
   Zap,
-  Star
+  Star,
+  ClipboardList
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -124,6 +125,19 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                 >
                   <Heart className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Favorites</span>
+                </Button>
+              </Link>
+            )}
+            {isAuthenticated && user && isPremium && (
+              <Link href="/application-tracker">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="sm:w-auto sm:px-3"
+                  data-testid="button-tracker-nav"
+                >
+                  <ClipboardList className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Tracker</span>
                 </Button>
               </Link>
             )}

@@ -15,6 +15,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { TrackSchoolButton } from "@/components/TrackSchoolButton";
 import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
@@ -272,12 +273,20 @@ export default function SchoolDetail() {
               </div>
               <CommuteTime schoolDbn={schoolWithScore.dbn} />
             </div>
-            <FavoriteButton 
-              schoolDbn={schoolWithScore.dbn} 
-              variant="default" 
-              size="default"
-              showLabel={true}
-            />
+            <div className="flex items-center gap-2">
+              <FavoriteButton 
+                schoolDbn={schoolWithScore.dbn} 
+                variant="default" 
+                size="default"
+                showLabel={true}
+              />
+              <TrackSchoolButton 
+                schoolDbn={schoolWithScore.dbn} 
+                variant="outline" 
+                size="default"
+                showLabel={true}
+              />
+            </div>
           </div>
 
           {/* Overall Score Card */}

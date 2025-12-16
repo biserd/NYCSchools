@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
@@ -75,6 +75,14 @@ export interface IStorage {
   // NYCEEC AI Insights Cache
   getNyceecAiInsight(locCode: string): Promise<NyceecAiInsight | undefined>;
   saveNyceecAiInsight(insight: InsertNyceecAiInsight): Promise<NyceecAiInsight>;
+  
+  // Application Tracker (Tracked Schools) operations
+  getUserTrackedSchools(userId: string): Promise<TrackedSchool[]>;
+  getTrackedSchool(userId: string, schoolDbn: string): Promise<TrackedSchool | undefined>;
+  addTrackedSchool(trackedSchool: InsertTrackedSchool): Promise<TrackedSchool>;
+  updateTrackedSchool(id: number, userId: string, updates: Partial<InsertTrackedSchool>): Promise<TrackedSchool | undefined>;
+  removeTrackedSchool(userId: string, schoolDbn: string): Promise<void>;
+  getTrackedSchoolsNeedingNotification(reminderHours: number): Promise<TrackedSchool[]>;
   
   // Blog data
   getCovidRecoveryBlogData(): Promise<CovidRecoveryBlogData>;
@@ -1108,6 +1116,94 @@ export class DbStorage implements IStorage {
         totalChange: Number(r.total_change),
       })),
     };
+  }
+
+  // Application Tracker (Tracked Schools) operations
+  async getUserTrackedSchools(userId: string): Promise<TrackedSchool[]> {
+    return await db
+      .select()
+      .from(trackedSchools)
+      .where(eq(trackedSchools.userId, userId))
+      .orderBy(desc(trackedSchools.createdAt));
+  }
+
+  async getTrackedSchool(userId: string, schoolDbn: string): Promise<TrackedSchool | undefined> {
+    const [tracked] = await db
+      .select()
+      .from(trackedSchools)
+      .where(and(
+        eq(trackedSchools.userId, userId),
+        eq(trackedSchools.schoolDbn, schoolDbn)
+      ));
+    return tracked;
+  }
+
+  async addTrackedSchool(trackedSchool: InsertTrackedSchool): Promise<TrackedSchool> {
+    const [inserted] = await db
+      .insert(trackedSchools)
+      .values(trackedSchool)
+      .returning();
+    return inserted;
+  }
+
+  async updateTrackedSchool(id: number, userId: string, updates: Partial<InsertTrackedSchool>): Promise<TrackedSchool | undefined> {
+    const [updated] = await db
+      .update(trackedSchools)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(
+        eq(trackedSchools.id, id),
+        eq(trackedSchools.userId, userId)
+      ))
+      .returning();
+    return updated;
+  }
+
+  async removeTrackedSchool(userId: string, schoolDbn: string): Promise<void> {
+    await db
+      .delete(trackedSchools)
+      .where(and(
+        eq(trackedSchools.userId, userId),
+        eq(trackedSchools.schoolDbn, schoolDbn)
+      ));
+  }
+
+  async getTrackedSchoolsNeedingNotification(reminderHours: number): Promise<TrackedSchool[]> {
+    const reminderTime = new Date();
+    reminderTime.setHours(reminderTime.getHours() + reminderHours);
+    
+    // Get tracked schools where dates are within the reminder window and haven't been notified yet
+    const results = await db
+      .select()
+      .from(trackedSchools)
+      .where(
+        or(
+          // Open house coming up
+          and(
+            eq(trackedSchools.notifyOpenHouse, true),
+            isNotNull(trackedSchools.openHouseDate),
+            sql`${trackedSchools.openHouseDate} <= ${reminderTime}`,
+            sql`${trackedSchools.openHouseDate} > NOW()`,
+            sql`${trackedSchools.openHouseNotifiedAt} IS NULL`
+          ),
+          // Tour coming up
+          and(
+            eq(trackedSchools.notifyTour, true),
+            isNotNull(trackedSchools.tourDate),
+            sql`${trackedSchools.tourDate} <= ${reminderTime}`,
+            sql`${trackedSchools.tourDate} > NOW()`,
+            sql`${trackedSchools.tourNotifiedAt} IS NULL`
+          ),
+          // Deadline coming up
+          and(
+            eq(trackedSchools.notifyDeadline, true),
+            isNotNull(trackedSchools.applicationDeadline),
+            sql`${trackedSchools.applicationDeadline} <= ${reminderTime}`,
+            sql`${trackedSchools.applicationDeadline} > NOW()`,
+            sql`${trackedSchools.deadlineNotifiedAt} IS NULL`
+          )
+        )
+      );
+    return results;
   }
 }
 

@@ -28,7 +28,8 @@ I prefer detailed explanations. Ask before making major changes.
 - **Historical Trends**: Shows 3-5 year score changes (2018-2025) with trend badges and detailed year-over-year ELA/Math line charts.
 - **Authentication**: Email/password authentication with registration, login, bcrypt hashing, PostgreSQL-backed sessions, and protected routes.
 - **Favorites**: Users can save/unsave schools, view them on a dedicated page, and compare them.
-- **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, and conversation history. Requires authentication; all sessions stored for history and training.
+- **AI Chat Assistant**: OpenAI-powered assistant (`gpt-4o-mini`) with streaming responses, school context, and conversation history. Requires Premium subscription; all sessions stored for history and training.
+- **Application Tracker (Premium)**: Comprehensive tracking system for school applications with status management (researching/applied/waitlisted/accepted/enrolled/rejected), important dates (open houses, tours, deadlines), personal notes, and email notification preferences. Uses `tracked_schools` database table with notification tracking columns.
 - **Smart Recommendations (Find My Match)**: AI-powered questionnaire for personalized school recommendations based on grade level, location, priorities, special programs, historical trends, and class size preferences.
 - **Interactive Map View**: Leaflet-based map with color-coded school markers and comprehensive filtering. Features SEO-friendly URL parameters and dynamic SEO.
 - **Side-by-Side Comparison**: Compare up to 4 schools with detailed metrics.

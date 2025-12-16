@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./auth";
 import OpenAI from "openai";
 import compression from "compression";
@@ -639,6 +639,135 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     } catch (error) {
       console.error("Error checking favorite:", error);
       res.status(500).json({ error: "Failed to check favorite" });
+    }
+  });
+
+  // Application Tracker API (Premium feature - tracked schools)
+  app.get("/api/tracked-schools", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({ 
+          error: "Premium required",
+          code: "PREMIUM_REQUIRED",
+          message: "Application Tracker is a Premium feature. Upgrade to track schools."
+        });
+      }
+      
+      const trackedSchools = await storage.getUserTrackedSchools(userId);
+      res.json(trackedSchools);
+    } catch (error) {
+      console.error("Error fetching tracked schools:", error);
+      res.status(500).json({ error: "Failed to fetch tracked schools" });
+    }
+  });
+
+  app.get("/api/tracked-schools/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const { schoolDbn } = req.params;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.json({ isTracked: false, data: null });
+      }
+      
+      const tracked = await storage.getTrackedSchool(userId, schoolDbn);
+      res.json({ isTracked: !!tracked, data: tracked || null });
+    } catch (error) {
+      console.error("Error checking tracked school:", error);
+      res.status(500).json({ error: "Failed to check tracked school" });
+    }
+  });
+
+  app.post("/api/tracked-schools", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({ 
+          error: "Premium required",
+          code: "PREMIUM_REQUIRED",
+          message: "Application Tracker is a Premium feature. Upgrade to track schools."
+        });
+      }
+      
+      const parsed = insertTrackedSchoolSchema.safeParse({
+        userId,
+        schoolDbn: req.body.schoolDbn,
+        status: req.body.status || 'researching',
+        notes: req.body.notes,
+        openHouseDate: req.body.openHouseDate ? new Date(req.body.openHouseDate) : undefined,
+        tourDate: req.body.tourDate ? new Date(req.body.tourDate) : undefined,
+        applicationDeadline: req.body.applicationDeadline ? new Date(req.body.applicationDeadline) : undefined,
+        notifyOpenHouse: req.body.notifyOpenHouse ?? true,
+        notifyTour: req.body.notifyTour ?? true,
+        notifyDeadline: req.body.notifyDeadline ?? true,
+      });
+      
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error });
+      }
+      
+      // Check if already tracked
+      const existing = await storage.getTrackedSchool(userId, parsed.data.schoolDbn);
+      if (existing) {
+        return res.status(409).json({ error: "School already tracked" });
+      }
+      
+      const tracked = await storage.addTrackedSchool(parsed.data);
+      res.status(201).json(tracked);
+    } catch (error) {
+      console.error("Error adding tracked school:", error);
+      res.status(500).json({ error: "Failed to add tracked school" });
+    }
+  });
+
+  app.patch("/api/tracked-schools/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const id = parseInt(req.params.id, 10);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      const updates: any = {};
+      if (req.body.status !== undefined) updates.status = req.body.status;
+      if (req.body.notes !== undefined) updates.notes = req.body.notes;
+      if (req.body.openHouseDate !== undefined) updates.openHouseDate = req.body.openHouseDate ? new Date(req.body.openHouseDate) : null;
+      if (req.body.tourDate !== undefined) updates.tourDate = req.body.tourDate ? new Date(req.body.tourDate) : null;
+      if (req.body.applicationDeadline !== undefined) updates.applicationDeadline = req.body.applicationDeadline ? new Date(req.body.applicationDeadline) : null;
+      if (req.body.notifyOpenHouse !== undefined) updates.notifyOpenHouse = req.body.notifyOpenHouse;
+      if (req.body.notifyTour !== undefined) updates.notifyTour = req.body.notifyTour;
+      if (req.body.notifyDeadline !== undefined) updates.notifyDeadline = req.body.notifyDeadline;
+      
+      const updated = await storage.updateTrackedSchool(id, userId, updates);
+      if (!updated) {
+        return res.status(404).json({ error: "Tracked school not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating tracked school:", error);
+      res.status(500).json({ error: "Failed to update tracked school" });
+    }
+  });
+
+  app.delete("/api/tracked-schools/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      await storage.removeTrackedSchool(userId, req.params.schoolDbn);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing tracked school:", error);
+      res.status(500).json({ error: "Failed to remove tracked school" });
     }
   });
 

@@ -33,6 +33,8 @@ import NotFound from "@/pages/not-found";
 const RecommendationsPage = lazy(() => import("@/pages/recommendations"));
 const MapPage = lazy(() => import("@/pages/map"));
 const LotterySimulatorPage = lazy(() => import("@/pages/lottery-simulator"));
+const ChancesCalculatorPage = lazy(() => import("@/pages/chances-calculator"));
+const ApplicationTrackerPage = lazy(() => import("@/pages/application-tracker"));
 const EarlyChildhoodPage = lazy(() => import("@/pages/early-childhood"));
 const NyceecDetailPage = lazy(() => import("@/pages/nyceec-detail"));
 
@@ -59,6 +61,11 @@ function Router() {
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <Route path="/favorites" component={FavoritesPage} />
+      <Route path="/application-tracker">
+        <Suspense fallback={<PageLoader />}>
+          <ApplicationTrackerPage />
+        </Suspense>
+      </Route>
       <Route path="/recommendations">
         <Suspense fallback={<PageLoader />}>
           <RecommendationsPage />
@@ -73,6 +80,11 @@ function Router() {
       <Route path="/lottery-simulator">
         <Suspense fallback={<PageLoader />}>
           <LotterySimulatorPage />
+        </Suspense>
+      </Route>
+      <Route path="/chances-calculator">
+        <Suspense fallback={<PageLoader />}>
+          <ChancesCalculatorPage />
         </Suspense>
       </Route>
       <Route path="/early-childhood">
