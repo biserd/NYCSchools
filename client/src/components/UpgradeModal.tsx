@@ -141,10 +141,12 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
   
   // Prefer Season Pass, fall back to monthly
   const currentPrice = seasonPassPrice || monthlyPrice;
-  const isSeasonPass = !!seasonPassPrice;
+  // Default to Season Pass display (our primary product) unless only monthly is available
+  const isSeasonPass = seasonPassPrice ? true : (monthlyPrice ? false : true);
   
   // Dynamic pricing display - format based on whether there are cents
-  const rawAmount = currentPrice?.unit_amount ? currentPrice.unit_amount / 100 : isSeasonPass ? 29 : 4.99;
+  // Default to Season Pass ($29) while loading since that's our primary product
+  const rawAmount = currentPrice?.unit_amount ? currentPrice.unit_amount / 100 : 29;
   const priceAmount = rawAmount % 1 === 0 ? rawAmount.toFixed(0) : rawAmount.toFixed(2);
   const priceLabel = isSeasonPass ? "one-time" : "/month";
   const priceDescription = isSeasonPass ? "6 months of full Premium access" : "Cancel anytime";
