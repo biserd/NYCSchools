@@ -27,6 +27,7 @@ import {
   Quote,
   School,
   Target,
+  ClipboardList,
 } from "lucide-react";
 
 interface PricingFeature {
@@ -44,6 +45,7 @@ const features: PricingFeature[] = [
   { name: "Detailed Score Breakdown", free: false, premium: true },
   { name: "Compare Schools Side-by-Side", free: false, premium: "Up to 4" },
   { name: "AI Chat Assistant", free: false, premium: "Unlimited" },
+  { name: "Application Tracker", free: false, premium: true },
   { name: "Smart School Recommendations", free: false, premium: true },
   { name: "Commute Time Calculator", free: false, premium: true },
   { name: "Historical Trend Analysis", free: false, premium: true },
@@ -331,6 +333,10 @@ export default function PricingPage() {
                     <X className="w-4 h-4" />
                     Side-by-Side Comparison
                   </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <X className="w-4 h-4" />
+                    Application Tracker
+                  </div>
                 </CardContent>
                 <CardFooter>
                   {authLoading || subLoading ? (
@@ -414,6 +420,10 @@ export default function PricingPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <Target className="w-4 h-4 text-primary" />
                     Smart school recommendations
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <ClipboardList className="w-4 h-4 text-primary" />
+                    Application Tracker with reminders
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Shield className="w-4 h-4 text-primary" />
