@@ -1696,21 +1696,38 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       
       // In production, return hardcoded Live product data since Stripe sync only has Sandbox data
       if (isProduction) {
-        const liveProducts = [{
-          id: 'prod_TYaCOkKkQ3j6Ah',
-          name: 'Premium',
-          description: 'Premium subscription with unlimited AI questions, commute calculator, and all features',
-          active: true,
-          metadata: { plan: 'premium' },
-          prices: [{
-            id: 'price_1SbT2LRwvWaTf8xf5VAvCHPq',
-            unit_amount: 499,
-            currency: 'usd',
-            recurring: { interval: 'month' },
+        const liveProducts = [
+          {
+            id: 'prod_Tc0wGwu3FOifBE',
+            name: 'Season Pass',
+            description: 'Full access for 6 months. Unlimited comparisons, detailed score breakdowns, commute calculator, AI assistant, and smart recommendations. Built by a NYC Parent for NYC Parents.',
             active: true,
-            metadata: {},
-          }]
-        }];
+            metadata: { plan: 'season_pass', duration_months: '6' },
+            prices: [{
+              id: 'price_1SemubRwvWaTf8xfAYvh2qJl',
+              unit_amount: 2900,
+              currency: 'usd',
+              recurring: null,
+              active: true,
+              metadata: { plan: 'season_pass', duration_months: '6' },
+            }]
+          },
+          {
+            id: 'prod_TYaCOkKkQ3j6Ah',
+            name: 'Premium',
+            description: 'Premium subscription with unlimited AI questions, commute calculator, and all features',
+            active: true,
+            metadata: { plan: 'premium' },
+            prices: [{
+              id: 'price_1SbT2LRwvWaTf8xf5VAvCHPq',
+              unit_amount: 499,
+              currency: 'usd',
+              recurring: { interval: 'month' },
+              active: true,
+              metadata: {},
+            }]
+          }
+        ];
         return res.json({ data: liveProducts });
       }
       
