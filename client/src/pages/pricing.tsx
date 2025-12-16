@@ -9,7 +9,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Check,
   X,
@@ -17,19 +17,16 @@ import {
   Zap,
   Shield,
   MessageCircle,
-  Map,
   Clock,
   Star,
   Heart,
   Loader2,
   TrendingUp,
   Users,
-  Award,
   ChevronRight,
   Quote,
   School,
   Target,
-  Brain,
 } from "lucide-react";
 
 interface PricingFeature {
@@ -41,16 +38,15 @@ interface PricingFeature {
 const features: PricingFeature[] = [
   { name: "Browse 1,500+ NYC Schools", free: true, premium: true },
   { name: "Interactive Map View", free: true, premium: true },
-  { name: "School Details & Metrics", free: true, premium: true },
+  { name: "Basic School Details", free: true, premium: true },
   { name: "District & Grade Filtering", free: true, premium: true },
   { name: "Save Favorite Schools", free: "Up to 5", premium: "Unlimited" },
-  { name: "Compare Schools Side-by-Side", free: "2 schools", premium: "Up to 4" },
-  { name: "AI Chat Assistant", free: "5 questions/day", premium: "Unlimited" },
+  { name: "Detailed Score Breakdown", free: false, premium: true },
+  { name: "Compare Schools Side-by-Side", free: false, premium: "Up to 4" },
+  { name: "AI Chat Assistant", free: false, premium: "Unlimited" },
   { name: "Smart School Recommendations", free: false, premium: true },
   { name: "Commute Time Calculator", free: false, premium: true },
-  { name: "Early Childhood AI Insights", free: false, premium: true },
   { name: "Historical Trend Analysis", free: false, premium: true },
-  { name: "API Access (10K requests/mo)", free: false, premium: true },
   { name: "Priority Support", free: false, premium: true },
 ];
 
@@ -107,7 +103,6 @@ export default function PricingPage() {
   const [location] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   // Check for success/canceled URL params
   useEffect(() => {
@@ -204,22 +199,22 @@ export default function PricingPage() {
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   const isLoadingData = authLoading || subLoading || productsLoading;
   
-  // Find the premium monthly price
+  // Find the Season Pass product/price
+  const seasonPassProduct = products?.data?.find(p => 
+    p.name?.toLowerCase().includes("season") || 
+    p.metadata?.plan === "season_pass"
+  );
+  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
+  
+  // Fallback to premium monthly if Season Pass not found
   const premiumProduct = products?.data?.find(p => 
     p.name?.toLowerCase().includes("premium") || 
-    p.name?.toLowerCase().includes("pro") || 
     p.metadata?.plan === "premium"
   );
   const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
-  const yearlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "year" && p.active);
   
-  const monthlyAmount = monthlyPrice?.unit_amount ? (monthlyPrice.unit_amount / 100) : 4.99;
-  const yearlyAmount = yearlyPrice?.unit_amount ? (yearlyPrice.unit_amount / 100) : 39.99;
-  const yearlyMonthlyEquivalent = (yearlyAmount / 12).toFixed(2);
-  const yearlySavings = Math.round((1 - (yearlyAmount / (monthlyAmount * 12))) * 100);
-
-  const currentPrice = billingCycle === "monthly" ? monthlyAmount : yearlyAmount;
-  const currentPriceId = billingCycle === "monthly" ? monthlyPrice?.id : (yearlyPrice?.id || monthlyPrice?.id);
+  // Use Season Pass price if available, otherwise monthly
+  const currentPriceId = seasonPassPrice?.id || monthlyPrice?.id;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -259,10 +254,10 @@ export default function PricingPage() {
           <div className="container mx-auto max-w-4xl text-center">
             <Badge variant="secondary" className="mb-4">
               <Sparkles className="w-3 h-3 mr-1" />
-              7-Day Free Trial
+              Season Pass Available
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-4" data-testid="heading-pricing">
-              Find Your Child's Perfect School <span className="text-primary">10x Faster</span>
+              Secure Your Child's Spot <span className="text-primary">This Enrollment Season</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
               Stop spending hours researching schools. Our AI-powered tools help you find, compare, and choose the best NYC school for your family.
@@ -284,34 +279,13 @@ export default function PricingPage() {
         {/* Pricing Section */}
         <section className="py-16 px-4">
           <div className="container mx-auto max-w-5xl">
-            {/* Billing Toggle */}
+            {/* Season Pass Value Proposition */}
             <div className="flex justify-center mb-8">
-              <div className="inline-flex items-center gap-2 p-1 rounded-lg bg-muted">
-                <button
-                  onClick={() => setBillingCycle("monthly")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    billingCycle === "monthly" 
-                      ? "bg-background shadow-sm" 
-                      : "hover:bg-background/50"
-                  }`}
-                  data-testid="button-monthly"
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingCycle("annual")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                    billingCycle === "annual" 
-                      ? "bg-background shadow-sm" 
-                      : "hover:bg-background/50"
-                  }`}
-                  data-testid="button-annual"
-                >
-                  Annual
-                  {yearlySavings > 0 && (
-                    <Badge variant="default" className="text-xs">Save {yearlySavings}%</Badge>
-                  )}
-                </button>
+              <div className="inline-flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <Clock className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium">
+                  Season Pass: Full access during peak enrollment season
+                </span>
               </div>
             </div>
 
@@ -347,15 +321,15 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Check className="w-4 h-4 text-emerald-500" />
-                    5 AI questions per day
+                    Basic school details
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <X className="w-4 h-4" />
-                    Commute calculator
+                    AI Chat Assistant
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <X className="w-4 h-4" />
-                    Smart recommendations
+                    Side-by-Side Comparison
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -392,37 +366,28 @@ export default function PricingPage() {
                 </CardFooter>
               </Card>
 
-              {/* Premium Plan */}
+              {/* Premium Plan - Season Pass */}
               <Card className="relative border-primary shadow-lg" data-testid="card-premium-plan">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-primary text-primary-foreground">
                     <Zap className="w-3 h-3 mr-1" />
-                    Most Popular
+                    Best Value
                   </Badge>
                 </div>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-yellow-500" />
-                    Premium
+                    Season Pass
                   </CardTitle>
                   <CardDescription>
-                    Everything you need to find the perfect school
+                    Full access during peak enrollment season
                   </CardDescription>
                   <div className="pt-4">
-                    {billingCycle === "annual" ? (
-                      <>
-                        <span className="text-4xl font-bold">${yearlyMonthlyEquivalent}</span>
-                        <span className="text-muted-foreground">/month</span>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          Billed ${yearlyAmount}/year
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-4xl font-bold">${monthlyAmount.toFixed(2)}</span>
-                        <span className="text-muted-foreground">/month</span>
-                      </>
-                    )}
+                    <span className="text-4xl font-bold">$29</span>
+                    <span className="text-muted-foreground"> one-time</span>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      6 months of full access
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -432,7 +397,15 @@ export default function PricingPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <MessageCircle className="w-4 h-4 text-primary" />
-                    <strong>Unlimited</strong> AI questions
+                    <strong>Unlimited</strong> AI Chat Assistant
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Side-by-Side Comparison (up to 4)
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    Detailed Score Breakdown
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-primary" />
@@ -441,14 +414,6 @@ export default function PricingPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <Target className="w-4 h-4 text-primary" />
                     Smart school recommendations
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Brain className="w-4 h-4 text-primary" />
-                    Early childhood AI insights
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    Historical trend analysis
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Shield className="w-4 h-4 text-primary" />
@@ -485,19 +450,19 @@ export default function PricingPage() {
                         ) : (
                           <Zap className="w-4 h-4 mr-2" />
                         )}
-                        Start 7-Day Free Trial
+                        Get Season Pass - $29
                       </Button>
                     )
                   ) : (
                     <Link href="/login?redirect=/pricing" className="w-full">
                       <Button className="w-full" data-testid="button-start-premium">
                         <Zap className="w-4 h-4 mr-2" />
-                        Start 7-Day Free Trial
+                        Get Season Pass - $29
                       </Button>
                     </Link>
                   )}
                   <p className="text-xs text-center text-muted-foreground">
-                    Cancel anytime. No questions asked.
+                    One-time payment. No recurring charges.
                   </p>
                 </CardFooter>
               </Card>
@@ -507,11 +472,11 @@ export default function PricingPage() {
             <div className="flex flex-wrap justify-center gap-6 mb-16 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-emerald-500" />
-                7-Day Money-Back Guarantee
+                Built by a NYC Parent
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500" />
-                Cancel Anytime
+                Official DOE Data
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-emerald-500" />
