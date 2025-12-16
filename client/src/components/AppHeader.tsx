@@ -16,7 +16,8 @@ import {
   Gift,
   Zap,
   Star,
-  ClipboardList
+  ClipboardList,
+  Target
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -89,6 +90,17 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                 <Shuffle className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Lottery Simulator</span>
                 <span className="sm:hidden">Lottery</span>
+              </Button>
+            </Link>
+            <Link href="/chances-calculator">
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="button-chances-nav"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Chances Calculator</span>
+                <span className="sm:hidden">Chances</span>
               </Button>
             </Link>
             <Link href="/map">

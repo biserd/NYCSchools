@@ -22,6 +22,10 @@ import {
   Bell,
   Download,
   ClipboardList,
+  Target,
+  Shuffle,
+  ArrowRight,
+  Crown,
 } from "lucide-react";
 
 interface FeatureCardProps {
