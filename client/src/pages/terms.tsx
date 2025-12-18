@@ -20,13 +20,25 @@ export default function Terms() {
           <h1 className="text-2xl font-bold">Terms of Service</h1>
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <p className="text-sm text-muted-foreground mb-6">Last Updated: November 23, 2025</p>
+          <p className="text-sm text-muted-foreground mb-6">Last Updated: December 18, 2025</p>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Agreement to Terms</h2>
             <p>
               By accessing or using NYC School Ratings, you agree to be bound by these Terms of Service. 
               If you disagree with any part of these terms, you may not use our service.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Age Requirements</h2>
+            <p className="mb-4">
+              <strong>Minimum Age:</strong> You must be at least 13 years old to use NYC School Ratings. 
+              Users between 13-17 years of age may use the service with parental or guardian consent.
+            </p>
+            <p>
+              By using this service, you represent that you are at least 13 years old and, if under 18, 
+              have obtained parental or guardian consent to use the service.
             </p>
           </section>
 
@@ -110,9 +122,37 @@ export default function Terms() {
               <li><strong>Google Maps APIs:</strong> For commute time calculations (subject to Google's Terms of Service)</li>
               <li><strong>OpenAI:</strong> For AI assistant features (subject to OpenAI's Terms of Use)</li>
               <li><strong>Replit:</strong> For authentication and hosting</li>
+              <li><strong>Stripe:</strong> For payment processing (subject to Stripe's Terms of Service)</li>
             </ul>
             <p>
               Use of these third-party services is subject to their respective terms and privacy policies.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">ChatGPT App Integration</h2>
+            <p className="mb-4">
+              NYC School Ratings is available as an app within ChatGPT, allowing you to access school data during your ChatGPT conversations.
+            </p>
+            <h3 className="text-xl font-semibold mb-2">Using the ChatGPT App</h3>
+            <p className="mb-4">When using NYC School Ratings through ChatGPT:</p>
+            <ul className="list-disc pl-6 mb-4">
+              <li>You agree to comply with both these Terms and OpenAI's Usage Policies</li>
+              <li>Your queries and responses are processed by both NYC School Ratings and OpenAI</li>
+              <li>The app provides read-only access to school data and cannot modify external systems</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">OAuth Account Connection</h3>
+            <p className="mb-4">If you choose to connect your NYC School Ratings account to ChatGPT:</p>
+            <ul className="list-disc pl-6 mb-4">
+              <li>You authorize ChatGPT to access your saved favorite schools</li>
+              <li>ChatGPT receives read-only access and cannot modify your account data</li>
+              <li>Access tokens are temporary and expire after 1 hour</li>
+              <li>You may revoke access at any time</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">OpenAI Policy Compliance</h3>
+            <p>
+              Use of the ChatGPT app is subject to <a href="https://openai.com/policies/usage-policies/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OpenAI's Usage Policies</a>. 
+              We reserve the right to suspend access for any user who violates these policies.
             </p>
           </section>
 
@@ -184,9 +224,13 @@ export default function Terms() {
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Contact</h2>
-            <p>
-              For questions about these terms, please contact us through our support channels.
+            <p className="mb-4">
+              For questions about these terms, please contact us:
             </p>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>Email:</strong> <a href="mailto:hello@nycschoolsratings.com" className="text-primary hover:underline">hello@nycschoolsratings.com</a></li>
+              <li><strong>Website:</strong> <a href="/contact" className="text-primary hover:underline">nycschoolsratings.com/contact</a></li>
+            </ul>
           </section>
 
         </div>
