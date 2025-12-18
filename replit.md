@@ -125,3 +125,40 @@ npx tsx server/scripts/updateNYSEDScores.ts
 - `server/scripts/setupStripeProductsLive.ts`: Production/Live product setup
 - `server/stripeService.ts`: Stripe API operations (checkout, portal, customers)
 - `server/webhookHandlers.ts`: Webhook processing via stripe-replit-sync
+
+## OpenAI ChatGPT Apps SDK Integration
+
+NYC School Ratings is integrated with OpenAI's ChatGPT Apps SDK, allowing ChatGPT to access school data directly through MCP (Model Context Protocol).
+
+### Endpoints
+- **Manifest**: `/.well-known/openai-apps.json` - App metadata for ChatGPT discovery
+- **MCP Server**: `POST /mcp` - JSON-RPC 2.0 endpoint for tool calls
+- **SSE Stream**: `GET /mcp/sse` - Server-Sent Events for real-time updates
+
+### Available Tools
+All tools have `readOnlyHint: true` annotations (data retrieval only, no mutations):
+
+1. **search_schools** - Search schools by name, borough, district, grade band, programs, and minimum scores
+2. **get_school_details** - Get comprehensive details for a specific school by DBN
+3. **compare_schools** - Compare up to 4 schools side-by-side
+4. **get_school_history** - Get historical test score trends (ELA/Math proficiency 2018-2025)
+5. **get_top_schools** - Get top-rated schools with optional filtering
+
+### Key Files
+- `server/mcp.ts` - MCP server implementation with tool handlers
+- `server/routes.ts` - Endpoint registration for `/.well-known/openai-apps.json` and `/mcp`
+
+### Tool Annotation Justifications (for submission)
+- **readOnlyHint: true** - All tools only read data from the database; no write operations
+- **openWorldHint: false** - Tools only access internal NYC School Ratings database, no external services
+- **destructiveHint: false** - No data is created, modified, or deleted
+
+### Submission Checklist
+- [x] MCP server endpoint at `/mcp`
+- [x] App manifest at `/.well-known/openai-apps.json`
+- [x] Privacy Policy at `/privacy`
+- [x] Terms of Service at `/terms`
+- [x] Contact page at `/contact` (hello@nycschoolsratings.com)
+- [x] All tools have proper annotations
+- [ ] OAuth 2.1 with PKCE for authenticated features (favorites)
+- [ ] Verification in OpenAI Platform Dashboard

@@ -1861,6 +1861,95 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     res.send(robotsTxt);
   });
 
+  // OpenAI Apps SDK manifest (.well-known endpoint)
+  app.get("/.well-known/openai-apps.json", (req: Request, res: Response) => {
+    const manifest = {
+      schema_version: "1.0.0",
+      name: "NYC School Ratings",
+      description: "Search, compare, and explore NYC public and charter schools. Get detailed information on academic scores, climate ratings, special programs, demographics, and historical trends for 1,500+ schools across all five boroughs.",
+      logo_url: "https://nycschoolsratings.com/logo.png",
+      contact_email: "hello@nycschoolsratings.com",
+      privacy_policy_url: "https://nycschoolsratings.com/privacy",
+      terms_of_service_url: "https://nycschoolsratings.com/terms",
+      mcp_server: {
+        url: "https://nycschoolsratings.com/mcp",
+        protocol_version: "2024-11-05"
+      },
+      capabilities: {
+        tools: true
+      },
+      categories: ["education", "local", "research"],
+      keywords: [
+        "NYC schools",
+        "school ratings", 
+        "New York City education",
+        "public schools",
+        "charter schools",
+        "school comparison",
+        "elementary schools",
+        "middle schools",
+        "high schools",
+        "gifted and talented",
+        "dual language programs"
+      ]
+    };
+    res.json(manifest);
+  });
+
+  // MCP (Model Context Protocol) endpoint for OpenAI ChatGPT Apps SDK
+  const { handleMCPRequest } = await import("./mcp");
+  
+  app.post("/mcp", async (req: Request, res: Response) => {
+    try {
+      const request = req.body;
+      
+      // Validate JSON-RPC format
+      if (!request.jsonrpc || request.jsonrpc !== "2.0" || !request.method) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          id: request.id || null,
+          error: {
+            code: -32600,
+            message: "Invalid Request"
+          }
+        });
+      }
+
+      const response = await handleMCPRequest(request);
+      res.json(response);
+    } catch (error: any) {
+      console.error("MCP request error:", error);
+      res.status(500).json({
+        jsonrpc: "2.0",
+        id: req.body?.id || null,
+        error: {
+          code: -32603,
+          message: "Internal error"
+        }
+      });
+    }
+  });
+
+  // MCP Server-Sent Events endpoint for streaming (optional, for future use)
+  app.get("/mcp/sse", (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    // Send initial connection event
+    res.write('event: open\ndata: {}\n\n');
+
+    // Keep connection alive
+    const keepAlive = setInterval(() => {
+      res.write(':keepalive\n\n');
+    }, 30000);
+
+    req.on('close', () => {
+      clearInterval(keepAlive);
+    });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

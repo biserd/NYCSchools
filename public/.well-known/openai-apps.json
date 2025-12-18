@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "name": "NYC School Ratings",
+  "description": "Search, compare, and explore NYC public and charter schools. Get detailed information on academic scores, climate ratings, special programs, demographics, and historical trends for 1,500+ schools across all five boroughs.",
+  "logo_url": "https://nycschoolsratings.com/logo.png",
+  "contact_email": "hello@nycschoolsratings.com",
+  "privacy_policy_url": "https://nycschoolsratings.com/privacy",
+  "terms_of_service_url": "https://nycschoolsratings.com/terms",
+  "mcp_server": {
+    "url": "https://nycschoolsratings.com/mcp",
+    "protocol_version": "2024-11-05"
+  },
+  "capabilities": {
+    "tools": true
+  },
+  "categories": ["education", "local", "research"],
+  "keywords": [
+    "NYC schools",
+    "school ratings",
+    "New York City education",
+    "public schools",
+    "charter schools",
+    "school comparison",
+    "elementary schools",
+    "middle schools",
+    "high schools",
+    "gifted and talented",
+    "dual language programs"
+  ]
+}
