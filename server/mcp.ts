@@ -219,6 +219,23 @@ function getBoroughFromDbn(dbn: string): string {
   return mapping[boroughCode] || 'Unknown';
 }
 
+// Normalize school name for search - handles PS/P.S., MS/M.S., IS/I.S., JHS/J.H.S. variations
+function normalizeSchoolName(name: string): string {
+  return name
+    .toLowerCase()
+    // Remove periods from abbreviations
+    .replace(/\./g, '')
+    // Normalize common abbreviations with spaces
+    .replace(/\bp\s*s\b/g, 'ps')
+    .replace(/\bm\s*s\b/g, 'ms')
+    .replace(/\bi\s*s\b/g, 'is')
+    .replace(/\bj\s*h\s*s\b/g, 'jhs')
+    .replace(/\bh\s*s\b/g, 'hs')
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Tool handlers
 async function handleSearchSchools(params: Record<string, any>) {
   const schools = await storage.getSchools();
@@ -226,9 +243,10 @@ async function handleSearchSchools(params: Record<string, any>) {
 
   // Apply filters
   if (params.query) {
-    const query = params.query.toLowerCase();
+    const normalizedQuery = normalizeSchoolName(params.query);
     filtered = filtered.filter(s => 
-      s.name.toLowerCase().includes(query)
+      normalizeSchoolName(s.name).includes(normalizedQuery) ||
+      s.dbn.toLowerCase().includes(params.query.toLowerCase())
     );
   }
 
