@@ -7,6 +7,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
 import OpenAI from "openai";
 import compression from "compression";
+import cors from "cors";
 import { updateUserZonedSchools, getUserZonedSchools } from "./services/zoning";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
@@ -88,6 +89,57 @@ async function getUserLimits(userId: string | undefined): Promise<typeof FREE_TI
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add compression middleware
   app.use(compression());
+
+  // CORS middleware for ChatGPT/OpenAI integration
+  const allowedOrigins = [
+    'https://chat.openai.com',
+    'https://chatgpt.com',
+    'https://platform.openai.com',
+    'https://api.openai.com',
+    // Allow local development
+    /^https?:\/\/localhost(:\d+)?$/,
+    /^https?:\/\/.*\.replit\.dev$/,
+    /^https?:\/\/.*\.replit\.app$/,
+  ];
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Check against allowed origins (strings and regexes)
+      const isAllowed = allowedOrigins.some(allowed => {
+        if (typeof allowed === 'string') {
+          return origin === allowed;
+        }
+        return allowed.test(origin);
+      });
+      
+      if (isAllowed) {
+        return callback(null, true);
+      }
+      
+      // Strict hostname check for our own domain (prevent subdomain bypass attacks)
+      try {
+        const url = new URL(origin);
+        const hostname = url.hostname;
+        if (hostname === 'nycschoolsratings.com' || hostname === 'www.nycschoolsratings.com') {
+          return callback(null, true);
+        }
+      } catch {
+        // Invalid URL, reject
+      }
+      
+      // Reject all other origins for security
+      return callback(new Error('Not allowed by CORS'), false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    exposedHeaders: ['WWW-Authenticate'],
+  }));
 
   // Auth middleware
   setupAuth(app);
@@ -1863,6 +1915,42 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     
     res.header('Content-Type', 'text/plain');
     res.send(robotsTxt);
+  });
+
+  // OAuth 2.0 Protected Resource Metadata (RFC 9728)
+  // This tells ChatGPT where to find our authorization server
+  app.get("/.well-known/oauth-protected-resource", (req: Request, res: Response) => {
+    const baseUrl = process.env.REPLIT_DEPLOYMENT === '1' 
+      ? 'https://nycschoolsratings.com'
+      : `https://${process.env.REPLIT_DEV_DOMAIN || req.headers.host}`;
+    
+    res.json({
+      resource: `${baseUrl}/mcp`,
+      authorization_servers: [baseUrl],
+      scopes_supported: ["favorites"],
+      resource_documentation: `${baseUrl}/.well-known/openai-apps.json`
+    });
+  });
+
+  // OAuth 2.0 Authorization Server Metadata (RFC 8414)
+  // This tells ChatGPT our OAuth endpoints and capabilities
+  app.get("/.well-known/oauth-authorization-server", (req: Request, res: Response) => {
+    const baseUrl = process.env.REPLIT_DEPLOYMENT === '1' 
+      ? 'https://nycschoolsratings.com'
+      : `https://${process.env.REPLIT_DEV_DOMAIN || req.headers.host}`;
+    
+    res.json({
+      issuer: baseUrl,
+      authorization_endpoint: `${baseUrl}/oauth/authorize`,
+      token_endpoint: `${baseUrl}/oauth/token`,
+      scopes_supported: ["favorites"],
+      response_types_supported: ["code"],
+      grant_types_supported: ["authorization_code", "refresh_token"],
+      code_challenge_methods_supported: ["S256"],
+      token_endpoint_auth_methods_supported: ["none"],
+      service_documentation: `${baseUrl}/privacy`,
+      ui_locales_supported: ["en-US"]
+    });
   });
 
   // OpenAI Apps SDK manifest (.well-known endpoint)
