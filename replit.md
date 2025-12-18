@@ -156,6 +156,13 @@ Users can connect their NYC School Ratings account to ChatGPT for authenticated 
 - **PKCE Required**: Yes (S256 only)
 - **Token Expiry**: Access tokens 1 hour, refresh tokens 30 days
 
+### OAuth Security Measures
+- **Redirect URI Whitelist**: Only allows callbacks to chat.openai.com, chatgpt.com, platform.openai.com, and localhost
+- **Client ID Validation**: Rejects requests with invalid or missing client_id
+- **PKCE S256 Enforcement**: Only S256 code_challenge_method accepted (no plain)
+- **Credential Validation**: Non-empty string checks with type verification before bcrypt
+- **Password Hashing**: bcrypt verification with user existence check before hash comparison
+
 ### Key Files
 - `server/mcp.ts` - MCP server implementation with tool handlers
 - `server/oauth.ts` - OAuth 2.1 implementation with PKCE support
