@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions } from "@shared/schema";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
+import { setupOAuth, getUserFromAccessToken } from "./oauth";
 import OpenAI from "openai";
 import compression from "compression";
 import { updateUserZonedSchools, getUserZonedSchools } from "./services/zoning";
@@ -90,6 +91,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth middleware
   setupAuth(app);
+  
+  // OAuth 2.1 endpoints for ChatGPT
+  setupOAuth(app);
 
   // Auth routes
   app.get("/api/auth/user", async (req: any, res: Response) => {
@@ -1875,6 +1879,13 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         url: "https://nycschoolsratings.com/mcp",
         protocol_version: "2024-11-05"
       },
+      oauth: {
+        client_id: "chatgpt-nycschoolratings",
+        authorization_url: "https://nycschoolsratings.com/oauth/authorize",
+        token_url: "https://nycschoolsratings.com/oauth/token",
+        scope: "favorites",
+        pkce_required: true
+      },
       capabilities: {
         tools: true
       },
@@ -1915,7 +1926,18 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         });
       }
 
-      const response = await handleMCPRequest(request);
+      // Check for Bearer token for authenticated requests
+      let context: { userId?: string } = {};
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        const user = await getUserFromAccessToken(token);
+        if (user) {
+          context.userId = user.id;
+        }
+      }
+
+      const response = await handleMCPRequest(request, context);
       res.json(response);
     } catch (error: any) {
       console.error("MCP request error:", error);

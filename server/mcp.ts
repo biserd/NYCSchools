@@ -170,6 +170,19 @@ const TOOLS = [
       openWorldHint: false,
       destructiveHint: false
     }
+  },
+  {
+    name: "get_favorites",
+    description: "Get the user's saved favorite schools. Requires authentication. Returns a list of the user's favorited schools with key details.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {}
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false
+    }
   }
 ];
 
@@ -482,8 +495,46 @@ async function handleGetTopSchools(params: Record<string, any>) {
   };
 }
 
+// Handler for get_favorites (requires authentication)
+async function handleGetFavorites(userId: string) {
+  const favorites = await storage.getUserFavorites(userId);
+  const schools = await storage.getSchools();
+  
+  const favoriteSchools = favorites.map(fav => {
+    const school = schools.find(s => s.dbn === fav.schoolDbn);
+    if (!school) return null;
+    
+    return {
+      dbn: school.dbn,
+      name: school.name,
+      district: school.district,
+      borough: getBoroughFromDbn(school.dbn),
+      grade_band: school.grade_band,
+      overall_score: calculateOverallScore(school),
+      academics_score: school.academics_score,
+      climate_score: school.climate_score,
+      progress_score: school.progress_score,
+      ela_proficiency: school.ela_proficiency,
+      math_proficiency: school.math_proficiency,
+      has_gifted_talented: school.has_gifted_talented,
+      has_dual_language: school.has_dual_language,
+      favorited_at: fav.createdAt
+    };
+  }).filter(Boolean);
+
+  return {
+    total_favorites: favoriteSchools.length,
+    favorites: favoriteSchools
+  };
+}
+
+// Context for authenticated MCP requests
+interface MCPContext {
+  userId?: string;
+}
+
 // Main MCP request handler
-export async function handleMCPRequest(request: MCPRequest): Promise<MCPResponse> {
+export async function handleMCPRequest(request: MCPRequest, context: MCPContext = {}): Promise<MCPResponse> {
   const { id, method, params = {} } = request;
 
   try {
@@ -520,6 +571,12 @@ export async function handleMCPRequest(request: MCPRequest): Promise<MCPResponse
             break;
           case "get_top_schools":
             result = await handleGetTopSchools(toolParams);
+            break;
+          case "get_favorites":
+            if (!context.userId) {
+              throw new Error("Authentication required. Please connect your NYC School Ratings account.");
+            }
+            result = await handleGetFavorites(context.userId);
             break;
           default:
             throw new Error(`Unknown tool: ${toolName}`);

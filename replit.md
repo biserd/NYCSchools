@@ -134,6 +134,8 @@ NYC School Ratings is integrated with OpenAI's ChatGPT Apps SDK, allowing ChatGP
 - **Manifest**: `/.well-known/openai-apps.json` - App metadata for ChatGPT discovery
 - **MCP Server**: `POST /mcp` - JSON-RPC 2.0 endpoint for tool calls
 - **SSE Stream**: `GET /mcp/sse` - Server-Sent Events for real-time updates
+- **OAuth Authorize**: `GET /oauth/authorize` - OAuth 2.1 authorization endpoint with PKCE
+- **OAuth Token**: `POST /oauth/token` - Token exchange endpoint
 
 ### Available Tools
 All tools have `readOnlyHint: true` annotations (data retrieval only, no mutations):
@@ -143,10 +145,26 @@ All tools have `readOnlyHint: true` annotations (data retrieval only, no mutatio
 3. **compare_schools** - Compare up to 4 schools side-by-side
 4. **get_school_history** - Get historical test score trends (ELA/Math proficiency 2018-2025)
 5. **get_top_schools** - Get top-rated schools with optional filtering
+6. **get_favorites** - Get user's saved favorite schools (requires authentication)
+
+### OAuth 2.1 with PKCE
+Users can connect their NYC School Ratings account to ChatGPT for authenticated features:
+- **Client ID**: `chatgpt-nycschoolratings`
+- **Authorization URL**: `/oauth/authorize`
+- **Token URL**: `/oauth/token`
+- **Scope**: `favorites`
+- **PKCE Required**: Yes (S256 only)
+- **Token Expiry**: Access tokens 1 hour, refresh tokens 30 days
 
 ### Key Files
 - `server/mcp.ts` - MCP server implementation with tool handlers
+- `server/oauth.ts` - OAuth 2.1 implementation with PKCE support
 - `server/routes.ts` - Endpoint registration for `/.well-known/openai-apps.json` and `/mcp`
+
+### Database Schema (OAuth)
+- `oauth_authorization_codes` - Temporary auth codes with PKCE challenge
+- `oauth_access_tokens` - Bearer tokens for authenticated requests
+- `oauth_refresh_tokens` - Long-lived refresh tokens
 
 ### Tool Annotation Justifications (for submission)
 - **readOnlyHint: true** - All tools only read data from the database; no write operations
@@ -160,5 +178,5 @@ All tools have `readOnlyHint: true` annotations (data retrieval only, no mutatio
 - [x] Terms of Service at `/terms`
 - [x] Contact page at `/contact` (hello@nycschoolsratings.com)
 - [x] All tools have proper annotations
-- [ ] OAuth 2.1 with PKCE for authenticated features (favorites)
+- [x] OAuth 2.1 with PKCE for authenticated features (favorites)
 - [ ] Verification in OpenAI Platform Dashboard

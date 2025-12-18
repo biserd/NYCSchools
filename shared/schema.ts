@@ -481,6 +481,52 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// OAuth 2.1 Authorization Codes for ChatGPT integration
+export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
+  code: varchar("code").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull(),
+  redirectUri: varchar("redirect_uri").notNull(),
+  codeChallenge: varchar("code_challenge").notNull(), // PKCE S256 challenge
+  codeChallengeMethod: varchar("code_challenge_method").notNull().default("S256"),
+  scope: varchar("scope"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("oauth_auth_codes_user_idx").on(table.userId),
+}));
+
+export type OAuthAuthorizationCode = typeof oauthAuthorizationCodes.$inferSelect;
+
+// OAuth 2.1 Access Tokens
+export const oauthAccessTokens = pgTable("oauth_access_tokens", {
+  token: varchar("token").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull(),
+  scope: varchar("scope"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("oauth_access_tokens_user_idx").on(table.userId),
+}));
+
+export type OAuthAccessToken = typeof oauthAccessTokens.$inferSelect;
+
+// OAuth 2.1 Refresh Tokens
+export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
+  token: varchar("token").primaryKey(),
+  accessToken: varchar("access_token").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull(),
+  scope: varchar("scope"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("oauth_refresh_tokens_user_idx").on(table.userId),
+}));
+
+export type OAuthRefreshToken = typeof oauthRefreshTokens.$inferSelect;
+
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
