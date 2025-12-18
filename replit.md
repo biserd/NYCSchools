@@ -149,16 +149,25 @@ All tools have `readOnlyHint: true` annotations (data retrieval only, no mutatio
 
 ### OAuth 2.1 with PKCE
 Users can connect their NYC School Ratings account to ChatGPT for authenticated features:
-- **Client ID**: `chatgpt-nycschoolratings`
+- **Default Client ID**: `chatgpt-nycschoolratings`
 - **Authorization URL**: `/oauth/authorize`
 - **Token URL**: `/oauth/token`
+- **Registration URL**: `/oauth/register` (RFC 7591 Dynamic Client Registration)
 - **Scope**: `favorites`
 - **PKCE Required**: Yes (S256 only)
 - **Token Expiry**: Access tokens 1 hour, refresh tokens 30 days
 
+### Dynamic Client Registration (RFC 7591)
+Third-party apps can register dynamically via POST to `/oauth/register`:
+- Required fields: `redirect_uris` (array), `client_name` (string)
+- Optional fields: `grant_types`, `response_types`, `scope`, `client_uri`, `logo_uri`, `tos_uri`, `policy_uri`, `contacts`
+- Returns: `client_id`, `client_secret`, `client_id_issued_at`, and echoed metadata
+- Stored in `oauth_clients` database table
+
 ### OAuth Security Measures
-- **Redirect URI Whitelist**: Only allows callbacks to chat.openai.com, chatgpt.com, platform.openai.com, and localhost
-- **Client ID Validation**: Rejects requests with invalid or missing client_id
+- **Redirect URI Whitelist**: Default client allows callbacks to chat.openai.com, chatgpt.com, platform.openai.com, and localhost
+- **Dynamic Clients**: Redirect URIs validated against registered URIs per client
+- **Client ID Validation**: Checks both hardcoded default client and dynamically registered clients
 - **PKCE S256 Enforcement**: Only S256 code_challenge_method accepted (no plain)
 - **Credential Validation**: Non-empty string checks with type verification before bcrypt
 - **Password Hashing**: bcrypt verification with user existence check before hash comparison
@@ -169,6 +178,7 @@ Users can connect their NYC School Ratings account to ChatGPT for authenticated 
 - `server/routes.ts` - Endpoint registration for `/.well-known/openai-apps.json` and `/mcp`
 
 ### Database Schema (OAuth)
+- `oauth_clients` - Dynamically registered OAuth clients (RFC 7591)
 - `oauth_authorization_codes` - Temporary auth codes with PKCE challenge
 - `oauth_access_tokens` - Bearer tokens for authenticated requests
 - `oauth_refresh_tokens` - Long-lived refresh tokens
