@@ -527,6 +527,29 @@ export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
 
 export type OAuthRefreshToken = typeof oauthRefreshTokens.$inferSelect;
 
+// OAuth 2.0 Dynamic Client Registration (RFC 7591)
+export const oauthClients = pgTable("oauth_clients", {
+  clientId: varchar("client_id").primaryKey(),
+  clientSecret: varchar("client_secret"),
+  clientName: varchar("client_name").notNull(),
+  redirectUris: text("redirect_uris").array().notNull(),
+  grantTypes: text("grant_types").array().default(["authorization_code"]),
+  responseTypes: text("response_types").array().default(["code"]),
+  tokenEndpointAuthMethod: varchar("token_endpoint_auth_method").default("none"),
+  scope: varchar("scope"),
+  clientUri: varchar("client_uri"),
+  logoUri: varchar("logo_uri"),
+  tosUri: varchar("tos_uri"),
+  policyUri: varchar("policy_uri"),
+  contacts: text("contacts").array(),
+  clientIdIssuedAt: timestamp("client_id_issued_at").defaultNow().notNull(),
+  clientSecretExpiresAt: timestamp("client_secret_expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OAuthClient = typeof oauthClients.$inferSelect;
+export type InsertOAuthClient = typeof oauthClients.$inferInsert;
+
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

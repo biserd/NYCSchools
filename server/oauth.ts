@@ -2,27 +2,51 @@ import { Express, Request, Response } from "express";
 import crypto from "crypto";
 import { storage } from "./storage";
 import { db } from "./db";
-import { oauthAuthorizationCodes, oauthAccessTokens, oauthRefreshTokens, type User } from "@shared/schema";
+import { oauthAuthorizationCodes, oauthAccessTokens, oauthRefreshTokens, oauthClients, type User } from "@shared/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { verifyPassword } from "./auth";
 
-const CLIENT_ID = "chatgpt-nycschoolratings";
+const DEFAULT_CLIENT_ID = "chatgpt-nycschoolratings";
 const AUTH_CODE_EXPIRY_MINS = 10;
 const ACCESS_TOKEN_EXPIRY_HOURS = 1;
 const REFRESH_TOKEN_EXPIRY_DAYS = 30;
 
-// Allowed redirect URIs for security (whitelist)
-const ALLOWED_REDIRECT_URIS = [
+// Allowed redirect URIs for the default hardcoded client
+const DEFAULT_ALLOWED_REDIRECT_URIS = [
   "https://chat.openai.com/aip/plugin/oauth/callback",
   "https://chat.openai.com/callback",
   "https://chatgpt.com/aip/plugin/oauth/callback",
   "https://chatgpt.com/callback",
   "https://platform.openai.com/",
-  "http://localhost:5000/oauth/callback", // For local testing only
+  "http://localhost:5000/oauth/callback",
 ];
 
-function isValidRedirectUri(uri: string): boolean {
-  return ALLOWED_REDIRECT_URIS.some(allowed => uri.startsWith(allowed));
+// Check if a client_id is valid (either default or dynamically registered)
+async function isValidClient(clientId: string): Promise<boolean> {
+  if (clientId === DEFAULT_CLIENT_ID) {
+    return true;
+  }
+  const client = await db.query.oauthClients.findFirst({
+    where: eq(oauthClients.clientId, clientId),
+  });
+  return !!client;
+}
+
+// Get redirect URIs for a client
+async function getClientRedirectUris(clientId: string): Promise<string[]> {
+  if (clientId === DEFAULT_CLIENT_ID) {
+    return DEFAULT_ALLOWED_REDIRECT_URIS;
+  }
+  const client = await db.query.oauthClients.findFirst({
+    where: eq(oauthClients.clientId, clientId),
+  });
+  return client?.redirectUris || [];
+}
+
+// Validate redirect URI against client's allowed URIs
+async function isValidRedirectUri(uri: string, clientId: string = DEFAULT_CLIENT_ID): Promise<boolean> {
+  const allowedUris = await getClientRedirectUris(clientId);
+  return allowedUris.some(allowed => uri.startsWith(allowed));
 }
 
 function generateToken(): string {
@@ -178,7 +202,100 @@ export async function getUserFromAccessToken(accessToken: string): Promise<User 
 }
 
 export function setupOAuth(app: Express) {
-  app.get("/oauth/authorize", (req: Request, res: Response) => {
+  // RFC 7591 Dynamic Client Registration endpoint
+  app.post("/oauth/register", async (req: Request, res: Response) => {
+    try {
+      const {
+        redirect_uris,
+        client_name,
+        grant_types = ["authorization_code"],
+        response_types = ["code"],
+        token_endpoint_auth_method = "none",
+        scope,
+        client_uri,
+        logo_uri,
+        tos_uri,
+        policy_uri,
+        contacts,
+      } = req.body;
+
+      // Validate required fields
+      if (!redirect_uris || !Array.isArray(redirect_uris) || redirect_uris.length === 0) {
+        return res.status(400).json({
+          error: "invalid_redirect_uri",
+          error_description: "redirect_uris is required and must be a non-empty array",
+        });
+      }
+
+      if (!client_name || typeof client_name !== "string") {
+        return res.status(400).json({
+          error: "invalid_client_metadata",
+          error_description: "client_name is required",
+        });
+      }
+
+      // Validate redirect URIs are valid URLs
+      for (const uri of redirect_uris) {
+        try {
+          new URL(uri);
+        } catch {
+          return res.status(400).json({
+            error: "invalid_redirect_uri",
+            error_description: `Invalid redirect URI: ${uri}`,
+          });
+        }
+      }
+
+      // Generate client credentials
+      const clientId = crypto.randomUUID();
+      const clientSecret = crypto.randomBytes(32).toString("base64url");
+      const clientIdIssuedAt = new Date();
+
+      // Store the client
+      await db.insert(oauthClients).values({
+        clientId,
+        clientSecret,
+        clientName: client_name,
+        redirectUris: redirect_uris,
+        grantTypes: grant_types,
+        responseTypes: response_types,
+        tokenEndpointAuthMethod: token_endpoint_auth_method,
+        scope: scope || null,
+        clientUri: client_uri || null,
+        logoUri: logo_uri || null,
+        tosUri: tos_uri || null,
+        policyUri: policy_uri || null,
+        contacts: contacts || null,
+        clientIdIssuedAt,
+      });
+
+      // Return RFC 7591 compliant response
+      return res.status(201).json({
+        client_id: clientId,
+        client_secret: clientSecret,
+        client_id_issued_at: Math.floor(clientIdIssuedAt.getTime() / 1000),
+        redirect_uris,
+        client_name,
+        grant_types,
+        response_types,
+        token_endpoint_auth_method,
+        scope: scope || undefined,
+        client_uri: client_uri || undefined,
+        logo_uri: logo_uri || undefined,
+        tos_uri: tos_uri || undefined,
+        policy_uri: policy_uri || undefined,
+        contacts: contacts || undefined,
+      });
+    } catch (error) {
+      console.error("Client registration error:", error);
+      return res.status(500).json({
+        error: "server_error",
+        error_description: "Failed to register client",
+      });
+    }
+  });
+
+  app.get("/oauth/authorize", async (req: Request, res: Response) => {
     const {
       response_type,
       client_id,
@@ -193,7 +310,8 @@ export function setupOAuth(app: Express) {
       return res.status(400).json({ error: "unsupported_response_type" });
     }
 
-    if (client_id !== CLIENT_ID) {
+    const clientIdStr = typeof client_id === "string" ? client_id : "";
+    if (!clientIdStr || !(await isValidClient(clientIdStr))) {
       return res.status(400).json({ error: "invalid_client" });
     }
 
@@ -205,8 +323,8 @@ export function setupOAuth(app: Express) {
       return res.status(400).json({ error: "invalid_request", error_description: "redirect_uri required" });
     }
 
-    // Validate redirect_uri against whitelist
-    if (!isValidRedirectUri(redirect_uri)) {
+    // Validate redirect_uri against client's allowed URIs
+    if (!(await isValidRedirectUri(redirect_uri, clientIdStr))) {
       return res.status(400).json({ error: "invalid_request", error_description: "redirect_uri not allowed" });
     }
 
@@ -378,7 +496,7 @@ export function setupOAuth(app: Express) {
     const { email, password, client_id, redirect_uri, code_challenge, state, scope } = req.body;
 
     // Validate all required OAuth parameters
-    if (!client_id || client_id !== CLIENT_ID) {
+    if (!client_id || !(await isValidClient(client_id))) {
       return res.status(400).json({ error: "Invalid client" });
     }
 
@@ -386,8 +504,8 @@ export function setupOAuth(app: Express) {
       return res.status(400).json({ error: "Missing required OAuth parameters" });
     }
 
-    // Validate redirect_uri against whitelist
-    if (!isValidRedirectUri(redirect_uri)) {
+    // Validate redirect_uri against client's allowed URIs
+    if (!(await isValidRedirectUri(redirect_uri, client_id))) {
       return res.status(400).json({ error: "Redirect URI not allowed" });
     }
 
@@ -435,7 +553,7 @@ export function setupOAuth(app: Express) {
         return res.status(400).json({ error: "invalid_request" });
       }
 
-      const tokens = await exchangeCodeForTokens(code, code_verifier, redirect_uri, client_id || CLIENT_ID);
+      const tokens = await exchangeCodeForTokens(code, code_verifier, redirect_uri, client_id || DEFAULT_CLIENT_ID);
       if (!tokens) {
         return res.status(400).json({ error: "invalid_grant" });
       }
@@ -453,7 +571,7 @@ export function setupOAuth(app: Express) {
         return res.status(400).json({ error: "invalid_request" });
       }
 
-      const tokens = await refreshAccessToken(refresh_token, client_id || CLIENT_ID);
+      const tokens = await refreshAccessToken(refresh_token, client_id || DEFAULT_CLIENT_ID);
       if (!tokens) {
         return res.status(400).json({ error: "invalid_grant" });
       }

@@ -1943,6 +1943,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       issuer: baseUrl,
       authorization_endpoint: `${baseUrl}/oauth/authorize`,
       token_endpoint: `${baseUrl}/oauth/token`,
+      registration_endpoint: `${baseUrl}/oauth/register`,
       scopes_supported: ["favorites"],
       response_types_supported: ["code"],
       grant_types_supported: ["authorization_code", "refresh_token"],
