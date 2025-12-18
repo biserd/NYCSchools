@@ -315,7 +315,9 @@ async function handleSearchSchools(params: Record<string, any>) {
       has_dual_language: s.has_dual_language,
       has_3k: s.has_3k,
       has_prek: s.has_prek,
-      address: s.address
+      address: s.address,
+      latitude: s.latitude,
+      longitude: s.longitude
     }))
   };
 }
@@ -345,6 +347,8 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     borough: getBoroughFromDbn(school.dbn),
     grade_band: school.grade_band,
     address: school.address,
+    latitude: school.latitude,
+    longitude: school.longitude,
     
     // Scores
     overall_score: calculateOverallScore(school),
@@ -406,6 +410,9 @@ async function handleCompareSchools(params: Record<string, any>) {
         district: school.district,
         borough: getBoroughFromDbn(school.dbn),
         grade_band: school.grade_band,
+        address: school.address,
+        latitude: school.latitude,
+        longitude: school.longitude,
         overall_score: calculateOverallScore(school),
         academics_score: school.academics_score,
         climate_score: school.climate_score,
@@ -500,6 +507,9 @@ async function handleGetTopSchools(params: Record<string, any>) {
       district: s.district,
       borough: getBoroughFromDbn(s.dbn),
       grade_band: s.grade_band,
+      address: s.address,
+      latitude: s.latitude,
+      longitude: s.longitude,
       overall_score: calculateOverallScore(s),
       academics_score: s.academics_score,
       climate_score: s.climate_score,
@@ -528,6 +538,9 @@ async function handleGetFavorites(userId: string) {
       district: school.district,
       borough: getBoroughFromDbn(school.dbn),
       grade_band: school.grade_band,
+      address: school.address,
+      latitude: school.latitude,
+      longitude: school.longitude,
       overall_score: calculateOverallScore(school),
       academics_score: school.academics_score,
       climate_score: school.climate_score,
