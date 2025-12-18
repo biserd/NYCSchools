@@ -1910,6 +1910,24 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // MCP (Model Context Protocol) endpoint for OpenAI ChatGPT Apps SDK
   const { handleMCPRequest } = await import("./mcp");
   
+  // GET handler for /mcp - returns usage info for browser visitors
+  app.get("/mcp", (req: Request, res: Response) => {
+    res.json({
+      name: "NYC School Ratings MCP Server",
+      description: "Model Context Protocol server for ChatGPT integration. This endpoint accepts JSON-RPC 2.0 POST requests only.",
+      documentation: "https://nycschoolsratings.com/.well-known/openai-apps.json",
+      tools: [
+        "search_schools - Search NYC schools by criteria",
+        "get_school_details - Get full details for a school",
+        "compare_schools - Compare up to 4 schools",
+        "get_school_history - Get historical test score trends",
+        "get_top_schools - Get top-rated schools",
+        "get_favorites - Get user's saved schools (requires auth)"
+      ],
+      usage: "Send POST requests with JSON-RPC 2.0 format. For authenticated requests, include Bearer token in Authorization header."
+    });
+  });
+  
   app.post("/mcp", async (req: Request, res: Response) => {
     try {
       const request = req.body;
