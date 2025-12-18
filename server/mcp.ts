@@ -543,6 +543,7 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
     switch (method) {
       case "initialize":
         result = {
+          protocolVersion: SERVER_INFO.protocolVersion,
           serverInfo: SERVER_INFO,
           capabilities: SERVER_CAPABILITIES
         };
