@@ -614,14 +614,29 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
             throw new Error(`Unknown tool: ${toolName}`);
         }
         
-        // Wrap tool result in content array as per MCP spec
+        // Determine base URL for widget
+        const widgetBaseUrl = process.env.REPLIT_DEPLOYMENT === '1' 
+          ? 'https://nycschoolsratings.com'
+          : process.env.REPL_SLUG 
+            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase()}.repl.co`
+            : 'http://localhost:5000';
+        
+        // Wrap tool result in content array as per MCP spec with widget metadata
         result = {
           content: [
             {
               type: "text",
               text: JSON.stringify(result, null, 2)
             }
-          ]
+          ],
+          _meta: {
+            "openai/widgetDomain": widgetBaseUrl,
+            "openai/widgetPath": "/widget/index.html",
+            "openai/widgetCSP": {
+              "connect_domains": [widgetBaseUrl],
+              "resource_domains": [widgetBaseUrl]
+            }
+          }
         };
         break;
 
