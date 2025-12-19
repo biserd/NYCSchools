@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type SchoolTrend, type TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
@@ -69,7 +69,7 @@ function getSchoolGradeLevelForZoning(school: School): "elementary" | "middle" |
   return "elementary";
 }
 
-export function SchoolCard({ school, trend }: SchoolCardProps) {
+export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCardProps) {
   const { user } = useAuth();
   const { startCheckout } = useCheckout();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -616,4 +616,4 @@ export function SchoolCard({ school, trend }: SchoolCardProps) {
       />
     </Link>
   );
-}
+});

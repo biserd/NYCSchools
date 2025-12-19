@@ -14,7 +14,27 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static assets with long cache TTL for hashed files (JS, CSS)
+  // and shorter cache for non-hashed files
+  app.use(express.static(distPath, {
+    maxAge: '1y', // 1 year for hashed assets
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      // HTML files should not be cached long-term
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      }
+      // Hashed assets (Vite generates these with content hash) can be cached forever
+      else if (filePath.match(/\.[a-f0-9]{8}\.(js|css)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Images, fonts can be cached for a long time
+      else if (filePath.match(/\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=2592000'); // 30 days
+      }
+    }
+  }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
