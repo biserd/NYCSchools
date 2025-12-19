@@ -20,6 +20,14 @@ The platform provides comprehensive data for 1,533 NYC schools, including academ
 ### System Design Choices
 The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data fetching and AI integration. Error handling is graceful, and performance is optimized through pagination, search debounce, server-side caching, Gzip compression, code-splitting, and localStorage synchronization. Cost optimizations include auth-gated features.
 
+### Core Web Vitals Optimizations
+Performance optimizations for better LCP, INP, and FCP scores:
+- **Lazy Loading**: Heavy pages (Home, SchoolDetail, ComparePage, BlogPage, BlogPostPage, PricingPage, etc.) are lazy-loaded with React.lazy() and Suspense
+- **React.memo**: SchoolCard component is wrapped in memo() to reduce unnecessary re-renders during filtering
+- **Deferred Analytics**: Google Analytics script is deferred and moved to end of body to not block rendering
+- **Font Optimization**: Google Fonts loaded with media="print" onload trick and font-display: swap
+- **Static Asset Caching**: Production server configured with aggressive cache headers (1 year for hashed JS/CSS with immutable, 30 days for images/fonts, no-cache for HTML)
+
 ## External Dependencies
 - **PostgreSQL**: Primary database.
 - **OpenAI**: AI chat assistant and smart recommendations (`gpt-4o-mini`).
