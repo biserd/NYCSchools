@@ -1,6 +1,7 @@
 // Stripe webhook handlers for NYC School Ratings
 import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
+import { sendAdminNewCustomerNotification, sendWelcomeEmail } from './emailService';
 import Stripe from 'stripe';
 
 // Enhanced logging for webhook debugging
@@ -230,6 +231,28 @@ export class WebhookHandlers {
           planType,
           expiresAt: expiresAt.toISOString()
         });
+        
+        // Send welcome email to customer and admin notification
+        if (user.email) {
+          logWebhook('INFO', `Sending emails for new Season Pass customer`, { email: user.email });
+          
+          // Extract first name from user profile if available
+          const firstName = user.firstName || undefined;
+          
+          // Send both emails in parallel
+          const [welcomeResult, adminResult] = await Promise.all([
+            sendWelcomeEmail(user.email, firstName),
+            sendAdminNewCustomerNotification(user.email, planType, session.amount_total || undefined)
+          ]);
+          
+          logWebhook('INFO', `Email sending completed`, { 
+            welcomeEmailSent: welcomeResult, 
+            adminNotificationSent: adminResult,
+            email: user.email
+          });
+        } else {
+          logWebhook('WARN', `No email available for user, skipping email notifications`, { userId: user.id });
+        }
       } else {
         logWebhook('WARN', `Unknown checkout session mode`, {
           mode: session.mode,
