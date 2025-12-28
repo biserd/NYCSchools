@@ -61,18 +61,37 @@ const PREMIUM_TIER_LIMITS = {
 async function isPremiumUser(userId: string): Promise<boolean> {
   try {
     const user = await storage.getUser(userId);
-    if (!user?.stripeSubscriptionId) {
+    if (!user) {
       return false;
     }
     
-    // Check subscription status from Stripe service
-    const subscription = await stripeService.getSubscriptionWithDetails(user.stripeSubscriptionId);
-    if (!subscription) {
-      return false;
+    // First check database fields for Season Pass (one-time purchase)
+    if (user.subscriptionStatus === 'active' && 
+        (user.subscriptionPlan === 'season_pass' || user.subscriptionPlan === 'premium')) {
+      // Check if Season Pass has expired
+      if (user.subscriptionExpiresAt) {
+        const now = new Date();
+        if (now > user.subscriptionExpiresAt) {
+          // Season Pass expired - update database and return false
+          await storage.updateUserStripeInfo(userId, {
+            subscriptionStatus: 'expired',
+            subscriptionPlan: 'free',
+          });
+          return false;
+        }
+      }
+      return true;
     }
     
-    // Active, trialing, or past_due subscriptions count as premium
-    return ['active', 'trialing', 'past_due'].includes(subscription.status);
+    // Fall back to checking Stripe subscription for recurring plans
+    if (user.stripeSubscriptionId) {
+      const subscription = await stripeService.getSubscriptionWithDetails(user.stripeSubscriptionId);
+      if (subscription && ['active', 'trialing', 'past_due'].includes(subscription.status)) {
+        return true;
+      }
+    }
+    
+    return false;
   } catch (error) {
     console.error("Error checking premium status:", error);
     return false;
@@ -1687,8 +1706,47 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.json({ isSubscribed: false, subscription: null });
+      }
 
-      const subscriptionId = user?.stripeSubscriptionId;
+      // First check for Season Pass (one-time purchase) in database
+      if (user.subscriptionStatus === 'active' && 
+          (user.subscriptionPlan === 'season_pass' || user.subscriptionPlan === 'premium')) {
+        // Check if Season Pass has expired
+        if (user.subscriptionExpiresAt) {
+          const now = new Date();
+          if (now > user.subscriptionExpiresAt) {
+            // Season Pass expired
+            await storage.updateUserStripeInfo(userId, {
+              subscriptionStatus: 'expired',
+              subscriptionPlan: 'free',
+            });
+            return res.json({ isSubscribed: false, subscription: null });
+          }
+        }
+        
+        // Active Season Pass
+        return res.json({
+          isSubscribed: true,
+          subscription: {
+            id: 'season_pass',
+            status: 'active',
+            current_period_end: user.subscriptionExpiresAt ? Math.floor(user.subscriptionExpiresAt.getTime() / 1000) : null,
+            cancel_at_period_end: false,
+            plan: {
+              nickname: 'Season Pass',
+              amount: 2900,
+              currency: 'usd',
+              interval: '6 months',
+            },
+          }
+        });
+      }
+
+      // Fall back to checking Stripe subscription for recurring plans
+      const subscriptionId = user.stripeSubscriptionId;
       if (!subscriptionId || typeof subscriptionId !== 'string') {
         return res.json({ isSubscribed: false, subscription: null });
       }
@@ -1717,8 +1775,8 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         subscription: {
           id: subscription.id,
           status: subscription.status,
-          current_period_end: subscription.current_period_end,
-          cancel_at_period_end: subscription.cancel_at_period_end,
+          current_period_end: (subscription as any).current_period_end,
+          cancel_at_period_end: (subscription as any).cancel_at_period_end,
           plan: planDetails,
         }
       });
