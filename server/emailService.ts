@@ -212,6 +212,116 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
   }
 }
 
+export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: string | null): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      to: userEmail,
+      subject: 'Welcome to NYC School Ratings!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to NYC School Ratings!</h1>
+            <p style="color: #6b7280; font-size: 16px;">Your guide to NYC schools starts here</p>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            Thank you for joining NYC School Ratings! You now have access to browse and compare over 1,500 NYC public and charter schools.
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0;">
+            <h2 style="color: #1e40af; margin-top: 0; font-size: 18px;">A Note From the Founder</h2>
+            <p style="font-size: 15px; line-height: 1.7; color: #374151;">
+              I'm the father of two boys on the Upper East Side. Like you, I found myself overwhelmed 
+              by the complexity of NYC's school system. I spent countless hours researching schools, 
+              comparing test scores, and trying to understand what really matters.
+            </p>
+            <p style="font-size: 15px; line-height: 1.7; color: #374151; margin-bottom: 0;">
+              That's why I built NYC School Ratings — <strong>a tool made by a NYC parent, for NYC parents</strong>. 
+              I hope it helps your family as much as it's helped mine.
+            </p>
+          </div>
+          
+          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">What You Can Do Now</h2>
+          
+          <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <span style="margin-left: 10px;">Browse all 1,500+ NYC public and charter schools</span>
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <span style="margin-left: 10px;">View basic school information and ratings</span>
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <span style="margin-left: 10px;">Filter by district, grade level, and programs</span>
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <span style="margin-left: 10px;">Save your favorite schools</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
+            <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Unlock Premium Features with Season Pass</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
+              Get the complete toolkit for your school search — just <strong>$29 for 6 months</strong>:
+            </p>
+            <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
+              <li style="padding: 6px 0;"><strong>AI Chat Assistant</strong> — Get personalized school recommendations</li>
+              <li style="padding: 6px 0;"><strong>Side-by-Side Comparison</strong> — Compare up to 4 schools at once</li>
+              <li style="padding: 6px 0;"><strong>Detailed Score Breakdowns</strong> — Deep dive into test scores and metrics</li>
+              <li style="padding: 6px 0;"><strong>Lottery Calculator</strong> — Understand your admission odds</li>
+              <li style="padding: 6px 0;"><strong>Application Tracker</strong> — Keep all applications organized</li>
+              <li style="padding: 6px 0;"><strong>District Deep Dives</strong> — Explore district-level trends</li>
+            </ul>
+            <div style="text-align: center;">
+              <a href="https://nycschoolratings.com/pricing" 
+                 style="background: #f59e0b; color: #78350f; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                View Season Pass
+              </a>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://nycschoolratings.com" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Start Exploring Schools
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+              Questions? Just reply to this email or reach out at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>.
+            </p>
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
+              Best of luck with your school search!<br/>
+              <strong>— The NYC School Ratings Team</strong>
+            </p>
+          </div>
+          
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'New user welcome email sent', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send new user welcome email', { error: error.message, userEmail });
+    return false;
+  }
+}
+
 export async function sendAdminNewUserRegistrationNotification(userEmail: string, firstName?: string | null, lastName?: string | null): Promise<boolean> {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
@@ -251,4 +361,5 @@ export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
   sendAdminNewUserRegistrationNotification,
+  sendNewUserWelcomeEmail,
 };
