@@ -49,6 +49,7 @@ export default function NyceecDetail() {
   const { slug } = useParams();
   const [, setLocation] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [premiumRequired, setPremiumRequired] = useState(false);
 
   const locCode = slug?.split('-')[0]?.toUpperCase() || '';
 
@@ -66,6 +67,7 @@ export default function NyceecDetail() {
 
   const aiInsightsMutation = useMutation({
     mutationFn: async () => {
+      setPremiumRequired(false);
       const response = await apiRequest("POST", "/api/nyceec-centers/ai-insights", {
         locCode: center?.locCode,
         name: center?.name,
@@ -77,11 +79,19 @@ export default function NyceecDetail() {
         extendedDay: center?.extendedDay,
         dayLength: center?.dayLength,
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.code === "PREMIUM_REQUIRED") {
+          setPremiumRequired(true);
+        }
+        throw new Error(errorData.message || "Failed to generate insights");
+      }
       return response.json();
     },
     onSuccess: () => {
-      // Refetch cached insights after successful generation
       refetchInsights();
+    },
+    onError: () => {
     },
   });
 
@@ -403,6 +413,25 @@ export default function NyceecDetail() {
                   </div>
                   <Skeleton className="h-20" />
                   <Skeleton className="h-32" />
+                </div>
+              ) : aiInsightsMutation.isError && premiumRequired ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="bg-primary/10 p-3 rounded-full w-fit mx-auto">
+                    <Sparkles className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Premium Feature</h4>
+                    <p className="text-muted-foreground text-sm">
+                      AI Insights for early childhood centers are available with Season Pass.
+                      Get personalized analysis and questions to ask during your tour.
+                    </p>
+                  </div>
+                  <Link href="/pricing">
+                    <Button data-testid="button-upgrade-insights">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Upgrade to Season Pass
+                    </Button>
+                  </Link>
                 </div>
               ) : aiInsightsMutation.isError ? (
                 <div className="text-center py-6 space-y-4">
