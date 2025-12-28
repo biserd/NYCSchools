@@ -3,6 +3,7 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
+import { sendAdminNewUserRegistrationNotification } from "./emailService";
 
 declare module "express-session" {
   interface SessionData {
@@ -73,6 +74,11 @@ export function setupAuth(app: Express) {
       });
 
       req.session.userId = user.id;
+      
+      // Send admin notification email (don't await to avoid slowing down registration)
+      sendAdminNewUserRegistrationNotification(email, firstName, lastName).catch((err) => {
+        console.error("Failed to send admin registration notification:", err);
+      });
       
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);

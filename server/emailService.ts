@@ -212,7 +212,43 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
   }
 }
 
+export async function sendAdminNewUserRegistrationNotification(userEmail: string, firstName?: string | null, lastName?: string | null): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    
+    const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Not provided';
+    
+    const result = await client.emails.send({
+      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      to: ADMIN_EMAIL,
+      subject: `New User Registration: ${userEmail}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #2563eb; margin-bottom: 20px;">New User Registered</h1>
+          
+          <div style="background: #f0f9ff; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${userEmail}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Name:</strong> ${fullName}</p>
+            <p style="margin: 0;"><strong>Registered:</strong> ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</p>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px;">
+            This user has created a free account and may convert to a Season Pass customer.
+          </p>
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Admin new user registration notification sent', { to: ADMIN_EMAIL, userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send admin new user registration notification', { error: error.message, userEmail });
+    return false;
+  }
+}
+
 export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
+  sendAdminNewUserRegistrationNotification,
 };
