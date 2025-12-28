@@ -24,7 +24,8 @@ export function TrackSchoolButton({
 
   // Check auth status
   const { data: user } = useQuery({
-    queryKey: ["/api/user"],
+    queryKey: ["/api/auth/user"],
+    retry: false,
   });
 
   // Check subscription status
@@ -33,7 +34,8 @@ export function TrackSchoolButton({
     enabled: !!user,
   });
 
-  const isPremium = (subscription as any)?.plan === "premium" || (subscription as any)?.plan === "season_pass";
+  const isPremium = (subscription as any)?.status === "active" && 
+    ((subscription as any)?.plan === "premium" || (subscription as any)?.plan === "season_pass");
 
   // Check if school is tracked
   const { data: trackStatus, isLoading: statusLoading } = useQuery<{ isTracked: boolean }>({
