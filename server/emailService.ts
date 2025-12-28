@@ -113,25 +113,8 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
           <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
           
           <p style="font-size: 16px; line-height: 1.6;">
-            Thank you for joining the NYC School Ratings family! I'm thrilled to have you on board.
+            Thank you for joining the NYC School Ratings family! Your Season Pass is now active and you have full access to all premium features.
           </p>
-          
-          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0;">
-            <h2 style="color: #1e40af; margin-top: 0; font-size: 18px;">A Note From the Founder</h2>
-            <p style="font-size: 15px; line-height: 1.7; color: #374151;">
-              I'm the father of two boys on the Upper East Side. Like you, I found myself overwhelmed 
-              by the complexity of NYC's school system. I spent countless hours researching schools, 
-              comparing test scores, and trying to understand what really matters.
-            </p>
-            <p style="font-size: 15px; line-height: 1.7; color: #374151;">
-              That's why I built NYC School Ratings — <strong>a tool made by a NYC parent, for NYC parents</strong>. 
-              I wanted to create something that gives families the clear, honest information they need 
-              to make confident decisions about their children's education.
-            </p>
-            <p style="font-size: 15px; line-height: 1.7; color: #374151; margin-bottom: 0;">
-              Welcome to the community. I hope this helps your family as much as it's helped mine.
-            </p>
-          </div>
           
           <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">Your Season Pass Benefits</h2>
           
@@ -278,12 +261,30 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
               Get the complete toolkit for your school search — just <strong>$29 for 6 months</strong>:
             </p>
             <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
-              <li style="padding: 6px 0;"><strong>AI Chat Assistant</strong> — Get personalized school recommendations</li>
-              <li style="padding: 6px 0;"><strong>Side-by-Side Comparison</strong> — Compare up to 4 schools at once</li>
-              <li style="padding: 6px 0;"><strong>Detailed Score Breakdowns</strong> — Deep dive into test scores and metrics</li>
-              <li style="padding: 6px 0;"><strong>Lottery Calculator</strong> — Understand your admission odds</li>
-              <li style="padding: 6px 0;"><strong>Application Tracker</strong> — Keep all applications organized</li>
-              <li style="padding: 6px 0;"><strong>District Deep Dives</strong> — Explore district-level trends</li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <strong>AI Chat Assistant</strong>
+                <span style="display: block; font-size: 14px; margin-top: 4px;">Get personalized school recommendations and answers to all your questions</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <strong>Side-by-Side Comparison</strong>
+                <span style="display: block; font-size: 14px; margin-top: 4px;">Compare up to 4 schools at once with detailed metrics</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <strong>Detailed Score Breakdowns</strong>
+                <span style="display: block; font-size: 14px; margin-top: 4px;">Deep dive into test scores, progress metrics, and school climate data</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <strong>Lottery & Admissions Calculator</strong>
+                <span style="display: block; font-size: 14px; margin-top: 4px;">Understand your odds and plan your application strategy</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <strong>Application Tracker</strong>
+                <span style="display: block; font-size: 14px; margin-top: 4px;">Keep all your school applications organized in one place</span>
+              </li>
+              <li style="padding: 10px 0;">
+                <strong>District Deep Dives</strong>
+                <span style="display: block; font-size: 14px; margin-top: 4px;">Explore district-level comparisons and trends</span>
+              </li>
             </ul>
             <div style="text-align: center;">
               <a href="https://nycschoolratings.com/pricing" 
