@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { format, formatDistanceToNow, isPast, isWithinInterval, addDays } from "date-fns";
 import { SEOHead } from "@/components/SEOHead";
+import { AppHeader } from "@/components/AppHeader";
+import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -161,16 +163,20 @@ export default function ApplicationTracker() {
   // Loading state
   if (authLoading || subLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col min-h-screen">
         <SEOHead 
           title="Application Tracker | NYC School Ratings"
           description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
         />
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
+        <AppHeader />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -178,27 +184,31 @@ export default function ApplicationTracker() {
   // Not logged in
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col min-h-screen">
         <SEOHead 
           title="Application Tracker | NYC School Ratings"
           description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
         />
-        <Card className="max-w-lg mx-auto text-center">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Lock className="h-6 w-6" />
-              Sign In Required
-            </CardTitle>
-            <CardDescription>
-              Please sign in to access the Application Tracker.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <AppHeader />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <Card className="max-w-lg mx-auto text-center">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Lock className="h-6 w-6" />
+                Sign In Required
+              </CardTitle>
+              <CardDescription>
+                Please sign in to access the Application Tracker.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild>
+                <Link href="/login">Sign In</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -206,64 +216,69 @@ export default function ApplicationTracker() {
   // Not premium
   if (!isPremium) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col min-h-screen">
         <SEOHead 
           title="Application Tracker | NYC School Ratings"
           description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
         />
-        <Card className="max-w-lg mx-auto text-center">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Lock className="h-6 w-6" />
-              Premium Feature
-            </CardTitle>
-            <CardDescription>
-              The Application Tracker is a Premium feature that helps you stay organized during the school admissions process.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm text-muted-foreground space-y-2">
-              <p>With the Application Tracker, you can:</p>
-              <ul className="text-left space-y-1 pl-4">
-                <li className="flex items-center gap-2">
-                  <CalendarClock className="h-4 w-4 text-primary" />
-                  Track open houses and tour dates
-                </li>
-                <li className="flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" />
-                  Get email reminders for important deadlines
-                </li>
-                <li className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  Keep notes on each school
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-primary" />
-                  Track application status
-                </li>
-              </ul>
-            </div>
-            <Button asChild className="w-full">
-              <Link href="/pricing">
-                Upgrade to Premium
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <AppHeader />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <Card className="max-w-lg mx-auto text-center">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Lock className="h-6 w-6" />
+                Premium Feature
+              </CardTitle>
+              <CardDescription>
+                The Application Tracker is a Premium feature that helps you stay organized during the school admissions process.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>With the Application Tracker, you can:</p>
+                <ul className="text-left space-y-1 pl-4">
+                  <li className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-primary" />
+                    Track open houses and tour dates
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    Get email reminders for important deadlines
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Keep notes on each school
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                    Track application status
+                  </li>
+                </ul>
+              </div>
+              <Button asChild className="w-full">
+                <Link href="/pricing">
+                  Upgrade to Premium
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   // Premium user - show tracker
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="flex flex-col min-h-screen">
       <SEOHead 
         title="Application Tracker | NYC School Ratings"
         description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
       />
-
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <AppHeader />
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Application Tracker</h1>
           <p className="text-muted-foreground">Track schools, deadlines, and application status</p>
@@ -521,6 +536,8 @@ export default function ApplicationTracker() {
           )}
         </DialogContent>
       </Dialog>
+      </main>
+      <Footer />
     </div>
   );
 }
