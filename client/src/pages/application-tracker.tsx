@@ -99,7 +99,8 @@ export default function ApplicationTracker() {
   
   // Check auth and subscription status
   const { data: user, isLoading: authLoading } = useQuery({
-    queryKey: ["/api/user"],
+    queryKey: ["/api/auth/user"],
+    retry: false,
   });
   
   const { data: subscription, isLoading: subLoading } = useQuery({
@@ -107,7 +108,8 @@ export default function ApplicationTracker() {
     enabled: !!user,
   });
 
-  const isPremium = (subscription as any)?.plan === "premium" || (subscription as any)?.plan === "season_pass";
+  const isPremium = (subscription as any)?.status === "active" && 
+    ((subscription as any)?.plan === "premium" || (subscription as any)?.plan === "season_pass");
 
   // Fetch tracked schools
   const { data: trackedSchools, isLoading: trackedLoading, error: trackedError } = useQuery<TrackedSchool[]>({
