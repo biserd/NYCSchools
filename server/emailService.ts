@@ -166,7 +166,7 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://nycschoolratings.com" 
+            <a href="https://nycschoolsratings.com" 
                style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
               Start Exploring Schools →
             </a>
@@ -287,7 +287,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
               </li>
             </ul>
             <div style="text-align: center;">
-              <a href="https://nycschoolratings.com/pricing" 
+              <a href="https://nycschoolsratings.com/pricing" 
                  style="background: #f59e0b; color: #78350f; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                 View Season Pass
               </a>
@@ -295,7 +295,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://nycschoolratings.com" 
+            <a href="https://nycschoolsratings.com" 
                style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
               Start Exploring Schools
             </a>
