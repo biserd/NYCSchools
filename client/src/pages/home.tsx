@@ -626,19 +626,6 @@ export default function Home() {
             </div>
             
             <div className="hidden md:flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
-                  if (chatButton) chatButton.click();
-                }}
-                data-testid="button-ai-assistant-header"
-                className="bg-primary hover:bg-primary/90"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Ask AI
-              </Button>
               <Button variant="outline" size="sm" asChild data-testid="button-recommendations-nav">
                 <Link href="/recommendations">
                   <Sparkles className="w-4 h-4 mr-2" />
@@ -740,16 +727,6 @@ export default function Home() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
-                      if (chatButton) chatButton.click();
-                    }}
-                    data-testid="menu-item-ai"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Ask AI Assistant
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/recommendations" data-testid="menu-item-match">
                       <Sparkles className="w-4 h-4 mr-2" />
