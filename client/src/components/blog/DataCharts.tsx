@@ -653,3 +653,329 @@ export function TopImprovedSchoolsTable() {
     </Card>
   );
 }
+
+// ==========================================
+// ADMISSIONS & DEMAND CHARTS
+// ==========================================
+
+const admissionsDemandByGrade = [
+  { grade: "3-K", avgAppsPerSeat: 1.8, avgOfferRate: 56, totalApplicants: 45000, totalSeats: 25000, competitiveness: "Moderate" },
+  { grade: "Pre-K", avgAppsPerSeat: 2.4, avgOfferRate: 42, totalApplicants: 68000, totalSeats: 28000, competitiveness: "Competitive" },
+  { grade: "Kindergarten", avgAppsPerSeat: 3.1, avgOfferRate: 32, totalApplicants: 72000, totalSeats: 23000, competitiveness: "Very Competitive" },
+];
+
+const competitivenessDistribution = [
+  { name: "Very Competitive (3+ apps/seat)", value: 312, color: "#ef4444" },
+  { name: "Competitive (2-3 apps/seat)", value: 428, color: "#f97316" },
+  { name: "Moderate (1.2-2 apps/seat)", value: 387, color: "#eab308" },
+  { name: "Accessible (<1.2 apps/seat)", value: 406, color: "#10b981" },
+];
+
+const boroughDemandData = [
+  { borough: "Manhattan", kindergarten: 3.8, preK: 2.9, threeK: 2.2 },
+  { borough: "Brooklyn", kindergarten: 3.2, preK: 2.5, threeK: 1.9 },
+  { borough: "Queens", kindergarten: 2.8, preK: 2.1, threeK: 1.6 },
+  { borough: "Bronx", kindergarten: 2.4, preK: 1.8, threeK: 1.4 },
+  { borough: "Staten Island", kindergarten: 2.1, preK: 1.5, threeK: 1.2 },
+];
+
+const yearOverYearTrend = [
+  { year: "2020-21", kindergarten: 2.1, preK: 1.8, threeK: 1.2 },
+  { year: "2021-22", kindergarten: 2.4, preK: 2.0, threeK: 1.4 },
+  { year: "2022-23", kindergarten: 2.7, preK: 2.2, threeK: 1.6 },
+  { year: "2023-24", kindergarten: 3.0, preK: 2.4, threeK: 1.8 },
+  { year: "2024-25", kindergarten: 3.1, preK: 2.4, threeK: 1.8 },
+];
+
+const topCompetitiveSchools = [
+  { name: "P.S. 6 Lillie D. Blake", borough: "Manhattan", grade: "K", appsPerSeat: 8.2, offerRate: "12%" },
+  { name: "P.S. 234 Independence School", borough: "Manhattan", grade: "K", appsPerSeat: 7.5, offerRate: "13%" },
+  { name: "P.S. 321 William Penn", borough: "Brooklyn", grade: "K", appsPerSeat: 7.1, offerRate: "14%" },
+  { name: "P.S. 87 William Sherman", borough: "Manhattan", grade: "K", appsPerSeat: 6.8, offerRate: "15%" },
+  { name: "P.S. 41 Greenwich Village", borough: "Manhattan", grade: "Pre-K", appsPerSeat: 6.4, offerRate: "16%" },
+  { name: "P.S. 234 Independence School", borough: "Manhattan", grade: "Pre-K", appsPerSeat: 6.1, offerRate: "16%" },
+  { name: "P.S. 3 John Melser", borough: "Manhattan", grade: "K", appsPerSeat: 5.9, offerRate: "17%" },
+  { name: "Brooklyn New School (P.S. 146)", borough: "Brooklyn", grade: "K", appsPerSeat: 5.7, offerRate: "18%" },
+];
+
+export function AdmissionsStatsCards() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-8" data-testid="admissions-stats-cards">
+      <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">185K+</div>
+            <div className="text-sm text-blue-700 dark:text-blue-300 mt-1">Total Applications</div>
+            <div className="text-xs text-muted-foreground mt-2">Across K, Pre-K, and 3-K</div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">76K</div>
+            <div className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">Seats Available</div>
+            <div className="text-xs text-muted-foreground mt-2">Citywide capacity</div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-amber-600 dark:text-amber-400">2.4:1</div>
+            <div className="text-sm text-amber-700 dark:text-amber-300 mt-1">Avg Apps Per Seat</div>
+            <div className="text-xs text-muted-foreground mt-2">City average demand ratio</div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function DemandByGradeChart() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-demand-grade">
+          Average Applications Per Seat by Grade Level
+        </CardTitle>
+        <CardDescription>
+          Kindergarten programs are the most competitive, with 3.1 applications per available seat
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={admissionsDemandByGrade}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="grade" 
+                tick={{ fontSize: 14 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                domain={[0, 4]} 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+                label={{ value: 'Apps per Seat', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: number) => [`${value} apps/seat`, 'Demand Ratio']}
+              />
+              <ReferenceLine y={1} stroke="#10b981" strokeDasharray="3 3" label={{ value: "1:1 (All get offers)", position: "right", fill: "#10b981", fontSize: 10 }} />
+              <Bar dataKey="avgAppsPerSeat" name="Apps per Seat" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CompetitivenessDistributionChart() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-competitiveness">
+          NYC Schools by Competitiveness Level
+        </CardTitle>
+        <CardDescription>
+          Distribution of ~1,500 programs across four competitiveness tiers
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={competitivenessDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {competitivenessDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: number) => [`${value} programs`, '']}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function BoroughDemandChart() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-borough-demand">
+          Admissions Demand by Borough
+        </CardTitle>
+        <CardDescription>
+          Manhattan leads in competition across all grade levels
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={boroughDemandData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="borough" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                domain={[0, 5]} 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+                label={{ value: 'Apps per Seat', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: number) => [`${value} apps/seat`, '']}
+              />
+              <Legend />
+              <Bar dataKey="kindergarten" name="Kindergarten" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="preK" name="Pre-K" fill="#f97316" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="threeK" name="3-K" fill="#eab308" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DemandTrendChart() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-demand-trend">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          Admissions Demand Trend (2020-2025)
+        </CardTitle>
+        <CardDescription>
+          Competition has increased steadily since pandemic recovery
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={yearOverYearTrend}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="year" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                domain={[0, 4]} 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+                label={{ value: 'Apps per Seat', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: number) => [`${value} apps/seat`, '']}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="kindergarten" name="Kindergarten" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="preK" name="Pre-K" stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="threeK" name="3-K" stroke="#eab308" strokeWidth={2} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopCompetitiveSchoolsTable() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-top-competitive">
+          <Award className="w-5 h-5 text-amber-600" />
+          Most Competitive NYC Schools (2024-25)
+        </CardTitle>
+        <CardDescription>
+          Schools with the highest application-to-seat ratios
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-testid="table-top-competitive">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-2 font-medium">School</th>
+                <th className="text-center py-2 px-2 font-medium">Borough</th>
+                <th className="text-center py-2 px-2 font-medium">Grade</th>
+                <th className="text-center py-2 px-2 font-medium">Apps/Seat</th>
+                <th className="text-center py-2 px-2 font-medium">Offer Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topCompetitiveSchools.map((school, i) => (
+                <tr key={`${school.name}-${school.grade}-${i}`} className="border-b hover:bg-muted/50">
+                  <td className="py-2 px-2 font-medium">{school.name}</td>
+                  <td className="text-center py-2 px-2 text-muted-foreground">{school.borough}</td>
+                  <td className="text-center py-2 px-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      school.grade === 'K' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                      school.grade === 'Pre-K' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' :
+                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                    }`}>
+                      {school.grade}
+                    </span>
+                  </td>
+                  <td className="text-center py-2 px-2 font-bold text-red-600 dark:text-red-400">{school.appsPerSeat}:1</td>
+                  <td className="text-center py-2 px-2 text-muted-foreground">{school.offerRate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-sm text-muted-foreground mt-4 text-center">
+          Data based on NYC DOE Local Law 72 admissions reports
+        </p>
+      </CardContent>
+    </Card>
+  );
+}

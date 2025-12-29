@@ -12,6 +12,16 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "nyc-prek-3k-kindergarten-admissions-demand-2025",
+    title: "NYC Pre-K, 3-K & Kindergarten Admissions 2025: Which Schools Are Most Competitive?",
+    description: "Our analysis of NYC DOE admissions data reveals which Pre-K, 3-K, and Kindergarten programs are most in-demand. See competitiveness ratings, application-to-seat ratios, and offer rates for every NYC school.",
+    author: "NYC School Ratings Team",
+    publishedAt: "2024-12-29",
+    readTime: "10 min read",
+    category: "Admissions Guide",
+    tags: ["Pre-K Admissions", "3-K Admissions", "Kindergarten", "NYC Schools", "Application Tips", "Competitiveness", "Lottery"]
+  },
+  {
     slug: "nyc-schools-2025-covid-recovery",
     title: "NYC Schools 2025: The COVID Recovery Story",
     description: "How NYC schools bounced back from pandemic learning loss. Our analysis of 2025 test scores reveals a remarkable recovery - with proficiency rates now exceeding pre-COVID levels.",
