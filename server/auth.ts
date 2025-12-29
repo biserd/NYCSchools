@@ -2,8 +2,9 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { storage } from "./storage";
-import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail } from "./emailService";
+import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail, sendPasswordResetEmail } from "./emailService";
 
 declare module "express-session" {
   interface SessionData {
@@ -128,6 +129,131 @@ export function setupAuth(app: Express) {
       res.clearCookie("connect.sid");
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  // Password Reset - Request reset email
+  app.post("/api/auth/password-reset/request", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Always return success to prevent email enumeration
+      const user = await storage.getUserByEmail(email);
+      
+      if (user) {
+        // Generate secure random token
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+        
+        // Token expires in 30 minutes
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        
+        await storage.createPasswordResetToken(user.id, tokenHash, expiresAt);
+        
+        // Build reset URL - use production domain or Replit dev domain
+        let baseUrl: string;
+        if (process.env.NODE_ENV === "production") {
+          baseUrl = "https://nycschoolsratings.com";
+        } else if (process.env.REPLIT_DEV_DOMAIN) {
+          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+        } else {
+          baseUrl = "http://localhost:5000";
+        }
+        const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
+        
+        // Send email (don't await to avoid timing attacks)
+        sendPasswordResetEmail(user.email, resetUrl, user.firstName).catch((err) => {
+          console.error("Failed to send password reset email:", err);
+        });
+      }
+
+      // Always return success
+      res.json({ message: "If an account exists with that email, you will receive a password reset link." });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
+  // Password Reset - Validate token
+  app.get("/api/auth/password-reset/validate", async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ valid: false, message: "Token is required" });
+      }
+
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const resetToken = await storage.findPasswordResetToken(tokenHash);
+
+      if (!resetToken) {
+        return res.json({ valid: false, message: "Invalid or expired reset link" });
+      }
+
+      if (resetToken.usedAt) {
+        return res.json({ valid: false, message: "This reset link has already been used" });
+      }
+
+      if (new Date() > resetToken.expiresAt) {
+        return res.json({ valid: false, message: "This reset link has expired" });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      console.error("Password reset validate error:", error);
+      res.status(500).json({ valid: false, message: "Failed to validate token" });
+    }
+  });
+
+  // Password Reset - Complete reset with new password
+  app.post("/api/auth/password-reset/complete", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const resetToken = await storage.findPasswordResetToken(tokenHash);
+
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired reset link" });
+      }
+
+      if (resetToken.usedAt) {
+        return res.status(400).json({ message: "This reset link has already been used" });
+      }
+
+      if (new Date() > resetToken.expiresAt) {
+        return res.status(400).json({ message: "This reset link has expired" });
+      }
+
+      // Hash the new password and update user
+      const hashedPassword = await hashPassword(password);
+      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      
+      // Mark token as used
+      await storage.markPasswordResetTokenUsed(resetToken.id);
+
+      // Clean up expired tokens periodically
+      storage.deleteExpiredPasswordResetTokens().catch((err) => {
+        console.error("Failed to clean up expired tokens:", err);
+      });
+
+      res.json({ message: "Password reset successfully. You can now log in with your new password." });
+    } catch (error) {
+      console.error("Password reset complete error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
   });
 }
 

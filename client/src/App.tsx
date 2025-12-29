@@ -18,6 +18,8 @@ import BenefitsPage from "@/pages/benefits";
 import ReleaseNotesPage from "@/pages/release-notes";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import DevelopersPage from "@/pages/developers";
 import ContactPage from "@/pages/contact";
 import NotFound from "@/pages/not-found";
@@ -64,6 +66,8 @@ function Router() {
         </Route>
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/favorites">
           <FavoritesPage />
         </Route>

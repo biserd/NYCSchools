@@ -481,6 +481,21 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// Password Reset Tokens for forgot password flow
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tokenHashIdx: index("password_reset_tokens_hash_idx").on(table.tokenHash),
+  userIdx: index("password_reset_tokens_user_idx").on(table.userId),
+}));
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
 // OAuth 2.1 Authorization Codes for ChatGPT integration
 export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
   code: varchar("code").primaryKey(),
