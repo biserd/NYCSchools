@@ -9,7 +9,12 @@ I prefer detailed explanations. Ask before making major changes.
 ## System Architecture
 
 ### UI/UX Decisions
-The design emphasizes a clean, modern aesthetic with the Inter typeface and a primary blue color scheme, adhering to `design_guidelines.md`. It is responsive and accessible, featuring ARIA labels and keyboard navigation. Visual cues include color-coded indicators for scores and metrics with on-screen explanations. The AI assistant is prominent, with multiple entry points and a pulsing animation. A consistent `AppHeader` and `Footer` are used across the application.
+The design emphasizes a clean, modern aesthetic with the Inter typeface and a primary blue color scheme, adhering to `design_guidelines.md`. It is responsive and accessible, featuring ARIA labels and keyboard navigation. Visual cues include color-coded indicators for scores and metrics with on-screen explanations. The AI assistant is prominent, with multiple entry points and a pulsing animation.
+
+**Header Architecture:**
+- `AppHeader`: Main navigation header used on most pages. Shows different navigation for logged-in/logged-out users.
+- `AuthPageHeader`: Minimal header with logo, page title breadcrumb, and theme toggle for auth pages (login, register, forgot-password, reset-password).
+- Home page has a custom header integrated with its hero section layout, but maintains consistent navigation buttons (Pricing, Log In, Sign Up for logged-out; Favorites, Settings, Logout for logged-in).
 
 ### Technical Implementations
 The frontend utilizes React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing. Components are organized into `components/` and `pages/`. Data is sourced from PostgreSQL, with client-side calculations and state managed via React's `useState` and `useMemo`. `shared/schema.ts` defines data models. SEO is comprehensive, including dynamic meta tags, Structured Data, `Sitemap.xml`, `Robots.txt`, Open Graph, Twitter Cards, and canonical URLs. Geocoding uses NYC Open Data for map visualization and school zone detection.
