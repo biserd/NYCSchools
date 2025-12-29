@@ -13,11 +13,12 @@ import {
   MessageCircle,
   Home,
   Shuffle,
-  Gift,
   Zap,
   Star,
   ClipboardList,
-  Target
+  Target,
+  UserPlus,
+  DollarSign
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -27,7 +28,6 @@ interface AppHeaderProps {
 export function AppHeader({ showAIButton = true }: AppHeaderProps) {
   const { user, isAuthenticated } = useAuth();
 
-  // Check subscription status - wait for query to complete before showing upgrade button
   const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
     status: string;
     plan: string;
@@ -36,10 +36,8 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
     enabled: isAuthenticated,
   });
 
-  // Check for premium access - includes recurring subscriptions and Season Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
-  // Only show upgrade button after subscription query completes and user is NOT premium
   const showUpgradeButton = isAuthenticated && subscriptionFetched && !isPremium;
 
   return (
@@ -54,162 +52,134 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
               </h1>
             </div>
           </Link>
+          
           <div className="flex items-center gap-2 flex-wrap">
-            {showAIButton && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
-                  if (chatButton) chatButton.click();
-                }}
-                data-testid="button-ai-assistant-header"
-                className="bg-primary hover:bg-primary/90"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Ask AI
-              </Button>
-            )}
-            <Link href="/recommendations">
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="button-recommendations-nav"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Find My Match</span>
-                <span className="sm:hidden">Match</span>
-              </Button>
-            </Link>
-            <Link href="/lottery-simulator">
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="button-lottery-nav"
-              >
-                <Shuffle className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Lottery Simulator</span>
-                <span className="sm:hidden">Lottery</span>
-              </Button>
-            </Link>
-            <Link href="/chances-calculator">
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid="button-chances-nav"
-              >
-                <Target className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Chances Calculator</span>
-                <span className="sm:hidden">Chances</span>
-              </Button>
-            </Link>
-            <Link href="/map">
-              <Button
-                variant="outline"
-                size="icon"
-                className="sm:w-auto sm:px-3"
-                data-testid="button-map-nav"
-              >
-                <Map className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Map</span>
-              </Button>
-            </Link>
-            {isAuthenticated && user && (
-              <Link href="/settings">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="sm:w-auto sm:px-3"
-                  data-testid="button-settings-nav"
-                >
-                  <Settings className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Settings</span>
-                </Button>
-              </Link>
-            )}
-            {isAuthenticated && user && (
-              <Link href="/favorites">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="sm:w-auto sm:px-3"
-                  data-testid="button-favorites-nav"
-                >
-                  <Heart className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Favorites</span>
-                </Button>
-              </Link>
-            )}
-            {isAuthenticated && user && isPremium && (
-              <Link href="/application-tracker">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="sm:w-auto sm:px-3"
-                  data-testid="button-tracker-nav"
-                >
-                  <ClipboardList className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Tracker</span>
-                </Button>
-              </Link>
-            )}
-            {/* Only show premium badge or upgrade button after subscription query completes */}
-            {isAuthenticated && user && subscriptionFetched && isPremium && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium">
-                <Star className="w-3 h-3" />
-                <span className="hidden sm:inline">Premium</span>
-              </div>
-            )}
-            {showUpgradeButton && (
-              <Link href="/pricing">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="bg-gradient-to-r from-primary to-primary/80"
-                  data-testid="button-upgrade-nav"
-                >
-                  <Zap className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Upgrade</span>
-                  <span className="sm:hidden">Pro</span>
-                </Button>
-              </Link>
-            )}
             {isAuthenticated ? (
-              <Button
-                variant="outline"
-                size="icon"
-                className="sm:w-auto sm:px-3"
-                onClick={async () => {
-                  await fetch('/api/logout', { method: 'POST' });
-                  window.location.href = '/';
-                }}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
+              <>
+                {showAIButton && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
+                      if (chatButton) chatButton.click();
+                    }}
+                    data-testid="button-ai-assistant-header"
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Ask AI
+                  </Button>
+                )}
+                <Link href="/recommendations">
+                  <Button variant="outline" size="sm" data-testid="button-recommendations-nav">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Find My Match</span>
+                    <span className="sm:hidden">Match</span>
+                  </Button>
+                </Link>
+                <Link href="/lottery-simulator">
+                  <Button variant="outline" size="sm" data-testid="button-lottery-nav">
+                    <Shuffle className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Lottery</span>
+                    <span className="sm:hidden">Lottery</span>
+                  </Button>
+                </Link>
+                <Link href="/chances-calculator">
+                  <Button variant="outline" size="sm" data-testid="button-chances-nav">
+                    <Target className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Chances</span>
+                    <span className="sm:hidden">Chances</span>
+                  </Button>
+                </Link>
+                <Link href="/map">
+                  <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-map-nav">
+                    <Map className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Map</span>
+                  </Button>
+                </Link>
+                <Link href="/favorites">
+                  <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-favorites-nav">
+                    <Heart className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Favorites</span>
+                  </Button>
+                </Link>
+                {isPremium && (
+                  <Link href="/application-tracker">
+                    <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-tracker-nav">
+                      <ClipboardList className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Tracker</span>
+                    </Button>
+                  </Link>
+                )}
+                {subscriptionFetched && isPremium && (
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium">
+                    <Star className="w-3 h-3" />
+                    <span className="hidden sm:inline">Premium</span>
+                  </div>
+                )}
+                {showUpgradeButton && (
+                  <Link href="/pricing">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-gradient-to-r from-primary to-primary/80"
+                      data-testid="button-upgrade-nav"
+                    >
+                      <Zap className="w-4 h-4 mr-1" />
+                      <span className="hidden sm:inline">Upgrade</span>
+                      <span className="sm:hidden">Pro</span>
+                    </Button>
+                  </Link>
+                )}
+                <Link href="/settings">
+                  <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-settings-nav">
+                    <Settings className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Settings</span>
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="sm:w-auto sm:px-3"
+                  onClick={async () => {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = '/';
+                  }}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
+              </>
             ) : (
               <>
-                <Link href="/benefits">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-testid="button-benefits-nav"
-                  >
-                    <Gift className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Why Register?</span>
-                    <span className="sm:hidden">Benefits</span>
+                <Link href="/recommendations">
+                  <Button variant="outline" size="sm" data-testid="button-recommendations-nav">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Find My Match</span>
+                    <span className="sm:hidden">Match</span>
+                  </Button>
+                </Link>
+                <Link href="/pricing">
+                  <Button variant="outline" size="sm" data-testid="button-pricing-nav">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Pricing</span>
+                    <span className="sm:hidden">Pricing</span>
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button
-                    variant="default"
-                    size="icon"
-                    className="sm:w-auto sm:px-3"
-                    data-testid="button-login"
-                  >
-                    <LogIn className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Login</span>
+                  <Button variant="outline" size="sm" data-testid="button-login">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Log In</span>
+                    <span className="sm:hidden">Log In</span>
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="default" size="sm" data-testid="button-signup">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Sign Up</span>
+                    <span className="sm:hidden">Sign Up</span>
                   </Button>
                 </Link>
               </>

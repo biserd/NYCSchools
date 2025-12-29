@@ -1,16 +1,15 @@
-import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthPageHeader } from "@/components/AuthPageHeader";
 import { SEOHead } from "@/components/SEOHead";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
@@ -82,19 +81,7 @@ export default function RegisterPage() {
         canonicalPath="/register"
         noindex
       />
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">Create Account</h1>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      <AuthPageHeader title="Create Account" />
 
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
