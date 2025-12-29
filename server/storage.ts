@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
@@ -93,6 +93,9 @@ export interface IStorage {
   markPasswordResetTokenUsed(id: number): Promise<void>;
   deleteExpiredPasswordResetTokens(): Promise<void>;
   updateUserPassword(userId: string, passwordHash: string): Promise<void>;
+  
+  // Admissions Data operations
+  getSchoolAdmissionsMetrics(dbn: string): Promise<AdmissionsMetrics[]>;
 }
 
 export interface NyceecFilters {
@@ -1253,6 +1256,15 @@ export class DbStorage implements IStorage {
       .update(users)
       .set({ password: passwordHash, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  // Admissions Data operations
+  async getSchoolAdmissionsMetrics(dbn: string): Promise<AdmissionsMetrics[]> {
+    return await db
+      .select()
+      .from(admissionsMetrics)
+      .where(eq(admissionsMetrics.dbn, dbn))
+      .orderBy(desc(admissionsMetrics.schoolYear), asc(admissionsMetrics.gradeBand));
   }
 }
 

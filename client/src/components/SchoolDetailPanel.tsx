@@ -1,6 +1,7 @@
 import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
+import { AdmissionsSection } from "./AdmissionsSection";
 import {
   Sheet,
   SheetContent,
@@ -416,6 +417,15 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium = fals
               </div>
             </Card>
           )}
+
+          {/* Admissions & Demand Section - for K/Pre-K/3K schools */}
+          <AdmissionsSection 
+            dbn={school.dbn}
+            schoolName={school.name}
+            has3k={school.has_3k ?? false}
+            hasPrek={school.has_prek ?? false}
+            gradeBand={school.grade_band}
+          />
 
           {/* PTA Fundraising Section */}
           {school.pta_fundraising_total && school.pta_fundraising_total > 0 && (

@@ -19,6 +19,7 @@ import { TrackSchoolButton } from "@/components/TrackSchoolButton";
 import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
+import { AdmissionsSection } from "@/components/AdmissionsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
@@ -600,6 +601,15 @@ export default function SchoolDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* Admissions & Demand Section - for K/Pre-K/3K schools */}
+          <AdmissionsSection 
+            dbn={schoolWithScore.dbn}
+            schoolName={schoolWithScore.name}
+            has3k={schoolWithScore.has_3k ?? false}
+            hasPrek={schoolWithScore.has_prek ?? false}
+            gradeBand={schoolWithScore.grade_band}
+          />
 
           {/* PTA Fundraising Section */}
           {schoolWithScore.pta_fundraising_total && schoolWithScore.pta_fundraising_total > 0 && (

@@ -237,6 +237,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admissions data API (public) - for K/3K/Pre-K admissions metrics
+  app.get("/api/schools/:dbn/admissions", async (req: Request, res: Response) => {
+    try {
+      const metrics = await storage.getSchoolAdmissionsMetrics(req.params.dbn);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching admissions data:", error);
+      res.status(500).json({ error: "Failed to fetch admissions data" });
+    }
+  });
+
   // NYCEEC Early Childhood Centers API (public) with caching
   app.get("/api/nyceec-centers", async (req: Request, res: Response) => {
     try {

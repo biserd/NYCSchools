@@ -897,3 +897,146 @@ export function getNyceecSlug(center: Pick<NyceecCenter, 'name' | 'locCode'>): s
 export function getNyceecUrl(center: Pick<NyceecCenter, 'name' | 'locCode'>): string {
   return `/early-childhood/${getNyceecSlug(center)}`;
 }
+
+// ========================================
+// KINDERGARTEN / 3-K / PRE-K ADMISSIONS DATA
+// ========================================
+
+// Admissions Offers Table - LL72 Applications & Offers data
+export const admissionsOffers = pgTable("admissions_offers", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  schoolYear: varchar("school_year").notNull(), // e.g., "2025-2026"
+  gradeBand: varchar("grade_band").notNull(), // "K", "3K", "PK"
+  category: varchar("category").notNull(), // "All Students" or breakdown category
+  
+  // Core metrics from LL72
+  seatsAvailable: integer("seats_available"),
+  totalApplicants: integer("total_applicants"),
+  trueApplicants: integer("true_applicants"), // Applicants who ranked this as a choice
+  offers: integer("offers"),
+  
+  // Suppression flags
+  isSuppressed: boolean("is_suppressed").default(false),
+  
+  // Source tracking
+  sourceFile: varchar("source_file"),
+  ingestedAt: timestamp("ingested_at").defaultNow(),
+}, (table) => [
+  index("idx_admissions_dbn").on(table.dbn),
+  index("idx_admissions_year_grade").on(table.schoolYear, table.gradeBand),
+]);
+
+export const insertAdmissionsOffersSchema = createInsertSchema(admissionsOffers).omit({ id: true, ingestedAt: true });
+export type InsertAdmissionsOffers = z.infer<typeof insertAdmissionsOffersSchema>;
+export type AdmissionsOffers = typeof admissionsOffers.$inferSelect;
+
+// Enrollment Data Table - LL72 Enrollment data (actual registered students)
+export const enrollmentData = pgTable("enrollment_data", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  schoolYear: varchar("school_year").notNull(), // e.g., "2024-2025"
+  grade: varchar("grade").notNull(), // "K", "3K", "PK", "1", "2", etc.
+  
+  enrolled: integer("enrolled"),
+  isSuppressed: boolean("is_suppressed").default(false),
+  
+  sourceFile: varchar("source_file"),
+  ingestedAt: timestamp("ingested_at").defaultNow(),
+}, (table) => [
+  index("idx_enrollment_dbn").on(table.dbn),
+  index("idx_enrollment_year_grade").on(table.schoolYear, table.grade),
+]);
+
+export const insertEnrollmentDataSchema = createInsertSchema(enrollmentData).omit({ id: true, ingestedAt: true });
+export type InsertEnrollmentData = z.infer<typeof insertEnrollmentDataSchema>;
+export type EnrollmentData = typeof enrollmentData.$inferSelect;
+
+// Computed Admissions Metrics - stored for fast retrieval
+export const admissionsMetrics = pgTable("admissions_metrics", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  schoolYear: varchar("school_year").notNull(),
+  gradeBand: varchar("grade_band").notNull(), // "K", "3K", "PK"
+  
+  // Demand metrics
+  appsPerSeat: real("apps_per_seat"), // Total applicants / seats
+  trueAppsPerSeat: real("true_apps_per_seat"), // True applicants / seats
+  offerRate: real("offer_rate"), // Offers / total applicants
+  trueOfferRate: real("true_offer_rate"), // Offers / true applicants
+  
+  // Fill metrics (requires enrollment data)
+  yield: real("yield"), // Enrolled / offers
+  fillRate: real("fill_rate"), // Enrolled / seats
+  
+  // Estimated metrics (for current year without enrollment data)
+  estimatedYield: real("estimated_yield"), // Bayesian-smoothed yield estimate
+  estimatedFillRate: real("estimated_fill_rate"),
+  estimationMethod: varchar("estimation_method"), // "historical_yield", "district_average"
+  
+  // Raw values for reference
+  seatsAvailable: integer("seats_available"),
+  totalApplicants: integer("total_applicants"),
+  trueApplicants: integer("true_applicants"),
+  offers: integer("offers"),
+  enrolled: integer("enrolled"),
+  
+  // District-level averages used for smoothing
+  districtAvgYield: real("district_avg_yield"),
+  
+  computedAt: timestamp("computed_at").defaultNow(),
+}, (table) => [
+  index("idx_metrics_dbn").on(table.dbn),
+  index("idx_metrics_year_grade").on(table.schoolYear, table.gradeBand),
+]);
+
+export const insertAdmissionsMetricsSchema = createInsertSchema(admissionsMetrics).omit({ id: true, computedAt: true });
+export type InsertAdmissionsMetrics = z.infer<typeof insertAdmissionsMetricsSchema>;
+export type AdmissionsMetrics = typeof admissionsMetrics.$inferSelect;
+
+// Type for API response with all metrics for a school
+export interface SchoolAdmissionsData {
+  dbn: string;
+  schoolName: string;
+  metrics: {
+    gradeBand: string;
+    schoolYear: string;
+    seatsAvailable: number | null;
+    totalApplicants: number | null;
+    trueApplicants: number | null;
+    offers: number | null;
+    enrolled: number | null;
+    appsPerSeat: number | null;
+    offerRate: number | null;
+    trueOfferRate: number | null;
+    yield: number | null;
+    fillRate: number | null;
+    estimatedFillRate: number | null;
+    competitivenessLevel: 'very_competitive' | 'competitive' | 'moderate' | 'accessible' | 'unknown';
+  }[];
+}
+
+// Helper to determine competitiveness level based on apps per seat
+export function getCompetitivenessLevel(appsPerSeat: number | null): 'very_competitive' | 'competitive' | 'moderate' | 'accessible' | 'unknown' {
+  if (appsPerSeat === null) return 'unknown';
+  if (appsPerSeat >= 3) return 'very_competitive';
+  if (appsPerSeat >= 2) return 'competitive';
+  if (appsPerSeat >= 1.2) return 'moderate';
+  return 'accessible';
+}
+
+// Helper to get competitiveness display info
+export function getCompetitivenessDisplay(level: string): { label: string; color: string; description: string } {
+  switch (level) {
+    case 'very_competitive':
+      return { label: 'Very Competitive', color: 'red', description: '3+ applicants per seat' };
+    case 'competitive':
+      return { label: 'Competitive', color: 'amber', description: '2-3 applicants per seat' };
+    case 'moderate':
+      return { label: 'Moderate', color: 'yellow', description: '1.2-2 applicants per seat' };
+    case 'accessible':
+      return { label: 'Accessible', color: 'green', description: 'Less than 1.2 applicants per seat' };
+    default:
+      return { label: 'Data Unavailable', color: 'gray', description: 'Insufficient data' };
+  }
+}
