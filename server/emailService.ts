@@ -3,7 +3,9 @@ import { Resend } from 'resend';
 
 // Use custom Resend credentials from environment variables
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'hello@nycschoolsratings.com';
+// Email format: "Display Name <email@domain.com>"
+// The RESEND_FROM_EMAIL env var should contain the full format like "NYC Schools Ratings <hello@nycschoolsratings.com>"
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'NYC Schools Ratings <hello@nycschoolsratings.com>';
 
 // Cached Resend client (singleton pattern)
 let cachedClient: Resend | null = null;
@@ -42,7 +44,7 @@ export async function sendAdminNewCustomerNotification(customerEmail: string, pl
     const planName = planType === 'season_pass' ? 'Season Pass ($29 for 6 months)' : planType;
     
     const result = await client.emails.send({
-      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      from: fromEmail,
       to: ADMIN_EMAIL,
       subject: `New Season Pass Customer: ${customerEmail}`,
       html: `
@@ -78,7 +80,7 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
     const result = await client.emails.send({
-      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      from: fromEmail,
       to: customerEmail,
       subject: 'Welcome to NYC School Ratings Season Pass!',
       html: `
@@ -181,7 +183,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
     const result = await client.emails.send({
-      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      from: fromEmail,
       to: userEmail,
       subject: 'Welcome to NYC School Ratings!',
       html: `
@@ -309,7 +311,7 @@ export async function sendAdminNewUserRegistrationNotification(userEmail: string
     const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Not provided';
     
     const result = await client.emails.send({
-      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      from: fromEmail,
       to: ADMIN_EMAIL,
       subject: `New User Registration: ${userEmail}`,
       html: `
@@ -344,7 +346,7 @@ export async function sendPasswordResetEmail(userEmail: string, resetUrl: string
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
     const result = await client.emails.send({
-      from: fromEmail || `NYC School Ratings <${CONTACT_EMAIL}>`,
+      from: fromEmail,
       to: userEmail,
       subject: 'Reset Your Password - NYC School Ratings',
       html: `
