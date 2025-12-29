@@ -1,0 +1,254 @@
+Below is a “tell-your-developer” framework for **SY 2025–26 Kindergarten admissions + class-fill** using NYCPS public data.
+
+---
+
+## 1) What you can (and can’t) know from public DOE/NYCPS data
+
+### You *can* get (school-level, public)
+
+* **Seats available (K)**, **Applicants (K)**, **True Applicants (K)**, **Offers (K)** for **SY 2025–26** via Local Law 72 “Applications & Offers” report. ([InfoHub NYCED][1])
+* **Actual enrollment counts** (incl. Kindergarten) for **SY 2024–25** via Local Law 72 “Enrollment” report. ([InfoHub NYCED][1])
+* **School attributes** (DBN, address, etc.) via “Directory Data” (Elementary Schools). ([InfoHub NYCED][2])
+* A clear explanation of the **offer mechanics** (choices + priorities + seat availability + random number; plus how priorities work) to describe “how classes get filled” conceptually. ([web][3])
+* High-level confirmation that NYCPS uses a **deferred-acceptance matching algorithm** (Gale–Shapley style) with preferences, priorities, and lottery/random numbers. ([Office of the New York State Comptroller][4])
+
+### You *cannot* get cleanly (public, at school+priority-group granularity)
+
+* Exactly *which priority group(s)* filled a particular school’s kindergarten seats (unless you also use the MySchools “My Chances / who got offers last year” UI per program; that’s not packaged as a clean dataset). NYCPS notes that info is visible per program in MySchools. ([web][3])
+
+---
+
+## 2) Data sources (authoritative) + direct file URLs
+
+### A) Local Law 72 — Student Applications, Admissions and Offers (InfoHub)
+
+Landing page (lists all years and both report types): ([InfoHub NYCED][1])
+
+Direct XLSX file URLs (from the link targets on that page):
+
+```text
+LL72 Applications & Offers 2025–26 (Fall 2025 admissions; “suppressed”):
+https://infohub.nyced.org/docs/default-source/default-document-library/ose/fall-2025-admissions_72_suppressed.xlsx
+
+LL72 Applications & Offers 2024–25:
+https://infohub.nyced.org/docs/default-source/default-document-library/ose/fall-2024-admissions-72-suppressed.xlsx
+
+LL72 Enrollment 2024–25 (Part II):
+https://infohub.nyced.org/docs/default-source/default-document-library/ose/fall-2024-admissions_part-ii_suppressed.xlsx
+```
+
+(Those exact URLs are the targets behind the InfoHub links; the filenames also confirm small-count suppression.) 
+
+### B) Directory Data (Elementary Schools)
+
+Landing page: ([InfoHub NYCED][2])
+Direct XLSX:
+
+```text
+Fall 2025 Elementary Schools Directory Data:
+https://infohub.nyced.org/docs/default-source/default-document-library/ose/fall-2025---es-directory-data.xlsx
+```
+
+
+
+### C) Optional: Enrollment projections (for a “fill” proxy for 2025–26)
+
+InfoHub page explains scope and caveats (FSF projections, not “seat availability”): ([InfoHub NYCED][5])
+Direct XLSX:
+
+```text
+SY 2025–26 Final Enrollment Projections (school totals):
+https://infohub.nyced.org/docs/default-source/default-document-library/ose/2025-26-final-projections---school-totals---post.xlsx
+```
+
+
+
+---
+
+## 3) Normalized data model (simple + scalable)
+
+Use **DBN** as the stable join key across all DOE school-level datasets.
+
+### Tables
+
+**dim_school**
+
+* `dbn` (PK)
+* `school_name`
+* `district` (if in directory data)
+* `borough` (if provided)
+* `address`, `lat`, `lon` (if present)
+* `data_source_version` (directory file version)
+
+**fact_admissions_offers**
+
+* `school_year` (e.g., `2025-2026`)
+* `dbn`
+* `grade_band` (store as `K`, or keep generic for 3K/PK/K/6/9 if you want)
+* `category` (typically use “All Students”; keep others if you want breakdown analytics)
+* `breakdown_type` (nullable; e.g., `Residential District`, `Zip Code`, `Home Language`)
+* `breakdown_value` (nullable)
+* `seats_available`
+* `total_applicants`
+* `true_applicants`
+* `offers`
+* `is_suppressed` (boolean, per-field or per-row)
+* `source_file`, `source_hash`, `ingested_at`
+
+**fact_enrollment**
+
+* `school_year` (e.g., `2024-2025`)
+* `dbn`
+* `grade` (K, 1, 2, …)
+* `enrolled`
+* `is_suppressed`
+* `source_file`, `source_hash`, `ingested_at`
+
+**fact_fill_estimates** (your derived layer)
+
+* `school_year`
+* `dbn`
+* `grade` (`K`)
+* `estimated_enrolled`
+* `estimation_method` (`historical_yield`, `projection`, `hybrid`)
+* `estimated_yield`
+* `estimated_fill_rate`
+* `confidence_low`, `confidence_high` (optional)
+* `computed_at`, `inputs_version`
+
+---
+
+## 4) ETL steps (robust to NYCPS workbook changes)
+
+### Step 1 — Download & version files
+
+* Download XLSX from InfoHub URLs.
+* Compute SHA-256 hash; store raw file in object storage with `school_year + report_type + hash`.
+
+### Step 2 — Parse workbook defensively
+
+Because sheet/column labels can vary slightly year to year:
+
+* Load all sheets, pick the sheet that contains a **DBN** column (regex match on `dbn|school.*number`).
+* Keep a **raw column map** in logs (so you can quickly update mappings).
+
+### Step 3 — Filter for the canonical per-school row set
+
+* For your “ratings” metrics, use `Category == "All Students"` (keep other categories/breakdowns separately).
+* Keep rows where “level” is school-level (not district summaries), if the file contains both.
+
+### Step 4 — Normalize into your fact tables
+
+* Convert suppressed cells to `NULL` and set `is_suppressed=true`.
+* Coerce numerics; strip commas; handle blanks.
+
+---
+
+## 5) Core metrics + formulas (Kindergarten)
+
+Let:
+
+* `S = seats_available(K)`
+* `A = total_applicants(K)`
+* `TA = true_applicants(K)` (if present)
+* `O = offers(K)`
+* `E = enrolled(K)` (from Enrollment report when available)
+
+### Demand / competitiveness
+
+* **Apps per seat**: `APS = A / S`
+* **True apps per seat**: `TAPS = TA / S`
+* **Offer rate (total)**: `OR = O / A`
+* **Offer rate (true)**: `TOR = O / TA`
+
+### “How full did they get?” (actual, once enrollment exists for the year)
+
+* **Yield**: `Y = E / O`
+* **Fill rate**: `FR = E / S`
+
+### Quality checks
+
+* If `S == 0` or null → don’t compute ratios.
+* If values are suppressed → return “insufficient public data” for that metric.
+
+---
+
+## 6) Estimating “filled classes” for **SY 2025–26** (since 2025–26 enrollment may not be published yet)
+
+You have two reasonable public options:
+
+### Option A — Use DOE “Final Enrollment Projections” as the fill proxy (fast + official-ish)
+
+* If the projections file includes grade-level columns (often it does), use:
+
+  * `Ê = projected_enrollment_K`
+  * `FR̂ = Ê / S`
+    Caveat: NYCPS explicitly says projections are for FSF allocations and **“are not meant to [represent] seat availability”**. Use as a proxy, label clearly. ([InfoHub NYCED][5])
+
+### Option B — Historical yield model (best when you want a stable estimate)
+
+Compute yield using the most recent year with both offers + enrollment (e.g., 2024–25):
+
+* `Y_2024 = E_2024 / O_2024`
+
+Then estimate 2025–26 enrolled:
+
+* `Ê_2025 = min(S_2025, O_2025 * Ŷ_2025)`
+
+**Smoothing (highly recommended)** to avoid noisy/suppressed schools:
+
+* Compute district mean yield:
+
+  * `µ_d = sum(E_2024 in district d) / sum(O_2024 in district d)`
+* Smoothed school yield (Bayesian shrinkage with pseudo-count `α`, e.g., 50 offers):
+
+  * `Ŷ_s = (O_s * Y_s + α * µ_d) / (O_s + α)`
+* If school yield is missing/suppressed → set `Ŷ_s = µ_d` (or borough mean).
+
+This produces a stable “filled seats estimate” that tracks reality well once you have a year or two of history.
+
+---
+
+## 7) “How classes get filled” explanation to show on your site (non-technical, accurate)
+
+You can describe the admissions fill mechanics (and cite NYCPS) like this:
+
+* Families rank choices; NYCPS aims to offer the **highest possible choice**. ([web][3])
+* Each program has **seat availability**. ([web][3])
+* Offers are made by **priority groups** first (zone, sibling, in-district, etc.); priority group 1 is considered before group 2, etc. ([web][3])
+* If there are more applicants than seats **within a priority group**, NYCPS uses **random numbers** as the tie-breaker. ([web][3])
+* NYCPS uses a centralized matching algorithm (deferred acceptance / Gale–Shapley style) for most admissions processes. ([Office of the New York State Comptroller][4])
+
+---
+
+## 8) Minimal developer deliverable checklist
+
+Ask your developer to deliver:
+
+1. **Ingestion jobs** (LL72 Offers 2025–26, LL72 Offers 2024–25, LL72 Enrollment 2024–25, Directory Data)
+2. **Normalized tables** above + a `source_registry` config (URLs + expected refresh cadence)
+3. Metric computation for each DBN:
+
+   * `APS`, `TAPS`, `OR`, `TOR`
+4. Fill estimate for 2025–26:
+
+   * Implement **Option B smoothing** (and optionally Option A projections as a second estimate)
+5. Public-facing disclaimers:
+
+   * suppressed values, missing schools (charters use separate process), estimates vs actuals (especially for projections). ([web][3])
+
+If you want, I can turn this into a one-page “engineering spec” (API endpoints + exact fields your frontend needs + example JSON for one school).
+
+[1]: https://infohub.nyced.org/reports/government-reports/student-applications-admissions-and-offers "
+	Student Applications, Admissions and Offers
+"
+[2]: https://infohub.nyced.org/reports/admissions-and-enrollment/directory-data "
+	Directory Data
+"
+[3]: https://www.schools.nyc.gov/enrollment/enroll-grade-by-grade/kindergarten "
+	Kindergarten
+"
+[4]: https://www.osc.ny.gov/state-agencies/audits/2025/07/24/management-student-school-matching-algorithm "Management of the Student-School Matching Algorithm | Office of the New York State Comptroller"
+[5]: https://infohub.nyced.org/reports/financial/financial-data-and-reports/sy-2025-26-final-enrollment-projections "
+	SY 2025-26 Final Enrollment Projections
+"
