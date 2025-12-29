@@ -640,7 +640,7 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
   updatedAt: true,
 }).extend({
   rating: z.number().min(1).max(5),
-  reviewText: z.string().optional(),
+  reviewText: z.string().nullish(),
 });
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
@@ -816,7 +816,7 @@ export const insertNyceecReviewSchema = createInsertSchema(nyceecReviews).omit({
   updatedAt: true,
 }).extend({
   rating: z.number().min(1).max(5),
-  reviewText: z.string().optional(),
+  reviewText: z.string().nullish(),
 });
 
 export type InsertNyceecReview = z.infer<typeof insertNyceecReviewSchema>;
