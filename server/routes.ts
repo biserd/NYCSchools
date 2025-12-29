@@ -1275,6 +1275,39 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
           const dualLangInfo = currentSchool.has_dual_language && currentSchool.dual_language_languages?.length 
             ? 'Yes - ' + currentSchool.dual_language_languages.join(', ')
             : currentSchool.has_dual_language ? 'Yes' : 'No';
+          
+          // Fetch historical trend data for this school
+          const schoolTrend = await storage.getSchoolTrend(currentSchoolDbn);
+          let historicalTrendContext = "";
+          
+          // Only include historical data if we have actual scores (not just null values)
+          const scoresWithData = schoolTrend.historicalData.filter(
+            h => h.ela_proficiency != null || h.math_proficiency != null
+          );
+          
+          if (scoresWithData.length > 0) {
+            const trendDescription = schoolTrend.direction === 'improving' 
+              ? `IMPROVING (up ${schoolTrend.changePercent.toFixed(1)}% overall)`
+              : schoolTrend.direction === 'declining'
+              ? `DECLINING (down ${Math.abs(schoolTrend.changePercent).toFixed(1)}% overall)`
+              : schoolTrend.direction === 'stable'
+              ? 'STABLE (minimal change)'
+              : 'Insufficient data for trend analysis';
+            
+            // Clone and sort to avoid mutating the original array
+            const sortedScores = [...scoresWithData].sort((a, b) => a.year - b.year);
+            const yearlyData = sortedScores
+              .map(h => `  ${h.year}: ELA ${h.ela_proficiency != null ? h.ela_proficiency + '%' : 'N/A'}, Math ${h.math_proficiency != null ? h.math_proficiency + '%' : 'N/A'}`)
+              .join('\n');
+            
+            historicalTrendContext = `
+Historical Test Score Trends (${scoresWithData.length} years of data):
+Trend Direction: ${trendDescription}
+Year-by-Year Data:
+${yearlyData}
+`;
+          }
+          
           currentSchoolContext = `
 IMPORTANT: The user is currently viewing this school's page:
 School: ${currentSchool.name} (DBN: ${currentSchool.dbn})
@@ -1282,14 +1315,14 @@ District: ${currentSchool.district}
 Grade Band: ${currentSchool.grade_band}
 Address: ${currentSchool.address || 'Not available'}
 
-Scores:
+Current Scores (Most Recent Year):
 - Overall Score: ${overallScore}
 - Academics Score: ${academics}
 - Climate Score: ${climate}
 - Progress Score: ${progress}
 - ELA Proficiency: ${currentSchool.ela_proficiency ?? 'N/A'}${currentSchool.ela_proficiency != null ? '%' : ''}
 - Math Proficiency: ${currentSchool.math_proficiency ?? 'N/A'}${currentSchool.math_proficiency != null ? '%' : ''}
-
+${historicalTrendContext}
 Demographics:
 - Enrollment: ${currentSchool.enrollment ?? 'N/A'} students
 - Student-Teacher Ratio: ${currentSchool.student_teacher_ratio ?? 'N/A'}
@@ -1312,6 +1345,7 @@ NYC School Survey Results:
 
 When the user asks about "this school", "the school", or uses phrases like "here" or "it", they are referring to ${currentSchool.name}.
 Prioritize answering questions about this specific school. If they ask comparison questions, compare this school against others.
+When asked about score trends or how scores have changed over time, USE THE HISTORICAL DATA PROVIDED ABOVE - do not say you don't have access to historical data.
 `;
         }
       }
@@ -1365,11 +1399,12 @@ Prioritize answering questions about this specific school. If they ask compariso
         cachedSchoolSummary = JSON.stringify(schoolSample, null, 2);
       }
 
-      const systemMessage = `You are a helpful assistant for parents looking for schools in NYC. You have access to data from NYC public and charter schools across all 5 boroughs (Manhattan, Bronx, Brooklyn, Queens, Staten Island).
+      const systemMessage = `You are a helpful assistant for parents looking for schools in NYC. You have access to REAL data from NYC public and charter schools across all 5 boroughs (Manhattan, Bronx, Brooklyn, Queens, Staten Island).
 ${currentSchoolContext}
 School Data Overview:
 - Districts: 1-32 (community school districts)
 - Metrics available: Overall Score, Academics Score, Climate Score, Progress Score, ELA Proficiency, Math Proficiency, Enrollment, Student-Teacher Ratio, NYC School Survey scores
+- HISTORICAL DATA: You have access to year-by-year test scores spanning multiple years. When asked about trends or how scores have changed, use the historical data provided above.
 - For high schools: Graduation rates, SAT scores, College readiness, AP courses
 
 Overall Score calculation: 40% academics + 30% climate + 30% progress
@@ -1384,11 +1419,12 @@ Here's a sample of other schools for comparison:
 ${cachedSchoolSummary}
 
 When answering questions:
-1. Be specific and helpful
+1. Be specific and helpful - USE THE ACTUAL DATA PROVIDED
 2. Reference actual school names, districts, and scores when possible
 3. Explain what metrics mean in parent-friendly language
 4. If asked to compare schools, focus on key differences
-5. If you don't have exact data for a specific question, acknowledge the limitation
+5. IMPORTANT: When asked about historical trends or how scores changed over time, use the year-by-year historical data provided above. Do NOT say you don't have access to this data - you do.
+6. If you don't have exact data for a specific question that isn't provided, acknowledge the limitation
 
 Remember: Schools are in the database, but you're seeing a sample. For comprehensive searches across all schools, suggest using the search and filter tools on the website.`;
 
