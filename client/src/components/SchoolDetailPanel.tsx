@@ -209,20 +209,53 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium = fals
                 </p>
               </div>
             ) : !isPremium ? (
-              <div className="bg-muted/30 rounded-lg p-6 text-center" data-testid="container-locked-breakdown">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                  <Lock className="w-6 h-6 text-primary" />
+              <div className="relative" data-testid="container-locked-breakdown">
+                <div className="space-y-4 blur-sm select-none pointer-events-none" aria-hidden="true">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Academics</span>
+                      <span className="text-sm font-bold tabular-nums">{school.academics_score}</span>
+                    </div>
+                    <div className="h-3 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-chart-1 rounded-full" style={{ width: getBarWidth(school.academics_score) }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Climate</span>
+                      <span className="text-sm font-bold tabular-nums">{school.climate_score}</span>
+                    </div>
+                    <div className="h-3 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-chart-2 rounded-full" style={{ width: getBarWidth(school.climate_score) }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Progress</span>
+                      <span className="text-sm font-bold tabular-nums">{school.progress_score}</span>
+                    </div>
+                    <div className="h-3 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-chart-3 rounded-full" style={{ width: getBarWidth(school.progress_score) }} />
+                    </div>
+                  </div>
                 </div>
-                <h4 className="font-semibold text-lg mb-2">Unlock Full Score Breakdown</h4>
-                <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
-                  Understand what drives this school's performance with detailed Academics, Climate, and Progress metrics
-                </p>
-                <Link href="/pricing">
-                  <Button data-testid="button-unlock-breakdown">
-                    <Lock className="w-4 h-4 mr-2" />
-                    Unlock for $29
-                  </Button>
-                </Link>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-background/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg border max-w-xs">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                      <Lock className="w-6 h-6 text-primary" />
+                    </div>
+                    <h4 className="font-semibold text-lg mb-2">Unlock Full Score Breakdown</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Understand what drives this school's performance with detailed Academics, Climate, and Progress metrics
+                    </p>
+                    <Link href="/pricing">
+                      <Button data-testid="button-unlock-breakdown">
+                        <Lock className="w-4 h-4 mr-2" />
+                        Unlock for $29
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
             ) : (
             <div className="space-y-4" data-testid="container-bars">

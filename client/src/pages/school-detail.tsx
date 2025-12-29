@@ -366,17 +366,46 @@ export default function SchoolDetail() {
                       />
                     </div>
                   ) : (
-                    <div className="bg-muted/30 rounded-lg p-4 text-center" data-testid="locked-district-comparison">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">District comparison is a premium feature</span>
+                    <div className="relative" data-testid="locked-district-comparison">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm blur-sm select-none pointer-events-none" aria-hidden="true">
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <div className="text-xs text-muted-foreground">Overall</div>
+                          <div className="font-medium tabular-nums">{schoolWithScore.overall_score}</div>
+                          <div className="text-xs text-emerald-600">+5 vs avg</div>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <div className="text-xs text-muted-foreground">Academics</div>
+                          <div className="font-medium tabular-nums">{schoolWithScore.academics_score}</div>
+                          <div className="text-xs text-emerald-600">+3 vs avg</div>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <div className="text-xs text-muted-foreground">Climate</div>
+                          <div className="font-medium tabular-nums">{schoolWithScore.climate_score}</div>
+                          <div className="text-xs text-yellow-600">At avg</div>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <div className="text-xs text-muted-foreground">Progress</div>
+                          <div className="font-medium tabular-nums">{schoolWithScore.progress_score}</div>
+                          <div className="text-xs text-emerald-600">+2 vs avg</div>
+                        </div>
                       </div>
-                      <Link href="/pricing">
-                        <Button size="sm" variant="outline" className="gap-1" data-testid="button-unlock-comparison">
-                          <Lock className="w-3 h-3" />
-                          Unlock for $29
-                        </Button>
-                      </Link>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 text-center shadow-lg border">
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 mb-3">
+                            <Lock className="w-5 h-5 text-primary" />
+                          </div>
+                          <h4 className="font-semibold text-sm mb-1">Unlock District Comparison</h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            See how this school compares to District {schoolWithScore.district} averages
+                          </p>
+                          <Link href="/pricing">
+                            <Button size="sm" data-testid="button-unlock-comparison">
+                              <Lock className="w-3 h-3 mr-1" />
+                              Unlock for $29
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
