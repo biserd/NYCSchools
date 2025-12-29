@@ -58,11 +58,13 @@ export function useCheckout() {
     },
   });
 
-  // Find the Season Pass product/price first
-  const seasonPassProduct = products?.data?.find(p => 
+  // Find the Season Pass product/price - use the LAST match to prefer test mode products
+  // (Test mode products are synced after live mode products due to the recent key switch)
+  const allSeasonPassProducts = products?.data?.filter(p => 
     p.name?.toLowerCase().includes("season") || 
     p.metadata?.plan === "season_pass"
-  );
+  ) || [];
+  const seasonPassProduct = allSeasonPassProducts[allSeasonPassProducts.length - 1];
   const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
 
   // Fallback to premium monthly if Season Pass not found

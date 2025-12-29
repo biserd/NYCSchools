@@ -136,6 +136,15 @@ export default function PricingPage() {
     enabled: !!user,
   });
 
+  // Fetch Stripe config to check if in test mode
+  const { data: stripeConfig } = useQuery<{
+    publishableKey: string;
+    mode: 'test' | 'live';
+  }>({
+    queryKey: ["/api/stripe/config"],
+  });
+  const isTestMode = stripeConfig?.mode === 'test';
+
   // Fetch products/prices from Stripe
   const { data: products, isLoading: productsLoading } = useQuery<{
     data: Array<{
@@ -201,11 +210,12 @@ export default function PricingPage() {
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   const isLoadingData = authLoading || subLoading || productsLoading;
   
-  // Find the Season Pass product/price
-  const seasonPassProduct = products?.data?.find(p => 
+  // Find the Season Pass product/price - use the LAST match to prefer test mode products
+  const allSeasonPassProducts = products?.data?.filter(p => 
     p.name?.toLowerCase().includes("season") || 
     p.metadata?.plan === "season_pass"
-  );
+  ) || [];
+  const seasonPassProduct = allSeasonPassProducts[allSeasonPassProducts.length - 1];
   const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
   
   // Fallback to premium monthly if Season Pass not found
@@ -238,6 +248,14 @@ export default function PricingPage() {
       <AppHeader />
 
       <main className="flex-1">
+        {/* Stripe Test Mode Banner */}
+        {isTestMode && (
+          <div className="bg-amber-500 text-black py-2 px-4 text-center text-sm font-medium" data-testid="banner-stripe-test-mode">
+            <Zap className="w-4 h-4 inline-block mr-2" />
+            STRIPE TEST MODE - Use card 4242 4242 4242 4242 (any expiry, any CVC) to test payments
+          </div>
+        )}
+
         {/* User subscription status banner */}
         {user && !subLoading && subscription && (
           <div className="bg-muted/50 border-b">

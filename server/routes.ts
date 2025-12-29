@@ -12,7 +12,7 @@ import compression from "compression";
 import cors from "cors";
 import { updateUserZonedSchools, getUserZonedSchools } from "./services/zoning";
 import { runMigrations } from 'stripe-replit-sync';
-import { getStripeSync, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { getStripeSync, getUncachableStripeClient, getStripePublishableKey, getStripeMode } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 
@@ -1564,11 +1564,12 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     }
   });
 
-  // Get Stripe publishable key (public)
+  // Get Stripe publishable key and mode (public)
   app.get("/api/stripe/config", async (req: Request, res: Response) => {
     try {
       const publishableKey = await getStripePublishableKey();
-      res.json({ publishableKey });
+      const mode = await getStripeMode();
+      res.json({ publishableKey, mode });
     } catch (error) {
       console.error("Error getting Stripe config:", error);
       res.status(500).json({ error: "Failed to get Stripe config" });
