@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { MapPin, Save, Settings as SettingsIcon, LogIn, CreditCard, Crown, Loader2, ExternalLink } from "lucide-react";
-import { UserProfile } from "@shared/schema";
+import { MapPin, Save, Settings as SettingsIcon, LogIn, CreditCard, Crown, Loader2, ExternalLink, MessageCircle, Calendar, Lock, Sparkles } from "lucide-react";
+import { UserProfile, AiChatSession, AiChatSessionWithMessages } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 
@@ -38,6 +39,97 @@ function formatPrice(amount: number, currency: string): string {
   }).format(amount / 100);
 }
 
+// Chat session item component with expandable messages
+function ChatSessionItem({ 
+  session, 
+  isExpanded, 
+  onToggle 
+}: { 
+  session: AiChatSession; 
+  isExpanded: boolean; 
+  onToggle: () => void;
+}) {
+  const { data: sessionWithMessages, isLoading } = useQuery<AiChatSessionWithMessages>({
+    queryKey: ["/api/chat/sessions", session.id],
+    enabled: isExpanded,
+  });
+
+  return (
+    <div
+      className={`rounded-lg border bg-card transition-colors ${isExpanded ? 'ring-1 ring-primary/20' : 'hover-elevate cursor-pointer'}`}
+      data-testid={`chat-session-${session.id}`}
+    >
+      <div 
+        className="p-3 cursor-pointer"
+        onClick={onToggle}
+        data-testid={`chat-session-toggle-${session.id}`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate" data-testid={`chat-session-title-${session.id}`}>
+              {session.title || "Untitled conversation"}
+            </p>
+            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <Calendar className="w-3 h-3" />
+              <span>
+                {new Date(session.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+          </div>
+          <Badge variant="secondary" className="shrink-0 text-xs">
+            {isExpanded ? 'Close' : 'View'}
+          </Badge>
+        </div>
+      </div>
+      
+      {isExpanded && (
+        <div className="border-t px-3 py-3 bg-muted/30" data-testid={`chat-session-messages-${session.id}`}>
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading messages...
+            </div>
+          ) : sessionWithMessages?.messages && sessionWithMessages.messages.length > 0 ? (
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {sessionWithMessages.messages.map((msg, idx) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  data-testid={`chat-message-${session.id}-${idx}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background border'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-[10px] opacity-70 mt-1">
+                      {new Date(msg.createdAt).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-2">No messages in this conversation</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Settings() {
   const { toast } = useToast();
   const [address, setAddress] = useState("");
@@ -53,6 +145,18 @@ export default function Settings() {
     queryKey: ["/api/subscription-status"],
     enabled: isAuthenticated,
   });
+
+  // Check if user is premium for chat history display
+  const isPremium = subscriptionData?.isSubscribed ?? false;
+
+  // Fetch chat sessions for premium users
+  const { data: chatSessions, isLoading: chatSessionsLoading } = useQuery<AiChatSession[]>({
+    queryKey: ["/api/chat/sessions"],
+    enabled: isAuthenticated && isPremium,
+  });
+
+  // State for expanded chat session
+  const [expandedSessionId, setExpandedSessionId] = useState<number | null>(null);
 
   const portalMutation = useMutation({
     mutationFn: async () => {
@@ -424,6 +528,64 @@ export default function Settings() {
                   </Button>
                 </Link>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Chat History Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              AI Chat History
+            </CardTitle>
+            <CardDescription>
+              View your past conversations with the AI School Assistant
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!isPremium ? (
+              <div className="space-y-4" data-testid="chat-history-locked">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Lock className="w-4 h-4" />
+                  <span className="text-sm">Premium feature</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Upgrade to Premium to access unlimited AI questions and view your conversation history.
+                </p>
+                <Link href="/pricing">
+                  <Button variant="outline" size="sm" data-testid="button-upgrade-for-chat">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Upgrade to Unlock
+                  </Button>
+                </Link>
+              </div>
+            ) : chatSessionsLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading chat history...
+              </div>
+            ) : !chatSessions || chatSessions.length === 0 ? (
+              <div className="text-center py-8" data-testid="no-chat-history">
+                <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground text-sm">No conversations yet</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Start a conversation with the AI assistant on any school page
+                </p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px]" data-testid="chat-history-list">
+                <div className="space-y-2">
+                  {chatSessions.map((session) => (
+                    <ChatSessionItem
+                      key={session.id}
+                      session={session}
+                      isExpanded={expandedSessionId === session.id}
+                      onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
