@@ -1,9 +1,9 @@
-// Stripe client for NYC School Ratings - handles Replit Stripe connector with manual key fallback
-// Note: Production uses manual STRIPE_LIVE_* keys since Stripe connector is only set up for Sandbox
+// Stripe client for NYC School Ratings - handles test vs live keys based on environment
+// Production: Uses STRIPE_LIVE_* keys
+// Development: Uses STRIPE_TEST_* keys for safe testing without affecting production
 import Stripe from 'stripe';
 
-let connectionSettings: any;
-let cachedCredentials: { publishableKey: string; secretKey: string } | null = null;
+let cachedCredentials: { publishableKey: string; secretKey: string; mode: 'test' | 'live' } | null = null;
 
 async function getCredentials() {
   // Return cached credentials if available
@@ -12,12 +12,9 @@ async function getCredentials() {
   }
 
   const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-  const targetEnvironment = isProduction ? 'production' : 'development';
   
-  console.log(`Getting Stripe credentials for ${targetEnvironment} environment`);
-  
-  // For production, use manual STRIPE_LIVE_* keys since Replit Stripe connector is only for Sandbox
   if (isProduction) {
+    // Production: Use LIVE keys
     const publishableKey = process.env.STRIPE_LIVE_PUBLISHABLE_KEY;
     const secretKey = process.env.STRIPE_LIVE_SECRET_KEY;
     
@@ -26,73 +23,26 @@ async function getCredentials() {
       throw new Error('Production Stripe credentials not configured. Please add STRIPE_LIVE_PUBLISHABLE_KEY and STRIPE_LIVE_SECRET_KEY to secrets.');
     }
     
-    console.log('Stripe production credentials loaded from manual secrets');
-    cachedCredentials = { publishableKey, secretKey };
+    console.log('Stripe LIVE mode credentials loaded for production');
+    cachedCredentials = { publishableKey, secretKey, mode: 'live' };
     return cachedCredentials;
   }
   
-  // For development, use the Replit Stripe connector (Sandbox mode)
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  // Development: Use TEST keys for safe testing
+  const publishableKey = process.env.STRIPE_TEST_PUBLISHABLE_KEY;
+  const secretKey = process.env.STRIPE_TEST_SECRET_KEY;
   
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? 'repl ' + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-      ? 'depl ' + process.env.WEB_REPL_RENEWAL
-      : null;
-
-  if (!xReplitToken) {
-    console.error('Stripe credentials error: No authentication token available');
-    console.error('REPL_IDENTITY:', !!process.env.REPL_IDENTITY);
-    console.error('WEB_REPL_RENEWAL:', !!process.env.WEB_REPL_RENEWAL);
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  if (!publishableKey || !secretKey) {
+    console.error('Development Stripe test keys missing.');
+    console.error('To test Stripe payments in development:');
+    console.error('1. Go to Stripe Dashboard → Toggle to "Test Mode"');
+    console.error('2. Go to Developers → API Keys');
+    console.error('3. Add STRIPE_TEST_PUBLISHABLE_KEY and STRIPE_TEST_SECRET_KEY to secrets');
+    throw new Error('Stripe test credentials not configured. Please add STRIPE_TEST_PUBLISHABLE_KEY and STRIPE_TEST_SECRET_KEY to secrets for development testing.');
   }
-
-  if (!hostname) {
-    console.error('Stripe credentials error: REPLIT_CONNECTORS_HOSTNAME not set');
-    throw new Error('REPLIT_CONNECTORS_HOSTNAME not available');
-  }
-
-  const connectorName = 'stripe';
-
-  const url = new URL(`https://${hostname}/api/v2/connection`);
-  url.searchParams.set('include_secrets', 'true');
-  url.searchParams.set('connector_names', connectorName);
-  url.searchParams.set('environment', targetEnvironment);
-
-  console.log('Fetching Stripe connection from:', url.toString().replace(/\?.*/, '?...'));
   
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Accept': 'application/json',
-      'X_REPLIT_TOKEN': xReplitToken
-    }
-  });
-
-  if (!response.ok) {
-    console.error('Stripe connector response error:', response.status, response.statusText);
-    throw new Error(`Stripe connector request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  connectionSettings = data.items?.[0];
-
-  if (!connectionSettings || (!connectionSettings.settings?.publishable || !connectionSettings.settings?.secret)) {
-    console.error('Stripe connection settings missing:', {
-      hasConnection: !!connectionSettings,
-      hasSettings: !!connectionSettings?.settings,
-      hasPublishable: !!connectionSettings?.settings?.publishable,
-      hasSecret: !!connectionSettings?.settings?.secret,
-      targetEnvironment
-    });
-    throw new Error(`Stripe ${targetEnvironment} connection not configured. Please set up Stripe in the Replit connector.`);
-  }
-
-  console.log(`Stripe ${targetEnvironment} credentials loaded successfully`);
-  
-  cachedCredentials = {
-    publishableKey: connectionSettings.settings.publishable,
-    secretKey: connectionSettings.settings.secret,
-  };
+  console.log('Stripe TEST mode credentials loaded for development');
+  cachedCredentials = { publishableKey, secretKey, mode: 'test' };
   return cachedCredentials;
 }
 
@@ -111,6 +61,11 @@ export async function getStripePublishableKey() {
 export async function getStripeSecretKey() {
   const { secretKey } = await getCredentials();
   return secretKey;
+}
+
+export async function getStripeMode(): Promise<'test' | 'live'> {
+  const { mode } = await getCredentials();
+  return mode;
 }
 
 let stripeSync: any = null;
