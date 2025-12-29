@@ -4,9 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Users, TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from "lucide-react";
+import { TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Lock } from "lucide-react";
 import { useState } from "react";
+import { Link } from "wouter";
 import { type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AdmissionsSectionProps {
   dbn: string;
@@ -18,32 +20,36 @@ interface AdmissionsSectionProps {
 
 export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }: AdmissionsSectionProps) {
   const [methodologyOpen, setMethodologyOpen] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  const { data: subscription } = useQuery<{ status: string; plan: string }>({
+    queryKey: ["/api/subscription"],
+    enabled: isAuthenticated && !authLoading,
+  });
+
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 
   const { data: admissionsData, isLoading } = useQuery<AdmissionsMetrics[]>({
     queryKey: ["/api/schools", dbn, "admissions"],
   });
 
-  // Check if this school has any relevant grades (K, 3K, Pre-K)
   const hasEarlyGrades = gradeBand?.includes("PK") || gradeBand?.includes("K") || has3k || hasPrek;
   
-  // Only show section if there's data or school has relevant grades
   if (!isLoading && (!admissionsData || admissionsData.length === 0)) {
     if (!hasEarlyGrades) return null;
-    return null; // No data for this school
+    return null;
   }
 
-  // Group metrics by grade band
   const metricsByGrade = (admissionsData || []).reduce((acc, m) => {
     if (!acc[m.gradeBand]) acc[m.gradeBand] = [];
     acc[m.gradeBand].push(m);
     return acc;
   }, {} as Record<string, AdmissionsMetrics[]>);
 
-  // Get the latest year's metrics for display (dynamically from data)
   const getLatestMetric = (grade: string) => {
     const gradeMetrics = metricsByGrade[grade];
     if (!gradeMetrics || gradeMetrics.length === 0) return undefined;
-    // Sort by year descending and return the most recent
     return gradeMetrics.sort((a, b) => b.schoolYear.localeCompare(a.schoolYear))[0];
   };
 
@@ -63,6 +69,12 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
     }
   };
 
+  const hasAnyData = Object.keys(metricsByGrade).length > 0;
+
+  if (!hasAnyData && !isLoading) {
+    return null;
+  }
+
   return (
     <Card className="p-4 mt-4" data-testid="section-admissions">
       <div className="flex items-center gap-2 mb-3">
@@ -76,6 +88,12 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
             <p>Data from NYC DOE Local Law 72 reports showing application demand and offer rates for K, Pre-K, and 3-K programs.</p>
           </TooltipContent>
         </Tooltip>
+        {!isPremium && (
+          <Badge variant="outline" className="ml-auto text-xs gap-1">
+            <Lock className="h-3 w-3" />
+            Premium
+          </Badge>
+        )}
       </div>
 
       {isLoading ? (
@@ -83,6 +101,67 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
           {[1, 2].map(i => (
             <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
           ))}
+        </div>
+      ) : !isPremium ? (
+        <div className="relative">
+          <div className="space-y-4 blur-sm select-none pointer-events-none" aria-hidden="true">
+            {Object.keys(gradeLabels).map(grade => {
+              const metric = getLatestMetric(grade);
+              if (!metric) return null;
+
+              return (
+                <div 
+                  key={grade} 
+                  className="border rounded-lg p-3 bg-muted/30"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{gradeLabels[grade]}</span>
+                      <span className="text-xs text-muted-foreground">({metric.schoolYear})</span>
+                    </div>
+                    <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                      --
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <div className="space-y-0.5">
+                      <div className="text-muted-foreground text-xs">Seats</div>
+                      <div className="font-medium">---</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="text-muted-foreground text-xs">Applicants</div>
+                      <div className="font-medium">---</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="text-muted-foreground text-xs">Apps/Seat</div>
+                      <div className="font-medium">--</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="text-muted-foreground text-xs">Offer Rate</div>
+                      <div className="font-medium">--%</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-background/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg border max-w-xs">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <h4 className="font-semibold text-lg mb-2">Unlock Admissions Data</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                See application demand, competitiveness levels, and offer rates for K, Pre-K, and 3-K programs.
+              </p>
+              <Link href={isAuthenticated ? "/pricing" : "/login"}>
+                <Button data-testid="button-unlock-admissions">
+                  <Lock className="w-4 h-4 mr-2" />
+                  {isAuthenticated ? "Unlock for $29" : "Log in to Unlock"}
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
@@ -160,7 +239,6 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
                   </div>
                 </div>
 
-                {/* Estimated fill rate for 2025-26 */}
                 {metric.estimatedFillRate != null && (
                   <div className="mt-2 pt-2 border-t">
                     <div className="flex items-center gap-2 text-sm">
@@ -182,14 +260,12 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
             );
           })}
 
-          {/* No data message */}
           {Object.keys(metricsByGrade).length === 0 && (
             <div className="text-center py-4 text-muted-foreground text-sm">
               No admissions data available for this school.
             </div>
           )}
 
-          {/* Methodology section */}
           <Collapsible open={methodologyOpen} onOpenChange={setMethodologyOpen}>
             <CollapsibleTrigger asChild>
               <Button 

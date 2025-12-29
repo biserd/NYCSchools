@@ -8,12 +8,12 @@ import { Link, useLocation } from "wouter";
 import { 
   X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus, Scale,
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
-  Globe, Percent, Languages, DollarSign, Lock, CheckCircle
+  Globe, Percent, Languages, DollarSign, Lock, CheckCircle, Target
 } from "lucide-react";
-import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection } from "@shared/schema";
+import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { DistrictAverages } from "@/components/DistrictComparison";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -217,8 +217,57 @@ export default function ComparePage() {
     queryKey: ["/api/schools-trends"],
   });
 
-  // Premium gate: Show upgrade prompt for non-premium users
-  if (!authLoading && subscriptionFetched && !isPremium) {
+  // Only fetch admissions data if user is premium (gated data)
+  const canAccessPremiumData = !!user && isPremium;
+  
+  // Fetch admissions data for all compared schools using useQueries (only for premium users)
+  const admissionsQueries = useQueries({
+    queries: comparedSchools.map(school => ({
+      queryKey: ["/api/schools", school.dbn, "admissions"],
+      enabled: !!school.dbn && canAccessPremiumData,
+    })),
+  });
+
+  // Build a map of DBN -> latest admissions metrics by grade
+  const admissionsDataMap: Record<string, Record<string, AdmissionsMetrics | undefined>> = {};
+  comparedSchools.forEach((school, idx) => {
+    const data = (admissionsQueries[idx]?.data as AdmissionsMetrics[]) || [];
+    const byGrade: Record<string, AdmissionsMetrics | undefined> = {};
+    ['K', 'PK', '3K'].forEach(grade => {
+      const gradeMetrics = data.filter(m => m.gradeBand === grade);
+      if (gradeMetrics.length > 0) {
+        byGrade[grade] = gradeMetrics.sort((a, b) => b.schoolYear.localeCompare(a.schoolYear))[0];
+      }
+    });
+    admissionsDataMap[school.dbn] = byGrade;
+  });
+
+  // Check if any school has admissions data
+  const hasAdmissionsData = Object.values(admissionsDataMap).some(
+    byGrade => Object.values(byGrade).some(m => m !== undefined)
+  );
+
+  // Show loading state while checking auth/subscription
+  const isCheckingAccess = authLoading || (!!user && !subscriptionFetched);
+  
+  // Loading state while checking access
+  if (isCheckingAccess) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <AppHeader />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center">
+            <Scale className="w-12 h-12 mx-auto text-muted-foreground animate-pulse mb-4" />
+            <p className="text-muted-foreground">Loading comparison...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+  
+  // Premium gate: Show upgrade prompt for non-premium users OR non-logged-in users
+  if (!user || !isPremium) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SEOHead 
@@ -679,6 +728,90 @@ export default function ComparePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Admissions & Demand */}
+          {hasAdmissionsData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Admissions & Demand (K/Pre-K/3K)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-48">Grade</TableHead>
+                        {schoolsWithScores.map((school) => (
+                          <TableHead key={school.dbn} className="text-center">
+                            <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {['K', 'PK', '3K'].map(grade => {
+                        const hasGradeData = schoolsWithScores.some(s => admissionsDataMap[s.dbn]?.[grade]);
+                        if (!hasGradeData) return null;
+                        
+                        const gradeLabel = grade === 'K' ? 'Kindergarten' : grade === 'PK' ? 'Pre-K' : '3-K';
+                        
+                        return (
+                          <TableRow key={grade}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <Baby className="w-4 h-4 text-muted-foreground" />
+                                {gradeLabel}
+                              </div>
+                            </TableCell>
+                            {schoolsWithScores.map((school) => {
+                              const metric = admissionsDataMap[school.dbn]?.[grade];
+                              if (!metric) {
+                                return (
+                                  <TableCell key={school.dbn} className="text-center text-muted-foreground">
+                                    N/A
+                                  </TableCell>
+                                );
+                              }
+                              const level = getCompetitivenessLevel(metric.appsPerSeat);
+                              const display = getCompetitivenessDisplay(level);
+                              const badgeClass = level === 'very_competitive' 
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                : level === 'competitive'
+                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                : level === 'moderate'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+                              
+                              return (
+                                <TableCell key={school.dbn} className="text-center" data-testid={`cell-admissions-${grade}-${school.dbn}`}>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="secondary" className={badgeClass}>
+                                      {display.label}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {metric.appsPerSeat?.toFixed(1)} apps/seat
+                                    </span>
+                                    {metric.offerRate != null && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {(metric.offerRate * 100).toFixed(0)}% offer rate
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* NYC School Survey */}
           {hasSurveyData && (
