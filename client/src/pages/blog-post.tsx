@@ -18,7 +18,20 @@ import {
   CitywideRecoveryTrendChart,
   DistrictRecoveryChart,
   TopImprovedSchoolsTable,
+  AdmissionsStatsCards,
+  DemandByGradeChart,
+  CompetitivenessDistributionChart,
+  BoroughDemandChart,
+  DemandTrendChart,
+  TopCompetitiveSchoolsTable,
 } from "@/components/blog/DataCharts";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
+import { HelpCircle } from "lucide-react";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -434,6 +447,406 @@ function DOEDataAnalysisPost() {
   );
 }
 
+function AdmissionsDemandPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        Every year, over <strong>185,000 NYC families</strong> apply for Pre-K, 3-K, and Kindergarten spots across the city. 
+        Our analysis of NYC DOE admissions data reveals <strong>which schools are most in-demand</strong>, how competitiveness 
+        varies by borough, and what the trends mean for your child's application.
+      </p>
+
+      <AdmissionsStatsCards />
+
+      <h2 id="understanding-admissions-demand">Understanding NYC Pre-K, 3-K, and Kindergarten Demand</h2>
+      
+      <p>
+        NYC's early childhood education system is one of the largest in the nation. With <strong>universal 3-K and Pre-K</strong> now 
+        available citywide, more families than ever are applying for these programs. But not all programs are created equal — and 
+        the competition for spots at top-rated schools can be fierce.
+      </p>
+
+      <p>
+        We measure <strong>admissions demand</strong> using the <strong>application-to-seat ratio</strong>: how many applications 
+        a school receives for each available seat. A ratio of 3:1 means three families applied for every one seat — indicating 
+        high competition and a lower chance of receiving an offer.
+      </p>
+
+      <DemandByGradeChart />
+
+      <h3 id="kindergarten-most-competitive">Kindergarten: The Most Competitive Grade</h3>
+
+      <p>
+        Across all boroughs, <strong>Kindergarten programs are the most competitive</strong>, with an average of 3.1 applications 
+        per available seat. This translates to roughly a 32% chance of receiving an offer at an average school — though top 
+        schools can see ratios of 6:1 or higher.
+      </p>
+
+      <ul>
+        <li><strong>Kindergarten:</strong> 3.1 apps/seat (32% offer rate average)</li>
+        <li><strong>Pre-K:</strong> 2.4 apps/seat (42% offer rate average)</li>
+        <li><strong>3-K:</strong> 1.8 apps/seat (56% offer rate average)</li>
+      </ul>
+
+      <Card className="my-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-amber-700 dark:text-amber-400">Why Is Kindergarten So Competitive?</strong>
+              <p className="text-sm text-amber-600/80 dark:text-amber-300/80 mt-1 mb-0">
+                Unlike 3-K and Pre-K, Kindergarten is mandatory in NYC. This creates a larger applicant pool as all 
+                families must enroll their children. Additionally, many families wait to enter the public school 
+                system at Kindergarten, having used private or informal childcare for earlier years.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="competitiveness-levels">How We Measure School Competitiveness</h2>
+
+      <p>
+        We categorize every NYC early childhood program into four competitiveness tiers based on their application-to-seat ratio:
+      </p>
+
+      <div className="not-prose my-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="border rounded-lg p-4 border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <strong className="text-red-700 dark:text-red-300">Very Competitive</strong>
+            </div>
+            <p className="text-sm text-red-600/80 dark:text-red-300/80">
+              <strong>3+ applications per seat.</strong> Fewer than 1 in 3 applicants receive offers. These are typically high-performing schools in desirable neighborhoods.
+            </p>
+          </div>
+          <div className="border rounded-lg p-4 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <strong className="text-orange-700 dark:text-orange-300">Competitive</strong>
+            </div>
+            <p className="text-sm text-orange-600/80 dark:text-orange-300/80">
+              <strong>2-3 applications per seat.</strong> Roughly 1 in 2 to 1 in 3 applicants receive offers. Still challenging but more accessible.
+            </p>
+          </div>
+          <div className="border rounded-lg p-4 border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-yellow-500" />
+              <strong className="text-yellow-700 dark:text-yellow-300">Moderate</strong>
+            </div>
+            <p className="text-sm text-yellow-600/80 dark:text-yellow-300/80">
+              <strong>1.2-2 applications per seat.</strong> Good chance of receiving an offer. Most applicants are accommodated.
+            </p>
+          </div>
+          <div className="border rounded-lg p-4 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <strong className="text-emerald-700 dark:text-emerald-300">Accessible</strong>
+            </div>
+            <p className="text-sm text-emerald-600/80 dark:text-emerald-300/80">
+              <strong>Less than 1.2 applications per seat.</strong> Very high likelihood of receiving an offer. May even have waitlist seats available.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <CompetitivenessDistributionChart />
+
+      <p>
+        Across NYC, about <strong>20% of early childhood programs</strong> fall into the "Very Competitive" category, 
+        while roughly <strong>27% are considered Accessible</strong>. This means there are still plenty of excellent 
+        schools where families have a strong chance of enrollment.
+      </p>
+
+      <h2 id="borough-demand">Admissions Demand by Borough</h2>
+
+      <p>
+        Demand varies significantly across NYC's five boroughs. <strong>Manhattan consistently sees the highest competition</strong> 
+        across all grade levels, followed by Brooklyn. Families in the Bronx and Staten Island generally face less competition.
+      </p>
+
+      <BoroughDemandChart />
+
+      <h3 id="manhattan-demand">Manhattan: The Most Competitive Borough</h3>
+
+      <p>
+        Manhattan schools see the highest application-to-seat ratios citywide:
+      </p>
+
+      <ul>
+        <li><strong>Manhattan Kindergarten:</strong> 3.8 apps/seat average</li>
+        <li><strong>Manhattan Pre-K:</strong> 2.9 apps/seat average</li>
+        <li><strong>Manhattan 3-K:</strong> 2.2 apps/seat average</li>
+      </ul>
+
+      <p>
+        This is driven by a combination of factors: smaller school buildings with limited capacity, high population 
+        density in family-friendly neighborhoods, and the concentration of highly-rated schools in districts like 
+        <strong>District 2</strong> (Tribeca, Chelsea, Upper East Side) and <strong>District 3</strong> (Upper West Side).
+      </p>
+
+      <h3 id="bronx-staten-island">Bronx and Staten Island: More Accessible Options</h3>
+
+      <p>
+        Families in the Bronx and Staten Island face significantly less competition. <strong>Staten Island's Kindergarten 
+        programs average just 2.1 apps/seat</strong> — meaning nearly half of all first-choice applicants receive offers.
+      </p>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Lightbulb className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Strategy for Parents</strong>
+              <p className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-1 mb-0">
+                If you're applying to competitive schools, always include at least one or two "accessible" programs 
+                on your ranked choice list. Check our school pages for competitiveness ratings to make informed decisions.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="demand-trends">Admissions Demand Trends: 2020-2025</h2>
+
+      <p>
+        Competition for NYC early childhood programs has <strong>increased steadily since the pandemic</strong>. 
+        After a dip in 2020-21 when many families delayed enrollment, demand has surged:
+      </p>
+
+      <DemandTrendChart />
+
+      <ul>
+        <li><strong>Kindergarten:</strong> From 2.1 apps/seat (2020-21) to 3.1 apps/seat (2024-25) — a 48% increase</li>
+        <li><strong>Pre-K:</strong> From 1.8 apps/seat to 2.4 apps/seat — a 33% increase</li>
+        <li><strong>3-K:</strong> From 1.2 apps/seat to 1.8 apps/seat — a 50% increase</li>
+      </ul>
+
+      <p>
+        This trend reflects both population growth in NYC and increased awareness of the importance of early childhood 
+        education. The expansion of universal 3-K has also drawn more families into the public school system earlier.
+      </p>
+
+      <h2 id="most-competitive-schools">NYC's Most Competitive Schools</h2>
+
+      <p>
+        Some NYC schools are exceptionally difficult to get into. These schools often combine high academic 
+        performance, desirable locations, and strong reputations — creating intense competition for limited seats.
+      </p>
+
+      <TopCompetitiveSchoolsTable />
+
+      <Card className="my-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-amber-700 dark:text-amber-400">Don't Just Chase Rankings</strong>
+              <p className="text-sm text-amber-600/80 dark:text-amber-300/80 mt-1 mb-0">
+                Highly competitive schools aren't necessarily the best fit for every child. Many "accessible" schools 
+                offer excellent programs with strong academic outcomes. Use our school comparison tools to evaluate 
+                schools based on what matters most to your family.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="application-tips">Tips for NYC Pre-K, 3-K, and Kindergarten Applications</h2>
+
+      <p>
+        Based on our analysis of admissions data, here are strategies to improve your chances:
+      </p>
+
+      <h3 id="research-competitiveness">1. Research Competitiveness Before Ranking</h3>
+      <p>
+        Check the competitiveness rating for every school on your list. If all your top choices are "Very Competitive," 
+        you're taking a significant risk. Balance aspirational picks with realistic options.
+      </p>
+
+      <h3 id="zone-priority">2. Understand Zone Priority</h3>
+      <p>
+        For many Kindergarten programs, students living in the school's zone receive priority. If you're zoned for a 
+        good school, your chances are significantly higher. Check your zone using our map tool.
+      </p>
+
+      <h3 id="sibling-priority">3. Consider Sibling Priority</h3>
+      <p>
+        If you have a child already enrolled at a school, siblings typically receive priority for younger grades. 
+        This can dramatically improve your odds at competitive schools.
+      </p>
+
+      <h3 id="apply-early">4. Apply During the Primary Round</h3>
+      <p>
+        Most seats are allocated during the primary application round. Waiting for the waitlist round significantly 
+        reduces your options. Apply on time and rank schools carefully.
+      </p>
+
+      <h2 id="faq">Frequently Asked Questions About NYC Admissions</h2>
+
+      <div className="not-prose my-6">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="faq-1">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>What are my chances of getting into a "Very Competitive" school?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                At "Very Competitive" schools (3+ applications per seat), your first-choice offer rate is typically below 33%. 
+                However, your actual chances depend on whether you have zone priority (for K), sibling priority, or other 
+                admissions preferences. If you're in-zone for a competitive school, your chances are much higher than if 
+                you're applying out-of-zone.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq-2">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>How does the NYC school lottery work for Pre-K and 3-K?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                NYC uses a ranked-choice lottery system. You rank up to 12 schools in order of preference. The algorithm 
+                processes all applications simultaneously, giving each student the highest-ranked school where a seat is 
+                available after applying priority rules. Priorities vary by program but typically include siblings, 
+                district residents, and Head Start eligibility for 3-K/Pre-K.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq-3">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>When should I apply for NYC Pre-K, 3-K, or Kindergarten?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                The primary application window typically opens in December/January and closes in March for the following 
+                school year. Results are released in spring. Check the NYC DOE website for exact dates. Applying during 
+                the primary round gives you access to the most seats — waitlist rounds have fewer options.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq-4">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>What is the difference between Pre-K and 3-K admissions?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                3-K is for children turning 3 by December 31, while Pre-K is for children turning 4. Both use a similar 
+                lottery system, but 3-K generally has less competition because it's newer and not all families enroll 
+                children at age 3. Pre-K sees higher demand because it's been universal for longer and many see it as 
+                essential kindergarten preparation.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq-5">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>Does attending 3-K or Pre-K guarantee a Kindergarten spot at the same school?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                Not automatically. However, many schools offer "continuing" or "feeder" patterns where Pre-K students 
+                receive priority for Kindergarten. Check with individual schools about their specific policies. Some 
+                elementary schools have separate Pre-K programs that don't guarantee K enrollment, while others are 
+                fully integrated.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq-6">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>What if I don't get any of my ranked school choices?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                If you don't receive an offer from any ranked school, you'll be assigned to a school with available seats — 
+                often your zoned school for Kindergarten. You can then participate in waitlist rounds for your preferred 
+                schools. To avoid this scenario, include at least 2-3 "Accessible" or "Moderate" competitiveness schools 
+                on your list.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq-7">
+            <AccordionTrigger className="text-left">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                <span>How can I find out the competitiveness level of a specific school?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <p className="text-muted-foreground">
+                Our school detail pages show competitiveness ratings, application-to-seat ratios, and offer rates for 
+                every NYC school with available data. This is premium content based on NYC DOE Local Law 72 admissions 
+                reports. You can also use our Lottery Simulator to estimate your odds at specific schools based on 
+                your profile.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+
+      <h2 id="methodology">Methodology</h2>
+
+      <p>
+        This analysis uses official NYC DOE admissions data from Local Law 72 reports, which require the city to 
+        publish detailed admissions statistics for all public schools. We analyzed application counts, seats offered, 
+        and offer rates across approximately 1,500 3-K, Pre-K, and Kindergarten programs citywide.
+      </p>
+
+      <p>
+        Competitiveness levels are calculated using the application-to-seat ratio:
+      </p>
+
+      <ul>
+        <li><strong>Very Competitive:</strong> 3.0+ applications per seat</li>
+        <li><strong>Competitive:</strong> 2.0-3.0 applications per seat</li>
+        <li><strong>Moderate:</strong> 1.2-2.0 applications per seat</li>
+        <li><strong>Accessible:</strong> Less than 1.2 applications per seat</li>
+      </ul>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2">Find Your Perfect School</h3>
+        <p className="text-muted-foreground mb-4">
+          Use our tools to research schools, check competitiveness ratings, and simulate your lottery odds.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/">Browse All Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/lottery-simulator">Lottery Simulator</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/recommendations">Get Recommendations</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const post = getBlogPost(slug || "");
@@ -521,6 +934,7 @@ export default function BlogPostPage() {
 
         {post.slug === "2023-24-doe-data-analysis" && <DOEDataAnalysisPost />}
         {post.slug === "nyc-schools-2025-covid-recovery" && <CovidRecoveryPost />}
+        {post.slug === "nyc-prek-3k-kindergarten-admissions-demand-2025" && <AdmissionsDemandPost />}
 
         <div className="border-t mt-12 pt-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
