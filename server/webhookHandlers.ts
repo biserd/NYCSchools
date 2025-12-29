@@ -37,12 +37,11 @@ export class WebhookHandlers {
     logWebhook('INFO', 'stripe-replit-sync processing complete');
     
     // Now handle custom logic for subscription updates
+    // The webhook was already verified by stripe-replit-sync, so we can safely parse the event
     try {
-      const stripe = await getUncachableStripeClient();
-      const webhookSecret = await sync.getWebhookSecret(uuid);
-      const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      const event = JSON.parse(payload.toString()) as Stripe.Event;
       
-      logWebhook('INFO', `Event constructed successfully`, { 
+      logWebhook('INFO', `Parsed event for custom handling`, { 
         eventId: event.id, 
         eventType: event.type,
         livemode: event.livemode 
