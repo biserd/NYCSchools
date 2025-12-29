@@ -1,44 +1,23 @@
-// Email service for NYC School Ratings using Resend integration
+// Email service for NYC School Ratings using custom Resend API
 import { Resend } from 'resend';
 
-let connectionSettings: any;
+// Use custom Resend credentials from environment variables
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'hello@nycschoolsratings.com';
 
-async function getCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
+// Cached Resend client (singleton pattern)
+let cachedClient: Resend | null = null;
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+function getResendClient(): { client: Resend; fromEmail: string } {
+  if (!RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY environment variable is not set');
   }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
-    throw new Error('Resend not connected');
+  if (!cachedClient) {
+    cachedClient = new Resend(RESEND_API_KEY);
   }
   return {
-    apiKey: connectionSettings.settings.api_key, 
-    fromEmail: connectionSettings.settings.from_email
-  };
-}
-
-async function getUncachableResendClient() {
-  const { apiKey, fromEmail } = await getCredentials();
-  return {
-    client: new Resend(apiKey),
-    fromEmail
+    client: cachedClient,
+    fromEmail: RESEND_FROM_EMAIL
   };
 }
 
@@ -57,7 +36,7 @@ function logEmail(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any)
 
 export async function sendAdminNewCustomerNotification(customerEmail: string, planType: string, amount?: number): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getUncachableResendClient();
+    const { client, fromEmail } = getResendClient();
     
     const formattedAmount = amount ? `$${(amount / 100).toFixed(2)}` : 'N/A';
     const planName = planType === 'season_pass' ? 'Season Pass ($29 for 6 months)' : planType;
@@ -94,7 +73,7 @@ export async function sendAdminNewCustomerNotification(customerEmail: string, pl
 
 export async function sendWelcomeEmail(customerEmail: string, firstName?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getUncachableResendClient();
+    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
@@ -197,7 +176,7 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
 
 export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getUncachableResendClient();
+    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
@@ -325,7 +304,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
 
 export async function sendAdminNewUserRegistrationNotification(userEmail: string, firstName?: string | null, lastName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getUncachableResendClient();
+    const { client, fromEmail } = getResendClient();
     
     const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Not provided';
     
