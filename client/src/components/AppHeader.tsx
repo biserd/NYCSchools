@@ -10,7 +10,6 @@ import {
   Sparkles, 
   Map, 
   Settings, 
-  MessageCircle,
   Home,
   Shuffle,
   Zap,
@@ -21,11 +20,7 @@ import {
   DollarSign
 } from "lucide-react";
 
-interface AppHeaderProps {
-  showAIButton?: boolean;
-}
-
-export function AppHeader({ showAIButton = true }: AppHeaderProps) {
+export function AppHeader() {
   const { user, isAuthenticated } = useAuth();
 
   const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
@@ -44,33 +39,26 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
     <header className="bg-background border-b" data-testid="header-main">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <Link href="/">
-            <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
-              <Home className="w-5 h-5 text-primary" />
-              <h1 className="text-xl md:text-2xl font-bold" data-testid="text-site-title">
-                NYC School Ratings
-              </h1>
-            </div>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
+                <Home className="w-5 h-5 text-primary" />
+                <h1 className="text-xl md:text-2xl font-bold" data-testid="text-site-title">
+                  NYC School Ratings
+                </h1>
+              </div>
+            </Link>
+            {subscriptionFetched && isPremium && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium" data-testid="badge-premium">
+                <Star className="w-3 h-3" />
+                <span>Premium</span>
+              </div>
+            )}
+          </div>
           
           <div className="flex items-center gap-2 flex-wrap">
             {isAuthenticated ? (
               <>
-                {showAIButton && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      const chatButton = document.querySelector('[data-testid="button-chat-open"]') as HTMLButtonElement;
-                      if (chatButton) chatButton.click();
-                    }}
-                    data-testid="button-ai-assistant-header"
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Ask AI
-                  </Button>
-                )}
                 <Link href="/recommendations">
                   <Button variant="outline" size="sm" data-testid="button-recommendations-nav">
                     <Sparkles className="w-4 h-4 mr-2" />
@@ -111,12 +99,6 @@ export function AppHeader({ showAIButton = true }: AppHeaderProps) {
                       <span className="hidden sm:inline">Tracker</span>
                     </Button>
                   </Link>
-                )}
-                {subscriptionFetched && isPremium && (
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium">
-                    <Star className="w-3 h-3" />
-                    <span className="hidden sm:inline">Premium</span>
-                  </div>
                 )}
                 {showUpgradeButton && (
                   <Link href="/pricing">

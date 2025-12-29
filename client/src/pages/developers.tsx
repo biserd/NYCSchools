@@ -83,7 +83,7 @@ export default function DevelopersPage() {
         canonicalPath="/developers"
       />
       <div className="min-h-screen flex flex-col bg-background">
-        <AppHeader showAIButton={false} />
+        <AppHeader />
 
         <main className="flex-1">
           <div className="bg-gradient-to-b from-primary/5 to-background py-16 md:py-24">

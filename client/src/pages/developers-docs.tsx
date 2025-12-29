@@ -220,7 +220,7 @@ export default function DevelopersDocsPage() {
         canonicalPath="/developers/docs"
       />
       <div className="min-h-screen flex flex-col bg-background">
-        <AppHeader showAIButton={false} />
+        <AppHeader />
 
         <main className="flex-1">
           <div className="container mx-auto px-4 max-w-6xl py-8">
