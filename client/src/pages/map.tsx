@@ -80,11 +80,11 @@ export default function MapPage() {
   const urlParams = useMemo(() => new URLSearchParams(searchString), [searchString]);
   
   // Initialize state from URL parameters
-  // Default to "all" districts unless a specific district is provided in URL
+  // Default to District 2 unless a specific district is provided in URL
   const [selectedDistrict, setSelectedDistrict] = useState(() => {
     const district = urlParams.get("district");
     if (district) return district;
-    return "all"; // Default to All Districts
+    return "2"; // Default to District 2 for less crowded view
   });
   const [selectedType, setSelectedType] = useState(() => urlParams.get("type") || "all");
   const [selectedGT, setSelectedGT] = useState(() => urlParams.get("gt") || "all");
@@ -139,11 +139,11 @@ export default function MapPage() {
     const source = newParams.get("source");
     const centerType = newParams.get("centerType");
     
-    // Set district: explicit district > default to "all"
+    // Set district: explicit district > default to District 2
     if (district) {
       setSelectedDistrict(district);
     } else {
-      setSelectedDistrict("all");
+      setSelectedDistrict("2");
     }
     
     setSelectedType(type || "all");
@@ -161,9 +161,9 @@ export default function MapPage() {
     const newParams = new URLSearchParams();
     
     Object.entries(params).forEach(([key, value]) => {
-      // Don't add default values to URL
+      // Don't add default values to URL (District 2 is the default for map)
       const isDefault = 
-        (key === "district" && value === "all") ||
+        (key === "district" && value === "2") ||
         (key === "source" && value === "schools") ||
         (key !== "district" && key !== "zip" && key !== "source" && value === "all") ||
         (key === "zip" && !value);
@@ -387,10 +387,10 @@ export default function MapPage() {
     return result;
   }, [allNyceecCenters, selectedDistrict, selectedNyceecType, selectedZipCode]);
 
-  // Count active filters (All Districts is the default, so only count as active if a specific district is selected)
+  // Count active filters (District 2 is default, "all" is expanded view - neither counts as active)
   const activeFilterCount = useMemo(() => {
     return [
-      selectedDistrict !== "all" ? 1 : 0,
+      (selectedDistrict !== "2" && selectedDistrict !== "all") ? 1 : 0,
       selectedType !== "all" ? 1 : 0,
       selectedGT !== "all" ? 1 : 0,
       selectedDL !== "all" ? 1 : 0,
@@ -426,7 +426,7 @@ export default function MapPage() {
       parts.push(iepLabel);
     }
     
-    if (selectedDistrict !== "all") {
+    if (selectedDistrict !== "2" && selectedDistrict !== "all") {
       parts.push(`District ${selectedDistrict}`);
     }
     
@@ -444,7 +444,7 @@ export default function MapPage() {
     
     // Build canonical path from active filter state
     const canonicalParams = new URLSearchParams();
-    if (selectedDistrict !== "all") canonicalParams.set("district", selectedDistrict);
+    if (selectedDistrict !== "2" && selectedDistrict !== "all") canonicalParams.set("district", selectedDistrict);
     if (selectedType !== "all") canonicalParams.set("type", selectedType);
     if (selectedGT !== "all") canonicalParams.set("gt", selectedGT);
     if (selectedDL !== "all") canonicalParams.set("dl", selectedDL);
@@ -714,7 +714,7 @@ export default function MapPage() {
 
   // Clear all filters (reset to defaults)
   const clearFilters = () => {
-    setSelectedDistrict("all");
+    setSelectedDistrict("2");
     setSelectedType("all");
     setSelectedGT("all");
     setSelectedDL("all");
@@ -983,6 +983,26 @@ export default function MapPage() {
       </div>
 
       <div className="flex-1 container mx-auto px-4 pb-4">
+        {/* Helper banner for default view */}
+        {selectedDistrict === "2" && dataSource === "schools" && (
+          <div className="mb-3 flex items-center justify-between gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <MapPin className="w-4 h-4 shrink-0" />
+              <span>
+                Showing <strong>District 2</strong> schools (Manhattan)
+              </span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setSelectedDistrict("all")}
+              className="shrink-0 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900"
+              data-testid="button-show-all-districts"
+            >
+              Show All NYC Schools
+            </Button>
+          </div>
+        )}
         <div 
           ref={mapRef} 
           className="w-full h-[600px] rounded-lg border shadow-lg"
