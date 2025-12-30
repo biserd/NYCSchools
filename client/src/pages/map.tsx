@@ -80,14 +80,11 @@ export default function MapPage() {
   const urlParams = useMemo(() => new URLSearchParams(searchString), [searchString]);
   
   // Initialize state from URL parameters
-  // If zip is provided without district, default to "all" to show all schools in that zip
-  // Otherwise, default to District 2
+  // Default to "all" districts unless a specific district is provided in URL
   const [selectedDistrict, setSelectedDistrict] = useState(() => {
     const district = urlParams.get("district");
-    const zip = urlParams.get("zip");
     if (district) return district;
-    if (zip && zip.length === 5) return "all"; // Zip provided but no district = show all districts
-    return "2"; // Default to District 2
+    return "all"; // Default to All Districts
   });
   const [selectedType, setSelectedType] = useState(() => urlParams.get("type") || "all");
   const [selectedGT, setSelectedGT] = useState(() => urlParams.get("gt") || "all");
@@ -142,13 +139,11 @@ export default function MapPage() {
     const source = newParams.get("source");
     const centerType = newParams.get("centerType");
     
-    // Set district: explicit district > infer from zip > default
+    // Set district: explicit district > default to "all"
     if (district) {
       setSelectedDistrict(district);
-    } else if (zip && zip.length === 5) {
-      setSelectedDistrict("all");
     } else {
-      setSelectedDistrict("2");
+      setSelectedDistrict("all");
     }
     
     setSelectedType(type || "all");
@@ -168,7 +163,7 @@ export default function MapPage() {
     Object.entries(params).forEach(([key, value]) => {
       // Don't add default values to URL
       const isDefault = 
-        (key === "district" && (value === "2" || value === "all")) ||
+        (key === "district" && value === "all") ||
         (key === "source" && value === "schools") ||
         (key !== "district" && key !== "zip" && key !== "source" && value === "all") ||
         (key === "zip" && !value);
@@ -392,10 +387,10 @@ export default function MapPage() {
     return result;
   }, [allNyceecCenters, selectedDistrict, selectedNyceecType, selectedZipCode]);
 
-  // Count active filters (District 2 is the default, so only count as active if changed to something else)
+  // Count active filters (All Districts is the default, so only count as active if a specific district is selected)
   const activeFilterCount = useMemo(() => {
     return [
-      selectedDistrict !== "2" ? 1 : 0,
+      selectedDistrict !== "all" ? 1 : 0,
       selectedType !== "all" ? 1 : 0,
       selectedGT !== "all" ? 1 : 0,
       selectedDL !== "all" ? 1 : 0,
@@ -431,7 +426,7 @@ export default function MapPage() {
       parts.push(iepLabel);
     }
     
-    if (selectedDistrict !== "all" && selectedDistrict !== "2") {
+    if (selectedDistrict !== "all") {
       parts.push(`District ${selectedDistrict}`);
     }
     
@@ -449,7 +444,7 @@ export default function MapPage() {
     
     // Build canonical path from active filter state
     const canonicalParams = new URLSearchParams();
-    if (selectedDistrict !== "all" && selectedDistrict !== "2") canonicalParams.set("district", selectedDistrict);
+    if (selectedDistrict !== "all") canonicalParams.set("district", selectedDistrict);
     if (selectedType !== "all") canonicalParams.set("type", selectedType);
     if (selectedGT !== "all") canonicalParams.set("gt", selectedGT);
     if (selectedDL !== "all") canonicalParams.set("dl", selectedDL);
@@ -719,7 +714,7 @@ export default function MapPage() {
 
   // Clear all filters (reset to defaults)
   const clearFilters = () => {
-    setSelectedDistrict("2");
+    setSelectedDistrict("all");
     setSelectedType("all");
     setSelectedGT("all");
     setSelectedDL("all");

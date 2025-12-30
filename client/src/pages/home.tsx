@@ -44,7 +44,7 @@ function getInitialFiltersFromURL(): {
   if (typeof window === "undefined") {
     return {
       search: "",
-      district: "2",
+      district: "all",
       gradeBand: "All",
       earlyChildhood: "All",
       giftedTalented: "All",
@@ -60,7 +60,7 @@ function getInitialFiltersFromURL(): {
   const params = new URLSearchParams(window.location.search);
   return {
     search: params.get("q") || "",
-    district: params.get("district") || "2",
+    district: params.get("district") || "all",
     gradeBand: params.get("grade") || "All",
     earlyChildhood: params.get("ec") || "All",
     giftedTalented: params.get("gt") || "All",
@@ -127,7 +127,7 @@ export default function Home() {
     Object.entries(updates).forEach(([key, value]) => {
       const defaultValues: Record<string, string> = {
         q: "",
-        district: "2",
+        district: "all",
         grade: "All",
         ec: "All",
         gt: "All",
