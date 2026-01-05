@@ -25,6 +25,14 @@ The platform provides comprehensive data for 1,533 NYC schools, including academ
 ### System Design Choices
 The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data fetching and AI integration. Error handling is graceful, and performance is optimized through pagination, search debounce, server-side caching, Gzip compression, code-splitting, and localStorage synchronization. Cost optimizations include auth-gated features.
 
+### Server-Side Caching (`server/cache.ts`)
+Centralized in-memory caching with configurable TTLs and mutation protection:
+- **TTL Tiers**: SHORT (1 min) for premium/subscription status, DEFAULT (5 min) for dynamic data, LONG (10 min) for static school/center data
+- **Mutation Protection**: Uses `structuredClone` on both read and write to prevent cached objects from being modified
+- **Automatic Cleanup**: Expired entries are cleaned every 5 minutes
+- **Webhook Invalidation**: `invalidateUserCaches(userId)` is called from webhookHandlers.ts after subscription changes to ensure immediate premium status updates
+- **Cached Endpoints**: Individual schools, school history, admissions data, NYCEEC centers, subscription status, premium user checks, school trends, district/citywide averages
+
 ### Core Web Vitals Optimizations
 Performance optimizations for better LCP, INP, and FCP scores:
 - **Lazy Loading**: Heavy pages (Home, SchoolDetail, ComparePage, BlogPage, BlogPostPage, PricingPage, etc.) are lazy-loaded with React.lazy() and Suspense
