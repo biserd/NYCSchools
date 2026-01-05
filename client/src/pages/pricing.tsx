@@ -249,9 +249,15 @@ export default function PricingPage() {
       });
       return;
     }
-    if (currentPriceId) {
-      guestCheckoutMutation.mutate({ email: guestEmail, priceId: currentPriceId });
+    if (!currentPriceId) {
+      toast({
+        title: "Loading...",
+        description: "Please wait while we load pricing information.",
+        variant: "destructive",
+      });
+      return;
     }
+    guestCheckoutMutation.mutate({ email: guestEmail, priceId: currentPriceId });
   };
 
   // Check for premium access - includes recurring subscriptions and Season Pass
@@ -575,16 +581,16 @@ export default function PricingPage() {
                           <DialogFooter className="flex-col gap-2 sm:flex-col">
                             <Button 
                               onClick={handleGuestCheckout}
-                              disabled={guestCheckoutMutation.isPending || !guestEmail}
+                              disabled={guestCheckoutMutation.isPending || !guestEmail || !currentPriceId}
                               className="w-full"
                               data-testid="button-continue-checkout"
                             >
-                              {guestCheckoutMutation.isPending ? (
+                              {guestCheckoutMutation.isPending || productsLoading ? (
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                               ) : (
                                 <Zap className="w-4 h-4 mr-2" />
                               )}
-                              Continue to Checkout
+                              {productsLoading ? "Loading..." : "Continue to Checkout"}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
