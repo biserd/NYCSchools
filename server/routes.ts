@@ -15,34 +15,7 @@ import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, getUncachableStripeClient, getStripePublishableKey, getStripeMode } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
-
-// Simple in-memory cache
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-}
-
-const cache = new Map<string, CacheEntry<any>>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function getCached<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  
-  if (Date.now() - entry.timestamp > CACHE_TTL) {
-    cache.delete(key);
-    return null;
-  }
-  
-  return entry.data as T;
-}
-
-function setCache<T>(key: string, data: T): void {
-  cache.set(key, {
-    data,
-    timestamp: Date.now(),
-  });
-}
+import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -57,11 +30,19 @@ const PREMIUM_TIER_LIMITS = {
   MAX_COMPARISON_SCHOOLS: 4,
 };
 
-// Helper to check if user has an active premium subscription
+// Helper to check if user has an active premium subscription (with 1-minute cache)
 async function isPremiumUser(userId: string): Promise<boolean> {
   try {
+    // Check cache first (1-minute TTL to reduce Stripe API calls)
+    const cacheKey = `premium-user-${userId}`;
+    const cachedResult = getCached<boolean>(cacheKey);
+    if (cachedResult !== null) {
+      return cachedResult;
+    }
+    
     const user = await storage.getUser(userId);
     if (!user) {
+      setCache(cacheKey, false, CACHE_TTL_SHORT);
       return false;
     }
     
@@ -77,9 +58,11 @@ async function isPremiumUser(userId: string): Promise<boolean> {
             subscriptionStatus: 'expired',
             subscriptionPlan: 'free',
           });
+          setCache(cacheKey, false, CACHE_TTL_SHORT);
           return false;
         }
       }
+      setCache(cacheKey, true, CACHE_TTL_SHORT);
       return true;
     }
     
@@ -87,10 +70,12 @@ async function isPremiumUser(userId: string): Promise<boolean> {
     if (user.stripeSubscriptionId) {
       const subscription = await stripeService.getSubscriptionWithDetails(user.stripeSubscriptionId);
       if (subscription && ['active', 'trialing', 'past_due'].includes(subscription.status)) {
+        setCache(cacheKey, true, CACHE_TTL_SHORT);
         return true;
       }
     }
     
+    setCache(cacheKey, false, CACHE_TTL_SHORT);
     return false;
   } catch (error) {
     console.error("Error checking premium status:", error);
@@ -213,12 +198,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Individual school lookup with 10-minute cache (static data)
   app.get("/api/schools/:dbn", async (req: Request, res: Response) => {
     try {
-      const school = await storage.getSchool(req.params.dbn);
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `school-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const school = await storage.getSchool(dbn);
       if (!school) {
         return res.status(404).json({ error: "School not found" });
       }
+      setCache(cacheKey, school, CACHE_TTL_LONG);
       res.json(school);
     } catch (error) {
       console.error("Error fetching school:", error);
@@ -226,10 +221,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Historical scores API (public) - for individual school
+  // Historical scores API (public) - for individual school with 10-minute cache
   app.get("/api/schools/:dbn/history", async (req: Request, res: Response) => {
     try {
-      const trend = await storage.getSchoolTrend(req.params.dbn);
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `school-history-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const trend = await storage.getSchoolTrend(dbn);
+      setCache(cacheKey, trend, CACHE_TTL_LONG);
       res.json(trend);
     } catch (error) {
       console.error("Error fetching school history:", error);
@@ -237,10 +241,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admissions data API (public) - for K/3K/Pre-K admissions metrics
+  // Admissions data API (public) - for K/3K/Pre-K admissions metrics with 10-minute cache
   app.get("/api/schools/:dbn/admissions", async (req: Request, res: Response) => {
     try {
-      const metrics = await storage.getSchoolAdmissionsMetrics(req.params.dbn);
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `school-admissions-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const metrics = await storage.getSchoolAdmissionsMetrics(dbn);
+      setCache(cacheKey, metrics, CACHE_TTL_LONG);
       res.json(metrics);
     } catch (error) {
       console.error("Error fetching admissions data:", error);
@@ -304,12 +317,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Individual NYCEEC center with 10-minute cache (normalize locCode to uppercase for consistent cache keys)
   app.get("/api/nyceec-centers/:locCode", async (req: Request, res: Response) => {
     try {
-      const center = await storage.getNyceecCenter(req.params.locCode);
+      const locCode = req.params.locCode.toUpperCase();
+      const cacheKey = `nyceec-center-${locCode}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const center = await storage.getNyceecCenter(locCode);
       if (!center) {
         return res.status(404).json({ error: "Early childhood center not found" });
       }
+      setCache(cacheKey, center, CACHE_TTL_LONG);
       res.json(center);
     } catch (error) {
       console.error("Error fetching NYCEEC center:", error);
@@ -1927,14 +1950,24 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     }
   });
 
-  // Get user's subscription status
+  // Get user's subscription status (with 1-minute cache to reduce Stripe API calls)
   app.get("/api/subscription-status", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.session.userId;
+      
+      // Check cache first (1-minute TTL to reduce Stripe API overhead)
+      const cacheKey = `subscription-status-${userId}`;
+      const cachedResult = getCached(cacheKey);
+      if (cachedResult) {
+        return res.json(cachedResult);
+      }
+      
       const user = await storage.getUser(userId);
       
       if (!user) {
-        return res.json({ isSubscribed: false, subscription: null });
+        const result = { isSubscribed: false, subscription: null };
+        setCache(cacheKey, result, CACHE_TTL_SHORT);
+        return res.json(result);
       }
 
       // First check for Season Pass (one-time purchase) in database
@@ -1949,12 +1982,15 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
               subscriptionStatus: 'expired',
               subscriptionPlan: 'free',
             });
-            return res.json({ isSubscribed: false, subscription: null });
+            const result = { isSubscribed: false, subscription: null };
+            setCache(cacheKey, result, CACHE_TTL_SHORT);
+            invalidateUserCaches(userId);
+            return res.json(result);
           }
         }
         
         // Active Season Pass
-        return res.json({
+        const result = {
           isSubscribed: true,
           subscription: {
             id: 'season_pass',
@@ -1968,20 +2004,26 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
               interval: '6 months',
             },
           }
-        });
+        };
+        setCache(cacheKey, result, CACHE_TTL_SHORT);
+        return res.json(result);
       }
 
       // Fall back to checking Stripe subscription for recurring plans
       const subscriptionId = user.stripeSubscriptionId;
       if (!subscriptionId || typeof subscriptionId !== 'string') {
-        return res.json({ isSubscribed: false, subscription: null });
+        const result = { isSubscribed: false, subscription: null };
+        setCache(cacheKey, result, CACHE_TTL_SHORT);
+        return res.json(result);
       }
 
       // Get subscription details from Stripe
       const subscription = await stripeService.getSubscriptionWithDetails(subscriptionId);
       
       if (!subscription || !['active', 'trialing', 'past_due'].includes(subscription.status)) {
-        return res.json({ isSubscribed: false, subscription: null });
+        const result = { isSubscribed: false, subscription: null };
+        setCache(cacheKey, result, CACHE_TTL_SHORT);
+        return res.json(result);
       }
 
       // Get plan/price details from the subscription
@@ -1996,7 +2038,7 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         };
       }
 
-      res.json({
+      const result = {
         isSubscribed: true,
         subscription: {
           id: subscription.id,
@@ -2005,7 +2047,9 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
           cancel_at_period_end: (subscription as any).cancel_at_period_end,
           plan: planDetails,
         }
-      });
+      };
+      setCache(cacheKey, result, CACHE_TTL_SHORT);
+      res.json(result);
     } catch (error) {
       console.error("Error fetching subscription status:", error);
       res.status(500).json({ error: "Failed to fetch subscription status" });

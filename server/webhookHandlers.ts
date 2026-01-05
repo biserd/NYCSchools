@@ -2,6 +2,7 @@
 import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
 import { sendAdminNewCustomerNotification, sendWelcomeEmail } from './emailService';
+import { invalidateUserCaches } from './cache';
 import Stripe from 'stripe';
 
 // Enhanced logging for webhook debugging
@@ -133,6 +134,9 @@ export class WebhookHandlers {
         subscriptionPlan,
       });
       
+      // Invalidate cached premium/subscription status for immediate effect
+      invalidateUserCaches(user.id);
+      
       logWebhook('INFO', `Successfully updated user subscription`, {
         userId: user.id,
         status: subscriptionStatus,
@@ -191,6 +195,9 @@ export class WebhookHandlers {
           subscriptionPlan: 'premium',
         });
         
+        // Invalidate cached premium/subscription status for immediate effect
+        invalidateUserCaches(user.id);
+        
         logWebhook('INFO', `Successfully updated user via subscription checkout`, {
           userId: user.id,
           subscriptionId
@@ -224,6 +231,9 @@ export class WebhookHandlers {
           subscriptionPlan: planType,
           subscriptionExpiresAt: expiresAt,
         });
+        
+        // Invalidate cached premium/subscription status for immediate effect
+        invalidateUserCaches(user.id);
         
         logWebhook('INFO', `Successfully updated user with Season Pass`, {
           userId: user.id,
