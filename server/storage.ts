@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -101,6 +101,19 @@ export interface IStorage {
   
   // Admissions Data operations
   getSchoolAdmissionsMetrics(dbn: string): Promise<AdmissionsMetrics[]>;
+  
+  // Magic Link Token operations (passwordless auth)
+  createMagicLinkToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void>;
+  findMagicLinkToken(tokenHash: string): Promise<{ id: number; userId: string; expiresAt: Date; usedAt: Date | null } | undefined>;
+  markMagicLinkTokenUsed(id: number): Promise<void>;
+  deleteExpiredMagicLinkTokens(): Promise<void>;
+  
+  // Webhook idempotency operations
+  isWebhookEventProcessed(eventId: string): Promise<boolean>;
+  markWebhookEventProcessed(eventId: string, eventType: string): Promise<void>;
+  
+  // Guest user creation (for checkout without registration)
+  createGuestUser(email: string, stripeCustomerId: string): Promise<User>;
 }
 
 export interface NyceecFilters {
@@ -1307,6 +1320,78 @@ export class DbStorage implements IStorage {
       .from(admissionsMetrics)
       .where(eq(admissionsMetrics.dbn, dbn))
       .orderBy(desc(admissionsMetrics.schoolYear), asc(admissionsMetrics.gradeBand));
+  }
+  
+  // Magic Link Token operations (passwordless auth)
+  async createMagicLinkToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    await db.insert(magicLinkTokens).values({
+      userId,
+      tokenHash,
+      expiresAt,
+    });
+  }
+
+  async findMagicLinkToken(tokenHash: string): Promise<{ id: number; userId: string; expiresAt: Date; usedAt: Date | null } | undefined> {
+    const [token] = await db
+      .select({
+        id: magicLinkTokens.id,
+        userId: magicLinkTokens.userId,
+        expiresAt: magicLinkTokens.expiresAt,
+        usedAt: magicLinkTokens.usedAt,
+      })
+      .from(magicLinkTokens)
+      .where(eq(magicLinkTokens.tokenHash, tokenHash));
+    return token;
+  }
+
+  async markMagicLinkTokenUsed(id: number): Promise<void> {
+    await db
+      .update(magicLinkTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(magicLinkTokens.id, id));
+  }
+
+  async deleteExpiredMagicLinkTokens(): Promise<void> {
+    await db
+      .delete(magicLinkTokens)
+      .where(sql`${magicLinkTokens.expiresAt} < NOW()`);
+  }
+  
+  // Webhook idempotency operations
+  async isWebhookEventProcessed(eventId: string): Promise<boolean> {
+    const [existing] = await db
+      .select({ eventId: processedWebhookEvents.eventId })
+      .from(processedWebhookEvents)
+      .where(eq(processedWebhookEvents.eventId, eventId))
+      .limit(1);
+    return !!existing;
+  }
+
+  async markWebhookEventProcessed(eventId: string, eventType: string): Promise<void> {
+    await db.insert(processedWebhookEvents).values({
+      eventId,
+      eventType,
+    }).onConflictDoNothing();
+  }
+  
+  // Guest user creation (for checkout without registration)
+  async createGuestUser(email: string, stripeCustomerId: string): Promise<User> {
+    const crypto = await import('crypto');
+    const randomPassword = crypto.randomBytes(32).toString('hex');
+    const bcrypt = await import('bcrypt');
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        stripeCustomerId,
+        subscriptionStatus: 'free',
+        subscriptionPlan: 'free',
+      })
+      .returning();
+    return user;
   }
 }
 

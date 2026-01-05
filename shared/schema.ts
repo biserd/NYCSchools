@@ -499,6 +499,32 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 
+// Magic Link Tokens for passwordless authentication
+export const magicLinkTokens = pgTable("magic_link_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tokenHashIdx: index("magic_link_tokens_hash_idx").on(table.tokenHash),
+  userIdx: index("magic_link_tokens_user_idx").on(table.userId),
+}));
+
+export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
+
+// Processed Webhook Events for idempotency (prevent duplicate processing)
+export const processedWebhookEvents = pgTable("processed_webhook_events", {
+  eventId: varchar("event_id").primaryKey(), // Stripe event ID
+  eventType: varchar("event_type").notNull(),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
+}, (table) => ({
+  eventTypeIdx: index("processed_webhook_events_type_idx").on(table.eventType),
+}));
+
+export type ProcessedWebhookEvent = typeof processedWebhookEvents.$inferSelect;
+
 // OAuth 2.1 Authorization Codes for ChatGPT integration
 export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
   code: varchar("code").primaryKey(),
