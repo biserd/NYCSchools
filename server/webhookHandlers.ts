@@ -163,9 +163,15 @@ export class WebhookHandlers {
         ? session.customer 
         : session.customer?.id;
       
-      // Get customer email from session (critical for guest checkout)
+      // Get customer email and name from session (critical for guest checkout)
       const customerEmail = session.customer_details?.email || session.customer_email;
+      const customerName = session.customer_details?.name || '';
       const isGuestCheckout = session.metadata?.source === 'guest_checkout';
+      
+      // Parse customer name into first and last name
+      const nameParts = customerName.trim().split(/\s+/);
+      const firstName = nameParts[0] || undefined;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
       
       logWebhook('INFO', `Processing checkout.session.completed`, {
         sessionId: session.id,
@@ -200,15 +206,19 @@ export class WebhookHandlers {
           });
           await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
         } else if (isGuestCheckout) {
-          // Guest checkout - create new user
+          // Guest checkout - create new user with name from Stripe
           logWebhook('INFO', `Creating new user for guest checkout`, {
             email: customerEmail,
-            customerId
+            customerId,
+            firstName,
+            lastName
           });
-          user = await storage.createGuestUser(customerEmail, customerId);
+          user = await storage.createGuestUser(customerEmail, customerId, firstName, lastName);
           logWebhook('INFO', `Created new guest user`, {
             userId: user.id,
-            email: user.email
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName
           });
         }
       }

@@ -113,7 +113,7 @@ export interface IStorage {
   markWebhookEventProcessed(eventId: string, eventType: string): Promise<void>;
   
   // Guest user creation (for checkout without registration)
-  createGuestUser(email: string, stripeCustomerId: string): Promise<User>;
+  createGuestUser(email: string, stripeCustomerId: string, firstName?: string, lastName?: string): Promise<User>;
 }
 
 export interface NyceecFilters {
@@ -1375,7 +1375,7 @@ export class DbStorage implements IStorage {
   }
   
   // Guest user creation (for checkout without registration)
-  async createGuestUser(email: string, stripeCustomerId: string): Promise<User> {
+  async createGuestUser(email: string, stripeCustomerId: string, firstName?: string, lastName?: string): Promise<User> {
     const crypto = await import('crypto');
     const randomPassword = crypto.randomBytes(32).toString('hex');
     const bcrypt = await import('bcrypt');
@@ -1389,6 +1389,8 @@ export class DbStorage implements IStorage {
         stripeCustomerId,
         subscriptionStatus: 'free',
         subscriptionPlan: 'free',
+        firstName: firstName || null,
+        lastName: lastName || null,
       })
       .returning();
     return user;
