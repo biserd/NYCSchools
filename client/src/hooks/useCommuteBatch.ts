@@ -19,14 +19,28 @@ interface UserProfile {
   longitude: number | null;
 }
 
+interface SubscriptionStatus {
+  isSubscribed: boolean;
+}
+
 export function useCommuteBatch(dbns: string[]) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   
+  // Check premium status before making commute API calls (premium-only feature)
+  const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription-status"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 1000 * 60, // Cache for 1 minute
+    retry: false,
+  });
+  
+  const isPremium = subscriptionData?.isSubscribed ?? false;
+  
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile | null>({
     queryKey: ["/api/profile"],
-    enabled: !authLoading && isAuthenticated,
+    enabled: !authLoading && isAuthenticated && isPremium,
     staleTime: 1000 * 60 * 5,
-    retry: 1, // Allow one retry for transient failures
+    retry: 1,
   });
 
   const coordinates = profile?.latitude && profile?.longitude 
@@ -50,9 +64,10 @@ export function useCommuteBatch(dbns: string[]) {
       }
       return response.json();
     },
-    enabled: isAuthenticated && !authLoading && !profileLoading && dbns.length > 0 && !!coordinates,
+    // Only fetch commutes for premium users with coordinates
+    enabled: isAuthenticated && !authLoading && !subscriptionLoading && isPremium && !profileLoading && dbns.length > 0 && !!coordinates,
     staleTime: 1000 * 60 * 30,
-    retry: 2, // Allow retries for transient Google API failures
+    retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
@@ -63,9 +78,10 @@ export function useCommuteBatch(dbns: string[]) {
   return {
     commutes: data?.commutes ?? {},
     getCommute,
-    isLoading: authLoading || profileLoading || isLoading,
+    isLoading: authLoading || subscriptionLoading || profileLoading || isLoading,
     hasCoordinates: !!coordinates,
     isAuthenticated,
-    refetch, // Expose for manual retry after failures
+    isPremium,
+    refetch,
   };
 }
