@@ -1033,72 +1033,12 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
-  // Commute Time API - PREMIUM ONLY (requires authentication)
-  app.get("/api/commute/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.session.userId;
-      
-      // Check premium status
-      const isPremium = await isPremiumUser(userId);
-      if (!isPremium) {
-        return res.status(403).json({
-          error: "Premium feature",
-          code: "PREMIUM_REQUIRED", 
-          message: "Commute time calculator is available for Premium subscribers. Upgrade to see travel times to schools.",
-        });
-      }
-      
-      const schoolDbn = req.params.schoolDbn;
-      const originLat = req.query.lat ? parseFloat(req.query.lat as string) : null;
-      const originLng = req.query.lng ? parseFloat(req.query.lng as string) : null;
-
-      if (!originLat || !originLng) {
-        return res.json({ commuteTime: null, distance: null, error: "No home address set" });
-      }
-
-      const school = await storage.getSchool(schoolDbn);
-      if (!school || !school.latitude || !school.longitude) {
-        return res.json({ commuteTime: null, distance: null, error: "School location not available" });
-      }
-
-      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
-      if (!googleMapsApiKey) {
-        return res.json({ commuteTime: null, distance: null, error: "Google Maps API not configured" });
-      }
-
-      const origin = `${originLat},${originLng}`;
-      const destination = `${school.latitude},${school.longitude}`;
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=transit&key=${googleMapsApiKey}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.status !== "OK" || !data.rows[0]?.elements[0]) {
-        return res.json({ commuteTime: null, distance: null, error: "Unable to calculate route" });
-      }
-
-      const element = data.rows[0].elements[0];
-      if (element.status !== "OK") {
-        return res.json({ commuteTime: null, distance: null, error: "Route not available" });
-      }
-
-      res.json({
-        commuteTime: element.duration.text,
-        commuteMinutes: Math.round(element.duration.value / 60),
-        distance: element.distance.text,
-        distanceMeters: element.distance.value,
-      });
-    } catch (error) {
-      console.error("Error calculating commute:", error);
-      res.status(500).json({ error: "Failed to calculate commute time" });
-    }
-  });
-
   // In-memory cache for commute times (origin+dbn -> result)
   const commuteCache = new Map<string, { data: any; timestamp: number }>();
   const COMMUTE_CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
   // Batch Commute Time API - fetch multiple commutes in parallel
+  // NOTE: This route MUST be registered before /api/commute/:schoolDbn to avoid route matching issues
   app.get("/api/commute/batch", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.session.userId;
@@ -1198,6 +1138,68 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     } catch (error) {
       console.error("Error calculating batch commute:", error);
       res.status(500).json({ error: "Failed to calculate commute times" });
+    }
+  });
+
+  // Commute Time API - PREMIUM ONLY (requires authentication)
+  // Single school commute lookup (must come AFTER /api/commute/batch)
+  app.get("/api/commute/:schoolDbn", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({
+          error: "Premium feature",
+          code: "PREMIUM_REQUIRED", 
+          message: "Commute time calculator is available for Premium subscribers. Upgrade to see travel times to schools.",
+        });
+      }
+      
+      const schoolDbn = req.params.schoolDbn;
+      const originLat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+      const originLng = req.query.lng ? parseFloat(req.query.lng as string) : null;
+
+      if (!originLat || !originLng) {
+        return res.json({ commuteTime: null, distance: null, error: "No home address set" });
+      }
+
+      const school = await storage.getSchool(schoolDbn);
+      if (!school || !school.latitude || !school.longitude) {
+        return res.json({ commuteTime: null, distance: null, error: "School location not available" });
+      }
+
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!googleMapsApiKey) {
+        return res.json({ commuteTime: null, distance: null, error: "Google Maps API not configured" });
+      }
+
+      const origin = `${originLat},${originLng}`;
+      const destination = `${school.latitude},${school.longitude}`;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=transit&key=${googleMapsApiKey}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status !== "OK" || !data.rows[0]?.elements[0]) {
+        return res.json({ commuteTime: null, distance: null, error: "Unable to calculate route" });
+      }
+
+      const element = data.rows[0].elements[0];
+      if (element.status !== "OK") {
+        return res.json({ commuteTime: null, distance: null, error: "Route not available" });
+      }
+
+      res.json({
+        commuteTime: element.duration.text,
+        commuteMinutes: Math.round(element.duration.value / 60),
+        distance: element.distance.text,
+        distanceMeters: element.distance.value,
+      });
+    } catch (error) {
+      console.error("Error calculating commute:", error);
+      res.status(500).json({ error: "Failed to calculate commute time" });
     }
   });
 

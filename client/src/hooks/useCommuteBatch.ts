@@ -36,9 +36,11 @@ export function useCommuteBatch(dbns: string[]) {
   
   const isPremium = subscriptionData?.isSubscribed ?? false;
   
+  // Profile is fetched for all authenticated users (used by settings too)
+  // Only the commute/batch API call is gated by premium status
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile | null>({
     queryKey: ["/api/profile"],
-    enabled: !authLoading && isAuthenticated && isPremium,
+    enabled: !authLoading && isAuthenticated,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
