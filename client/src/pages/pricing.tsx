@@ -5,13 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Check,
   X,
@@ -30,7 +28,6 @@ import {
   School,
   Target,
   ClipboardList,
-  Mail,
 } from "lucide-react";
 
 interface PricingFeature {
@@ -108,8 +105,6 @@ export default function PricingPage() {
   const [location] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
 
   // Check for success/canceled URL params
   useEffect(() => {
@@ -210,13 +205,13 @@ export default function PricingPage() {
     },
   });
 
-  // Guest checkout mutation (no account required)
+  // Guest checkout mutation (no account required - email collected by Stripe)
   const guestCheckoutMutation = useMutation({
-    mutationFn: async ({ email, priceId }: { email: string; priceId: string }) => {
+    mutationFn: async ({ priceId }: { priceId: string }) => {
       const res = await fetch("/api/checkout/guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, priceId }),
+        body: JSON.stringify({ priceId }),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -226,7 +221,6 @@ export default function PricingPage() {
     },
     onSuccess: (data) => {
       if (data.url) {
-        setGuestDialogOpen(false);
         window.location.href = data.url;
       }
     },
@@ -240,15 +234,6 @@ export default function PricingPage() {
   });
 
   const handleGuestCheckout = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!guestEmail || !emailRegex.test(guestEmail)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return;
-    }
     if (!currentPriceId) {
       toast({
         title: "Loading...",
@@ -257,7 +242,7 @@ export default function PricingPage() {
       });
       return;
     }
-    guestCheckoutMutation.mutate({ email: guestEmail, priceId: currentPriceId });
+    guestCheckoutMutation.mutate({ priceId: currentPriceId });
   };
 
   // Check for premium access - includes recurring subscriptions and Season Pass
@@ -547,54 +532,19 @@ export default function PricingPage() {
                     )
                   ) : (
                     <div className="w-full space-y-2">
-                      <Dialog open={guestDialogOpen} onOpenChange={setGuestDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button className="w-full" data-testid="button-guest-checkout">
-                            <Zap className="w-4 h-4 mr-2" />
-                            Get Season Pass - $29
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Enter your email to continue</DialogTitle>
-                            <DialogDescription>
-                              We'll send your access link to this email. No password needed!
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                type="email"
-                                placeholder="your@email.com"
-                                value={guestEmail}
-                                onChange={(e) => setGuestEmail(e.target.value)}
-                                className="pl-10"
-                                data-testid="input-guest-email"
-                              />
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Your membership will be active immediately after payment. 
-                              You'll receive an email with your access link.
-                            </p>
-                          </div>
-                          <DialogFooter className="flex-col gap-2 sm:flex-col">
-                            <Button 
-                              onClick={handleGuestCheckout}
-                              disabled={guestCheckoutMutation.isPending || !guestEmail || !currentPriceId}
-                              className="w-full"
-                              data-testid="button-continue-checkout"
-                            >
-                              {guestCheckoutMutation.isPending || productsLoading ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              ) : (
-                                <Zap className="w-4 h-4 mr-2" />
-                              )}
-                              {productsLoading ? "Loading..." : "Continue to Checkout"}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                      <Button 
+                        className="w-full" 
+                        onClick={handleGuestCheckout}
+                        disabled={guestCheckoutMutation.isPending || !currentPriceId}
+                        data-testid="button-guest-checkout"
+                      >
+                        {guestCheckoutMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Zap className="w-4 h-4 mr-2" />
+                        )}
+                        Get Season Pass - $29
+                      </Button>
                       <Link href="/login?redirect=/pricing" className="block">
                         <Button variant="ghost" className="w-full text-sm" data-testid="button-login-existing">
                           Already have an account? Log in
@@ -820,8 +770,17 @@ export default function PricingPage() {
                 Get Season Pass - $29
               </Button>
             ) : !user ? (
-              <Button size="lg" onClick={() => setGuestDialogOpen(true)} data-testid="button-cta-start">
-                <Zap className="w-4 h-4 mr-2" />
+              <Button 
+                size="lg" 
+                onClick={handleGuestCheckout}
+                disabled={guestCheckoutMutation.isPending || !currentPriceId}
+                data-testid="button-cta-start"
+              >
+                {guestCheckoutMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
                 Get Started Now
               </Button>
             ) : null}
