@@ -2069,6 +2069,66 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     }
   });
 
+  // Magic link authentication endpoint - allows passwordless login
+  app.get("/api/auth/magic-link/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token || token.length !== 64) {
+        return res.status(400).json({ error: "Invalid magic link token" });
+      }
+      
+      // Hash the token to compare with stored hash
+      const crypto = await import('crypto');
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      
+      // Find and validate the magic link token
+      const magicLink = await storage.findMagicLinkToken(tokenHash);
+      
+      if (!magicLink) {
+        return res.status(400).json({ error: "Invalid or expired magic link" });
+      }
+      
+      // Check if token is expired
+      if (new Date() > magicLink.expiresAt) {
+        return res.status(400).json({ error: "Magic link has expired" });
+      }
+      
+      // Check if token was already used
+      if (magicLink.usedAt) {
+        return res.status(400).json({ error: "Magic link has already been used" });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(magicLink.userId);
+      
+      if (!user) {
+        return res.status(400).json({ error: "User not found" });
+      }
+      
+      // Mark token as used
+      await storage.markMagicLinkTokenUsed(magicLink.id);
+      
+      // Create session for the user (auto-login)
+      (req as any).session.userId = user.id;
+      
+      // Return success with redirect URL
+      res.json({ 
+        success: true, 
+        redirectUrl: '/schools',
+        user: {
+          id: user.id,
+          email: user.email,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionPlan: user.subscriptionPlan,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error processing magic link:", error?.message || error);
+      res.status(500).json({ error: "Failed to process magic link" });
+    }
+  });
+
   // Get user's subscription status (with 1-minute cache to reduce Stripe API calls)
   app.get("/api/subscription-status", isAuthenticated, async (req: any, res: Response) => {
     try {

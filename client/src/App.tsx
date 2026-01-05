@@ -40,6 +40,8 @@ const ChancesCalculatorPage = lazy(() => import("@/pages/chances-calculator"));
 const ApplicationTrackerPage = lazy(() => import("@/pages/application-tracker"));
 const EarlyChildhoodPage = lazy(() => import("@/pages/early-childhood"));
 const NyceecDetailPage = lazy(() => import("@/pages/nyceec-detail"));
+const ThanksPage = lazy(() => import("@/pages/thanks"));
+const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -116,6 +118,12 @@ function Router() {
           <DevelopersDocsPage />
         </Route>
         <Route path="/contact" component={ContactPage} />
+        <Route path="/thanks">
+          <ThanksPage />
+        </Route>
+        <Route path="/auth/magic-link/:token">
+          <MagicLinkPage />
+        </Route>
         <Route path="/school/:slug">
           <SchoolDetail />
         </Route>
