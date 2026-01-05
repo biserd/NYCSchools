@@ -403,10 +403,106 @@ export async function sendPasswordResetEmail(userEmail: string, resetUrl: string
   }
 }
 
+export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string, firstName?: string): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'Your NYC School Ratings Access Link',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Your Membership is Active!</h1>
+            <p style="color: #6b7280; font-size: 16px;">Here's your access link for NYC School Ratings</p>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            Thank you for your purchase! Your Season Pass is now active, and you have full access to all premium features.
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            <strong>Use the button below to access your account anytime:</strong>
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${magicLinkUrl}" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Access NYC School Ratings
+            </a>
+          </div>
+          
+          <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin: 20px 0; border-left: 4px solid #2563eb;">
+            <p style="margin: 0; font-size: 14px; color: #1e40af;">
+              <strong>Bookmark this email!</strong> Use this link whenever you need to log in. 
+              No password required – just click the link above.
+            </p>
+          </div>
+          
+          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">Your Season Pass Benefits</h2>
+          
+          <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">✓</span>
+                <strong style="margin-left: 10px;">AI Chat Assistant</strong> – Personalized school recommendations
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">✓</span>
+                <strong style="margin-left: 10px;">Side-by-Side Comparison</strong> – Compare up to 4 schools
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">✓</span>
+                <strong style="margin-left: 10px;">Detailed Score Breakdowns</strong> – Deep dive into metrics
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">✓</span>
+                <strong style="margin-left: 10px;">Commute Time Calculator</strong> – Travel times from your home
+              </li>
+              <li style="padding: 8px 0;">
+                <span style="color: #10b981; font-weight: bold;">✓</span>
+                <strong style="margin-left: 10px;">Application Tracker</strong> – Manage deadlines and documents
+              </li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+            If the button doesn't work, copy and paste this link into your browser:<br/>
+            <a href="${magicLinkUrl}" style="color: #2563eb; word-break: break-all;">${magicLinkUrl}</a>
+          </p>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+              Need help? Contact us at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
+            </p>
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
+              <strong>— The NYC School Ratings Team</strong>
+            </p>
+          </div>
+          
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Magic link email sent', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send magic link email', { error: error.message, userEmail });
+    return false;
+  }
+}
+
 export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
   sendAdminNewUserRegistrationNotification,
   sendNewUserWelcomeEmail,
   sendPasswordResetEmail,
+  sendMagicLinkEmail,
 };

@@ -1952,6 +1952,123 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
     }
   });
 
+  // Guest checkout - no login required, creates account after payment
+  app.post("/api/checkout/guest", async (req: Request, res: Response) => {
+    try {
+      const { priceId, mode = 'payment' } = req.body;
+      
+      console.log("Guest checkout request:", { priceId, mode });
+
+      if (!priceId) {
+        console.error("Guest checkout failed: Missing priceId");
+        return res.status(400).json({ error: "Price ID is required" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      
+      // Create checkout session without a customer (Stripe will create one)
+      // Email collection is required so we can create/link the user account after payment
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const baseUrl = isProduction 
+        ? 'https://nycschoolsratings.com'
+        : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
+      
+      const checkoutMode = mode === 'payment' ? 'payment' : 'subscription';
+      
+      const sessionParams: any = {
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: checkoutMode,
+        success_url: `${baseUrl}/thanks?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/pricing?canceled=true`,
+        customer_creation: 'always', // Always create a Stripe customer
+        metadata: {
+          plan: 'season_pass',
+          duration_months: '6',
+          source: 'guest_checkout',
+        },
+      };
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      console.log("Guest checkout session created:", session.id, "mode:", checkoutMode);
+      res.json({ url: session.url, sessionId: session.id });
+    } catch (error: any) {
+      console.error("Error creating guest checkout session:", error?.message || error);
+      res.status(500).json({ error: "Failed to create checkout session", details: error?.message });
+    }
+  });
+
+  // Verify checkout session and auto-login (for /thanks page)
+  app.get("/api/checkout/verify-session", async (req: Request, res: Response) => {
+    try {
+      const sessionId = req.query.session_id as string;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+      
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['customer'],
+      });
+      
+      if (session.payment_status !== 'paid') {
+        return res.status(400).json({ error: "Payment not completed", status: session.payment_status });
+      }
+      
+      // Get customer email from session
+      const customerEmail = session.customer_details?.email || 
+        (typeof session.customer === 'object' ? session.customer?.email : null);
+      
+      if (!customerEmail) {
+        return res.status(400).json({ error: "Customer email not found" });
+      }
+      
+      const customerId = typeof session.customer === 'string' 
+        ? session.customer 
+        : session.customer?.id;
+      
+      if (!customerId) {
+        return res.status(400).json({ error: "Customer ID not found" });
+      }
+      
+      // Find or wait for user (webhook should have created them)
+      let user = await storage.getUserByEmail(customerEmail.toLowerCase());
+      
+      // If user doesn't exist yet, webhook might not have processed
+      // Try by Stripe customer ID as fallback
+      if (!user) {
+        user = await storage.getUserByStripeCustomerId(customerId);
+      }
+      
+      if (!user) {
+        // User should exist by now (created by webhook), but if not, inform client to retry
+        return res.status(202).json({ 
+          status: 'processing', 
+          message: 'Your account is being set up. Please wait a moment.',
+          email: customerEmail,
+        });
+      }
+      
+      // Auto-login the user by creating session
+      (req as any).session.userId = user.id;
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          email: user.email,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionPlan: user.subscriptionPlan,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error verifying checkout session:", error?.message || error);
+      res.status(500).json({ error: "Failed to verify session", details: error?.message });
+    }
+  });
+
   // Get user's subscription status (with 1-minute cache to reduce Stripe API calls)
   app.get("/api/subscription-status", isAuthenticated, async (req: any, res: Response) => {
     try {

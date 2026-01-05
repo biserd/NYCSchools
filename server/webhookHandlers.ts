@@ -1,9 +1,10 @@
 // Stripe webhook handlers for NYC School Ratings
 import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
-import { sendAdminNewCustomerNotification, sendWelcomeEmail } from './emailService';
+import { sendAdminNewCustomerNotification, sendWelcomeEmail, sendMagicLinkEmail } from './emailService';
 import { invalidateUserCaches } from './cache';
 import Stripe from 'stripe';
+import crypto from 'crypto';
 
 // Enhanced logging for webhook debugging
 function logWebhook(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any) {
@@ -48,7 +49,17 @@ export class WebhookHandlers {
         livemode: event.livemode 
       });
       
+      // Idempotency check - skip if already processed
+      const alreadyProcessed = await storage.isWebhookEventProcessed(event.id);
+      if (alreadyProcessed) {
+        logWebhook('INFO', `Event already processed, skipping`, { eventId: event.id });
+        return;
+      }
+      
       await WebhookHandlers.handleSubscriptionEvents(event);
+      
+      // Mark event as processed for idempotency
+      await storage.markWebhookEventProcessed(event.id, event.type);
     } catch (err: any) {
       logWebhook('ERROR', 'Error in custom webhook handling', { 
         error: err.message,
@@ -152,9 +163,15 @@ export class WebhookHandlers {
         ? session.customer 
         : session.customer?.id;
       
+      // Get customer email from session (critical for guest checkout)
+      const customerEmail = session.customer_details?.email || session.customer_email;
+      const isGuestCheckout = session.metadata?.source === 'guest_checkout';
+      
       logWebhook('INFO', `Processing checkout.session.completed`, {
         sessionId: session.id,
         customerId,
+        customerEmail,
+        isGuestCheckout,
         mode: session.mode,
         paymentStatus: session.payment_status,
         amountTotal: session.amount_total,
@@ -166,13 +183,46 @@ export class WebhookHandlers {
         return;
       }
       
-      const user = await storage.getUserByStripeCustomerId(customerId);
+      // Try to find existing user by Stripe customer ID first
+      let user = await storage.getUserByStripeCustomerId(customerId);
+      
+      // If no user found and we have an email, check by email or create new user
+      if (!user && customerEmail) {
+        // Check if user exists by email
+        user = await storage.getUserByEmail(customerEmail.toLowerCase());
+        
+        if (user) {
+          // User exists by email - link Stripe customer ID
+          logWebhook('INFO', `Found existing user by email, linking Stripe customer`, {
+            userId: user.id,
+            email: customerEmail,
+            customerId
+          });
+          await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
+        } else if (isGuestCheckout) {
+          // Guest checkout - create new user
+          logWebhook('INFO', `Creating new user for guest checkout`, {
+            email: customerEmail,
+            customerId
+          });
+          user = await storage.createGuestUser(customerEmail, customerId);
+          logWebhook('INFO', `Created new guest user`, {
+            userId: user.id,
+            email: user.email
+          });
+        }
+      }
+      
       if (!user) {
-        logWebhook('WARN', `No user found for Stripe customer in checkout`, { customerId });
+        logWebhook('WARN', `No user found or created for checkout session`, { 
+          customerId,
+          customerEmail,
+          isGuestCheckout
+        });
         return;
       }
       
-      logWebhook('INFO', `Found user for checkout session`, {
+      logWebhook('INFO', `Found/created user for checkout session`, {
         userId: user.id,
         email: user.email,
         currentStatus: user.subscriptionStatus,
@@ -241,24 +291,62 @@ export class WebhookHandlers {
           expiresAt: expiresAt.toISOString()
         });
         
-        // Send welcome email to customer and admin notification
+        // Send appropriate emails based on checkout type
         if (user.email) {
-          logWebhook('INFO', `Sending emails for new Season Pass customer`, { email: user.email });
+          logWebhook('INFO', `Sending emails for new Season Pass customer`, { 
+            email: user.email,
+            isGuestCheckout 
+          });
           
-          // Extract first name from user profile if available
           const firstName = user.firstName || undefined;
           
-          // Send both emails in parallel
-          const [welcomeResult, adminResult] = await Promise.all([
-            sendWelcomeEmail(user.email, firstName),
-            sendAdminNewCustomerNotification(user.email, planType, session.amount_total || undefined)
-          ]);
-          
-          logWebhook('INFO', `Email sending completed`, { 
-            welcomeEmailSent: welcomeResult, 
-            adminNotificationSent: adminResult,
-            email: user.email
-          });
+          if (isGuestCheckout) {
+            // Guest checkout - send magic link email instead of regular welcome
+            // Generate magic link token (24-hour expiration for initial access)
+            const magicToken = crypto.randomBytes(32).toString('hex');
+            const tokenHash = crypto.createHash('sha256').update(magicToken).digest('hex');
+            const magicLinkExpiry = new Date();
+            magicLinkExpiry.setHours(magicLinkExpiry.getHours() + 24);
+            
+            await storage.createMagicLinkToken(user.id, tokenHash, magicLinkExpiry);
+            
+            // Build magic link URL
+            const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+            const baseUrl = isProduction 
+              ? 'https://nycschoolsratings.com'
+              : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
+            const magicLinkUrl = `${baseUrl}/auth/magic-link/${magicToken}`;
+            
+            logWebhook('INFO', `Generated magic link for guest user`, { 
+              userId: user.id,
+              email: user.email,
+              expiresAt: magicLinkExpiry.toISOString()
+            });
+            
+            // Send magic link email and admin notification
+            const [magicResult, adminResult] = await Promise.all([
+              sendMagicLinkEmail(user.email, magicLinkUrl, firstName),
+              sendAdminNewCustomerNotification(user.email, planType, session.amount_total || undefined)
+            ]);
+            
+            logWebhook('INFO', `Email sending completed (guest checkout)`, { 
+              magicLinkEmailSent: magicResult, 
+              adminNotificationSent: adminResult,
+              email: user.email
+            });
+          } else {
+            // Regular checkout - send normal welcome email
+            const [welcomeResult, adminResult] = await Promise.all([
+              sendWelcomeEmail(user.email, firstName),
+              sendAdminNewCustomerNotification(user.email, planType, session.amount_total || undefined)
+            ]);
+            
+            logWebhook('INFO', `Email sending completed`, { 
+              welcomeEmailSent: welcomeResult, 
+              adminNotificationSent: adminResult,
+              email: user.email
+            });
+          }
         } else {
           logWebhook('WARN', `No email available for user, skipping email notifications`, { userId: user.id });
         }
