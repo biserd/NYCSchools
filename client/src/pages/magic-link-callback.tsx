@@ -50,8 +50,13 @@ export default function MagicLinkCallbackPage() {
           setStatus('success');
           queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
           
+          // Use the sanitized returnTo from state (already validated), not raw query param
+          const safeRedirect = returnToParam && returnToParam.startsWith('/') && !returnToParam.startsWith('//') 
+            ? returnToParam 
+            : '/account';
+          
           setTimeout(() => {
-            navigate(returnToParam || data.redirectUrl || '/account');
+            navigate(safeRedirect);
           }, 1500);
         }
       } catch (error: any) {
