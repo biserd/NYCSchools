@@ -94,6 +94,10 @@ export interface IStorage {
   deleteExpiredPasswordResetTokens(): Promise<void>;
   updateUserPassword(userId: string, passwordHash: string): Promise<void>;
   
+  // Free School View operations
+  getUserFreeViewSchool(userId: string): Promise<string | null>;
+  setUserFreeViewSchool(userId: string, schoolDbn: string): Promise<void>;
+  
   // Admissions Data operations
   getSchoolAdmissionsMetrics(dbn: string): Promise<AdmissionsMetrics[]>;
 }
@@ -1255,6 +1259,23 @@ export class DbStorage implements IStorage {
     await db
       .update(users)
       .set({ password: passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+  
+  // Free School View operations
+  async getUserFreeViewSchool(userId: string): Promise<string | null> {
+    const [user] = await db
+      .select({ freeViewSchoolDbn: users.freeViewSchoolDbn })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return user?.freeViewSchoolDbn || null;
+  }
+  
+  async setUserFreeViewSchool(userId: string, schoolDbn: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ freeViewSchoolDbn: schoolDbn.toUpperCase(), updatedAt: new Date() })
       .where(eq(users.id, userId));
   }
 

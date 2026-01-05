@@ -48,6 +48,7 @@ import {
   Crown
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useFreeSchoolView } from "@/hooks/useFreeSchoolView";
 
 interface SubscriptionStatus {
   status: string;
@@ -73,10 +74,16 @@ export default function SchoolDetail() {
     enabled: !authLoading && isAuthenticated,
     staleTime: 1000 * 60 * 5,
   });
+  
+  // Track free school view - visitors get one school with full access
+  const { isThisFreeSchool, isLoading: freeViewLoading } = useFreeSchoolView(dbn);
 
-  // Check for premium access - includes recurring subscriptions and Season Pass
-  const isPremium = subscription?.status === "active" && 
+  // Check for premium access - includes:
+  // 1. Recurring subscriptions and Season Pass
+  // 2. OR this is the user's one free school view
+  const hasPaidPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
+  const isPremium = hasPaidPremium || isThisFreeSchool;
 
   const schoolWithScore: SchoolWithOverallScore | null = school ? {
     ...school,

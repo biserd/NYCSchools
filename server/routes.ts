@@ -1684,6 +1684,43 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       res.status(500).json({ error: "Failed to fetch subscription" });
     }
   });
+  
+  // Get user's free view school (the one school they can view fully unlocked)
+  app.get("/api/user/free-view", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const freeViewSchoolDbn = await storage.getUserFreeViewSchool(userId);
+      res.json({ freeViewSchoolDbn });
+    } catch (error) {
+      console.error("Error fetching free view school:", error);
+      res.status(500).json({ error: "Failed to fetch free view school" });
+    }
+  });
+  
+  // Set user's free view school (only if not already set)
+  app.post("/api/user/free-view", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const { dbn } = req.body;
+      
+      if (!dbn || typeof dbn !== 'string') {
+        return res.status(400).json({ error: "Valid DBN is required" });
+      }
+      
+      // Check if user already has a free view school set
+      const existing = await storage.getUserFreeViewSchool(userId);
+      if (existing) {
+        return res.json({ freeViewSchoolDbn: existing, message: "Free view already claimed" });
+      }
+      
+      // Set the free view school
+      await storage.setUserFreeViewSchool(userId, dbn);
+      res.json({ freeViewSchoolDbn: dbn.toUpperCase(), message: "Free view claimed successfully" });
+    } catch (error) {
+      console.error("Error setting free view school:", error);
+      res.status(500).json({ error: "Failed to set free view school" });
+    }
+  });
 
   // Create checkout session for subscription
   app.post("/api/checkout", isAuthenticated, async (req: any, res: Response) => {

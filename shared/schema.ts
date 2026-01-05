@@ -462,6 +462,7 @@ export const users = pgTable("users", {
   subscriptionStatus: varchar("subscription_status").default("free"),
   subscriptionPlan: varchar("subscription_plan").default("free"), // 'free', 'season_pass', 'developer'
   subscriptionExpiresAt: timestamp("subscription_expires_at"), // For Season Pass expiration
+  freeViewSchoolDbn: varchar("free_view_school_dbn"), // DBN of the one school they can view for free
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

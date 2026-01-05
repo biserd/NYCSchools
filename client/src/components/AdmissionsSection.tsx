@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
+import { useFreeSchoolView } from "@/hooks/useFreeSchoolView";
 
 interface AdmissionsSectionProps {
   dbn: string;
@@ -26,9 +27,14 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
     queryKey: ["/api/subscription"],
     enabled: isAuthenticated && !authLoading,
   });
+  
+  // Check if this is the user's free school view
+  const { isThisFreeSchool } = useFreeSchoolView(dbn);
 
-  const isPremium = subscription?.status === "active" && 
+  // Premium access: paid subscription OR this is their one free school
+  const hasPaidPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
+  const isPremium = hasPaidPremium || isThisFreeSchool;
 
   const { data: admissionsData, isLoading } = useQuery<AdmissionsMetrics[]>({
     queryKey: ["/api/schools", dbn, "admissions"],

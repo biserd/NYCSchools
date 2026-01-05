@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Building2, Users, GraduationCap, Heart, TrendingUp, X, Shield, Briefcase, MessageSquare, MapPin, Info, Award, Clock, Home, School, FileCheck, Target, Languages, DollarSign, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { useFreeSchoolView } from "@/hooks/useFreeSchoolView";
 
 interface SchoolDetailPanelProps {
   school: SchoolWithOverallScore | null;
@@ -24,7 +25,14 @@ interface SchoolDetailPanelProps {
   isPremium?: boolean;
 }
 
-export function SchoolDetailPanel({ school, open, onOpenChange, isPremium = false }: SchoolDetailPanelProps) {
+export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPaidPremium = false }: SchoolDetailPanelProps) {
+  // Check if this school is the user's free school view
+  // Hook must be called unconditionally, so we pass empty string when no school
+  const { isThisFreeSchool } = useFreeSchoolView(school?.dbn || '');
+  
+  // Premium access: paid subscription OR this is their one free school
+  const isPremium = hasPaidPremium || isThisFreeSchool;
+  
   if (!school) return null;
 
   const scoreColor = getScoreColor(school.overall_score);
