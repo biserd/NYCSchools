@@ -21,6 +21,8 @@ export function useFreeSchoolView(currentSchoolDbn: string) {
   const [localFreeViewDbn, setLocalFreeViewDbn] = useState<string | null>(getStoredFreeViewDbn);
   // Track if we've already claimed to prevent duplicate claims
   const hasClaimedRef = useRef(false);
+  // Track if we've already synced to server to prevent duplicate mutations
+  const hasSyncedToServerRef = useRef(false);
 
   // Fetch user's free view school from server (for logged-in users)
   const { data: serverFreeView, isLoading: serverLoading } = useQuery<FreeViewData>({
@@ -41,12 +43,20 @@ export function useFreeSchoolView(currentSchoolDbn: string) {
 
   // Sync localStorage with server when user logs in
   useEffect(() => {
-    if (isAuthenticated && !authLoading && localFreeViewDbn && !serverFreeView?.freeViewSchoolDbn) {
+    // Guard: only sync once per component lifetime
+    if (hasSyncedToServerRef.current) return;
+    // Guard: mutation in progress
+    if (setFreeViewMutation.isPending) return;
+    // Guard: waiting for auth or server data to load
+    if (authLoading || serverLoading) return;
+    
+    if (isAuthenticated && localFreeViewDbn && !serverFreeView?.freeViewSchoolDbn) {
       // User just logged in and has a local free view but no server record
       // Transfer the local free view to their account
+      hasSyncedToServerRef.current = true;
       setFreeViewMutation.mutate(localFreeViewDbn);
     }
-  }, [isAuthenticated, authLoading, localFreeViewDbn, serverFreeView?.freeViewSchoolDbn]);
+  }, [isAuthenticated, authLoading, serverLoading, localFreeViewDbn, serverFreeView?.freeViewSchoolDbn, setFreeViewMutation.isPending]);
 
   // Get the effective free view DBN (server takes precedence for logged-in users)
   const freeViewDbn = isAuthenticated 
@@ -64,24 +74,28 @@ export function useFreeSchoolView(currentSchoolDbn: string) {
   const hasUsedFreeView = freeViewDbn !== null && !isThisFreeSchool;
 
   // Set this school as the free view school (if not already set)
+  // Use ref-based guards to prevent unstable callbacks from triggering multiple claims
   const claimFreeView = useCallback(() => {
     // Multiple guards to prevent re-claiming:
     // 1. Check ref (in-memory guard)
     if (hasClaimedRef.current) {
       return;
     }
-    // 2. Check state (component state guard)
-    if (localFreeViewDbn) {
-      return;
-    }
-    // 3. Check localStorage directly (persistence guard)
+    // 2. Check localStorage directly (persistence guard - most reliable)
     const existingDbn = getStoredFreeViewDbn();
     if (existingDbn) {
       // Sync state from localStorage if somehow out of sync
-      setLocalFreeViewDbn(existingDbn);
+      if (!localFreeViewDbn) {
+        setLocalFreeViewDbn(existingDbn);
+      }
+      return;
+    }
+    // 3. Check state (component state guard)
+    if (localFreeViewDbn) {
       return;
     }
 
+    // Mark as claimed BEFORE any async operations
     hasClaimedRef.current = true;
     const dbn = currentSchoolDbn.toUpperCase();
     
@@ -89,16 +103,26 @@ export function useFreeSchoolView(currentSchoolDbn: string) {
     localStorage.setItem(FREE_VIEW_STORAGE_KEY, dbn);
     setLocalFreeViewDbn(dbn);
 
-    // If logged in, also save to server
-    if (isAuthenticated) {
+    // If logged in, also save to server (sync ref prevents duplicates)
+    if (isAuthenticated && !hasSyncedToServerRef.current) {
+      hasSyncedToServerRef.current = true;
       setFreeViewMutation.mutate(dbn);
     }
   }, [currentSchoolDbn, localFreeViewDbn, isAuthenticated, setFreeViewMutation]);
 
   // Auto-claim on first visit if no free view is set
+  // Use minimal dependencies to prevent effect re-runs
   useEffect(() => {
-    // Skip if already claimed or if state shows existing free view
-    if (hasClaimedRef.current || localFreeViewDbn) {
+    // Skip if still loading
+    if (authLoading || serverLoading) {
+      return;
+    }
+    // Skip if already claimed (ref guard)
+    if (hasClaimedRef.current) {
+      return;
+    }
+    // Skip if state shows existing free view
+    if (localFreeViewDbn) {
       return;
     }
     // Read from localStorage directly to ensure we have the latest value
@@ -108,7 +132,8 @@ export function useFreeSchoolView(currentSchoolDbn: string) {
       setLocalFreeViewDbn(existingDbn);
       return;
     }
-    if (!authLoading && !serverLoading && currentSchoolDbn) {
+    // Claim if we have a school to claim
+    if (currentSchoolDbn) {
       claimFreeView();
     }
   }, [authLoading, serverLoading, currentSchoolDbn, localFreeViewDbn, claimFreeView]);

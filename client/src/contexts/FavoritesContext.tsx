@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useCallback, useRef, useEffect } from "react";
 import { useFavoritesBatch } from "@/hooks/useFavoritesBatch";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -17,13 +17,25 @@ interface FavoritesProviderProps {
 
 export function FavoritesProvider({ dbns, children }: FavoritesProviderProps) {
   const { isAuthenticated } = useAuth();
-  const { isFavorite, isLoading, invalidateBatch } = useFavoritesBatch(dbns);
+  const { favorites, isLoading, invalidateBatch } = useFavoritesBatch(dbns);
+
+  // Use ref to always have latest favorites data for isFavorite callback
+  const favoritesRef = useRef(favorites);
+  useEffect(() => {
+    favoritesRef.current = favorites;
+  }, [favorites]);
+
+  // Stable isFavorite callback that always reads from latest ref
+  const isFavorite = useCallback((dbn: string): boolean => {
+    if (!isAuthenticated) return false;
+    return favoritesRef.current[dbn] ?? false;
+  }, [isAuthenticated]);
 
   const value = useMemo(() => ({
-    isFavorite: isAuthenticated ? isFavorite : () => false,
+    isFavorite,
     isLoading,
     invalidateBatch,
-  }), [isFavorite, isLoading, invalidateBatch, isAuthenticated]);
+  }), [isFavorite, isLoading, invalidateBatch]);
 
   return (
     <FavoritesContext.Provider value={value}>

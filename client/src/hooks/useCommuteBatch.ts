@@ -26,7 +26,7 @@ export function useCommuteBatch(dbns: string[]) {
     queryKey: ["/api/profile"],
     enabled: !authLoading && isAuthenticated,
     staleTime: 1000 * 60 * 5,
-    retry: false,
+    retry: 1, // Allow one retry for transient failures
   });
 
   const coordinates = profile?.latitude && profile?.longitude 
@@ -35,7 +35,7 @@ export function useCommuteBatch(dbns: string[]) {
 
   const dbnsKey = dbns.sort().join(",");
   
-  const { data, isLoading } = useQuery<CommutesBatchResponse>({
+  const { data, isLoading, refetch } = useQuery<CommutesBatchResponse>({
     queryKey: ["/api/commute/batch", dbnsKey, coordinates?.lat, coordinates?.lng],
     queryFn: async () => {
       if (!dbns.length || !coordinates) return { commutes: {} };
@@ -52,7 +52,8 @@ export function useCommuteBatch(dbns: string[]) {
     },
     enabled: isAuthenticated && !authLoading && !profileLoading && dbns.length > 0 && !!coordinates,
     staleTime: 1000 * 60 * 30,
-    retry: false,
+    retry: 2, // Allow retries for transient Google API failures
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
   const getCommute = (dbn: string): CommuteData | null => {
@@ -65,5 +66,6 @@ export function useCommuteBatch(dbns: string[]) {
     isLoading: authLoading || profileLoading || isLoading,
     hasCoordinates: !!coordinates,
     isAuthenticated,
+    refetch, // Expose for manual retry after failures
   };
 }

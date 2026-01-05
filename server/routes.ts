@@ -745,13 +745,27 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
         return res.json({ favorites: {} });
       }
 
-      const dbns = (req.query.dbns as string)?.split(",").filter(Boolean) || [];
+      const rawDbns = req.query.dbns as string;
+      if (!rawDbns || typeof rawDbns !== 'string') {
+        return res.json({ favorites: {} });
+      }
+
+      // Parse, trim, dedupe, and validate DBNs
+      const dbnRegex = /^[0-9]{2}[A-Z]{1}[0-9]{3,4}$/i; // NYC school DBN format
+      const parsedDbns = rawDbns.split(",")
+        .map(d => d.trim().toUpperCase())
+        .filter(d => d && dbnRegex.test(d));
+      const dbns = Array.from(new Set(parsedDbns));
+      
       if (dbns.length === 0) {
         return res.json({ favorites: {} });
       }
 
+      // Limit batch size to prevent abuse
+      const limitedDbns = dbns.slice(0, 100);
+
       const userId = req.session.userId;
-      const favoriteStatus = await storage.getFavoriteStatusBatch(userId, dbns);
+      const favoriteStatus = await storage.getFavoriteStatusBatch(userId, limitedDbns);
       res.json({ favorites: favoriteStatus });
     } catch (error) {
       console.error("Error checking batch favorites:", error);
