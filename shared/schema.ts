@@ -104,7 +104,9 @@ export const schools = pgTable("schools", {
   
   // Metadata
   last_updated: timestamp("last_updated").defaultNow(),
-});
+}, (table) => [
+  index("schools_district_idx").on(table.district),
+]);
 
 export const insertSchoolSchema = createInsertSchema(schools);
 
@@ -571,7 +573,10 @@ export const favorites = pgTable("favorites", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   schoolDbn: varchar("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("favorites_user_id_idx").on(table.userId),
+  index("favorites_user_school_idx").on(table.userId, table.schoolDbn),
+]);
 
 export const insertFavoriteSchema = createInsertSchema(favorites).omit({
   id: true,
