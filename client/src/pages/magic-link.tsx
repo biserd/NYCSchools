@@ -45,7 +45,7 @@ export default function MagicLinkPage() {
           queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
           
           setTimeout(() => {
-            navigate(data.redirectUrl || '/schools');
+            navigate(data.redirectUrl || '/');
           }, 2000);
         }
       } catch (error: any) {
@@ -135,7 +135,7 @@ export default function MagicLinkPage() {
           {status === 'success' && (
             <div className="flex justify-center">
               <Button 
-                onClick={() => navigate('/schools')}
+                onClick={() => navigate('/')}
                 data-testid="button-browse-schools-now"
               >
                 Browse Schools Now
@@ -170,7 +170,7 @@ export default function MagicLinkPage() {
           {status === 'used' && (
             <div className="flex flex-col gap-3 items-center">
               <Button 
-                onClick={() => navigate('/schools')}
+                onClick={() => navigate('/')}
                 data-testid="button-browse-schools-used"
               >
                 Browse Schools
