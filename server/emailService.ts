@@ -498,6 +498,70 @@ export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string
   }
 }
 
+export async function sendMagicLinkLoginEmail(userEmail: string, magicLinkUrl: string, firstName?: string): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'Sign in to NYC School Ratings',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Sign In Request</h1>
+            <p style="color: #6b7280; font-size: 16px;">Click the button below to sign in to your account</p>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            You requested to sign in to your NYC School Ratings account. Click the button below to continue:
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${magicLinkUrl}" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Sign In to NYC School Ratings
+            </a>
+          </div>
+          
+          <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              <strong>This link expires in 15 minutes.</strong> If you didn't request this sign-in link, 
+              you can safely ignore this email.
+            </p>
+          </div>
+          
+          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+            If the button doesn't work, copy and paste this link into your browser:<br/>
+            <a href="${magicLinkUrl}" style="color: #2563eb; word-break: break-all;">${magicLinkUrl}</a>
+          </p>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+              Need help? Contact us at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
+            </p>
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
+              <strong>— The NYC School Ratings Team</strong>
+            </p>
+          </div>
+          
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Magic link login email sent', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send magic link login email', { error: error.message, userEmail });
+    return false;
+  }
+}
+
 export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
@@ -505,4 +569,5 @@ export const emailService = {
   sendNewUserWelcomeEmail,
   sendPasswordResetEmail,
   sendMagicLinkEmail,
+  sendMagicLinkLoginEmail,
 };

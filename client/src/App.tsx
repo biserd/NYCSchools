@@ -42,6 +42,7 @@ const EarlyChildhoodPage = lazy(() => import("@/pages/early-childhood"));
 const NyceecDetailPage = lazy(() => import("@/pages/nyceec-detail"));
 const ThanksPage = lazy(() => import("@/pages/thanks"));
 const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
+const MagicLinkCallbackPage = lazy(() => import("@/pages/magic-link-callback"));
 
 // Loading component for lazy routes
 function PageLoader() {

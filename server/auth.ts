@@ -4,7 +4,32 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { storage } from "./storage";
-import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail, sendPasswordResetEmail } from "./emailService";
+import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail, sendPasswordResetEmail, sendMagicLinkLoginEmail } from "./emailService";
+
+// Rate limiting for magic link requests (in-memory, keyed by email)
+const magicLinkRateLimit = new Map<string, number>();
+const MAGIC_LINK_COOLDOWN_MS = 60 * 1000; // 60 seconds
+
+function canRequestMagicLink(email: string): boolean {
+  const key = email.toLowerCase();
+  const lastRequest = magicLinkRateLimit.get(key);
+  if (!lastRequest) return true;
+  return Date.now() - lastRequest > MAGIC_LINK_COOLDOWN_MS;
+}
+
+function recordMagicLinkRequest(email: string): void {
+  magicLinkRateLimit.set(email.toLowerCase(), Date.now());
+}
+
+// Clean up old rate limit entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of magicLinkRateLimit.entries()) {
+    if (now - timestamp > MAGIC_LINK_COOLDOWN_MS * 2) {
+      magicLinkRateLimit.delete(key);
+    }
+  }
+}, 5 * 60 * 1000); // Clean up every 5 minutes
 
 declare module "express-session" {
   interface SessionData {
@@ -253,6 +278,67 @@ export function setupAuth(app: Express) {
     } catch (error) {
       console.error("Password reset complete error:", error);
       res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Magic Link Login - Request a sign-in link via email
+  app.post("/api/auth/magic-link/request", async (req, res) => {
+    try {
+      const { email, returnTo } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Always return success to prevent email enumeration
+      // Check rate limit first
+      if (!canRequestMagicLink(email)) {
+        // Still return 200 to prevent enumeration, but don't send another email
+        return res.json({ message: "If an account exists, we sent a link." });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      
+      if (user) {
+        // Record the request for rate limiting
+        recordMagicLinkRequest(email);
+        
+        // Generate secure random token
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+        
+        // Token expires in 15 minutes
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        
+        await storage.createMagicLinkToken(user.id, tokenHash, expiresAt);
+        
+        // Build magic link URL
+        let baseUrl: string;
+        if (process.env.REPLIT_DEPLOYMENT === "1") {
+          baseUrl = "https://nycschoolsratings.com";
+        } else if (process.env.REPLIT_DEV_DOMAIN) {
+          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+        } else {
+          baseUrl = "http://localhost:5000";
+        }
+        
+        // Include returnTo in the callback URL if provided
+        const sanitizedReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") 
+          ? returnTo 
+          : "/account";
+        const magicLinkUrl = `${baseUrl}/auth/magic-link/callback?token=${rawToken}&returnTo=${encodeURIComponent(sanitizedReturnTo)}`;
+        
+        // Send email (don't await to avoid timing attacks)
+        sendMagicLinkLoginEmail(user.email, magicLinkUrl, user.firstName || undefined).catch((err) => {
+          console.error("Failed to send magic link login email:", err);
+        });
+      }
+
+      // Always return success
+      res.json({ message: "If an account exists, we sent a link." });
+    } catch (error) {
+      console.error("Magic link request error:", error);
+      res.status(500).json({ message: "Failed to process magic link request" });
     }
   });
 }
