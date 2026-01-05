@@ -147,7 +147,7 @@ export default function ThanksPage() {
                 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <Button 
-                    onClick={() => navigate('/schools')}
+                    onClick={() => navigate('/')}
                     className="flex-1"
                     data-testid="button-browse-schools"
                   >
