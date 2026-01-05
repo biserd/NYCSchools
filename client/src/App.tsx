@@ -122,6 +122,9 @@ function Router() {
         <Route path="/thanks">
           <ThanksPage />
         </Route>
+        <Route path="/auth/magic-link/callback">
+          <MagicLinkCallbackPage />
+        </Route>
         <Route path="/auth/magic-link/:token">
           <MagicLinkPage />
         </Route>
