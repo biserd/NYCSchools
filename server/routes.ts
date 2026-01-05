@@ -739,6 +739,26 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
+  app.get("/api/favorites/batch", async (req: any, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.json({ favorites: {} });
+      }
+
+      const dbns = (req.query.dbns as string)?.split(",").filter(Boolean) || [];
+      if (dbns.length === 0) {
+        return res.json({ favorites: {} });
+      }
+
+      const userId = req.session.userId;
+      const favoriteStatus = await storage.getFavoriteStatusBatch(userId, dbns);
+      res.json({ favorites: favoriteStatus });
+    } catch (error) {
+      console.error("Error checking batch favorites:", error);
+      res.status(500).json({ error: "Failed to check favorites" });
+    }
+  });
+
   // Application Tracker API (Premium feature - tracked schools)
   app.get("/api/tracked-schools", isAuthenticated, async (req: any, res: Response) => {
     try {
@@ -1034,6 +1054,113 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     } catch (error) {
       console.error("Error calculating commute:", error);
       res.status(500).json({ error: "Failed to calculate commute time" });
+    }
+  });
+
+  // In-memory cache for commute times (origin+dbn -> result)
+  const commuteCache = new Map<string, { data: any; timestamp: number }>();
+  const COMMUTE_CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+  // Batch Commute Time API - fetch multiple commutes in parallel
+  app.get("/api/commute/batch", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({
+          error: "Premium feature",
+          code: "PREMIUM_REQUIRED", 
+          message: "Commute time calculator is available for Premium subscribers.",
+        });
+      }
+      
+      const dbns = (req.query.dbns as string)?.split(",").filter(Boolean) || [];
+      const originLat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+      const originLng = req.query.lng ? parseFloat(req.query.lng as string) : null;
+
+      if (!originLat || !originLng) {
+        return res.json({ commutes: {} });
+      }
+
+      if (dbns.length === 0) {
+        return res.json({ commutes: {} });
+      }
+
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!googleMapsApiKey) {
+        return res.json({ commutes: {} });
+      }
+
+      const origin = `${originLat},${originLng}`;
+      const now = Date.now();
+      const results: Record<string, any> = {};
+      const uncachedDbns: string[] = [];
+
+      // Check cache first
+      for (const dbn of dbns) {
+        const cacheKey = `${origin}-${dbn}`;
+        const cached = commuteCache.get(cacheKey);
+        if (cached && now - cached.timestamp < COMMUTE_CACHE_TTL) {
+          results[dbn] = cached.data;
+        } else {
+          uncachedDbns.push(dbn);
+        }
+      }
+
+      // Fetch schools for uncached DBNs
+      if (uncachedDbns.length > 0) {
+        const schoolsToFetch = await Promise.all(
+          uncachedDbns.map(dbn => storage.getSchool(dbn))
+        );
+        
+        // Filter valid schools with locations
+        const validSchools = uncachedDbns
+          .map((dbn, i) => ({ dbn, school: schoolsToFetch[i] }))
+          .filter(({ school }) => school?.latitude && school?.longitude);
+
+        if (validSchools.length > 0) {
+          // Build destinations string (max 25 per request)
+          const destinations = validSchools
+            .map(({ school }) => `${school!.latitude},${school!.longitude}`)
+            .join("|");
+          
+          const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${encodeURIComponent(destinations)}&mode=transit&key=${googleMapsApiKey}`;
+
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.status === "OK" && data.rows?.[0]?.elements) {
+            validSchools.forEach(({ dbn }, index) => {
+              const element = data.rows[0].elements[index];
+              if (element?.status === "OK") {
+                const result = {
+                  commuteTime: element.duration.text,
+                  commuteMinutes: Math.round(element.duration.value / 60),
+                  distance: element.distance.text,
+                  distanceMeters: element.distance.value,
+                };
+                results[dbn] = result;
+                commuteCache.set(`${origin}-${dbn}`, { data: result, timestamp: now });
+              } else {
+                results[dbn] = { error: "Route not available" };
+              }
+            });
+          }
+        }
+
+        // Mark missing schools
+        for (const dbn of uncachedDbns) {
+          if (!results[dbn]) {
+            results[dbn] = { error: "School location not available" };
+          }
+        }
+      }
+
+      res.json({ commutes: results });
+    } catch (error) {
+      console.error("Error calculating batch commute:", error);
+      res.status(500).json({ error: "Failed to calculate commute times" });
     }
   });
 

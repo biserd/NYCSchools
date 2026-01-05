@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { useCommuteContext } from "@/contexts/CommuteContext";
 
 interface CommuteTimeProps {
   schoolDbn: string;
@@ -33,23 +34,29 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { startCheckout, isLoading: checkoutLoading } = useCheckout();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const commuteContext = useCommuteContext();
+  const commuteFromContext = commuteContext?.getCommute(schoolDbn);
 
   // Fetch user profile (address) from database - only for authenticated users
   // Wait for auth check to complete before fetching profile
+  // Skip profile fetch if we have context (it handles profile internally)
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile | null>({
     queryKey: ["/api/profile"],
-    enabled: !authLoading && isAuthenticated,
-    staleTime: 1000 * 60 * 5, // Cache profile for 5 minutes
-    retry: false, // Don't retry on 401
+    enabled: !authLoading && isAuthenticated && !commuteContext,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 
-  const coordinates = profile?.latitude && profile?.longitude 
-    ? { lat: profile.latitude, lng: profile.longitude }
-    : null;
+  const coordinates = commuteContext 
+    ? (commuteContext.hasCoordinates ? { lat: 1, lng: 1 } : null)
+    : (profile?.latitude && profile?.longitude 
+        ? { lat: profile.latitude, lng: profile.longitude }
+        : null);
 
-  // Fetch commute data - only when authenticated and has coordinates
+  // Fetch commute data - only when not using context
   // Wait for both auth check and profile to be resolved
-  const { data: commuteData, isLoading, isError } = useQuery<CommuteData>({
+  const { data: individualCommuteData, isLoading, isError } = useQuery<CommuteData>({
     queryKey: ["/api/commute", schoolDbn, coordinates?.lat, coordinates?.lng],
     queryFn: async () => {
       if (!coordinates) {
@@ -58,7 +65,6 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
       try {
         const response = await fetch(`/api/commute/${schoolDbn}?lat=${coordinates.lat}&lng=${coordinates.lng}`);
         if (!response.ok) {
-          // Check if this is a premium required error
           if (response.status === 403) {
             return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, premiumRequired: true };
           }
@@ -69,10 +75,12 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
         return { commuteTime: null, commuteMinutes: null, distance: null, distanceMeters: null, error: "Network error" };
       }
     },
-    enabled: !authLoading && isAuthenticated && !!coordinates,
+    enabled: !authLoading && isAuthenticated && !!coordinates && !commuteContext,
     staleTime: 1000 * 60 * 30,
-    retry: false, // Don't retry on errors
+    retry: false,
   });
+  
+  const commuteData = commuteContext ? commuteFromContext as CommuteData | null : individualCommuteData;
 
   // For unauthenticated users - show sign up prompt with prominent styling
   if (!authLoading && !isAuthenticated) {

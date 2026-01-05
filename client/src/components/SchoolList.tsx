@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { SchoolWithOverallScore, type SchoolTrend } from "@shared/schema";
 import { SchoolCard } from "./SchoolCard";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
+import { CommuteProvider } from "@/contexts/CommuteContext";
 
 interface SchoolListProps {
   schools: SchoolWithOverallScore[];
@@ -26,6 +28,11 @@ export function SchoolList({ schools }: SchoolListProps) {
 
   const displayedSchools = schools.slice(0, displayCount);
   const hasMore = displayCount < schools.length;
+  
+  const displayedDbns = useMemo(() => 
+    displayedSchools.map(s => s.dbn), 
+    [displayedSchools]
+  );
 
   if (schools.length === 0) {
     return (
@@ -42,29 +49,33 @@ export function SchoolList({ schools }: SchoolListProps) {
   }
 
   return (
-    <div className="space-y-6" data-testid="list-schools">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {displayedSchools.map((school) => (
-          <SchoolCard
-            key={school.dbn}
-            school={school}
-            trend={trends?.[school.dbn]}
-          />
-        ))}
-      </div>
-      
-      {hasMore && (
-        <div className="flex justify-center pt-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setDisplayCount(prev => Math.min(prev + LOAD_MORE_INCREMENT, schools.length))}
-            data-testid="button-load-more"
-          >
-            Load More Schools ({schools.length - displayCount} remaining)
-          </Button>
+    <FavoritesProvider dbns={displayedDbns}>
+      <CommuteProvider dbns={displayedDbns}>
+        <div className="space-y-6" data-testid="list-schools">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {displayedSchools.map((school) => (
+              <SchoolCard
+                key={school.dbn}
+                school={school}
+                trend={trends?.[school.dbn]}
+              />
+            ))}
+          </div>
+          
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setDisplayCount(prev => Math.min(prev + LOAD_MORE_INCREMENT, schools.length))}
+                data-testid="button-load-more"
+              >
+                Load More Schools ({schools.length - displayCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </CommuteProvider>
+    </FavoritesProvider>
   );
 }

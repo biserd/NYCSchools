@@ -7,6 +7,7 @@ import { apiRequest, ApiError } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { useFavoritesContext } from "@/contexts/FavoritesContext";
 
 interface FavoriteButtonProps {
   schoolDbn: string;
@@ -25,15 +26,20 @@ export function FavoriteButton({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const favoritesContext = useFavoritesContext();
+  const isFavoriteFromContext = favoritesContext?.isFavorite(schoolDbn);
 
   const { data: favoriteStatus } = useQuery<{ isFavorite: boolean }>({
     queryKey: ["/api/favorites/check", schoolDbn],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !favoritesContext,
   });
+
+  const currentIsFavorite = favoritesContext ? isFavoriteFromContext : favoriteStatus?.isFavorite;
 
   const toggleFavorite = useMutation({
     mutationFn: async () => {
-      if (favoriteStatus?.isFavorite) {
+      if (currentIsFavorite) {
         await apiRequest("DELETE", `/api/favorites/${schoolDbn}`);
       } else {
         await apiRequest("POST", "/api/favorites", {
@@ -43,10 +49,14 @@ export function FavoriteButton({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/favorites/check", schoolDbn] });
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites/batch"] });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      if (favoritesContext) {
+        favoritesContext.invalidateBatch();
+      }
       toast({
-        title: favoriteStatus?.isFavorite ? "Removed from favorites" : "Added to favorites",
-        description: favoriteStatus?.isFavorite 
+        title: currentIsFavorite ? "Removed from favorites" : "Added to favorites",
+        description: currentIsFavorite 
           ? "School removed from your favorites list"
           : "School added to your favorites list",
       });
@@ -97,7 +107,7 @@ export function FavoriteButton({
     );
   }
 
-  const isFavorite = favoriteStatus?.isFavorite ?? false;
+  const isFavorite = currentIsFavorite ?? false;
 
   return (
     <>

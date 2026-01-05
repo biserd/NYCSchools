@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics } from "@shared/schema";
-import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull } from "drizzle-orm";
+import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for standalone auth
@@ -21,6 +21,7 @@ export interface IStorage {
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: string, schoolDbn: string): Promise<void>;
   isFavorite(userId: string, schoolDbn: string): Promise<boolean>;
+  getFavoriteStatusBatch(userId: string, schoolDbns: string[]): Promise<Record<string, boolean>>;
   
   getSchools(): Promise<School[]>;
   getSchool(dbn: string): Promise<School | undefined>;
@@ -252,6 +253,26 @@ export class DbStorage implements IStorage {
       )
     ).limit(1);
     return !!fav;
+  }
+
+  async getFavoriteStatusBatch(userId: string, schoolDbns: string[]): Promise<Record<string, boolean>> {
+    if (!schoolDbns.length) return {};
+    
+    const userFavorites = await db.select({ schoolDbn: favorites.schoolDbn })
+      .from(favorites)
+      .where(
+        and(
+          eq(favorites.userId, userId),
+          inArray(favorites.schoolDbn, schoolDbns)
+        )
+      );
+    
+    const favoriteSet = new Set(userFavorites.map(f => f.schoolDbn));
+    const result: Record<string, boolean> = {};
+    for (const dbn of schoolDbns) {
+      result[dbn] = favoriteSet.has(dbn);
+    }
+    return result;
   }
 
   async getSchools(): Promise<School[]> {
