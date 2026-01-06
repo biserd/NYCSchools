@@ -27,7 +27,10 @@ import {
   Users,
   Building2,
   MapPin,
-  Home
+  Home,
+  Search,
+  ListOrdered,
+  ArrowRight
 } from "lucide-react";
 import { School, calculateOverallScore } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -469,14 +472,25 @@ export default function LotterySimulatorPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-primary" />
-                  <CardTitle>Add Schools to Your List</CardTitle>
+                  <Search className="w-5 h-5 text-primary" />
+                  <CardTitle>Step 1: Find Schools</CardTitle>
                 </div>
                 <CardDescription>
-                  Search for 3-K and Pre-K schools and add up to 12 to your ranking ({12 - rankedSchools.length} remaining)
+                  Search for 3-K and Pre-K schools, then click "Add" to build your ranked list
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Slots remaining indicator */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <ListOrdered className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Slots Available</span>
+                  </div>
+                  <Badge variant={rankedSchools.length >= 12 ? "destructive" : "default"} className="text-sm">
+                    {12 - rankedSchools.length} of 12 remaining
+                  </Badge>
+                </div>
+
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Input
@@ -499,7 +513,32 @@ export default function LotterySimulatorPage() {
                   </Select>
                 </div>
 
-                <ScrollArea className="h-[300px] border rounded-lg">
+                {/* Column headers with rating explanation */}
+                <div className="flex items-center justify-between px-3 py-2 bg-muted/50 rounded-t-lg border-x border-t text-sm font-medium text-muted-foreground">
+                  <span>School</span>
+                  <div className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help">
+                          <span>Rating</span>
+                          <Info className="w-3 h-3" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Overall School Rating (0-100)</p>
+                        <p className="text-xs">Based on test scores (40%), school climate (30%), and student progress (30%).</p>
+                        <div className="flex items-center gap-2 mt-2 text-xs">
+                          <span className="text-emerald-600">70+ Great</span>
+                          <span className="text-amber-600">50-69 Good</span>
+                          <span className="text-red-600">&lt;50 Needs Work</span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                    <span className="w-16 text-center">Action</span>
+                  </div>
+                </div>
+
+                <ScrollArea className="h-[280px] border-x border-b rounded-b-lg">
                   {isLoading ? (
                     <div className="p-4 text-center text-muted-foreground">Loading schools...</div>
                   ) : filteredSchools.length === 0 ? (
@@ -511,16 +550,17 @@ export default function LotterySimulatorPage() {
                       {filteredSchools.map(school => {
                         const score = calculateOverallScore(school);
                         const isZoned = isZonedSchool(school.dbn);
+                        const isAlreadyAdded = rankedSchools.some(rs => rs.school.dbn === school.dbn);
                         return (
                           <div 
                             key={school.dbn} 
-                            className="p-3 hover-elevate flex items-center justify-between gap-2"
+                            className={`p-3 hover-elevate flex items-center justify-between gap-2 ${isAlreadyAdded ? 'bg-muted/30' : ''}`}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium truncate">{school.name}</span>
                                 {isZoned && (
-                                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20 shrink-0">
                                     <Home className="h-3 w-3 mr-1" />
                                     Zoned
                                   </Badge>
@@ -529,24 +569,30 @@ export default function LotterySimulatorPage() {
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <span>{school.dbn}</span>
                                 <span>•</span>
-                                <span>District {school.district}</span>
+                                <span>D{school.district}</span>
                                 {school.has_3k && <Badge variant="secondary" className="text-xs">3-K</Badge>}
                                 {school.has_prek && <Badge variant="secondary" className="text-xs">Pre-K</Badge>}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <Badge variant="outline" className={`${getScoreColor(score)} font-semibold`}>
+                              <Badge variant="outline" className={`${getScoreColor(score)} font-semibold min-w-[2.5rem] justify-center`}>
                                 {score > 0 ? score : "N/A"}
                               </Badge>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => addSchool(school)}
-                                disabled={rankedSchools.length >= 12}
-                                data-testid={`button-add-school-${school.dbn}`}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
+                              {isAlreadyAdded ? (
+                                <Badge variant="secondary" className="text-xs">Added</Badge>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => addSchool(school)}
+                                  disabled={rankedSchools.length >= 12}
+                                  className="bg-primary hover:bg-primary/90"
+                                  data-testid={`button-add-school-${school.dbn}`}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add
+                                </Button>
+                              )}
                             </div>
                           </div>
                         );
@@ -564,21 +610,30 @@ export default function LotterySimulatorPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-primary" />
-                    <CardTitle>Your Ranked Schools</CardTitle>
+                    <ListOrdered className="w-5 h-5 text-primary" />
+                    <CardTitle>Step 2: Rank Your Schools</CardTitle>
                   </div>
                   <Badge variant="outline">{rankedSchools.length}/12</Badge>
                 </div>
                 <CardDescription>
-                  Order schools by your true preference. First choice at top.
+                  Use the arrows to reorder. Your #1 choice should be at the top.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {rankedSchools.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <GraduationCap className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No schools added yet</p>
-                    <p className="text-sm">Search and add schools from the left</p>
+                  <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
+                    <div className="flex justify-center mb-3">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <ArrowRight className="w-8 h-8 text-primary" />
+                      </div>
+                    </div>
+                    <p className="font-medium text-foreground mb-1">Your ranked list is empty</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Click the <span className="font-medium text-primary">"Add"</span> button next to any school on the left to add it here
+                    </p>
+                    <div className="text-xs text-muted-foreground">
+                      You can add up to 12 schools and rank them in order of preference
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -651,25 +706,33 @@ export default function LotterySimulatorPage() {
 
                 <Separator className="my-4" />
 
-                <Button
-                  onClick={runSimulation}
-                  disabled={rankedSchools.length === 0 || isSimulating}
-                  className="w-full"
-                  size="lg"
-                  data-testid="button-run-simulation"
-                >
-                  {isSimulating ? (
-                    <>
-                      <Shuffle className="w-4 h-4 mr-2 animate-spin" />
-                      Running 1,000 Simulations...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Run Lottery Simulation
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Play className="w-4 h-4 text-primary" />
+                    <span>Step 3: Run Simulation</span>
+                  </div>
+                  <Button
+                    onClick={runSimulation}
+                    disabled={rankedSchools.length === 0 || isSimulating}
+                    className="w-full"
+                    size="lg"
+                    data-testid="button-run-simulation"
+                  >
+                    {isSimulating ? (
+                      <>
+                        <Shuffle className="w-4 h-4 mr-2 animate-spin" />
+                        Running 1,000 Simulations...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        {rankedSchools.length === 0 
+                          ? "Add Schools First" 
+                          : `Simulate with ${rankedSchools.length} School${rankedSchools.length > 1 ? 's' : ''}`}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
