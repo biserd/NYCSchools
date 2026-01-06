@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
-import { LogOut, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Loader2 } from "lucide-react";
+import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap } from "lucide-react";
 import { Link } from "wouter";
 
 interface UserZones {
@@ -677,20 +677,11 @@ export default function Home() {
                       Pricing
                     </Link>
                   </Button>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={startCheckout}
-                    disabled={checkoutPending}
-                    className="bg-gradient-to-r from-primary to-primary/80"
-                    data-testid="button-upgrade-guest"
-                  >
-                    {checkoutPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Zap className="w-4 h-4 mr-2" />
-                    )}
-                    Get Premium
+                  <Button variant="default" size="sm" asChild data-testid="button-login-nav">
+                    <Link href="/login">
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Log In
+                    </Link>
                   </Button>
                 </>
               )}
@@ -711,19 +702,10 @@ export default function Home() {
                   <LogOut className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={startCheckout}
-                  disabled={checkoutPending}
-                  className="bg-gradient-to-r from-primary to-primary/80"
-                  data-testid="button-upgrade-guest-mobile"
-                >
-                  {checkoutPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Zap className="w-4 h-4" />
-                  )}
+                <Button variant="default" size="sm" asChild data-testid="button-login-nav-mobile">
+                  <Link href="/login">
+                    <LogIn className="w-4 h-4" />
+                  </Link>
                 </Button>
               )}
               <ThemeToggle />
