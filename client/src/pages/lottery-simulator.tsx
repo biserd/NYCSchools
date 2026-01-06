@@ -538,7 +538,7 @@ export default function LotterySimulatorPage() {
                   </div>
                 </div>
 
-                <ScrollArea className="h-[280px] border-x border-b rounded-b-lg">
+                <div className="h-[280px] border-x border-b rounded-b-lg overflow-y-auto">
                   {isLoading ? (
                     <div className="p-4 text-center text-muted-foreground">Loading schools...</div>
                   ) : filteredSchools.length === 0 ? (
@@ -554,11 +554,12 @@ export default function LotterySimulatorPage() {
                         return (
                           <div 
                             key={school.dbn} 
-                            className={`p-3 hover-elevate flex items-center justify-between gap-2 ${isAlreadyAdded ? 'bg-muted/30' : ''}`}
+                            className={`p-3 hover-elevate grid grid-cols-[1fr_auto_auto] items-center gap-3 ${isAlreadyAdded ? 'bg-muted/30' : ''}`}
                           >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium truncate">{school.name}</span>
+                            {/* School info - takes remaining space, truncates */}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium truncate max-w-[200px]">{school.name}</span>
                                 {isZoned && (
                                   <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20 shrink-0">
                                     <Home className="h-3 w-3 mr-1" />
@@ -566,40 +567,46 @@ export default function LotterySimulatorPage() {
                                   </Badge>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                                 <span>{school.dbn}</span>
                                 <span>•</span>
                                 <span>D{school.district}</span>
-                                {school.has_3k && <Badge variant="secondary" className="text-xs">3-K</Badge>}
-                                {school.has_prek && <Badge variant="secondary" className="text-xs">Pre-K</Badge>}
+                                {school.has_3k && <Badge variant="secondary" className="text-[10px] px-1 py-0">3-K</Badge>}
+                                {school.has_prek && <Badge variant="secondary" className="text-[10px] px-1 py-0">Pre-K</Badge>}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Badge variant="outline" className={`${getScoreColor(score)} font-semibold min-w-[2.5rem] justify-center`}>
-                                {score > 0 ? score : "N/A"}
-                              </Badge>
-                              {isAlreadyAdded ? (
-                                <Badge variant="secondary" className="text-xs">Added</Badge>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => addSchool(school)}
-                                  disabled={rankedSchools.length >= 12}
-                                  className="bg-primary hover:bg-primary/90"
-                                  data-testid={`button-add-school-${school.dbn}`}
-                                >
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  Add
-                                </Button>
-                              )}
-                            </div>
+                            
+                            {/* Rating - fixed width */}
+                            <Badge 
+                              variant="outline" 
+                              className={`${getScoreColor(score)} font-bold text-sm w-12 justify-center`}
+                              data-testid={`rating-${school.dbn}`}
+                            >
+                              {score > 0 ? score : "N/A"}
+                            </Badge>
+                            
+                            {/* Action - fixed width */}
+                            {isAlreadyAdded ? (
+                              <Badge variant="secondary" className="text-xs w-16 justify-center">Added</Badge>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => addSchool(school)}
+                                disabled={rankedSchools.length >= 12}
+                                className="w-16"
+                                data-testid={`button-add-school-${school.dbn}`}
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Add
+                              </Button>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </div>
