@@ -10,8 +10,9 @@ import { StructuredData } from "@/components/StructuredData";
 import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend, type NyceecCenter } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, DollarSign, UserPlus } from "lucide-react";
+import { LogOut, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
 interface UserZones {
@@ -95,6 +96,7 @@ export default function Home() {
   const [detailOpen, setDetailOpen] = useState(false);
   
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { startCheckout, isPending: checkoutPending } = useCheckout();
 
   // Fetch subscription status for premium features
   const { data: subscription } = useQuery<{
@@ -671,21 +673,24 @@ export default function Home() {
                 <>
                   <Button variant="outline" size="sm" asChild data-testid="button-pricing-nav">
                     <Link href="/pricing">
-                      <DollarSign className="w-4 h-4 mr-2" />
+                      <Zap className="w-4 h-4 mr-2" />
                       Pricing
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" asChild data-testid="button-login">
-                    <Link href="/login">
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Log In
-                    </Link>
-                  </Button>
-                  <Button variant="default" size="sm" asChild data-testid="button-signup">
-                    <Link href="/register">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Sign Up
-                    </Link>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={startCheckout}
+                    disabled={checkoutPending}
+                    className="bg-gradient-to-r from-primary to-primary/80"
+                    data-testid="button-upgrade-guest"
+                  >
+                    {checkoutPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Zap className="w-4 h-4 mr-2" />
+                    )}
+                    Get Premium
                   </Button>
                 </>
               )}
@@ -706,18 +711,20 @@ export default function Home() {
                   <LogOut className="w-4 h-4" />
                 </Button>
               ) : (
-                <>
-                  <Button variant="outline" size="sm" asChild data-testid="button-login-mobile">
-                    <Link href="/login">
-                      <LogIn className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                  <Button variant="default" size="sm" asChild data-testid="button-signup-mobile">
-                    <Link href="/register">
-                      <UserPlus className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                </>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={startCheckout}
+                  disabled={checkoutPending}
+                  className="bg-gradient-to-r from-primary to-primary/80"
+                  data-testid="button-upgrade-guest-mobile"
+                >
+                  {checkoutPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                </Button>
               )}
               <ThemeToggle />
               <DropdownMenu>

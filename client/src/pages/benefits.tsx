@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 import {
   Home,
   Heart,
@@ -16,7 +17,6 @@ import {
   GitCompare,
   Star,
   CheckCircle2,
-  ArrowRight,
   Lock,
   Users,
   Bell,
@@ -25,6 +25,7 @@ import {
   Target,
   Crown,
   Zap,
+  Loader2,
 } from "lucide-react";
 
 interface BenefitCardProps {
@@ -65,12 +66,13 @@ function BenefitCard({ icon, title, description, features, highlight }: BenefitC
 
 export default function BenefitsPage() {
   const { isAuthenticated } = useAuth();
+  const { startCheckout, isPending: checkoutPending, isPremium } = useCheckout();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Why Create an Account - NYC School Ratings"
-        description="Discover the benefits of creating a free account on NYC School Ratings. Get personalized school zoning, commute times, favorites, AI recommendations, and more."
+        title="Premium Benefits - NYC School Ratings"
+        description="Discover the benefits of Premium on NYC School Ratings. Get AI chat assistant, school comparison, commute times, favorites, and more."
         canonicalPath="/benefits"
       />
 
@@ -79,10 +81,10 @@ export default function BenefitsPage() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="text-center mb-12">
           <Badge className="mb-4" variant="secondary">
-            Free Forever
+            Premium Benefits
           </Badge>
           <h1 className="text-4xl font-bold mb-4" data-testid="heading-benefits">
-            Why Create an Account?
+            Why Go Premium?
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Unlock powerful features to make finding your perfect NYC school easier and more personalized
@@ -265,31 +267,32 @@ export default function BenefitsPage() {
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
-                <h2 className="text-2xl font-bold mb-2">All Features Are Free</h2>
+                <h2 className="text-2xl font-bold mb-2">Unlock Premium Features</h2>
                 <p className="text-muted-foreground">
-                  Create an account in seconds. No credit card required, no hidden fees.
-                  Just more personalized tools to help you secure your child's spot.
+                  Get 6 months of full access with a single payment. No subscriptions, no hidden fees.
+                  All the tools you need to find the perfect school for your child.
                 </p>
               </div>
-              {isAuthenticated ? (
+              {isPremium ? (
                 <div className="flex items-center gap-2 text-primary">
                   <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-medium">You're already signed in!</span>
+                  <span className="font-medium">You have Premium access!</span>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Link href="/register">
-                    <Button size="lg" data-testid="button-create-account">
-                      Create Free Account
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/login">
-                    <Button variant="outline" size="lg" data-testid="button-sign-in">
-                      Sign In
-                    </Button>
-                  </Link>
-                </div>
+                <Button 
+                  size="lg"
+                  onClick={startCheckout}
+                  disabled={checkoutPending}
+                  className="bg-gradient-to-r from-primary to-primary/80"
+                  data-testid="button-upgrade-benefits"
+                >
+                  {checkoutPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  Get Premium - $29
+                </Button>
               )}
             </div>
           </CardContent>
