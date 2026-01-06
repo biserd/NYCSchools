@@ -174,9 +174,9 @@ function runMonteCarloSimulation(
       const profile = demandProfiles[i];
       lastSchoolIndex = i;
       
-      // Sibling priority is nearly guaranteed (98% if seats available)
+      // Sibling priority is nearly guaranteed (99% - rare edge cases only)
       if (rankedSchools[i].priority === "sibling") {
-        if (profile.estimatedSeats > 0 && Math.random() < 0.98) {
+        if (Math.random() < 0.99) {
           results[i].matchedInSimulations++;
           matched = true;
           totalMatched++;
@@ -185,15 +185,12 @@ function runMonteCarloSimulation(
         continue;
       }
       
-      // Zoned priority is very high (90% if seats available for your zone)
+      // Zoned priority is GUARANTEED - NYC zoned schools must accept all zoned students
       if (rankedSchools[i].priority === "zoned") {
-        if (profile.estimatedSeats > 0 && Math.random() < 0.85) {
-          results[i].matchedInSimulations++;
-          matched = true;
-          totalMatched++;
-          break;
-        }
-        continue;
+        results[i].matchedInSimulations++;
+        matched = true;
+        totalMatched++;
+        break;
       }
       
       // For other priorities: lottery within tier
@@ -754,11 +751,11 @@ export default function LotterySimulatorPage() {
               <CardContent className="text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sibling</span>
-                  <span className="text-emerald-600">Highest priority</span>
+                  <span className="text-emerald-600 font-medium">~99% guaranteed</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Zoned</span>
-                  <span className="text-emerald-600">Very high</span>
+                  <span className="text-emerald-600 font-medium">100% guaranteed</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">In-District</span>
