@@ -82,28 +82,28 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
   
   const commuteData = commuteContext ? commuteFromContext as CommuteData | null : individualCommuteData;
 
-  // For unauthenticated users - show sign up prompt with prominent styling
+  // For unauthenticated users - show upgrade prompt with prominent styling
   if (!authLoading && !isAuthenticated) {
     return compact ? (
       <div 
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          window.location.href = "/login?redirect=" + encodeURIComponent(window.location.pathname);
+          startCheckout();
         }}
       >
         <Badge 
           variant="secondary" 
           className="flex items-center gap-1 bg-primary/10 text-primary border-primary/20 hover-elevate cursor-pointer"
         >
-          <LogIn className="h-3 w-3" />
-          <span>Sign up for commute</span>
+          <Zap className="h-3 w-3" />
+          <span>Upgrade to see commute</span>
         </Badge>
       </div>
     ) : (
       <div 
         className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20" 
-        data-testid="commute-signup-prompt"
+        data-testid="commute-upgrade-prompt"
       >
         <div className="flex items-center gap-3 flex-1">
           <div className="flex items-center justify-center h-8 w-8 shrink-0 rounded-full bg-primary/10">
@@ -114,16 +114,20 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
               See commute times from your home
             </p>
             <p className="text-xs text-muted-foreground">
-              Sign up to calculate transit times to this school
+              Upgrade to calculate transit times to this school
             </p>
           </div>
         </div>
-        <a href={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="w-full sm:w-auto">
-          <Button size="sm" className="w-full sm:w-auto" data-testid="button-signup-commute">
-            <LogIn className="h-3 w-3 mr-1" />
-            Sign Up Free
-          </Button>
-        </a>
+        <Button 
+          size="sm" 
+          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80" 
+          onClick={startCheckout}
+          disabled={checkoutLoading}
+          data-testid="button-upgrade-commute"
+        >
+          <Zap className="h-3 w-3 mr-1" />
+          Get Premium
+        </Button>
       </div>
     );
   }
