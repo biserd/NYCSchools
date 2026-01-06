@@ -61,7 +61,6 @@ export default function SchoolDetail() {
   const { slug } = useParams();
   const [, setLocation] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { startCheckout, isPending: checkoutPending } = useCheckout();
 
   // Extract DBN from slug (format: "02m158-ps-158-bayard-taylor" or legacy "02M158")
   const dbn = slug?.split('-')[0]?.toUpperCase() || '';
@@ -1242,7 +1241,7 @@ export default function SchoolDetail() {
           )}
 
           {/* Reviews Section */}
-          <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} startCheckout={startCheckout} checkoutPending={checkoutPending} />
+          <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
             <p>Data from NYC Department of Education School Survey and public records.</p>
@@ -1256,7 +1255,7 @@ export default function SchoolDetail() {
   );
 }
 
-function ReviewsSection({ schoolDbn, userId, isAuthenticated, startCheckout, checkoutPending }: { schoolDbn: string; userId?: string; isAuthenticated: boolean; startCheckout: () => void; checkoutPending: boolean }) {
+function ReviewsSection({ schoolDbn, userId, isAuthenticated }: { schoolDbn: string; userId?: string; isAuthenticated: boolean }) {
   const { data: stats } = useQuery<{ averageRating: number; totalReviews: number }>({
     queryKey: ["/api/schools", schoolDbn, "reviews", "stats"],
   });
@@ -1317,22 +1316,17 @@ function ReviewsSection({ schoolDbn, userId, isAuthenticated, startCheckout, che
         ) : (
           <div className="space-y-4">
             <div className="text-center py-4 bg-muted/50 rounded-lg">
-              <p className="text-muted-foreground mb-2">Get Premium to write your own review</p>
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={startCheckout}
-                disabled={checkoutPending}
-                className="bg-gradient-to-r from-primary to-primary/80"
-                data-testid="button-upgrade-to-review"
-              >
-                {checkoutPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Zap className="w-4 h-4 mr-2" />
-                )}
-                Get Premium
-              </Button>
+              <p className="text-muted-foreground mb-2">Log in to write your own review</p>
+              <Link href="/login">
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  data-testid="button-login-to-review"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Log In
+                </Button>
+              </Link>
             </div>
             <ReviewsList schoolDbn={schoolDbn} currentUserId={userId} />
           </div>
