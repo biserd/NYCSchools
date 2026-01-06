@@ -46,7 +46,8 @@ import {
   Lock,
   Crown,
   Zap,
-  Loader2
+  Loader2,
+  LogIn
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
