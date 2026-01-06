@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, X, Send, Sparkles, LogIn, Star, Zap, ThumbsUp, ThumbsDown, Bot, User, RefreshCw } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, Star, Zap, ThumbsUp, ThumbsDown, Bot, User, RefreshCw, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { School } from "@shared/schema";
@@ -161,6 +162,7 @@ function QuickActions({ onSelect, currentSchool }: { onSelect: (question: string
 
 export function ChatBot() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { startCheckout, isPending: checkoutPending } = useCheckout();
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -487,10 +489,10 @@ export function ChatBot() {
     );
   }
 
-  // Show login prompt if not authenticated
+  // Show upgrade prompt if not authenticated - AI chat is a premium feature
   if (!isAuthenticated && !authLoading) {
     return (
-      <Card className="fixed bottom-6 right-6 w-96 h-auto shadow-2xl z-50 flex flex-col" data-testid="card-chat-login">
+      <Card className="fixed bottom-6 right-6 w-96 h-auto shadow-2xl z-50 flex flex-col" data-testid="card-chat-upgrade">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b gap-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -513,26 +515,26 @@ export function ChatBot() {
               <MessageCircle className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Sign in to Chat</h3>
+              <h3 className="text-lg font-semibold">Unlock AI Assistant</h3>
               <p className="text-sm text-muted-foreground">
                 Get personalized help finding the perfect school for your child. Our AI assistant can answer questions, compare schools, and provide recommendations.
               </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <Link href="/login">
-                <Button className="w-full" data-testid="button-chat-login">
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button variant="outline" className="w-full" data-testid="button-chat-register">
-                  Create Account
-                </Button>
-              </Link>
-            </div>
+            <Button 
+              className="w-full bg-gradient-to-r from-primary to-primary/80" 
+              onClick={startCheckout}
+              disabled={checkoutPending}
+              data-testid="button-chat-upgrade"
+            >
+              {checkoutPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4 mr-2" />
+              )}
+              Get Premium
+            </Button>
             <p className="text-xs text-muted-foreground">
-              Premium feature - included with Season Pass
+              One-time payment - 6 months of full access
             </p>
           </div>
         </CardContent>
