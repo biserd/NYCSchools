@@ -2600,7 +2600,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // EMAIL / DRIP CAMPAIGN ENDPOINTS
   // ==========================================
   
-  const { unsubscribeUser, processDripCampaign, isDripCampaignEnabled, setDripCampaignEnabled } = await import("./dripCampaign");
+  const { unsubscribeUser, processDripCampaign, isDripCampaignEnabled, setDripCampaignEnabled, sendTestDripEmail } = await import("./dripCampaign");
   
   // Unsubscribe from marketing emails
   app.get("/api/email/unsubscribe", async (req: Request, res: Response) => {
@@ -2674,6 +2674,27 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
+      // Check for test mode parameters
+      const testEmail = req.query.testEmail as string | undefined;
+      const dripNumber = req.query.dripNumber ? parseInt(req.query.dripNumber as string) : undefined;
+      
+      // Test mode: send specific email to specific user
+      if (testEmail && dripNumber) {
+        if (![1, 2, 3, 4].includes(dripNumber)) {
+          return res.status(400).json({ error: 'dripNumber must be 1, 2, 3, or 4' });
+        }
+        
+        console.log(`[DRIP_CRON] TEST MODE: Sending drip ${dripNumber} to ${testEmail}`);
+        const result = await sendTestDripEmail(testEmail, dripNumber as 1 | 2 | 3 | 4);
+        
+        return res.json({
+          testMode: true,
+          ...result,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
+      // Normal mode: process all eligible users
       console.log('[DRIP_CRON] Processing drip campaign...');
       const stats = await processDripCampaign();
       

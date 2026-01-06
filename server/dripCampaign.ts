@@ -239,6 +239,57 @@ export async function unsubscribeUser(userId: string): Promise<boolean> {
   }
 }
 
+// Test function to send a specific drip email to a specific user by email
+export async function sendTestDripEmail(
+  testEmail: string,
+  dripNumber: 1 | 2 | 3 | 4
+): Promise<{ success: boolean; message: string }> {
+  const dripTypeMap: { [key: number]: DripEmailType } = {
+    1: 'welcome_tip',
+    2: 'ai_spotlight',
+    3: 'data_insight',
+    4: 'upgrade_nudge',
+  };
+  
+  const emailType = dripTypeMap[dripNumber];
+  if (!emailType) {
+    return { success: false, message: `Invalid drip number: ${dripNumber}. Use 1, 2, 3, or 4.` };
+  }
+  
+  try {
+    // Find the user by email
+    const userResult = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+      })
+      .from(users)
+      .where(eq(users.email, testEmail))
+      .limit(1);
+    
+    if (!userResult.length) {
+      return { success: false, message: `User not found with email: ${testEmail}` };
+    }
+    
+    const user = userResult[0];
+    log('INFO', `[TEST MODE] Sending drip email ${dripNumber} (${emailType}) to ${testEmail}`);
+    
+    // Send the email
+    const success = await sendDripEmail(emailType, user.email, user.id, user.firstName);
+    
+    if (success) {
+      await recordDripEmailSent(user.id, emailType);
+      return { success: true, message: `Sent drip email ${dripNumber} (${emailType}) to ${testEmail}` };
+    } else {
+      return { success: false, message: `Failed to send drip email ${dripNumber} to ${testEmail}` };
+    }
+  } catch (error: any) {
+    log('ERROR', '[TEST MODE] Error sending test drip email', { testEmail, dripNumber, error: error.message });
+    return { success: false, message: `Error: ${error.message}` };
+  }
+}
+
 // Admin function to enable/disable drip campaign
 export async function setDripCampaignEnabled(enabled: boolean): Promise<boolean> {
   try {
