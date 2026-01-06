@@ -589,7 +589,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "NYC School Ratings",
-    "url": "https://nyc-school-ratings.replit.app",
+    "url": "https://nycschoolsratings.com",
     "description": "Find and compare NYC public and charter elementary schools with ratings, test scores, and parent reviews",
     "sameAs": []
   };
@@ -598,10 +598,10 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "NYC School Ratings",
-    "url": "https://nyc-school-ratings.replit.app",
+    "url": "https://nycschoolsratings.com",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://nyc-school-ratings.replit.app/?search={search_term_string}",
+      "target": "https://nycschoolsratings.com/?search={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };

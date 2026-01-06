@@ -23,7 +23,7 @@ export default function BlogPage() {
     "@type": "Blog",
     "name": "NYC School Ratings Blog",
     "description": "Data-driven insights and analysis about NYC public and charter schools",
-    "url": "https://nyc-school-ratings.replit.app/blog",
+    "url": "https://nycschoolsratings.com/blog",
     "blogPost": blogPosts.map(post => ({
       "@type": "BlogPosting",
       "headline": post.title,

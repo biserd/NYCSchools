@@ -14,8 +14,8 @@ interface SEOHeadProps {
 const DEFAULT_TITLE = 'NYC School Ratings';
 const DEFAULT_DESCRIPTION = 'Find and compare NYC public and charter elementary schools with ratings and detailed metrics. Browse 1,500+ schools with test scores, demographics, and parent reviews.';
 const DEFAULT_KEYWORDS = 'NYC schools, elementary schools, public schools, charter schools, school ratings, school finder, New York City education, school comparison, parent reviews';
-const DEFAULT_OG_IMAGE = 'https://nyc-school-ratings.replit.app/og-image.png';
-const SITE_URL = 'https://nyc-school-ratings.replit.app';
+const DEFAULT_OG_IMAGE = 'https://nycschoolsratings.com/og-image.png';
+const SITE_URL = 'https://nycschoolsratings.com';
 
 export function SEOHead({
   title,

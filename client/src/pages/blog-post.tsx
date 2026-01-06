@@ -881,11 +881,11 @@ export default function BlogPostPage() {
     "publisher": {
       "@type": "Organization",
       "name": "NYC School Ratings",
-      "url": "https://nyc-school-ratings.replit.app"
+      "url": "https://nycschoolsratings.com"
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://nyc-school-ratings.replit.app/blog/${post.slug}`
+      "@id": `https://nycschoolsratings.com/blog/${post.slug}`
     }
   };
 
