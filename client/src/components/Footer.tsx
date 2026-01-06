@@ -133,7 +133,7 @@ export function Footer() {
         
         <div className="border-t pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span>© 2025 NYC School Ratings</span>
+            <span>© 2026 NYC School Ratings</span>
           </div>
           <div className="text-xs text-center sm:text-right">
             Data from NYC Department of Education
