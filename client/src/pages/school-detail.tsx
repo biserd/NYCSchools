@@ -157,7 +157,7 @@ export default function SchoolDetail() {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
     "name": schoolWithScore.name,
-    "url": `https://nyc-kindergarten-school-finder.replit.app/school/${schoolSlug}`,
+    "url": `https://nycschoolsratings.com/school/${schoolSlug}`,
     "address": {
       "@type": "PostalAddress",
       "addressLocality": borough || "New York",
