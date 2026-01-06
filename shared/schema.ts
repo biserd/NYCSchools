@@ -465,6 +465,10 @@ export const users = pgTable("users", {
   subscriptionPlan: varchar("subscription_plan").default("free"), // 'free', 'season_pass', 'developer'
   subscriptionExpiresAt: timestamp("subscription_expires_at"), // For Season Pass expiration
   freeViewSchoolDbn: varchar("free_view_school_dbn"), // DBN of the one school they can view for free
+  // Drip campaign tracking
+  dripEmailsSent: text("drip_emails_sent").array().default([]), // Array of sent drip email types
+  emailUnsubscribed: boolean("email_unsubscribed").default(false), // User opted out of marketing emails
+  lastDripEmailAt: timestamp("last_drip_email_at"), // When the last drip email was sent
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1047,6 +1051,26 @@ export interface SchoolAdmissionsData {
     competitivenessLevel: 'very_competitive' | 'competitive' | 'moderate' | 'accessible' | 'unknown';
   }[];
 }
+
+// App Settings table for global configuration
+export const appSettings = pgTable("app_settings", {
+  key: varchar("key").primaryKey(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+
+// Drip email types for the re-engagement campaign
+export const DRIP_EMAIL_TYPES = [
+  'welcome_tip',      // Day 1: Quick tip on using filters and favorites
+  'ai_spotlight',     // Day 3: AI Chat Assistant feature spotlight  
+  'data_insight',     // Day 7: Data insight about top schools
+  'upgrade_nudge',    // Day 14: Soft upgrade nudge with Season Pass benefits
+] as const;
+
+export type DripEmailType = typeof DRIP_EMAIL_TYPES[number];
 
 // Helper to determine competitiveness level based on apps per seat
 export function getCompetitivenessLevel(appsPerSeat: number | null): 'very_competitive' | 'competitive' | 'moderate' | 'accessible' | 'unknown' {
