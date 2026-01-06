@@ -6,6 +6,7 @@ import { useCheckout } from "@/hooks/useCheckout";
 import { useQuery } from "@tanstack/react-query";
 import { 
   LogOut, 
+  LogIn,
   Heart, 
   Sparkles, 
   Map, 
@@ -15,8 +16,7 @@ import {
   Zap,
   Star,
   ClipboardList,
-  Target,
-  Loader2
+  Target
 } from "lucide-react";
 
 export function AppHeader() {
@@ -150,22 +150,17 @@ export function AppHeader() {
                     <span className="sm:hidden">Pricing</span>
                   </Button>
                 </Link>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={startCheckout}
-                  disabled={isPending}
-                  className="bg-gradient-to-r from-primary to-primary/80"
-                  data-testid="button-upgrade-guest"
-                >
-                  {isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Zap className="w-4 h-4 mr-2" />
-                  )}
-                  <span className="hidden sm:inline">Get Premium</span>
-                  <span className="sm:hidden">Upgrade</span>
-                </Button>
+                <Link href="/login">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    data-testid="button-login-nav"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Log In</span>
+                    <span className="sm:hidden">Login</span>
+                  </Button>
+                </Link>
               </>
             )}
             <ThemeToggle />
