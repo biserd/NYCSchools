@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,10 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useCheckout } from "@/hooks/useCheckout";
 import {
   Zap,
   Star,
@@ -81,85 +77,15 @@ const testimonial = {
 };
 
 export function UpgradeModal({ open, onOpenChange, trigger = "general" }: UpgradeModalProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { startCheckout, isPending, priceAmount, isSeasonPass, isReady } = useCheckout();
   const content = triggerContent[trigger];
   const IconComponent = content.icon;
 
-  // Fetch products/prices from Stripe
-  const { data: products } = useQuery<{
-    data: Array<{
-      id: string;
-      name: string;
-      metadata: Record<string, string>;
-      prices: Array<{
-        id: string;
-        unit_amount: number;
-        currency: string;
-        recurring: { interval: string } | null;
-        active: boolean;
-      }>;
-    }>;
-  }>({
-    queryKey: ["/api/products"],
-  });
-
-  // Create checkout session
-  const checkoutMutation = useMutation({
-    mutationFn: async ({ priceId, mode }: { priceId: string; mode: 'subscription' | 'payment' }) => {
-      const res = await apiRequest("POST", "/api/checkout", { priceId, mode });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Find the Season Pass price (one-time payment) or fall back to monthly
-  const seasonPassProduct = products?.data?.find(p => 
-    p.name?.toLowerCase().includes("season") || 
-    p.metadata?.plan === "season_pass"
-  );
-  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
-  
-  // Fallback to monthly premium price if no Season Pass found
-  const premiumProduct = products?.data?.find(p => 
-    p.name?.toLowerCase().includes("premium") || 
-    p.name?.toLowerCase().includes("pro") || 
-    p.metadata?.plan === "premium"
-  );
-  const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
-  
-  // Prefer Season Pass, fall back to monthly
-  const currentPrice = seasonPassPrice || monthlyPrice;
-  // Default to Season Pass display (our primary product) unless only monthly is available
-  const isSeasonPass = seasonPassPrice ? true : (monthlyPrice ? false : true);
-  
-  // Dynamic pricing display - format based on whether there are cents
-  // Default to Season Pass ($29) while loading since that's our primary product
-  const rawAmount = currentPrice?.unit_amount ? currentPrice.unit_amount / 100 : 29;
-  const priceAmount = rawAmount % 1 === 0 ? rawAmount.toFixed(0) : rawAmount.toFixed(2);
+  // Dynamic text based on product type
   const priceLabel = isSeasonPass ? "one-time" : "/month";
   const priceDescription = isSeasonPass ? "6 months of full Premium access" : "Cancel anytime";
   const badgeText = isSeasonPass ? "Season Pass" : "Premium";
   const buttonText = isSeasonPass ? "Get Season Pass" : "Upgrade to Premium";
-
-  const handleUpgrade = () => {
-    if (currentPrice) {
-      // Season Pass uses 'payment' mode (one-time), monthly uses 'subscription' mode
-      const mode = isSeasonPass ? 'payment' : 'subscription';
-      checkoutMutation.mutate({ priceId: currentPrice.id, mode });
-    }
-  };
 
   const premiumFeatures = [
     { icon: MessageCircle, text: "Unlimited AI questions" },
@@ -227,28 +153,19 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          {user ? (
-            <Button 
-              className="w-full" 
-              onClick={handleUpgrade}
-              disabled={checkoutMutation.isPending || !currentPrice}
-              data-testid="button-modal-upgrade"
-            >
-              {checkoutMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4 mr-2" />
-              )}
-              {buttonText}
-            </Button>
-          ) : (
-            <Link href="/login?redirect=/pricing" className="w-full">
-              <Button className="w-full" data-testid="button-modal-login">
-                <Zap className="w-4 h-4 mr-2" />
-                Sign In to Upgrade
-              </Button>
-            </Link>
-          )}
+          <Button 
+            className="w-full" 
+            onClick={startCheckout}
+            disabled={isPending || !isReady}
+            data-testid="button-modal-upgrade"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="w-4 h-4 mr-2" />
+            )}
+            {buttonText}
+          </Button>
           <Button 
             variant="ghost" 
             className="w-full text-muted-foreground" 
