@@ -2,9 +2,9 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  LogIn, 
   LogOut, 
   Heart, 
   Sparkles, 
@@ -16,12 +16,12 @@ import {
   Star,
   ClipboardList,
   Target,
-  UserPlus,
-  DollarSign
+  Loader2
 } from "lucide-react";
 
 export function AppHeader() {
   const { user, isAuthenticated } = useAuth();
+  const { startCheckout, isPending, isPremium } = useCheckout();
 
   const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
     status: string;
@@ -31,9 +31,9 @@ export function AppHeader() {
     enabled: isAuthenticated,
   });
 
-  const isPremium = subscription?.status === "active" && 
+  const isPremiumUser = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
-  const showUpgradeButton = isAuthenticated && subscriptionFetched && !isPremium;
+  const showUpgradeButton = isAuthenticated && subscriptionFetched && !isPremiumUser;
 
   return (
     <header className="bg-background border-b" data-testid="header-main">
@@ -48,7 +48,7 @@ export function AppHeader() {
                 </h1>
               </div>
             </Link>
-            {subscriptionFetched && isPremium && (
+            {subscriptionFetched && isPremiumUser && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium" data-testid="badge-premium">
                 <Star className="w-3 h-3" />
                 <span>Premium</span>
@@ -145,25 +145,27 @@ export function AppHeader() {
                 </Link>
                 <Link href="/pricing">
                   <Button variant="outline" size="sm" data-testid="button-pricing-nav">
-                    <DollarSign className="w-4 h-4 mr-2" />
+                    <Zap className="w-4 h-4 mr-2" />
                     <span className="hidden sm:inline">Pricing</span>
                     <span className="sm:hidden">Pricing</span>
                   </Button>
                 </Link>
-                <Link href="/login">
-                  <Button variant="outline" size="sm" data-testid="button-login">
-                    <LogIn className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Log In</span>
-                    <span className="sm:hidden">Log In</span>
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="default" size="sm" data-testid="button-signup">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Sign Up</span>
-                    <span className="sm:hidden">Sign Up</span>
-                  </Button>
-                </Link>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={startCheckout}
+                  disabled={isPending}
+                  className="bg-gradient-to-r from-primary to-primary/80"
+                  data-testid="button-upgrade-guest"
+                >
+                  {isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  <span className="hidden sm:inline">Get Premium</span>
+                  <span className="sm:hidden">Upgrade</span>
+                </Button>
               </>
             )}
             <ThemeToggle />
