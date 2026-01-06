@@ -562,6 +562,290 @@ export async function sendMagicLinkLoginEmail(userEmail: string, magicLinkUrl: s
   }
 }
 
+// ==========================================
+// DRIP CAMPAIGN EMAILS
+// ==========================================
+
+function getUnsubscribeLink(userId: string): string {
+  return `https://nycschoolsratings.com/api/email/unsubscribe?userId=${encodeURIComponent(userId)}`;
+}
+
+function getDripEmailFooter(userId: string): string {
+  const unsubscribeUrl = getUnsubscribeLink(userId);
+  return `
+    <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+      <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+        Questions? Reply to this email or reach out at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
+      </p>
+      <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
+        <strong>— The NYC School Ratings Team</strong>
+      </p>
+      <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
+        <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe from marketing emails</a>
+      </p>
+    </div>
+  `;
+}
+
+// Day 1: Welcome tip on using filters and favorites
+export async function sendDripWelcomeTip(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'Quick Tip: Find Schools Faster with Filters',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            Welcome back! Here's a quick tip to help you get the most out of NYC School Ratings:
+          </p>
+          
+          <div style="background: #f0f9ff; border-radius: 12px; padding: 25px; margin: 25px 0; border-left: 4px solid #2563eb;">
+            <h2 style="color: #1e40af; margin-top: 0; font-size: 18px;">Use Filters to Narrow Your Search</h2>
+            <p style="font-size: 15px; line-height: 1.7; color: #374151;">
+              With over 1,500 schools in our database, filters are your best friend:
+            </p>
+            <ul style="padding-left: 20px; margin: 15px 0; color: #374151;">
+              <li style="margin-bottom: 8px;"><strong>District filter:</strong> Focus on schools in your neighborhood</li>
+              <li style="margin-bottom: 8px;"><strong>Grade band:</strong> Find schools for your child's current grade</li>
+              <li style="margin-bottom: 8px;"><strong>Programs:</strong> Search for 3-K, Pre-K, or Gifted & Talented</li>
+            </ul>
+          </div>
+          
+          <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              <strong>Pro tip:</strong> Use the heart icon to save your favorite schools. 
+              They'll appear in your Favorites page for easy comparison later!
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://nycschoolsratings.com/search" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Start Exploring Schools
+            </a>
+          </div>
+          
+          ${getDripEmailFooter(userId)}
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Drip email sent: welcome_tip', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send drip email: welcome_tip', { error: error.message, userEmail });
+    return false;
+  }
+}
+
+// Day 3: AI Chat Assistant feature spotlight
+export async function sendDripAiSpotlight(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'Meet Your Personal School Search Assistant',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            Choosing the right school is overwhelming. That's why we built an AI assistant that knows NYC schools inside and out.
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 25px; margin: 25px 0;">
+            <h2 style="color: #1e40af; margin-top: 0; font-size: 18px;">Ask It Anything About NYC Schools</h2>
+            <p style="font-size: 15px; line-height: 1.7; color: #374151; margin-bottom: 15px;">
+              Our AI Chat Assistant can answer questions like:
+            </p>
+            <ul style="padding-left: 20px; margin: 0; color: #374151;">
+              <li style="margin-bottom: 10px;">"What are the best elementary schools in District 2?"</li>
+              <li style="margin-bottom: 10px;">"Which schools near me have Gifted & Talented programs?"</li>
+              <li style="margin-bottom: 10px;">"Compare PS 6 and PS 290 for me"</li>
+              <li style="margin-bottom: 10px;">"What are my chances of getting into Hunter Elementary?"</li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            It's like having a knowledgeable NYC parent friend who has done all the research!
+          </p>
+          
+          <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #f59e0b;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              <strong>This premium feature is available with Season Pass</strong> — just $29 for 6 months of full access.
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://nycschoolsratings.com/pricing" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Learn More About Season Pass
+            </a>
+          </div>
+          
+          ${getDripEmailFooter(userId)}
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Drip email sent: ai_spotlight', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send drip email: ai_spotlight', { error: error.message, userEmail });
+    return false;
+  }
+}
+
+// Day 7: Data insight about top schools
+export async function sendDripDataInsight(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'NYC School Insight: What the Numbers Tell Us',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            Did you know that NYC has over 1,800 public schools? Here's what our data reveals about finding the right fit:
+          </p>
+          
+          <div style="background: #f0fdf4; border-radius: 12px; padding: 25px; margin: 25px 0; border-left: 4px solid #10b981;">
+            <h2 style="color: #065f46; margin-top: 0; font-size: 18px;">Key Insights from Our Analysis</h2>
+            <ul style="padding-left: 20px; margin: 15px 0; color: #374151;">
+              <li style="margin-bottom: 12px;">
+                <strong>Smaller isn't always better:</strong> Schools with 400-600 students often have the best balance of resources and individual attention
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Climate matters:</strong> Schools with high parent satisfaction scores tend to have better student outcomes
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Look beyond test scores:</strong> Progress scores show which schools are helping students grow, regardless of starting point
+              </li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            Want to dive deeper? Our premium features give you access to historical trends, side-by-side comparisons, and detailed breakdowns.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://nycschoolsratings.com/search" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Explore Schools Now
+            </a>
+          </div>
+          
+          ${getDripEmailFooter(userId)}
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Drip email sent: data_insight', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send drip email: data_insight', { error: error.message, userEmail });
+    return false;
+  }
+}
+
+// Day 14: Soft upgrade nudge with Season Pass benefits
+export async function sendDripUpgradeNudge(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'Get the Full Picture with Season Pass',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            You've been exploring NYC schools — great! But are you getting the complete picture?
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
+            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">Season Pass: $29 for 6 Months</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
+              Built by a NYC parent, for NYC parents. Get everything you need for your school search:
+            </p>
+            <ul style="list-style: none; padding: 0; margin: 0; color: #78350f;">
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <strong style="margin-left: 10px;">AI Chat Assistant</strong>
+                <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Get instant answers about any NYC school</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <strong style="margin-left: 10px;">Side-by-Side Comparison</strong>
+                <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Compare up to 4 schools at once</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <strong style="margin-left: 10px;">Lottery & Admissions Calculator</strong>
+                <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Understand your real odds</span>
+              </li>
+              <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <strong style="margin-left: 10px;">Application Tracker</strong>
+                <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Never miss a deadline</span>
+              </li>
+              <li style="padding: 10px 0;">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <strong style="margin-left: 10px;">Detailed Score Breakdowns</strong>
+                <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Deep dive into test scores and trends</span>
+              </li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6; text-align: center; color: #6b7280;">
+            That's less than <strong>$5 per month</strong> for complete peace of mind during your school search.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://nycschoolsratings.com/pricing" 
+               style="background: #f59e0b; color: #78350f; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Get Season Pass Now
+            </a>
+          </div>
+          
+          ${getDripEmailFooter(userId)}
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Drip email sent: upgrade_nudge', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send drip email: upgrade_nudge', { error: error.message, userEmail });
+    return false;
+  }
+}
+
 export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
@@ -570,4 +854,9 @@ export const emailService = {
   sendPasswordResetEmail,
   sendMagicLinkEmail,
   sendMagicLinkLoginEmail,
+  // Drip campaign emails
+  sendDripWelcomeTip,
+  sendDripAiSpotlight,
+  sendDripDataInsight,
+  sendDripUpgradeNudge,
 };

@@ -2596,6 +2596,140 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     });
   });
 
+  // ==========================================
+  // EMAIL / DRIP CAMPAIGN ENDPOINTS
+  // ==========================================
+  
+  const { unsubscribeUser, processDripCampaign, isDripCampaignEnabled, setDripCampaignEnabled } = await import("./dripCampaign");
+  
+  // Unsubscribe from marketing emails
+  app.get("/api/email/unsubscribe", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).send(`
+          <html>
+            <head><title>Invalid Request</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+              <h1 style="color: #dc2626;">Invalid Request</h1>
+              <p>Missing or invalid user ID.</p>
+            </body>
+          </html>
+        `);
+      }
+      
+      const success = await unsubscribeUser(userId);
+      
+      if (success) {
+        res.send(`
+          <html>
+            <head><title>Unsubscribed - NYC School Ratings</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+              <h1 style="color: #2563eb;">Successfully Unsubscribed</h1>
+              <p>You've been unsubscribed from marketing emails.</p>
+              <p style="color: #6b7280; margin-top: 20px;">
+                You'll still receive important account-related emails (like password resets).
+              </p>
+              <p style="margin-top: 30px;">
+                <a href="https://nycschoolsratings.com" style="color: #2563eb;">Return to NYC School Ratings</a>
+              </p>
+            </body>
+          </html>
+        `);
+      } else {
+        res.status(500).send(`
+          <html>
+            <head><title>Error - NYC School Ratings</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+              <h1 style="color: #dc2626;">Something went wrong</h1>
+              <p>We couldn't process your unsubscribe request. Please try again or contact support.</p>
+            </body>
+          </html>
+        `);
+      }
+    } catch (error: any) {
+      console.error("Unsubscribe error:", error);
+      res.status(500).send("An error occurred");
+    }
+  });
+  
+  // Cron job endpoint to trigger drip campaign processing
+  // This can be called by an external cron service (e.g., Uptime Robot, cron-job.org)
+  // Requires CRON_SECRET environment variable to be set
+  app.post("/api/cron/drip-campaign", async (req: Request, res: Response) => {
+    try {
+      const expectedSecret = process.env.CRON_SECRET;
+      
+      // Require CRON_SECRET to be configured
+      if (!expectedSecret) {
+        console.error('[DRIP_CRON] CRON_SECRET environment variable is not configured');
+        return res.status(503).json({ error: 'Cron endpoint not configured' });
+      }
+      
+      const cronSecret = req.headers['x-cron-secret'] || req.query.secret;
+      
+      if (cronSecret !== expectedSecret) {
+        console.warn('[DRIP_CRON] Unauthorized attempt to trigger drip campaign', { ip: req.ip });
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      console.log('[DRIP_CRON] Processing drip campaign...');
+      const stats = await processDripCampaign();
+      
+      res.json({
+        success: true,
+        stats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('[DRIP_CRON] Error:', error);
+      res.status(500).json({ error: 'Failed to process drip campaign', message: error.message });
+    }
+  });
+  
+  // Admin endpoint to check drip campaign status
+  app.get("/api/admin/drip-campaign/status", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      // Check if user is admin (you might want to add a proper admin check)
+      const userEmail = req.user?.email;
+      const adminEmails = ['hello@bigappledigital.nyc'];
+      
+      if (!adminEmails.includes(userEmail)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      const isEnabled = await isDripCampaignEnabled();
+      res.json({ enabled: isEnabled });
+    } catch (error: any) {
+      console.error('Error checking drip campaign status:', error);
+      res.status(500).json({ error: 'Failed to check status' });
+    }
+  });
+  
+  // Admin endpoint to enable/disable drip campaign
+  app.post("/api/admin/drip-campaign/toggle", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userEmail = req.user?.email;
+      const adminEmails = ['hello@bigappledigital.nyc'];
+      
+      if (!adminEmails.includes(userEmail)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ error: 'enabled must be a boolean' });
+      }
+      
+      const success = await setDripCampaignEnabled(enabled);
+      res.json({ success, enabled });
+    } catch (error: any) {
+      console.error('Error toggling drip campaign:', error);
+      res.status(500).json({ error: 'Failed to toggle campaign' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

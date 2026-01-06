@@ -25,6 +25,27 @@ The platform provides comprehensive data for 1,533 NYC schools, including academ
 ### System Design Choices
 The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data fetching and AI integration. Error handling is graceful, and performance is optimized through pagination, search debounce, server-side caching, Gzip compression, code-splitting, and localStorage synchronization. Cost optimizations include auth-gated features.
 
+### Drip Email Campaign (`server/dripCampaign.ts`)
+Automated re-engagement email sequence for free users over 14 days:
+- **Global Control**: `app_settings` table with `drip_campaign_enabled` key (default: 'false' for safety)
+- **User Tracking**: Users table has `dripEmailsSent` (array), `emailUnsubscribed` (boolean), `lastDripEmailAt` (timestamp)
+- **Email Sequence**: 
+  1. Day 1: `welcome_tip` - Quick tip on using filters and favorites
+  2. Day 3: `ai_spotlight` - AI Chat Assistant feature spotlight
+  3. Day 7: `data_insight` - Data insight about NYC schools
+  4. Day 14: `upgrade_nudge` - Soft Season Pass upgrade nudge
+- **Targeting Rules**: Only sends to FREE users (skips anyone with paid subscription), respects `emailUnsubscribed` flag
+- **Rate Limiting**: Minimum 24 hours between drip emails per user
+- **Endpoints**:
+  - `GET /api/email/unsubscribe?userId=...` - User unsubscribe page
+  - `POST /api/cron/drip-campaign` - Cron trigger (requires `x-cron-secret` header)
+  - `GET /api/admin/drip-campaign/status` - Check if enabled (admin only)
+  - `POST /api/admin/drip-campaign/toggle` - Enable/disable campaign (admin only)
+- **To Enable**: 
+  1. Set `CRON_SECRET` environment variable to a strong random secret
+  2. Set `drip_campaign_enabled` to 'true' in `app_settings` table
+  3. Configure external cron service (e.g., cron-job.org) to call `POST /api/cron/drip-campaign` hourly with `x-cron-secret: YOUR_SECRET` header
+
 ### Server-Side Caching (`server/cache.ts`)
 Centralized in-memory caching with configurable TTLs and mutation protection:
 - **TTL Tiers**: SHORT (1 min) for premium/subscription status, DEFAULT (5 min) for dynamic data, LONG (10 min) for static school/center data
