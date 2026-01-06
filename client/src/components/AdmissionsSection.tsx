@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Lock } from "lucide-react";
+import { TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Lock, Zap, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "wouter";
 import { type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useFreeSchoolView } from "@/hooks/useFreeSchoolView";
+import { useCheckout } from "@/hooks/useCheckout";
 
 interface AdmissionsSectionProps {
   dbn: string;
@@ -22,6 +22,7 @@ interface AdmissionsSectionProps {
 export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }: AdmissionsSectionProps) {
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { startCheckout, isPending: checkoutPending } = useCheckout();
 
   const { data: subscription } = useQuery<{ status: string; plan: string }>({
     queryKey: ["/api/subscription"],
@@ -160,12 +161,19 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
               <p className="text-sm text-muted-foreground mb-4">
                 See application demand, competitiveness levels, and offer rates for K, Pre-K, and 3-K programs.
               </p>
-              <Link href={isAuthenticated ? "/pricing" : "/login"}>
-                <Button data-testid="button-unlock-admissions">
-                  <Lock className="w-4 h-4 mr-2" />
-                  {isAuthenticated ? "Unlock for $29" : "Log in to Unlock"}
-                </Button>
-              </Link>
+              <Button 
+                onClick={startCheckout}
+                disabled={checkoutPending}
+                className="bg-gradient-to-r from-primary to-primary/80"
+                data-testid="button-unlock-admissions"
+              >
+                {checkoutPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Get Premium
+              </Button>
             </div>
           </div>
         </div>
