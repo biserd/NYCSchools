@@ -534,8 +534,8 @@ export default function LotterySimulatorPage() {
                                 {school.has_prek && <Badge variant="secondary" className="text-xs">Pre-K</Badge>}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${getScoreColor(score)}`}>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className={`font-semibold ${getScoreColor(score)} min-w-[2rem] text-right`}>
                                 {score > 0 ? score : "N/A"}
                               </span>
                               <Button
