@@ -89,21 +89,31 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-3">Blog</h3>
+            <h3 className="font-semibold text-foreground mb-3">Best Schools</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/blog/nyc-prek-3k-kindergarten-admissions-demand-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-admissions">
-                  Pre-K/3-K Admissions 2025
+                <Link href="/blog/best-nyc-kindergartens-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-kindergartens">
+                  Best Kindergartens 2025
                 </Link>
               </li>
               <li>
-                <Link href="/blog/nyc-schools-2025-covid-recovery" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-covid">
-                  COVID Recovery Story
+                <Link href="/blog/best-nyc-elementary-schools-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-elementary">
+                  Best Elementary Schools
                 </Link>
               </li>
               <li>
-                <Link href="/blog/2023-24-doe-data-analysis" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-data">
-                  DOE Data Analysis
+                <Link href="/blog/best-nyc-middle-schools-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-middle">
+                  Best Middle Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog/best-nyc-charter-schools-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-charter">
+                  Best Charter Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="hover:text-foreground transition-colors" data-testid="footer-link-all-blog">
+                  All Blog Posts
                 </Link>
               </li>
             </ul>

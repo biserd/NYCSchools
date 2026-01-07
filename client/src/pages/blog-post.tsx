@@ -847,6 +847,989 @@ function AdmissionsDemandPost() {
   );
 }
 
+function BestKindergartensPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        Finding the right kindergarten is one of the most important decisions NYC parents face. We analyzed data from over <strong>800 elementary schools</strong> offering kindergarten programs to identify the top-performing K programs in every borough.
+      </p>
+
+      <Card className="my-6 border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <TrendingUp className="w-6 h-6 text-primary shrink-0 mt-1" />
+            <div>
+              <strong className="text-foreground">2025 Kindergarten Quick Facts</strong>
+              <ul className="text-sm text-muted-foreground mt-2 mb-0 space-y-1">
+                <li>NYC has <strong>800+ public kindergarten programs</strong></li>
+                <li>Average class size: <strong>20-25 students</strong></li>
+                <li>Full-day kindergarten available at all public schools</li>
+                <li>Gifted & Talented programs start at kindergarten level</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="how-we-rank">How We Rank Kindergarten Programs</h2>
+      
+      <p>
+        Our rankings consider multiple factors that matter to parents:
+      </p>
+
+      <ul>
+        <li><strong>Academic Foundation (40%)</strong> - Early literacy and numeracy scores, transition to 1st grade readiness</li>
+        <li><strong>School Climate (30%)</strong> - Safety, engagement, and NYC School Survey parent satisfaction ratings</li>
+        <li><strong>Progress Score (30%)</strong> - How much academic growth students show year-over-year</li>
+      </ul>
+
+      <h2 id="manhattan-kindergartens">Best Manhattan Kindergartens</h2>
+
+      <p>
+        Manhattan offers some of NYC's most competitive kindergarten programs, particularly in Districts 2 (Upper East Side, Tribeca) and District 3 (Upper West Side).
+      </p>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">Top Manhattan K Programs</strong>
+              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 6 Lillie Devereaux Blake</strong> (D2) - 90%+ proficiency</li>
+                <li><strong>PS 77 Lower Lab</strong> (D2) - Outstanding climate scores</li>
+                <li><strong>PS 199 Jessie Isador Straus</strong> (D3) - Strong academic growth</li>
+                <li><strong>PS 87 William Sherman</strong> (D3) - Excellent parent satisfaction</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="brooklyn-kindergartens">Best Brooklyn Kindergartens</h2>
+
+      <p>
+        Brooklyn's diverse neighborhoods offer excellent kindergarten options from Park Slope to Brooklyn Heights to Williamsburg. District 15 and District 13 consistently rank among the top.
+      </p>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Top Brooklyn K Programs</strong>
+              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 321 William Penn</strong> (D15) - Park Slope's flagship school</li>
+                <li><strong>PS 107 John W Kimball</strong> (D15) - Exceptional progress scores</li>
+                <li><strong>PS 8 Robert Fulton</strong> (D13) - Brooklyn Heights excellence</li>
+                <li><strong>PS 84 José de Diego</strong> (D14) - Strong dual-language K program</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="queens-kindergartens">Best Queens Kindergartens</h2>
+
+      <p>
+        Queens offers excellent value with top-rated kindergartens in Districts 26 (Bayside/Douglaston), 25 (Flushing), and 28 (Forest Hills/Jamaica Estates).
+      </p>
+
+      <Card className="my-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-purple-700 dark:text-purple-400">Top Queens K Programs</strong>
+              <ul className="text-sm text-purple-600/80 dark:text-purple-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 188 Kingsbury</strong> (D26) - Top Queens academic scores</li>
+                <li><strong>PS 203 Oakland Gardens</strong> (D26) - Excellent climate ratings</li>
+                <li><strong>PS 173 Fresh Meadows</strong> (D26) - Strong parent satisfaction</li>
+                <li><strong>PS 196 Grand Central</strong> (D28) - Forest Hills favorite</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="bronx-kindergartens">Best Bronx Kindergartens</h2>
+
+      <p>
+        The Bronx has standout kindergarten programs, especially in District 11 (Morris Park/Pelham Gardens) and Riverdale's District 10.
+      </p>
+
+      <Card className="my-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-orange-700 dark:text-orange-400">Top Bronx K Programs</strong>
+              <ul className="text-sm text-orange-600/80 dark:text-orange-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 83 Donald Hertz</strong> (D11) - Morris Park's highest-rated</li>
+                <li><strong>PS 81 Robert Christen</strong> (D11) - Excellent academics</li>
+                <li><strong>PS 24 Spuyten Duyvil</strong> (D10) - Riverdale gem</li>
+                <li><strong>PS 7 Milton Fein</strong> (D10) - Strong community engagement</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="staten-island-kindergartens">Best Staten Island Kindergartens</h2>
+
+      <p>
+        Staten Island's District 31 offers some of the city's top-performing kindergartens, with excellent academics and strong community ties.
+      </p>
+
+      <Card className="my-6 border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-teal-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-teal-700 dark:text-teal-400">Top Staten Island K Programs</strong>
+              <ul className="text-sm text-teal-600/80 dark:text-teal-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 36 J C Drumgoole</strong> (D31) - Highest SI proficiency</li>
+                <li><strong>PS 56 Louis DeSario</strong> (D31) - Excellent climate scores</li>
+                <li><strong>PS 29 Bardwell</strong> (D31) - Strong community support</li>
+                <li><strong>PS 3 Margaret Gioiosa</strong> (D31) - Top progress scores</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="gifted-talented">Gifted & Talented Kindergarten Programs</h2>
+
+      <p>
+        NYC offers district-level Gifted & Talented programs starting at kindergarten. These programs require testing and are highly competitive:
+      </p>
+
+      <ul>
+        <li><strong>District G&T Programs</strong> - Available in most districts, admission based on testing</li>
+        <li><strong>Citywide G&T Schools</strong> - NEST+m, TAG Young Scholars, Anderson School</li>
+        <li><strong>Application Timeline</strong> - Testing typically opens in late fall for the following school year</li>
+      </ul>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <Accordion type="single" collapsible className="w-full not-prose">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What age does my child need to be for NYC kindergarten?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Children must turn 5 years old by December 31st of the school year they're entering kindergarten. For fall 2025 enrollment, your child must be born on or before December 31, 2020.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              How do I apply for NYC kindergarten?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Apply through MySchools.nyc during the application period (typically January-March). You can rank up to 12 schools. Zoned schools guarantee admission if you live in the zone; non-zoned schools use a lottery.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Do I have to send my child to my zoned school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            No. While zoned schools guarantee a spot, you can apply to any public school in NYC. Non-zoned schools, magnet programs, and charter schools all use lottery-based admission.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What's the difference between half-day and full-day kindergarten?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            All NYC public schools offer full-day kindergarten (6+ hours). Half-day programs are rare and typically only found in some private or parochial schools.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              When is the NYC kindergarten application deadline?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            The kindergarten application typically opens in January and closes in early March. Offers are released in spring (usually April). Check MySchools.nyc for exact dates each year.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2">Find Kindergarten Programs Near You</h3>
+        <p className="text-muted-foreground mb-4">
+          Use our tools to explore kindergarten options, compare schools, and check lottery competitiveness.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/">Browse All Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/lottery-simulator">Check Lottery Odds</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function BestElementarySchoolsPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        Choosing an elementary school shapes your child's educational foundation. Our analysis of <strong>1,000+ NYC elementary schools</strong> reveals the highest-performing K-5 programs based on test scores, student growth, and school climate.
+      </p>
+
+      <Card className="my-6 border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <TrendingUp className="w-6 h-6 text-primary shrink-0 mt-1" />
+            <div>
+              <strong className="text-foreground">2025 Elementary School Stats</strong>
+              <ul className="text-sm text-muted-foreground mt-2 mb-0 space-y-1">
+                <li><strong>1,000+ elementary schools</strong> across 32 districts</li>
+                <li>Citywide ELA proficiency: <strong>54.9%</strong></li>
+                <li>Citywide Math proficiency: <strong>55.0%</strong></li>
+                <li>Top schools exceed <strong>90% proficiency</strong></li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="ranking-methodology">Our Ranking Methodology</h2>
+      
+      <p>
+        We evaluate elementary schools using a comprehensive scoring system:
+      </p>
+
+      <ul>
+        <li><strong>Test Proficiency (40%)</strong> - Combined ELA and Math proficiency rates from NYSED assessments</li>
+        <li><strong>Climate Score (30%)</strong> - Safety, engagement, and NYC School Survey results</li>
+        <li><strong>Progress Score (30%)</strong> - Student academic growth compared to similar schools</li>
+      </ul>
+
+      <h2 id="top-manhattan-elementary">Top Manhattan Elementary Schools</h2>
+
+      <p>
+        Manhattan's Districts 2 and 3 dominate the city's top elementary rankings, with schools regularly achieving 80%+ proficiency rates.
+      </p>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">Manhattan's Best Elementary Schools</strong>
+              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 6 Lillie Devereaux Blake</strong> (D2) - 91% ELA, 89% Math</li>
+                <li><strong>PS 77 Lower Lab School</strong> (D2) - Outstanding overall score</li>
+                <li><strong>PS 199 Jessie Isador Straus</strong> (D3) - Consistent top performer</li>
+                <li><strong>PS 87 William Sherman</strong> (D3) - Excellent progress scores</li>
+                <li><strong>PS 234 Independence School</strong> (D2) - TriBeCa excellence</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-brooklyn-elementary">Top Brooklyn Elementary Schools</h2>
+
+      <p>
+        Brooklyn's District 15 (Park Slope, Carroll Gardens) and District 22 (Midwood, Sheepshead Bay) lead the borough's elementary rankings.
+      </p>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Brooklyn's Best Elementary Schools</strong>
+              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 321 William Penn</strong> (D15) - Park Slope's crown jewel</li>
+                <li><strong>PS 107 John W Kimball</strong> (D15) - Top academic growth</li>
+                <li><strong>PS 8 Robert Fulton</strong> (D13) - Brooklyn Heights leader</li>
+                <li><strong>PS 130 Parkside</strong> (D22) - Exceptional math scores</li>
+                <li><strong>PS 217 Colonel David Marcus</strong> (D22) - High overall rating</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-queens-elementary">Top Queens Elementary Schools</h2>
+
+      <p>
+        Queens' District 26 consistently ranks as NYC's top-performing district, with multiple schools exceeding 85% proficiency.
+      </p>
+
+      <Card className="my-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-purple-700 dark:text-purple-400">Queens' Best Elementary Schools</strong>
+              <ul className="text-sm text-purple-600/80 dark:text-purple-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 188 Kingsbury</strong> (D26) - District 26's highest scores</li>
+                <li><strong>PS 203 Oakland Gardens</strong> (D26) - Excellent in all metrics</li>
+                <li><strong>PS 173 Fresh Meadows</strong> (D26) - Outstanding climate</li>
+                <li><strong>PS 196 Grand Central</strong> (D28) - Forest Hills favorite</li>
+                <li><strong>PS 144 Col Jeromus Remsen</strong> (D28) - Strong community</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-bronx-elementary">Top Bronx Elementary Schools</h2>
+
+      <p>
+        The Bronx's top elementary schools are concentrated in Districts 10 (Riverdale) and 11 (Pelham/Morris Park).
+      </p>
+
+      <Card className="my-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-orange-700 dark:text-orange-400">Bronx's Best Elementary Schools</strong>
+              <ul className="text-sm text-orange-600/80 dark:text-orange-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 24 Spuyten Duyvil</strong> (D10) - Riverdale's top school</li>
+                <li><strong>PS 81 Robert Christen</strong> (D11) - Morris Park excellence</li>
+                <li><strong>PS 83 Donald Hertz</strong> (D11) - Outstanding academics</li>
+                <li><strong>PS 7 Milton Fein</strong> (D10) - High progress scores</li>
+                <li><strong>PS 175 City Island</strong> (D11) - Unique island community</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-staten-island-elementary">Top Staten Island Elementary Schools</h2>
+
+      <p>
+        Staten Island's District 31 offers many high-performing elementary options with strong community engagement.
+      </p>
+
+      <Card className="my-6 border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-teal-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-teal-700 dark:text-teal-400">Staten Island's Best Elementary Schools</strong>
+              <ul className="text-sm text-teal-600/80 dark:text-teal-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>PS 36 J C Drumgoole</strong> - Island's highest proficiency</li>
+                <li><strong>PS 56 Louis DeSario</strong> - Excellent all-around</li>
+                <li><strong>PS 29 Bardwell</strong> - Strong academics & climate</li>
+                <li><strong>PS 3 Margaret Gioiosa</strong> - Top progress scores</li>
+                <li><strong>PS 50 Frank Hankinson</strong> - Great community</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="what-to-look-for">What to Look for in an Elementary School</h2>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Lightbulb className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Key Factors for Parents</strong>
+              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-2">
+                <li><strong>Academic Performance</strong> - Look at both current scores AND trends over time</li>
+                <li><strong>School Climate</strong> - Safety, engagement, and parent satisfaction matter</li>
+                <li><strong>Special Programs</strong> - G&T, dual-language, STEM focus, arts integration</li>
+                <li><strong>After-School Options</strong> - Many schools offer enrichment programs</li>
+                <li><strong>Class Size</strong> - Smaller classes often mean more individual attention</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <Accordion type="single" collapsible className="w-full not-prose">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What grades are considered elementary school in NYC?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            NYC elementary schools typically serve grades K-5, though some schools are K-8 or have different configurations. Most students transition to middle school after 5th grade.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Can I choose any elementary school in NYC?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            You have a guaranteed spot at your zoned school (based on your address), but you can apply to any public school through MySchools.nyc. Non-zoned schools use lottery admission with priority tiers.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What is a "good" test score for an NYC elementary school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            The citywide average is around 55% proficiency. Schools above 70% are considered strong performers, and schools above 85% are exceptional. However, also consider progress scores - some schools help students grow significantly even if overall scores are moderate.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              How important is the school district vs. the individual school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Both matter. High-performing districts (like D2, D3, D26) have more consistently strong schools, but every district has standout schools. Look at individual school data rather than relying solely on district reputation.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Should I prioritize test scores or school climate?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Both are important. A school with great test scores but poor climate may not be the right fit. Look for schools that balance academic rigor with positive culture, safety, and parent engagement.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2">Explore Elementary Schools</h3>
+        <p className="text-muted-foreground mb-4">
+          Use our interactive tools to compare schools, view detailed metrics, and find the best fit for your family.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/">Browse All Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/compare">Compare Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/recommendations">Get Recommendations</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function BestMiddleSchoolsPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        The transition to middle school is a pivotal moment in your child's education. We analyzed <strong>500+ NYC middle schools</strong> to identify the top programs for grades 6-8, considering academics, specialized programs, and school environment.
+      </p>
+
+      <Card className="my-6 border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <TrendingUp className="w-6 h-6 text-primary shrink-0 mt-1" />
+            <div>
+              <strong className="text-foreground">NYC Middle School Landscape</strong>
+              <ul className="text-sm text-muted-foreground mt-2 mb-0 space-y-1">
+                <li><strong>500+ middle school programs</strong> across NYC</li>
+                <li>Mix of standalone middle schools and K-8/6-12 configurations</li>
+                <li>Screened, unscreened, and specialized programs available</li>
+                <li>Application process varies by school type</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="middle-school-types">Types of NYC Middle Schools</h2>
+      
+      <p>
+        Understanding the different types of middle schools helps you navigate the application process:
+      </p>
+
+      <ul>
+        <li><strong>Zoned Middle Schools</strong> - Guaranteed admission based on address</li>
+        <li><strong>District Unscreened</strong> - Lottery admission for district residents</li>
+        <li><strong>Screened/Selective</strong> - Admission based on academics, attendance, and sometimes auditions</li>
+        <li><strong>Specialized Programs</strong> - STEM, arts, dual-language, and magnet programs</li>
+        <li><strong>K-8 Schools</strong> - Continue through middle school without reapplying</li>
+      </ul>
+
+      <h2 id="top-manhattan-middle">Top Manhattan Middle Schools</h2>
+
+      <p>
+        Manhattan's screened middle schools are among the most competitive in the city, with some receiving thousands of applications.
+      </p>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">Manhattan's Best Middle Schools</strong>
+              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>Lab Middle School</strong> (D2) - Top academics citywide</li>
+                <li><strong>MS 54 Booker T Washington</strong> (D3) - Screened excellence</li>
+                <li><strong>East Side Middle School</strong> (D2) - Outstanding scores</li>
+                <li><strong>NEST+m</strong> (D1) - Citywide G&T 6-12</li>
+                <li><strong>Wagner Middle School</strong> (D2) - Arts integration</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-brooklyn-middle">Top Brooklyn Middle Schools</h2>
+
+      <p>
+        Brooklyn offers excellent middle school options from established screened programs to innovative unscreened schools.
+      </p>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Brooklyn's Best Middle Schools</strong>
+              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>Mark Twain IS 239</strong> (D21) - Citywide G&T for talented</li>
+                <li><strong>JHS 51 William Alexander</strong> (D15) - Park Slope strong</li>
+                <li><strong>MS 447 Math & Science</strong> (D15) - STEM excellence</li>
+                <li><strong>MS 51 William Alexander</strong> (D15) - High academics</li>
+                <li><strong>Bay Academy IS 98</strong> (D22) - South Brooklyn leader</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-queens-middle">Top Queens Middle Schools</h2>
+
+      <p>
+        Queens' middle schools, particularly in Districts 25, 26, and 28, offer strong academic programs with diverse student bodies.
+      </p>
+
+      <Card className="my-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-purple-700 dark:text-purple-400">Queens' Best Middle Schools</strong>
+              <ul className="text-sm text-purple-600/80 dark:text-purple-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>IS 74 Nathaniel Hawthorne</strong> (D26) - Top Queens scores</li>
+                <li><strong>JHS 194 William Carr</strong> (D26) - Excellent academics</li>
+                <li><strong>MS 158 Marie Curie</strong> (D26) - Strong STEM focus</li>
+                <li><strong>IS 25 Adrien Block</strong> (D25) - Flushing excellence</li>
+                <li><strong>JHS 157 Stephen A Halsey</strong> (D25) - High progress</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-bronx-middle">Top Bronx Middle Schools</h2>
+
+      <p>
+        The Bronx has strong middle school options, especially in Districts 10 and 11, with several citywide programs.
+      </p>
+
+      <Card className="my-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-orange-700 dark:text-orange-400">Bronx's Best Middle Schools</strong>
+              <ul className="text-sm text-orange-600/80 dark:text-orange-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>MS 101 Edward R Byrne</strong> (D11) - Bronx's highest</li>
+                <li><strong>MS 141 Riverdale/Kingsbridge</strong> (D10) - Strong academics</li>
+                <li><strong>JHS 144 Michelangelo</strong> (D11) - Arts & academics</li>
+                <li><strong>MS 118 William W Niles</strong> (D10) - Riverdale area</li>
+                <li><strong>MS 180 Dr Daniel Fisher</strong> (D11) - Solid performer</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-staten-island-middle">Top Staten Island Middle Schools</h2>
+
+      <p>
+        Staten Island's District 31 middle schools offer strong academics with close-knit community feel.
+      </p>
+
+      <Card className="my-6 border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-teal-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-teal-700 dark:text-teal-400">Staten Island's Best Middle Schools</strong>
+              <ul className="text-sm text-teal-600/80 dark:text-teal-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>IS 24 Myra S Barnes</strong> - Top SI middle school</li>
+                <li><strong>IS 27 Anning S Prall</strong> - Strong academics</li>
+                <li><strong>IS 72 Rocco Laurie</strong> - High scores</li>
+                <li><strong>IS 34 Tottenville</strong> - South Shore leader</li>
+                <li><strong>IS 75 Frank D Paulo</strong> - Solid performer</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="screened-admissions">Understanding Screened Admissions</h2>
+
+      <Card className="my-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-amber-700 dark:text-amber-400">Screened School Factors</strong>
+              <ul className="text-sm text-amber-600/80 dark:text-amber-300/80 mt-2 mb-0 space-y-2">
+                <li><strong>Grades</strong> - 4th and 5th grade report cards</li>
+                <li><strong>Test Scores</strong> - State ELA and Math assessments</li>
+                <li><strong>Attendance</strong> - Consistent attendance record</li>
+                <li><strong>Auditions</strong> - For performing arts programs</li>
+                <li><strong>Essays/Interviews</strong> - Some programs require these</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <Accordion type="single" collapsible className="w-full not-prose">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              When do I apply for NYC middle school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Middle school applications typically open in fall (October-November) for 5th graders entering 6th grade the following year. The deadline is usually in early December, with offers released in spring.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What is a screened middle school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Screened schools review applicants based on criteria like grades, test scores, and attendance. They rank applicants and make offers accordingly. This is different from lottery-based unscreened schools.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Can I apply to middle schools outside my district?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Yes! While some schools have district priority, many accept applications citywide. Screened schools often have no geographic restrictions. Check each school's admissions policy on MySchools.nyc.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What are "citywide" middle school programs?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Citywide programs accept students from all five boroughs. Examples include Mark Twain (D21), NEST+m, and various specialized programs. Competition is intense as the entire city applies.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Should I stay at a K-8 school or apply to middle school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            It depends on your school and goals. K-8 schools offer continuity and don't require reapplication. However, standalone middle schools often have more specialized programs and prepare students for competitive high school applications.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2">Find Your Middle School</h3>
+        <p className="text-muted-foreground mb-4">
+          Explore middle school options, compare programs, and prepare for the application process.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/">Browse All Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/compare">Compare Schools</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function BestCharterSchoolsPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        NYC's <strong>280+ charter schools</strong> offer alternatives to traditional public schools. We analyzed performance data to identify the top-performing charter networks and individual schools, along with application tips and lottery strategies.
+      </p>
+
+      <Card className="my-6 border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <TrendingUp className="w-6 h-6 text-primary shrink-0 mt-1" />
+            <div>
+              <strong className="text-foreground">NYC Charter School Facts</strong>
+              <ul className="text-sm text-muted-foreground mt-2 mb-0 space-y-1">
+                <li><strong>280+ charter schools</strong> serving 140,000+ students</li>
+                <li>Free public schools with lottery-based admission</li>
+                <li>Independently operated with public funding</li>
+                <li>Often have longer school days and unique curricula</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="charter-vs-public">Charter vs. Traditional Public Schools</h2>
+      
+      <p>
+        Charter schools are public schools that operate independently from the DOE. Key differences include:
+      </p>
+
+      <ul>
+        <li><strong>Admission</strong> - Lottery-based, not zoned (anyone can apply)</li>
+        <li><strong>Schedule</strong> - Often longer school days and years</li>
+        <li><strong>Curriculum</strong> - More flexibility in teaching methods</li>
+        <li><strong>Accountability</strong> - Must meet performance benchmarks or risk closure</li>
+        <li><strong>Funding</strong> - Receive public funds but may also have private donors</li>
+      </ul>
+
+      <h2 id="top-charter-networks">Top-Performing Charter Networks</h2>
+
+      <p>
+        Several charter networks consistently outperform district averages across multiple schools:
+      </p>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">Top Charter Networks</strong>
+              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>Success Academy</strong> - 47 schools, consistently highest test scores</li>
+                <li><strong>KIPP NYC</strong> - 18 schools, strong college prep focus</li>
+                <li><strong>Achievement First</strong> - 12 schools, emphasis on rigor</li>
+                <li><strong>Uncommon Schools</strong> - 16 schools, data-driven approach</li>
+                <li><strong>Democracy Prep</strong> - 8 schools, civic engagement focus</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="top-individual-charters">Top Individual Charter Schools</h2>
+
+      <p>
+        These charter schools rank among NYC's highest performers across all school types:
+      </p>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Highest-Rated Charter Schools</strong>
+              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
+                <li><strong>Success Academy Harlem 1</strong> - 95%+ proficiency</li>
+                <li><strong>Success Academy Bronx 1</strong> - Outstanding math scores</li>
+                <li><strong>KIPP Infinity</strong> - Harlem's top middle school</li>
+                <li><strong>Achievement First Brownsville</strong> - Brooklyn leader</li>
+                <li><strong>Uncommon Schools North Star</strong> - High growth scores</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="charter-by-borough">Charter Schools by Borough</h2>
+
+      <h3>Brooklyn Charters</h3>
+      <p>
+        Brooklyn has the highest concentration of charter schools, with strong options in Bed-Stuy, Crown Heights, and Brownsville.
+      </p>
+
+      <h3>Bronx Charters</h3>
+      <p>
+        The South Bronx has many high-performing charters, particularly from Success Academy, KIPP, and Uncommon Schools networks.
+      </p>
+
+      <h3>Manhattan Charters</h3>
+      <p>
+        Harlem is home to numerous charter options, including several Success Academy and Democracy Prep campuses.
+      </p>
+
+      <h3>Queens & Staten Island</h3>
+      <p>
+        Fewer charter options, but growing. Queens has emerging networks while Staten Island has limited charter presence.
+      </p>
+
+      <h2 id="lottery-tips">Charter School Lottery Tips</h2>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Lightbulb className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">Improve Your Lottery Chances</strong>
+              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-2">
+                <li><strong>Apply Early</strong> - Many charters give priority to early applicants</li>
+                <li><strong>Apply to Multiple Schools</strong> - Each lottery is independent</li>
+                <li><strong>Sibling Priority</strong> - If one child attends, siblings get preference</li>
+                <li><strong>Check Deadlines</strong> - Each charter has its own timeline</li>
+                <li><strong>Geographic Priority</strong> - Some give preference to local students</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="what-to-consider">What to Consider About Charters</h2>
+
+      <Card className="my-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-amber-700 dark:text-amber-400">Important Considerations</strong>
+              <ul className="text-sm text-amber-600/80 dark:text-amber-300/80 mt-2 mb-0 space-y-2">
+                <li><strong>Longer Hours</strong> - Many charters have 7:30am-4:30pm schedules</li>
+                <li><strong>Strict Discipline</strong> - Some networks have rigid behavior policies</li>
+                <li><strong>Transportation</strong> - May not have yellow bus service</li>
+                <li><strong>Special Needs</strong> - Services may vary from DOE schools</li>
+                <li><strong>Attrition</strong> - Check how many students leave before graduation</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <Accordion type="single" collapsible className="w-full not-prose">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Are charter schools free?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Yes, charter schools are free public schools. They receive public funding and cannot charge tuition. However, some may request (not require) parent donations.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              How do I apply to a charter school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Apply directly through each charter school's website or through the NYC Charter Center. Unlike DOE schools, charters have their own application timelines and processes. Most hold lotteries in spring.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What are my odds in a charter lottery?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            It varies widely. Popular schools like Success Academy Harlem may have 10+ applicants per seat. Newer or less well-known charters may have better odds. Check our lottery simulator for estimates.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Can my child get an IEP at a charter school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Yes, charter schools must serve students with disabilities. However, services may differ from DOE schools. Ask specifically about how the school implements IEPs before enrolling.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Why do some charter schools have higher test scores?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Several factors: longer school days, more instructional time, data-driven teaching, strict discipline policies, and sometimes selective attrition (students who struggle may transfer out). Compare apples to apples when evaluating.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2">Explore Charter Options</h3>
+        <p className="text-muted-foreground mb-4">
+          Browse charter schools, compare performance data, and check lottery competitiveness.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/">Browse All Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/lottery-simulator">Lottery Simulator</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/compare">Compare Schools</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const post = getBlogPost(slug || "");
@@ -949,6 +1932,10 @@ export default function BlogPostPage() {
           </p>
         </div>
 
+        {post.slug === "best-nyc-kindergartens-2025" && <BestKindergartensPost />}
+        {post.slug === "best-nyc-elementary-schools-2025" && <BestElementarySchoolsPost />}
+        {post.slug === "best-nyc-middle-schools-2025" && <BestMiddleSchoolsPost />}
+        {post.slug === "best-nyc-charter-schools-2025" && <BestCharterSchoolsPost />}
         {post.slug === "2023-24-doe-data-analysis" && <DOEDataAnalysisPost />}
         {post.slug === "nyc-schools-2025-covid-recovery" && <CovidRecoveryPost />}
         {post.slug === "nyc-prek-3k-kindergarten-admissions-demand-2025" && <AdmissionsDemandPost />}

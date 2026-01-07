@@ -2369,6 +2369,10 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       
       // Blog posts
       const blogPosts = [
+        { slug: 'best-nyc-kindergartens-2025', lastmod: '2025-01-07' },
+        { slug: 'best-nyc-elementary-schools-2025', lastmod: '2025-01-06' },
+        { slug: 'best-nyc-middle-schools-2025', lastmod: '2025-01-05' },
+        { slug: 'best-nyc-charter-schools-2025', lastmod: '2025-01-04' },
         { slug: 'nyc-prek-3k-kindergarten-admissions-demand-2025', lastmod: '2024-12-29' },
         { slug: 'nyc-schools-2025-covid-recovery', lastmod: '2024-12-09' },
         { slug: '2023-24-doe-data-analysis', lastmod: '2024-11-26' },

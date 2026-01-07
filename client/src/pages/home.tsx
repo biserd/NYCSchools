@@ -894,6 +894,77 @@ export default function Home() {
         onOpenChange={setDetailOpen}
         isPremium={isPremium}
       />
+
+      {/* School Guides Section - SEO Internal Links */}
+      <section className="bg-muted/50 border-t" data-testid="section-school-guides">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-school-guides">
+              NYC School Guides for Parents
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Expert guides to help you find the best schools for your child, based on real data and parent insights.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link href="/blog/best-nyc-kindergartens-2025" className="group" data-testid="link-guide-kindergarten">
+              <div className="bg-card rounded-lg p-6 border hover-elevate h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                    <Baby className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded">2025</span>
+                </div>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Kindergartens</h3>
+                <p className="text-sm text-muted-foreground mt-1">Top-rated K programs by borough with enrollment tips</p>
+              </div>
+            </Link>
+            <Link href="/blog/best-nyc-elementary-schools-2025" className="group" data-testid="link-guide-elementary">
+              <div className="bg-card rounded-lg p-6 border hover-elevate h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <SchoolIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">2025</span>
+                </div>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Elementary Schools</h3>
+                <p className="text-sm text-muted-foreground mt-1">Complete K-5 rankings by performance and climate</p>
+              </div>
+            </Link>
+            <Link href="/blog/best-nyc-middle-schools-2025" className="group" data-testid="link-guide-middle">
+              <div className="bg-card rounded-lg p-6 border hover-elevate h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded">2025</span>
+                </div>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Middle Schools</h3>
+                <p className="text-sm text-muted-foreground mt-1">Top grades 6-8 programs and admission tips</p>
+              </div>
+            </Link>
+            <Link href="/blog/best-nyc-charter-schools-2025" className="group" data-testid="link-guide-charter">
+              <div className="bg-card rounded-lg p-6 border hover-elevate h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                    <Building2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">2025</span>
+                </div>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Charter Schools</h3>
+                <p className="text-sm text-muted-foreground mt-1">Top charter networks and lottery strategies</p>
+              </div>
+            </Link>
+          </div>
+          <div className="text-center mt-8">
+            <Button variant="outline" asChild data-testid="button-all-guides">
+              <Link href="/blog">
+                View All School Guides & Articles
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
       
       <Footer />
     </div>

@@ -12,6 +12,46 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "best-nyc-kindergartens-2025",
+    title: "Best NYC Kindergartens 2025: Top-Rated Programs by Borough",
+    description: "Discover the highest-rated kindergarten programs in New York City. Our data-driven analysis ranks the best K programs in Manhattan, Brooklyn, Queens, the Bronx, and Staten Island based on test scores, climate ratings, and parent reviews.",
+    author: "NYC School Ratings Team",
+    publishedAt: "2025-01-07",
+    readTime: "12 min read",
+    category: "School Rankings",
+    tags: ["Kindergarten", "Best Schools", "NYC Schools", "School Rankings", "Elementary Schools", "2025"]
+  },
+  {
+    slug: "best-nyc-elementary-schools-2025",
+    title: "Best NYC Elementary Schools 2025: Complete Rankings & Guide",
+    description: "The definitive guide to NYC's top elementary schools. See rankings for all five boroughs based on academic performance, school climate, and progress scores. Includes neighborhood breakdowns and enrollment tips.",
+    author: "NYC School Ratings Team",
+    publishedAt: "2025-01-06",
+    readTime: "15 min read",
+    category: "School Rankings",
+    tags: ["Elementary Schools", "Best Schools", "NYC Schools", "School Rankings", "K-5", "2025"]
+  },
+  {
+    slug: "best-nyc-middle-schools-2025",
+    title: "Best NYC Middle Schools 2025: Top Programs for Grades 6-8",
+    description: "Find the best middle schools in NYC for your child. Our comprehensive rankings cover academic excellence, specialized programs, and what makes each school stand out for grades 6-8.",
+    author: "NYC School Ratings Team",
+    publishedAt: "2025-01-05",
+    readTime: "14 min read",
+    category: "School Rankings",
+    tags: ["Middle Schools", "Best Schools", "NYC Schools", "School Rankings", "Grades 6-8", "2025"]
+  },
+  {
+    slug: "best-nyc-charter-schools-2025",
+    title: "Best NYC Charter Schools 2025: Top Performers & How to Apply",
+    description: "Explore NYC's highest-performing charter schools. Compare academic results, lottery odds, and application deadlines. Learn which charter networks consistently outperform district schools.",
+    author: "NYC School Ratings Team",
+    publishedAt: "2025-01-04",
+    readTime: "11 min read",
+    category: "School Rankings",
+    tags: ["Charter Schools", "Best Schools", "NYC Schools", "School Rankings", "Lottery", "2025"]
+  },
+  {
     slug: "nyc-prek-3k-kindergarten-admissions-demand-2025",
     title: "NYC Pre-K, 3-K & Kindergarten Admissions 2025: Which Schools Are Most Competitive?",
     description: "Our analysis of NYC DOE admissions data reveals which Pre-K, 3-K, and Kindergarten programs are most in-demand. See competitiveness ratings, application-to-seat ratios, and offer rates for every NYC school.",
