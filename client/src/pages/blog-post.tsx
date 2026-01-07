@@ -1932,10 +1932,10 @@ export default function BlogPostPage() {
           </p>
         </div>
 
-        {post.slug === "best-nyc-kindergartens-2025" && <BestKindergartensPost />}
-        {post.slug === "best-nyc-elementary-schools-2025" && <BestElementarySchoolsPost />}
-        {post.slug === "best-nyc-middle-schools-2025" && <BestMiddleSchoolsPost />}
-        {post.slug === "best-nyc-charter-schools-2025" && <BestCharterSchoolsPost />}
+        {post.slug === "best-nyc-kindergartens-2026" && <BestKindergartensPost />}
+        {post.slug === "best-nyc-elementary-schools-2026" && <BestElementarySchoolsPost />}
+        {post.slug === "best-nyc-middle-schools-2026" && <BestMiddleSchoolsPost />}
+        {post.slug === "best-nyc-charter-schools-2026" && <BestCharterSchoolsPost />}
         {post.slug === "2023-24-doe-data-analysis" && <DOEDataAnalysisPost />}
         {post.slug === "nyc-schools-2025-covid-recovery" && <CovidRecoveryPost />}
         {post.slug === "nyc-prek-3k-kindergarten-admissions-demand-2025" && <AdmissionsDemandPost />}

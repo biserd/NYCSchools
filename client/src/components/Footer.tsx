@@ -92,22 +92,22 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-3">Best Schools</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/blog/best-nyc-kindergartens-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-kindergartens">
-                  Best Kindergartens 2025
+                <Link href="/blog/best-nyc-kindergartens-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-kindergartens">
+                  Best Kindergartens 2026
                 </Link>
               </li>
               <li>
-                <Link href="/blog/best-nyc-elementary-schools-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-elementary">
+                <Link href="/blog/best-nyc-elementary-schools-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-elementary">
                   Best Elementary Schools
                 </Link>
               </li>
               <li>
-                <Link href="/blog/best-nyc-middle-schools-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-middle">
+                <Link href="/blog/best-nyc-middle-schools-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-middle">
                   Best Middle Schools
                 </Link>
               </li>
               <li>
-                <Link href="/blog/best-nyc-charter-schools-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-charter">
+                <Link href="/blog/best-nyc-charter-schools-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-charter">
                   Best Charter Schools
                 </Link>
               </li>
