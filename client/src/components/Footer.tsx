@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card mt-auto">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-8">
           <div>
             <h3 className="font-semibold text-foreground mb-3">Explore</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -83,6 +83,27 @@ export function Footer() {
               <li>
                 <Link href="/release-notes" className="hover:text-foreground transition-colors" data-testid="footer-link-release-notes">
                   Release Notes
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-foreground mb-3">Blog</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="/blog/nyc-prek-3k-kindergarten-admissions-demand-2025" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-admissions">
+                  Pre-K/3-K Admissions 2025
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog/nyc-schools-2025-covid-recovery" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-covid">
+                  COVID Recovery Story
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog/2023-24-doe-data-analysis" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-data">
+                  DOE Data Analysis
                 </Link>
               </li>
             </ul>

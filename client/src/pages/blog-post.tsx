@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getBlogPost } from "@/lib/blog-data";
-import { Calendar, Clock, ArrowLeft, Share2, TrendingUp, AlertTriangle, CheckCircle, Home, Lightbulb } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, Share2, TrendingUp, AlertTriangle, CheckCircle, Home, Lightbulb, ChevronRight } from "lucide-react";
 import {
   DistrictPerformanceChart,
   ProficiencyTierChart,
@@ -901,14 +901,31 @@ export default function BlogPostPage() {
       <AppHeader />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <Button variant="ghost" size="sm" asChild className="mb-4">
-            <Link href="/blog" data-testid="link-back-to-blog">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Blog
-            </Link>
-          </Button>
+        {/* Breadcrumbs */}
+        <nav aria-label="Breadcrumb" className="mb-6" data-testid="breadcrumb-nav">
+          <ol className="flex items-center gap-2 text-sm text-muted-foreground">
+            <li>
+              <Link href="/" className="flex items-center gap-1 hover:text-foreground transition-colors" data-testid="breadcrumb-home">
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </Link>
+            </li>
+            <li className="flex items-center gap-2">
+              <ChevronRight className="w-4 h-4" />
+              <Link href="/blog" className="hover:text-foreground transition-colors" data-testid="breadcrumb-blog">
+                Blog
+              </Link>
+            </li>
+            <li className="flex items-center gap-2">
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-foreground font-medium truncate max-w-[200px] md:max-w-none" data-testid="breadcrumb-current">
+                {post.title.length > 40 ? post.title.substring(0, 40) + '...' : post.title}
+              </span>
+            </li>
+          </ol>
+        </nav>
 
+        <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Badge variant="secondary">{post.category}</Badge>
             <div className="flex items-center text-sm text-muted-foreground gap-4">

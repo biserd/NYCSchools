@@ -2367,6 +2367,13 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         { url: '/terms', changefreq: 'monthly', priority: '0.3' },
       ];
       
+      // Blog posts
+      const blogPosts = [
+        { slug: 'nyc-prek-3k-kindergarten-admissions-demand-2025', lastmod: '2024-12-29' },
+        { slug: 'nyc-schools-2025-covid-recovery', lastmod: '2024-12-09' },
+        { slug: '2023-24-doe-data-analysis', lastmod: '2024-11-26' },
+      ];
+      
       // Generate XML
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
       xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
@@ -2378,6 +2385,16 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         xml += `    <lastmod>${today}</lastmod>\n`;
         xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
         xml += `    <priority>${page.priority}</priority>\n`;
+        xml += '  </url>\n';
+      });
+      
+      // Add blog post pages
+      blogPosts.forEach(post => {
+        xml += '  <url>\n';
+        xml += `    <loc>https://nycschoolsratings.com/blog/${post.slug}</loc>\n`;
+        xml += `    <lastmod>${post.lastmod}</lastmod>\n`;
+        xml += `    <changefreq>monthly</changefreq>\n`;
+        xml += `    <priority>0.8</priority>\n`;
         xml += '  </url>\n';
       });
       
