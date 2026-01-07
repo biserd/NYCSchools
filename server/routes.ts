@@ -161,6 +161,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth 2.1 endpoints for ChatGPT
   setupOAuth(app);
 
+  // Redirect /search to homepage (email campaign link fix)
+  app.get("/search", (req: Request, res: Response) => {
+    res.redirect(301, "/");
+  });
+
   // Auth routes
   app.get("/api/auth/user", async (req: any, res: Response) => {
     try {
