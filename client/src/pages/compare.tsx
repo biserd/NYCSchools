@@ -172,6 +172,177 @@ function formatPTAAmount(amount: number | null | undefined): string {
   return `$${amount.toLocaleString()}`;
 }
 
+interface ComparisonInsight {
+  metric: string;
+  leader: string;
+  loser: string;
+  leaderValue: number;
+  loserValue: number;
+  difference: number;
+  isClose: boolean;
+}
+
+interface ComparisonSummary {
+  insights: ComparisonInsight[];
+  overallWinner: string | null;
+  overallTie: boolean;
+  hasData: boolean;
+}
+
+function generateComparisonSummary(
+  schools: Array<{ name: string; dbn: string; overall_score: number | null; ela_proficiency?: number | null; math_proficiency?: number | null; climate_score?: number | null; progress_score?: number | null }>
+): ComparisonSummary | null {
+  if (schools.length < 2) return null;
+  
+  const [school1, school2] = schools;
+  const insights: ComparisonInsight[] = [];
+  
+  const metrics = [
+    { key: 'overall_score', label: 'Overall Score', threshold: 3 },
+    { key: 'ela_proficiency', label: 'ELA (Reading)', threshold: 5 },
+    { key: 'math_proficiency', label: 'Math', threshold: 5 },
+    { key: 'climate_score', label: 'School Climate', threshold: 3 },
+    { key: 'progress_score', label: 'Student Progress', threshold: 3 },
+  ];
+  
+  let school1Wins = 0;
+  let school2Wins = 0;
+  
+  for (const metric of metrics) {
+    const val1 = (school1 as any)[metric.key] as number | null | undefined;
+    const val2 = (school2 as any)[metric.key] as number | null | undefined;
+    
+    if (val1 != null && val2 != null) {
+      const diff = Math.abs(val1 - val2);
+      const isClose = diff < metric.threshold;
+      
+      if (val1 > val2) {
+        school1Wins++;
+        insights.push({
+          metric: metric.label,
+          leader: school1.name,
+          loser: school2.name,
+          leaderValue: val1,
+          loserValue: val2,
+          difference: diff,
+          isClose,
+        });
+      } else if (val2 > val1) {
+        school2Wins++;
+        insights.push({
+          metric: metric.label,
+          leader: school2.name,
+          loser: school1.name,
+          leaderValue: val2,
+          loserValue: val1,
+          difference: diff,
+          isClose,
+        });
+      } else {
+        insights.push({
+          metric: metric.label,
+          leader: school1.name,
+          loser: school2.name,
+          leaderValue: val1,
+          loserValue: val2,
+          difference: 0,
+          isClose: true,
+        });
+      }
+    }
+  }
+  
+  const hasData = insights.length > 0;
+  const overallTie = hasData && school1Wins === school2Wins;
+  const overallWinner = overallTie || !hasData ? null : (school1Wins > school2Wins ? school1.name : school2.name);
+  
+  return { insights, overallWinner, overallTie, hasData };
+}
+
+function getShortSchoolName(name: string): string {
+  const match = name.match(/^(P\.?S\.?|I\.?S\.?|M\.?S\.?)\s*\.?\s*(\d+)/i);
+  if (match) {
+    return `${match[1].replace(/\./g, '')} ${match[2]}`;
+  }
+  if (name.length > 20) {
+    return name.substring(0, 18) + '...';
+  }
+  return name;
+}
+
+function ComparisonSummaryCard({ summary, schools, totalSchools }: { 
+  summary: ComparisonSummary; 
+  schools: Array<{ name: string; dbn: string }>;
+  totalSchools: number;
+}) {
+  const significantInsights = summary.insights.filter(i => !i.isClose && i.difference > 0);
+  const closeInsights = summary.insights.filter(i => i.isClose || i.difference === 0);
+  
+  const shortName1 = getShortSchoolName(schools[0].name);
+  const shortName2 = getShortSchoolName(schools[1].name);
+  
+  return (
+    <Card className="mb-6 border-primary/20 bg-primary/5" data-testid="card-comparison-summary">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Sparkles className="w-5 h-5 text-primary" />
+          Quick Comparison Summary
+          {totalSchools > 2 && (
+            <span className="text-xs font-normal text-muted-foreground">
+              (comparing {shortName1} vs {shortName2})
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {!summary.hasData && (
+            <p className="text-sm text-muted-foreground" data-testid="text-no-data">
+              Insufficient data available to generate a comparison summary for these schools.
+            </p>
+          )}
+          
+          {summary.hasData && summary.overallWinner && (
+            <p className="text-sm font-medium" data-testid="text-overall-winner">
+              <span className="text-primary">{getShortSchoolName(summary.overallWinner)}</span> leads in more categories overall.
+            </p>
+          )}
+          {summary.hasData && summary.overallTie && (
+            <p className="text-sm font-medium text-muted-foreground" data-testid="text-overall-tie">
+              Both schools are evenly matched across categories.
+            </p>
+          )}
+          
+          {significantInsights.length > 0 && (
+            <div className="space-y-2">
+              {significantInsights.map((insight, idx) => (
+                <p key={idx} className="text-sm" data-testid={`text-insight-${idx}`}>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    {getShortSchoolName(insight.leader)}
+                  </span>
+                  {' '}scores higher in{' '}
+                  <span className="font-medium">{insight.metric}</span>
+                  {' '}
+                  <span className="text-muted-foreground">
+                    ({insight.leaderValue} vs {insight.loserValue}, +{insight.difference.toFixed(0)} pts)
+                  </span>
+                </p>
+              ))}
+            </div>
+          )}
+          
+          {closeInsights.length > 0 && (
+            <p className="text-sm text-muted-foreground" data-testid="text-close-metrics">
+              <span className="font-medium">Similar scores:</span>{' '}
+              {closeInsights.map(i => i.metric).join(', ')}
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PTACell({ total, perStudent }: { total: number | null | undefined; perStudent: number | null | undefined }) {
   if (!total || total === 0) {
     return <span className="text-muted-foreground">No data</span>;
@@ -390,6 +561,11 @@ export default function ComparePage() {
     s.student_safety != null || s.student_engagement != null || s.guardian_satisfaction != null
   );
   
+  // Generate comparison summary for 2+ schools
+  const comparisonSummary = schoolsWithScores.length >= 2 
+    ? generateComparisonSummary(schoolsWithScores)
+    : null;
+  
   // Dynamic SEO based on compared schools
   const seoTitle = validComparedSchools.length >= 2
     ? `${validComparedSchools[0].name} vs ${validComparedSchools[1].name}${validComparedSchools.length > 2 ? ` + ${validComparedSchools.length - 2} more` : ''} | NYC School Comparison`
@@ -453,6 +629,15 @@ export default function ComparePage() {
             </Button>
           </div>
         </div>
+
+        {/* Comparison Summary - shown for 2+ schools */}
+        {comparisonSummary && schoolsWithScores.length >= 2 && (
+          <ComparisonSummaryCard 
+            summary={comparisonSummary} 
+            schools={schoolsWithScores.slice(0, 2)}
+            totalSchools={schoolsWithScores.length}
+          />
+        )}
 
         <div className="grid gap-6 mb-8">
           {/* Overview Cards */}
