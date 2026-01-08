@@ -172,20 +172,8 @@ function formatPTAAmount(amount: number | null | undefined): string {
   return `$${amount.toLocaleString()}`;
 }
 
-interface ComparisonInsight {
-  metric: string;
-  leader: string;
-  loser: string;
-  leaderValue: number;
-  loserValue: number;
-  difference: number;
-  isClose: boolean;
-}
-
 interface ComparisonSummary {
-  insights: ComparisonInsight[];
-  overallWinner: string | null;
-  overallTie: boolean;
+  sentence: string;
   hasData: boolean;
 }
 
@@ -194,69 +182,82 @@ function generateComparisonSummary(
 ): ComparisonSummary | null {
   if (schools.length < 2) return null;
   
-  const [school1, school2] = schools;
-  const insights: ComparisonInsight[] = [];
-  
   const metrics = [
-    { key: 'overall_score', label: 'Overall Score', threshold: 3 },
-    { key: 'ela_proficiency', label: 'ELA (Reading)', threshold: 5 },
-    { key: 'math_proficiency', label: 'Math', threshold: 5 },
-    { key: 'climate_score', label: 'School Climate', threshold: 3 },
-    { key: 'progress_score', label: 'Student Progress', threshold: 3 },
+    { key: 'overall_score', label: 'Overall Score' },
+    { key: 'ela_proficiency', label: 'ELA' },
+    { key: 'math_proficiency', label: 'Math' },
+    { key: 'climate_score', label: 'Climate' },
+    { key: 'progress_score', label: 'Progress' },
   ];
   
-  let school1Wins = 0;
-  let school2Wins = 0;
+  // Track wins per school
+  const wins: Record<string, { name: string; count: number; metrics: string[] }> = {};
+  schools.forEach(s => { wins[s.dbn] = { name: s.name, count: 0, metrics: [] }; });
+  
+  let metricsWithData = 0;
   
   for (const metric of metrics) {
-    const val1 = (school1 as any)[metric.key] as number | null | undefined;
-    const val2 = (school2 as any)[metric.key] as number | null | undefined;
+    // Get all schools with data for this metric
+    const schoolsWithData = schools
+      .map(s => ({ school: s, value: (s as any)[metric.key] as number | null }))
+      .filter(x => x.value != null);
     
-    if (val1 != null && val2 != null) {
-      const diff = Math.abs(val1 - val2);
-      const isClose = diff < metric.threshold;
-      
-      if (val1 > val2) {
-        school1Wins++;
-        insights.push({
-          metric: metric.label,
-          leader: school1.name,
-          loser: school2.name,
-          leaderValue: val1,
-          loserValue: val2,
-          difference: diff,
-          isClose,
-        });
-      } else if (val2 > val1) {
-        school2Wins++;
-        insights.push({
-          metric: metric.label,
-          leader: school2.name,
-          loser: school1.name,
-          leaderValue: val2,
-          loserValue: val1,
-          difference: diff,
-          isClose,
-        });
-      } else {
-        insights.push({
-          metric: metric.label,
-          leader: school1.name,
-          loser: school2.name,
-          leaderValue: val1,
-          loserValue: val2,
-          difference: 0,
-          isClose: true,
-        });
-      }
+    if (schoolsWithData.length < 2) continue;
+    metricsWithData++;
+    
+    // Find the highest value
+    const maxValue = Math.max(...schoolsWithData.map(x => x.value!));
+    
+    // Find all schools tied for the lead
+    const leaders = schoolsWithData.filter(x => x.value === maxValue);
+    
+    // Only count as a win if there's a single leader (no tie)
+    if (leaders.length === 1) {
+      const winner = leaders[0].school;
+      wins[winner.dbn].count++;
+      wins[winner.dbn].metrics.push(metric.label);
     }
   }
   
-  const hasData = insights.length > 0;
-  const overallTie = hasData && school1Wins === school2Wins;
-  const overallWinner = overallTie || !hasData ? null : (school1Wins > school2Wins ? school1.name : school2.name);
+  if (metricsWithData === 0) {
+    return { sentence: '', hasData: false };
+  }
   
-  return { insights, overallWinner, overallTie, hasData };
+  // Sort schools by win count
+  const sorted = Object.values(wins).sort((a, b) => b.count - a.count);
+  const topWinner = sorted[0];
+  const secondPlace = sorted[1];
+  
+  // Generate the sentence
+  let sentence: string;
+  
+  if (topWinner.count === 0) {
+    // No clear winner in any category
+    sentence = "These schools are closely matched across all metrics.";
+  } else if (topWinner.count === secondPlace?.count && topWinner.count > 0) {
+    // Tie for first place
+    const tiedSchools = sorted.filter(s => s.count === topWinner.count);
+    const names = tiedSchools.map(s => getShortSchoolName(s.name));
+    if (names.length === 2) {
+      sentence = `${names[0]} and ${names[1]} are tied, each leading in ${topWinner.count} ${topWinner.count === 1 ? 'category' : 'categories'}.`;
+    } else {
+      sentence = `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]} are closely matched.`;
+    }
+  } else {
+    // Clear winner
+    const winnerName = getShortSchoolName(topWinner.name);
+    const metricsWon = topWinner.metrics.slice(0, 2).join(' and ');
+    
+    if (topWinner.count === 1) {
+      sentence = `${winnerName} leads in ${metricsWon}, with other metrics closely matched.`;
+    } else if (topWinner.count >= metricsWithData - 1) {
+      sentence = `${winnerName} leads in ${topWinner.count} of ${metricsWithData} categories, including ${metricsWon}.`;
+    } else {
+      sentence = `${winnerName} leads in ${topWinner.count} categories (${metricsWon}), but other schools excel in different areas.`;
+    }
+  }
+  
+  return { sentence, hasData: true };
 }
 
 function getShortSchoolName(name: string): string {
