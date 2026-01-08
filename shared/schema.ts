@@ -1126,11 +1126,14 @@ export const DRIP_EMAIL_TYPES = [
 export type DripEmailType = typeof DRIP_EMAIL_TYPES[number];
 
 // Helper to determine competitiveness level based on apps per seat
-export function getCompetitivenessLevel(appsPerSeat: number | null): 'very_competitive' | 'competitive' | 'moderate' | 'accessible' | 'unknown' {
-  if (appsPerSeat === null) return 'unknown';
-  if (appsPerSeat >= 3) return 'very_competitive';
-  if (appsPerSeat >= 2) return 'competitive';
-  if (appsPerSeat >= 1.2) return 'moderate';
+// Prefers trueAppsPerSeat (actual unique applicants) over appsPerSeat (raw applications) for more accurate odds
+export function getCompetitivenessLevel(appsPerSeat: number | null, trueAppsPerSeat?: number | null): 'very_competitive' | 'competitive' | 'moderate' | 'accessible' | 'unknown' {
+  // Use true applicants per seat if available (more accurate), otherwise fall back to raw apps per seat
+  const metric = trueAppsPerSeat ?? appsPerSeat;
+  if (metric === null || metric === undefined) return 'unknown';
+  if (metric >= 3) return 'very_competitive';
+  if (metric >= 2) return 'competitive';
+  if (metric >= 1.2) return 'moderate';
   return 'accessible';
 }
 

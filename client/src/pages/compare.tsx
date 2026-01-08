@@ -983,7 +983,7 @@ export default function ComparePage() {
                                   </TableCell>
                                 );
                               }
-                              const level = getCompetitivenessLevel(metric.appsPerSeat);
+                              const level = getCompetitivenessLevel(metric.appsPerSeat, metric.trueAppsPerSeat);
                               const display = getCompetitivenessDisplay(level);
                               const badgeClass = level === 'very_competitive' 
                                 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
@@ -992,6 +992,9 @@ export default function ComparePage() {
                                 : level === 'moderate'
                                 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                                 : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+                              // Use true applicants data when available (more accurate)
+                              const displayAppsPerSeat = metric.trueAppsPerSeat ?? metric.appsPerSeat;
+                              const displayOfferRate = metric.trueOfferRate ?? metric.offerRate;
                               
                               return (
                                 <TableCell key={school.dbn} className="text-center" data-testid={`cell-admissions-${grade}-${school.dbn}`}>
@@ -1000,11 +1003,11 @@ export default function ComparePage() {
                                       {display.label}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
-                                      {metric.appsPerSeat?.toFixed(1)} apps/seat
+                                      {displayAppsPerSeat?.toFixed(1)} apps/seat
                                     </span>
-                                    {metric.offerRate != null && (
+                                    {displayOfferRate != null && (
                                       <span className="text-xs text-muted-foreground">
-                                        {(metric.offerRate * 100).toFixed(0)}% offer rate
+                                        {(displayOfferRate * 100).toFixed(0)}% offer rate
                                       </span>
                                     )}
                                   </div>

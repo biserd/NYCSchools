@@ -183,8 +183,12 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
             const metric = getLatestMetric(grade);
             if (!metric) return null;
 
-            const competitivenessLevel = getCompetitivenessLevel(metric.appsPerSeat);
+            const competitivenessLevel = getCompetitivenessLevel(metric.appsPerSeat, metric.trueAppsPerSeat);
             const competitivenessInfo = getCompetitivenessDisplay(competitivenessLevel);
+            // Use true applicants data when available (more accurate odds)
+            const displayAppsPerSeat = metric.trueAppsPerSeat ?? metric.appsPerSeat;
+            const displayOfferRate = metric.trueOfferRate ?? metric.offerRate;
+            const displayApplicants = metric.trueApplicants ?? metric.totalApplicants;
 
             return (
               <div 
@@ -214,9 +218,19 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
                     </div>
                   </div>
                   <div className="space-y-0.5">
-                    <div className="text-muted-foreground text-xs">Applicants</div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="text-muted-foreground text-xs flex items-center gap-1 cursor-help">
+                          Applicants
+                          <Info className="h-3 w-3" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Unique applicants who ranked this school (not total applications).</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <div className="font-medium" data-testid={`text-applicants-${grade}`}>
-                      {metric.totalApplicants?.toLocaleString() ?? 'N/A'}
+                      {displayApplicants?.toLocaleString() ?? 'N/A'}
                     </div>
                   </div>
                   <div className="space-y-0.5">
@@ -228,11 +242,11 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Applications per available seat. Higher = more competitive.</p>
+                        <p>Applicants per available seat. Higher = more competitive.</p>
                       </TooltipContent>
                     </Tooltip>
                     <div className="font-medium" data-testid={`text-apps-per-seat-${grade}`}>
-                      {metric.appsPerSeat?.toFixed(1) ?? 'N/A'}
+                      {displayAppsPerSeat?.toFixed(1) ?? 'N/A'}
                     </div>
                   </div>
                   <div className="space-y-0.5">
@@ -248,7 +262,7 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
                       </TooltipContent>
                     </Tooltip>
                     <div className="font-medium" data-testid={`text-offer-rate-${grade}`}>
-                      {metric.offerRate != null ? `${(metric.offerRate * 100).toFixed(0)}%` : 'N/A'}
+                      {displayOfferRate != null ? `${(displayOfferRate * 100).toFixed(0)}%` : 'N/A'}
                     </div>
                   </div>
                 </div>
