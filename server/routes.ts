@@ -203,6 +203,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fetch multiple schools by DBNs (for shareable comparison URLs)
+  // IMPORTANT: This must come BEFORE /api/schools/:dbn to avoid matching "by-dbns" as a DBN
+  app.get("/api/schools/by-dbns", async (req: Request, res: Response) => {
+    try {
+      const dbnsParam = req.query.dbns as string;
+      if (!dbnsParam) {
+        return res.status(400).json({ error: "Missing dbns parameter" });
+      }
+      
+      const dbns = dbnsParam.split(",").map(dbn => dbn.trim().toUpperCase()).filter(Boolean);
+      if (dbns.length === 0) {
+        return res.json([]);
+      }
+      
+      // Limit to 4 schools max (same as comparison limit)
+      const limitedDbns = dbns.slice(0, 4);
+      
+      const schools = await Promise.all(
+        limitedDbns.map(dbn => storage.getSchool(dbn))
+      );
+      
+      // Filter out any null results (schools not found)
+      const validSchools = schools.filter(s => s !== null);
+      res.json(validSchools);
+    } catch (error) {
+      console.error("Error fetching schools by DBNs:", error);
+      res.status(500).json({ error: "Failed to fetch schools" });
+    }
+  });
+
   // Individual school lookup with 10-minute cache (static data)
   app.get("/api/schools/:dbn", async (req: Request, res: Response) => {
     try {
