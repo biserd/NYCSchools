@@ -271,71 +271,19 @@ function getShortSchoolName(name: string): string {
   return name;
 }
 
-function ComparisonSummaryCard({ summary, schools, totalSchools }: { 
-  summary: ComparisonSummary; 
-  schools: Array<{ name: string; dbn: string }>;
-  totalSchools: number;
-}) {
-  const significantInsights = summary.insights.filter(i => !i.isClose && i.difference > 0);
-  const closeInsights = summary.insights.filter(i => i.isClose || i.difference === 0);
-  
-  const shortName1 = getShortSchoolName(schools[0].name);
-  const shortName2 = getShortSchoolName(schools[1].name);
-  
+function ComparisonSummaryCard({ summary }: { summary: ComparisonSummary }) {
   return (
     <Card className="mb-6 border-primary/20 bg-primary/5" data-testid="card-comparison-summary">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Sparkles className="w-5 h-5 text-primary" />
-          Quick Comparison Summary
-          {totalSchools > 2 && (
-            <span className="text-xs font-normal text-muted-foreground">
-              (comparing {shortName1} vs {shortName2})
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {!summary.hasData && (
+      <CardContent className="py-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+          {summary.hasData ? (
+            <p className="text-sm" data-testid="text-summary">
+              {summary.sentence}
+            </p>
+          ) : (
             <p className="text-sm text-muted-foreground" data-testid="text-no-data">
-              Insufficient data available to generate a comparison summary for these schools.
-            </p>
-          )}
-          
-          {summary.hasData && summary.overallWinner && (
-            <p className="text-sm font-medium" data-testid="text-overall-winner">
-              <span className="text-primary">{getShortSchoolName(summary.overallWinner)}</span> leads in more categories overall.
-            </p>
-          )}
-          {summary.hasData && summary.overallTie && (
-            <p className="text-sm font-medium text-muted-foreground" data-testid="text-overall-tie">
-              Both schools are evenly matched across categories.
-            </p>
-          )}
-          
-          {significantInsights.length > 0 && (
-            <div className="space-y-2">
-              {significantInsights.map((insight, idx) => (
-                <p key={idx} className="text-sm" data-testid={`text-insight-${idx}`}>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {getShortSchoolName(insight.leader)}
-                  </span>
-                  {' '}scores higher in{' '}
-                  <span className="font-medium">{insight.metric}</span>
-                  {' '}
-                  <span className="text-muted-foreground">
-                    ({insight.leaderValue} vs {insight.loserValue}, +{insight.difference.toFixed(0)} pts)
-                  </span>
-                </p>
-              ))}
-            </div>
-          )}
-          
-          {closeInsights.length > 0 && (
-            <p className="text-sm text-muted-foreground" data-testid="text-close-metrics">
-              <span className="font-medium">Similar scores:</span>{' '}
-              {closeInsights.map(i => i.metric).join(', ')}
+              Insufficient data to generate a comparison summary.
             </p>
           )}
         </div>
@@ -633,11 +581,7 @@ export default function ComparePage() {
 
         {/* Comparison Summary - shown for 2+ schools */}
         {comparisonSummary && schoolsWithScores.length >= 2 && (
-          <ComparisonSummaryCard 
-            summary={comparisonSummary} 
-            schools={schoolsWithScores.slice(0, 2)}
-            totalSchools={schoolsWithScores.length}
-          />
+          <ComparisonSummaryCard summary={comparisonSummary} />
         )}
 
         <div className="grid gap-6 mb-8">
