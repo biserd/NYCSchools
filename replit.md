@@ -63,7 +63,7 @@ SEO-optimized comparison page with friendly slugs and dynamic meta tags:
 - **URL Updates**: Uses `window.history.replaceState()` for instant URL updates when schools change
 - **Free Preview**: Basic comparison (names, scores, grades) visible to all; detailed metrics premium-gated
 - **Neighborhood Seeding**: 25 pre-generated comparison URLs in `shared/neighborhoodComparisons.ts` for sitemap indexing
-- **Comparison Summary**: Rule-based summary card showing which school leads in each metric (Overall Score, ELA, Math, Climate, Progress). Uses thresholds (±3 pts for scores, ±5 pts for ELA/Math) to identify "close" scores. Shows "(comparing PS X vs PS Y)" note when 3+ schools are selected. Displays "Insufficient data" when no metrics available.
+- **Comparison Summary**: Single-sentence summary analyzing all 2-4 selected schools. Counts category wins per school (Overall Score, ELA, Math, Climate, Progress) and generates natural language like "PS 321 leads in 3 of 5 categories, including Overall Score and Math." Handles ties and close matches gracefully.
 
 ### Core Web Vitals Optimizations
 Performance optimizations for better LCP, INP, and FCP scores:
