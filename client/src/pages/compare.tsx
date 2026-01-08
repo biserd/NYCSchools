@@ -332,94 +332,7 @@ export default function ComparePage() {
     );
   }
   
-  // Premium gate: Show upgrade prompt for non-premium users OR non-logged-in users
-  if (!user || !isPremium) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <SEOHead 
-          title="Premium Feature - Compare Schools Side-by-Side"
-          description="Upgrade to compare NYC schools side-by-side with detailed metrics, trends, and insights."
-          canonicalPath="/compare"
-        />
-        <AppHeader />
-
-        <div className="flex-1 flex items-center justify-center p-8">
-          <Card className="max-w-lg w-full">
-            <CardContent className="pt-8 text-center">
-              <div className="mb-6">
-                <div className="relative inline-block">
-                  <Scale className="w-16 h-16 text-primary" />
-                  <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1">
-                    <Lock className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold mb-3" data-testid="text-compare-locked-title">
-                Unlock Side-by-Side Comparison
-              </h2>
-              <p className="text-muted-foreground mb-6" data-testid="text-compare-locked-description">
-                Compare schools side-by-side with detailed metrics, historical trends, and district averages. 
-                Make confident enrollment decisions with comprehensive data at your fingertips.
-              </p>
-              
-              <div className="space-y-3 text-left mb-8 bg-muted/50 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                  <span className="text-sm">Compare up to 4 schools at once</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                  <span className="text-sm">See how schools compare to district averages</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                  <span className="text-sm">Historical trend analysis (improving vs declining)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                  <span className="text-sm">Demographics, programs, and PTA funding</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {!user ? (
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={() => navigate("/login")}
-                    data-testid="button-login-compare"
-                  >
-                    Login to Get Started
-                  </Button>
-                ) : (
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={() => navigate("/pricing")}
-                    data-testid="button-upgrade-compare"
-                  >
-                    <Lock className="w-4 h-4 mr-2" />
-                    Unlock with Season Pass - $29
-                  </Button>
-                )}
-                <Link href="/">
-                  <Button variant="outline" className="w-full" data-testid="button-browse-schools-compare">
-                    Browse Schools First
-                  </Button>
-                </Link>
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-4">
-                6 months of full access. Built by a NYC Parent for NYC Parents.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
+  
   if (validComparedSchools.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -476,14 +389,33 @@ export default function ComparePage() {
   const hasSurveyData = schoolsWithScores.some(s => 
     s.student_safety != null || s.student_engagement != null || s.guardian_satisfaction != null
   );
+  
+  // Dynamic SEO based on compared schools
+  const seoTitle = validComparedSchools.length >= 2
+    ? `${validComparedSchools[0].name} vs ${validComparedSchools[1].name}${validComparedSchools.length > 2 ? ` + ${validComparedSchools.length - 2} more` : ''} | NYC School Comparison`
+    : validComparedSchools.length === 1
+    ? `${validComparedSchools[0].name} | NYC School Comparison`
+    : "Compare NYC Schools Side-by-Side";
+    
+  const seoDescription = validComparedSchools.length >= 2
+    ? `Compare ${validComparedSchools.map(s => s.name).join(' vs ')} side-by-side. View overall scores, test results, and ratings to choose the best school for your child in NYC.`
+    : "Compare NYC schools side-by-side. View test scores, ratings, demographics, historical trends, and key metrics to make informed enrollment decisions.";
+    
+  const seoKeywords = validComparedSchools.length > 0
+    ? `${validComparedSchools.map(s => s.name).join(', ')}, compare NYC schools, school comparison, NYC school ratings`
+    : "compare NYC schools, school comparison tool, side-by-side school ratings, NYC school metrics";
+    
+  const canonicalPath = validComparedSchools.length > 0
+    ? getComparisonUrl(validComparedSchools)
+    : "/compare";
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
-        title="Compare Schools Side-by-Side"
-        description="Compare NYC schools side-by-side. View test scores, ratings, demographics, historical trends, and key metrics to make informed enrollment decisions."
-        keywords="compare NYC schools, school comparison tool, side-by-side school ratings, NYC school metrics, school comparison"
-        canonicalPath="/compare"
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        canonicalPath={canonicalPath}
       />
       <AppHeader />
 
@@ -593,6 +525,74 @@ export default function ComparePage() {
             })}
           </div>
 
+          {/* Premium Gate for Detailed Comparison */}
+          {!isPremium && (
+            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+              <CardContent className="py-8 text-center">
+                <div className="mb-4">
+                  <div className="relative inline-block">
+                    <Scale className="w-12 h-12 text-primary" />
+                    <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1">
+                      <Lock className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2" data-testid="text-premium-gate-title">
+                  Unlock Full Comparison Details
+                </h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto" data-testid="text-premium-gate-description">
+                  Get detailed metrics, district averages, admissions data, demographics, and more to make confident enrollment decisions.
+                </p>
+                
+                <div className="flex flex-wrap gap-4 justify-center mb-6">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    <span>District Comparisons</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    <span>Admissions Data</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    <span>Survey Results</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    <span>Demographics</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-center">
+                  {!user ? (
+                    <Button 
+                      size="lg"
+                      onClick={() => navigate("/login")}
+                      data-testid="button-login-compare"
+                    >
+                      Login to Get Started
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="lg"
+                      onClick={() => navigate("/pricing")}
+                      data-testid="button-upgrade-compare"
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      Unlock with Season Pass - $29
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  6 months of full access. Built by a NYC Parent for NYC Parents.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Premium Content - Detailed Comparison Tables */}
+          {isPremium && (
+            <>
           {/* Academic Performance */}
           <Card>
             <CardHeader>
@@ -1328,6 +1328,8 @@ export default function ComparePage() {
                 </div>
               </CardContent>
             </Card>
+          )}
+          </>
           )}
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">

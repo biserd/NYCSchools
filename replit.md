@@ -54,6 +54,16 @@ Centralized in-memory caching with configurable TTLs and mutation protection:
 - **Webhook Invalidation**: `invalidateUserCaches(userId)` is called from webhookHandlers.ts after subscription changes to ensure immediate premium status updates
 - **Cached Endpoints**: Individual schools, school history, admissions data, NYCEEC centers, subscription status, premium user checks, school trends, district/citywide averages
 
+### Shareable Comparison URLs
+SEO-optimized comparison page with friendly slugs and dynamic meta tags:
+- **URL Format**: `/compare/PS006-M-vs-PS290-M` - School type + 3-digit number + borough letter
+- **Borough Codes**: M=Manhattan, X=Bronx, K=Brooklyn, Q=Queens, R=Staten Island  
+- **API Endpoint**: `GET /api/schools/by-slugs?slugs=PS006-M,PS290-M` - Supports both friendly slugs and legacy DBN format
+- **Dynamic SEO**: Title, description, keywords, and Open Graph meta tags update based on compared schools
+- **URL Updates**: Uses `window.history.replaceState()` for instant URL updates when schools change
+- **Free Preview**: Basic comparison (names, scores, grades) visible to all; detailed metrics premium-gated
+- **Neighborhood Seeding**: 25 pre-generated comparison URLs in `shared/neighborhoodComparisons.ts` for sitemap indexing
+
 ### Core Web Vitals Optimizations
 Performance optimizations for better LCP, INP, and FCP scores:
 - **Lazy Loading**: Heavy pages (Home, SchoolDetail, ComparePage, BlogPage, BlogPostPage, PricingPage, etc.) are lazy-loaded with React.lazy() and Suspense

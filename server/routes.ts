@@ -16,6 +16,7 @@ import { getStripeSync, getUncachableStripeClient, getStripePublishableKey, getS
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
+import { neighborhoodComparisons, getComparisonSlugForNeighborhood } from "@shared/neighborhoodComparisons";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -2531,6 +2532,17 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
       } catch (nyceecError) {
         console.error("Error fetching NYCEEC data for sitemap:", nyceecError);
       }
+      
+      // Add neighborhood comparison pages (pre-seeded for SEO)
+      neighborhoodComparisons.forEach(comparison => {
+        const comparisonSlug = getComparisonSlugForNeighborhood(comparison);
+        xml += '  <url>\n';
+        xml += `    <loc>https://nycschoolsratings.com/compare/${comparisonSlug}</loc>\n`;
+        xml += `    <lastmod>${today}</lastmod>\n`;
+        xml += `    <changefreq>weekly</changefreq>\n`;
+        xml += `    <priority>0.8</priority>\n`;
+        xml += '  </url>\n';
+      });
       
       xml += '</urlset>';
       
