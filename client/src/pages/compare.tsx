@@ -197,29 +197,55 @@ export default function ComparePage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [urlInitialized, setUrlInitialized] = useState(false);
   
   // Check for URL params
   const [, params] = useRoute("/compare/:schools");
-  const urlDbns = params?.schools ? parseComparisonSlug(params.schools) : [];
+  const urlSlugs = params?.schools || "";
   
-  // Fetch schools from URL if provided
+  // Fetch schools from URL if provided (supports both friendly slugs like PS006-M and DBN format)
   const { data: urlSchools, isLoading: urlSchoolsLoading } = useQuery<School[]>({
-    queryKey: ["/api/schools/by-dbns", urlDbns.join(",")],
+    queryKey: ["/api/schools/by-slugs", urlSlugs],
     queryFn: async () => {
-      if (urlDbns.length === 0) return [];
-      const response = await fetch(`/api/schools/by-dbns?dbns=${urlDbns.join(",")}`);
+      if (!urlSlugs) return [];
+      const slugParts = urlSlugs.split('-vs-');
+      if (slugParts.length === 0) return [];
+      const response = await fetch(`/api/schools/by-slugs?slugs=${slugParts.join(",")}`);
       if (!response.ok) throw new Error("Failed to fetch schools");
       return response.json();
     },
-    enabled: urlDbns.length > 0,
+    enabled: !!urlSlugs,
   });
   
-  // Sync URL schools to comparison context when loaded
+  // Sync URL schools to comparison context when loaded (only on initial load)
   useEffect(() => {
-    if (urlSchools && urlSchools.length > 0 && comparedSchools.length === 0) {
+    if (urlSchools && urlSchools.length > 0 && !urlInitialized) {
       setComparedSchools(urlSchools);
+      setUrlInitialized(true);
     }
-  }, [urlSchools, comparedSchools.length, setComparedSchools]);
+  }, [urlSchools, urlInitialized, setComparedSchools]);
+  
+  // Initialize URL tracking when user navigates directly to /compare (no URL params)
+  useEffect(() => {
+    if (!urlSlugs && !urlInitialized) {
+      setUrlInitialized(true);
+    }
+  }, [urlSlugs, urlInitialized]);
+  
+  // Filter out any null schools before using them
+  const validComparedSchools = comparedSchools.filter((s): s is School => s !== null && s !== undefined);
+  
+  // Update URL immediately when schools change (after initial load)
+  useEffect(() => {
+    if (urlInitialized && validComparedSchools.length > 0) {
+      const newUrl = getComparisonUrl(validComparedSchools);
+      if (window.location.pathname !== newUrl) {
+        window.history.replaceState(null, '', newUrl);
+      }
+    } else if (urlInitialized && validComparedSchools.length === 0) {
+      window.history.replaceState(null, '', '/compare');
+    }
+  }, [validComparedSchools, urlInitialized]);
   
   // Check subscription status
   const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
@@ -234,13 +260,9 @@ export default function ComparePage() {
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "season_pass" || subscription?.plan === "premium" || subscription?.plan === "developer");
   
-  // Filter out any null schools before using them
-  const validComparedSchools = comparedSchools.filter((s): s is School => s !== null && s !== undefined);
-  
   // Copy shareable link to clipboard
   const copyShareableLink = () => {
-    const dbns = validComparedSchools.map(s => s.dbn);
-    const url = `${window.location.origin}${getComparisonUrl(dbns)}`;
+    const url = `${window.location.origin}${getComparisonUrl(validComparedSchools)}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       toast({

@@ -421,17 +421,57 @@ export function getSchoolUrl(school: Pick<School, 'name' | 'dbn'>): string {
   return `/school/${getSchoolSlug(school)}`;
 }
 
-// Helper function to generate a shareable comparison URL from DBNs
-export function getComparisonUrl(dbns: string[]): string {
-  if (dbns.length === 0) return '/compare';
-  const slug = dbns.map(dbn => dbn.toLowerCase()).join('-vs-');
+// Extract school type abbreviation from school name (e.g., "P.S. 006" -> "PS", "I.S. 075" -> "IS")
+export function extractSchoolType(name: string): string {
+  const typeMatch = name.match(/^(P\.?S\.?|I\.?S\.?|M\.?S\.?|H\.?S\.?|J\.?H\.?S\.?)/i);
+  if (typeMatch) {
+    return typeMatch[1].replace(/\./g, '').toUpperCase();
+  }
+  return '';
+}
+
+// Convert a school to a URL-friendly comparison slug (e.g., "PS006-M" from DBN "01M006")
+export function schoolToCompareSlug(school: Pick<School, 'dbn' | 'name'>): string {
+  const dbn = school.dbn.toUpperCase();
+  const borough = dbn.charAt(2); // M, X, K, Q, R
+  const schoolNumber = dbn.slice(3); // Last 3 digits
+  const schoolType = extractSchoolType(school.name);
+  
+  if (schoolType) {
+    return `${schoolType}${schoolNumber}-${borough}`;
+  }
+  // Fallback: use DBN directly for schools without standard type
+  return dbn;
+}
+
+// Convert comparison slug back to DBN format (e.g., "PS006-M" -> needs district lookup)
+// Returns the slug parts for API lookup: { type, number, borough } or { dbn } for direct DBN format
+export function parseCompareSlug(slug: string): { type?: string; number?: string; borough?: string; dbn?: string } {
+  // Check if it's a friendly slug like "PS006-M"
+  const friendlyMatch = slug.match(/^([A-Z]+)(\d+)-([MXKQR])$/i);
+  if (friendlyMatch) {
+    return {
+      type: friendlyMatch[1].toUpperCase(),
+      number: friendlyMatch[2].padStart(3, '0'),
+      borough: friendlyMatch[3].toUpperCase()
+    };
+  }
+  // Fallback: treat as DBN (e.g., "01M006" or "01m006")
+  return { dbn: slug.toUpperCase() };
+}
+
+// Helper function to generate a shareable comparison URL from schools
+export function getComparisonUrl(schools: Pick<School, 'dbn' | 'name'>[]): string {
+  if (schools.length === 0) return '/compare';
+  const slug = schools.map(s => schoolToCompareSlug(s)).join('-vs-');
   return `/compare/${slug}`;
 }
 
-// Helper function to parse DBNs from a comparison URL slug
-export function parseComparisonSlug(slug: string): string[] {
+// Helper function to parse school identifiers from a comparison URL slug
+// Returns an array of parsed slug parts
+export function parseComparisonSlug(slug: string): Array<{ type?: string; number?: string; borough?: string; dbn?: string }> {
   if (!slug) return [];
-  return slug.split('-vs-').map(dbn => dbn.toUpperCase());
+  return slug.split('-vs-').map(part => parseCompareSlug(part));
 }
 
 export function getScoreColor(score: number): "green" | "yellow" | "purple" | "red" | "gray" {

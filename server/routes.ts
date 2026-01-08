@@ -203,8 +203,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Fetch multiple schools by DBNs (for shareable comparison URLs)
-  // IMPORTANT: This must come BEFORE /api/schools/:dbn to avoid matching "by-dbns" as a DBN
+  // Fetch multiple schools by slugs (for shareable comparison URLs)
+  // Supports both friendly slugs (PS006-M) and DBN format (01M006)
+  // IMPORTANT: This must come BEFORE /api/schools/:dbn to avoid matching "by-slugs" as a DBN
+  app.get("/api/schools/by-slugs", async (req: Request, res: Response) => {
+    try {
+      const slugsParam = req.query.slugs as string;
+      if (!slugsParam) {
+        return res.status(400).json({ error: "Missing slugs parameter" });
+      }
+      
+      const slugs = slugsParam.split(",").map(s => s.trim()).filter(Boolean);
+      if (slugs.length === 0) {
+        return res.json([]);
+      }
+      
+      // Limit to 4 schools max (same as comparison limit)
+      const limitedSlugs = slugs.slice(0, 4);
+      
+      // Get all schools to search through
+      const allSchools = await storage.getSchools();
+      
+      const foundSchools = limitedSlugs.map(slug => {
+        // Check if it's a friendly slug like "PS006-M"
+        const friendlyMatch = slug.match(/^([A-Z]+)(\d+)-([MXKQR])$/i);
+        if (friendlyMatch) {
+          const type = friendlyMatch[1].toUpperCase();
+          const number = friendlyMatch[2].padStart(3, '0');
+          const borough = friendlyMatch[3].toUpperCase();
+          
+          // Find school matching type, number, and borough
+          return allSchools.find(school => {
+            const dbn = school.dbn.toUpperCase();
+            const schoolBorough = dbn.charAt(2);
+            const schoolNumber = dbn.slice(3);
+            
+            // Check borough and number match
+            if (schoolBorough !== borough || schoolNumber !== number) return false;
+            
+            // Check school type matches based on name
+            const nameUpper = school.name.toUpperCase();
+            if (type === 'PS' && nameUpper.startsWith('P.S.')) return true;
+            if (type === 'IS' && nameUpper.startsWith('I.S.')) return true;
+            if (type === 'MS' && nameUpper.startsWith('M.S.')) return true;
+            if (type === 'HS' && nameUpper.startsWith('H.S.')) return true;
+            if (type === 'JHS' && nameUpper.startsWith('J.H.S.')) return true;
+            
+            return false;
+          });
+        }
+        
+        // Fallback: treat as DBN (e.g., "01M006")
+        const dbn = slug.toUpperCase();
+        return allSchools.find(school => school.dbn.toUpperCase() === dbn);
+      });
+      
+      // Filter out any null results (schools not found)
+      const validSchools = foundSchools.filter(s => s !== null && s !== undefined);
+      res.json(validSchools);
+    } catch (error) {
+      console.error("Error fetching schools by slugs:", error);
+      res.status(500).json({ error: "Failed to fetch schools" });
+    }
+  });
+  
+  // Legacy endpoint for backwards compatibility
   app.get("/api/schools/by-dbns", async (req: Request, res: Response) => {
     try {
       const dbnsParam = req.query.dbns as string;
