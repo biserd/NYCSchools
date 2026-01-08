@@ -320,8 +320,9 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
                 
                 <p className="font-medium mt-3">Key Metrics</p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                  <li><strong>Apps per Seat:</strong> Total Applicants ÷ Seats Available</li>
-                  <li><strong>Offer Rate:</strong> Offers Made ÷ Total Applicants</li>
+                  <li><strong>Applicants:</strong> Unique applicants who ranked this school (not raw application count, since families apply to multiple schools)</li>
+                  <li><strong>Apps per Seat:</strong> Unique Applicants ÷ Seats Available</li>
+                  <li><strong>Offer Rate:</strong> Offers Made ÷ Unique Applicants</li>
                   <li><strong>Est. Fill Rate:</strong> Uses Bayesian-smoothed historical yield to estimate how full the school will be</li>
                 </ul>
                 
