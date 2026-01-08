@@ -421,6 +421,19 @@ export function getSchoolUrl(school: Pick<School, 'name' | 'dbn'>): string {
   return `/school/${getSchoolSlug(school)}`;
 }
 
+// Helper function to generate a shareable comparison URL from DBNs
+export function getComparisonUrl(dbns: string[]): string {
+  if (dbns.length === 0) return '/compare';
+  const slug = dbns.map(dbn => dbn.toLowerCase()).join('-vs-');
+  return `/compare/${slug}`;
+}
+
+// Helper function to parse DBNs from a comparison URL slug
+export function parseComparisonSlug(slug: string): string[] {
+  if (!slug) return [];
+  return slug.split('-vs-').map(dbn => dbn.toUpperCase());
+}
+
 export function getScoreColor(score: number): "green" | "yellow" | "purple" | "red" | "gray" {
   if (score < 0) return "gray"; // Insufficient data
   if (score >= 90) return "green";

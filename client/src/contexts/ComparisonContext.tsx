@@ -11,6 +11,7 @@ interface ComparisonContextType {
   addToComparison: (school: School) => { success: boolean; error?: string };
   removeFromComparison: (dbn: string) => void;
   clearComparison: () => void;
+  setComparedSchools: (schools: School[]) => void;
   isInComparison: (dbn: string) => boolean;
   maxCompare: number;
   isPremium: boolean;
@@ -71,6 +72,10 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     setComparedSchools([]);
   }, []);
 
+  const setSchools = useCallback((schools: School[]) => {
+    setComparedSchools(schools.slice(0, maxCompare));
+  }, [maxCompare]);
+
   const isInComparison = useCallback((dbn: string) => {
     return comparedSchools.some(s => s.dbn === dbn);
   }, [comparedSchools]);
@@ -82,6 +87,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
         addToComparison,
         removeFromComparison,
         clearComparison,
+        setComparedSchools: setSchools,
         isInComparison,
         maxCompare,
         isPremium,

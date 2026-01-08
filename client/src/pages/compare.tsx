@@ -4,13 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
+import { useState, useEffect } from "react";
 import { 
   X, GraduationCap, Users, TrendingUp, Sun, MapPin, Home, TrendingDown, Minus, Scale,
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
-  Globe, Percent, Languages, DollarSign, Lock, CheckCircle, Target
+  Globe, Percent, Languages, DollarSign, Lock, CheckCircle, Target, Share2, Check, Copy
 } from "lucide-react";
-import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/schema";
+import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, School } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueries } from "@tanstack/react-query";
@@ -190,9 +192,34 @@ function PTACell({ total, perStudent }: { total: number | null | undefined; perS
 }
 
 export default function ComparePage() {
-  const { comparedSchools, removeFromComparison, clearComparison } = useComparison();
+  const { comparedSchools, removeFromComparison, clearComparison, setComparedSchools } = useComparison();
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  
+  // Check for URL params
+  const [, params] = useRoute("/compare/:schools");
+  const urlDbns = params?.schools ? parseComparisonSlug(params.schools) : [];
+  
+  // Fetch schools from URL if provided
+  const { data: urlSchools, isLoading: urlSchoolsLoading } = useQuery<School[]>({
+    queryKey: ["/api/schools/by-dbns", urlDbns.join(",")],
+    queryFn: async () => {
+      if (urlDbns.length === 0) return [];
+      const response = await fetch(`/api/schools/by-dbns?dbns=${urlDbns.join(",")}`);
+      if (!response.ok) throw new Error("Failed to fetch schools");
+      return response.json();
+    },
+    enabled: urlDbns.length > 0,
+  });
+  
+  // Sync URL schools to comparison context when loaded
+  useEffect(() => {
+    if (urlSchools && urlSchools.length > 0 && comparedSchools.length === 0) {
+      setComparedSchools(urlSchools);
+    }
+  }, [urlSchools, comparedSchools.length, setComparedSchools]);
   
   // Check subscription status
   const { data: subscription, isFetched: subscriptionFetched } = useQuery<{
@@ -206,6 +233,20 @@ export default function ComparePage() {
   
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "season_pass" || subscription?.plan === "premium" || subscription?.plan === "developer");
+  
+  // Copy shareable link to clipboard
+  const copyShareableLink = () => {
+    const dbns = comparedSchools.map(s => s.dbn);
+    const url = `${window.location.origin}${getComparisonUrl(dbns)}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Share this link to show your school comparison.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   
   // Fetch all district averages for comparison
   const { data: allDistrictAverages } = useQuery<Record<string, DistrictAverages>>({
@@ -247,8 +288,8 @@ export default function ComparePage() {
     byGrade => Object.values(byGrade).some(m => m !== undefined)
   );
 
-  // Show loading state while checking auth/subscription
-  const isCheckingAccess = authLoading || (!!user && !subscriptionFetched);
+  // Show loading state while checking auth/subscription or loading URL schools
+  const isCheckingAccess = authLoading || (!!user && !subscriptionFetched) || urlSchoolsLoading;
   
   // Loading state while checking access
   if (isCheckingAccess) {
@@ -434,14 +475,26 @@ export default function ComparePage() {
               Comparing {comparedSchools.length} {comparedSchools.length === 1 ? 'school' : 'schools'}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={clearComparison}
-            data-testid="button-clear-all-compare"
-          >
-            Clear All
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyShareableLink}
+              data-testid="button-copy-compare-link"
+              disabled={comparedSchools.length === 0}
+            >
+              {copied ? <Check className="w-4 h-4 mr-1" /> : <Share2 className="w-4 h-4 mr-1" />}
+              {copied ? "Copied!" : "Share"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearComparison}
+              data-testid="button-clear-all-compare"
+            >
+              Clear All
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 mb-8">

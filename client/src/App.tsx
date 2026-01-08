@@ -83,6 +83,9 @@ function Router() {
         <Route path="/compare">
           <ComparePage />
         </Route>
+        <Route path="/compare/:schools">
+          <ComparePage />
+        </Route>
         <Route path="/map">
           <MapPage />
         </Route>
