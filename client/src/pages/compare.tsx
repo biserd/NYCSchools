@@ -234,9 +234,12 @@ export default function ComparePage() {
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "season_pass" || subscription?.plan === "premium" || subscription?.plan === "developer");
   
+  // Filter out any null schools before using them
+  const validComparedSchools = comparedSchools.filter((s): s is School => s !== null && s !== undefined);
+  
   // Copy shareable link to clipboard
   const copyShareableLink = () => {
-    const dbns = comparedSchools.map(s => s.dbn);
+    const dbns = validComparedSchools.map(s => s.dbn);
     const url = `${window.location.origin}${getComparisonUrl(dbns)}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
@@ -263,7 +266,7 @@ export default function ComparePage() {
   
   // Fetch admissions data for all compared schools using useQueries (only for premium users)
   const admissionsQueries = useQueries({
-    queries: comparedSchools.map(school => ({
+    queries: validComparedSchools.map(school => ({
       queryKey: ["/api/schools", school.dbn, "admissions"],
       enabled: !!school.dbn && canAccessPremiumData,
     })),
@@ -271,7 +274,7 @@ export default function ComparePage() {
 
   // Build a map of DBN -> latest admissions metrics by grade
   const admissionsDataMap: Record<string, Record<string, AdmissionsMetrics | undefined>> = {};
-  comparedSchools.forEach((school, idx) => {
+  validComparedSchools.forEach((school, idx) => {
     const data = (admissionsQueries[idx]?.data as AdmissionsMetrics[]) || [];
     const byGrade: Record<string, AdmissionsMetrics | undefined> = {};
     ['K', 'PK', '3K'].forEach(grade => {
@@ -395,7 +398,7 @@ export default function ComparePage() {
     );
   }
 
-  if (comparedSchools.length === 0) {
+  if (validComparedSchools.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <AppHeader />
@@ -424,7 +427,7 @@ export default function ComparePage() {
     );
   }
 
-  const schoolsWithScores = comparedSchools.map(school => ({
+  const schoolsWithScores = validComparedSchools.map(school => ({
     ...school,
     overall_score: calculateOverallScore(school),
     scoreColor: getScoreColor(calculateOverallScore(school)),
@@ -472,7 +475,7 @@ export default function ComparePage() {
               </h1>
             </div>
             <p className="text-muted-foreground" data-testid="text-compare-description">
-              Comparing {comparedSchools.length} {comparedSchools.length === 1 ? 'school' : 'schools'}
+              Comparing {validComparedSchools.length} {validComparedSchools.length === 1 ? 'school' : 'schools'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -481,7 +484,7 @@ export default function ComparePage() {
               size="sm"
               onClick={copyShareableLink}
               data-testid="button-copy-compare-link"
-              disabled={comparedSchools.length === 0}
+              disabled={validComparedSchools.length === 0}
             >
               {copied ? <Check className="w-4 h-4 mr-1" /> : <Share2 className="w-4 h-4 mr-1" />}
               {copied ? "Copied!" : "Share"}

@@ -4,11 +4,14 @@ import { Card } from "@/components/ui/card";
 import { X, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { School } from "@shared/schema";
 
 export function CompareBar() {
   const { comparedSchools, removeFromComparison, clearComparison, maxCompare } = useComparison();
 
-  if (comparedSchools.length === 0) return null;
+  const validSchools = comparedSchools.filter((s): s is School => s !== null && s !== undefined);
+
+  if (validSchools.length === 0) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -17,9 +20,9 @@ export function CompareBar() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium" data-testid="text-compare-count">
-                Compare ({comparedSchools.length}/{maxCompare})
+                Compare ({validSchools.length}/{maxCompare})
               </span>
-              {comparedSchools.map((school) => (
+              {validSchools.map((school) => (
                 <Badge
                   key={school.dbn}
                   variant="secondary"
@@ -49,7 +52,7 @@ export function CompareBar() {
               >
                 Clear All
               </Button>
-              {comparedSchools.length >= 2 && (
+              {validSchools.length >= 2 && (
                 <Link href="/compare">
                   <Button size="sm" data-testid="button-view-comparison">
                     Compare Schools
