@@ -1659,53 +1659,100 @@ When asked about score trends or how scores have changed over time, USE THE HIST
         content: message,
       });
 
-      // Create or use cached school summary
+      // Create or use cached school summary - compact format for efficiency
+      // Uses a condensed format to fit within context limits while maintaining filtering capability
       if (!cachedSchoolSummary) {
         const schools = await storage.getSchools();
-        const schoolSample = schools.slice(0, 50).map(s => ({
-          dbn: s.dbn,
-          name: s.name,
-          district: s.district,
-          grade_band: s.grade_band,
-          overall: Math.round(0.4 * s.academics_score + 0.3 * s.climate_score + 0.3 * s.progress_score),
-          academics: s.academics_score,
-          climate: s.climate_score,
-          progress: s.progress_score,
-          ela: s.ela_proficiency,
-          math: s.math_proficiency,
-          enrollment: s.enrollment,
-        }));
-        cachedSchoolSummary = JSON.stringify(schoolSample, null, 2);
+        // Group schools by borough for efficient lookup
+        const byBorough: Record<string, any[]> = { M: [], X: [], K: [], Q: [], R: [] };
+        
+        schools.forEach(s => {
+          const borough = s.dbn.slice(2, 3) as keyof typeof byBorough;
+          if (byBorough[borough]) {
+            const overall = Math.round(0.4 * (s.academics_score || 0) + 0.3 * (s.climate_score || 0) + 0.3 * (s.progress_score || 0));
+            // Compact format: DBN|Name|GradeBand|Overall|Flags
+            const flags = [
+              s.has_gifted_talented ? 'GT' + (s.gt_program_type === 'citywide' ? '+' : '') : '',
+              s.has_dual_language ? 'DL' : '',
+              s.has_3k ? '3K' : '',
+              s.has_prek ? 'PK' : '',
+            ].filter(Boolean).join(',');
+            byBorough[borough].push({
+              d: s.dbn,
+              n: s.name,
+              g: s.grade_band,
+              o: overall,
+              f: flags || null,
+            });
+          }
+        });
+        
+        // Sort each borough by overall score descending
+        Object.keys(byBorough).forEach(b => {
+          byBorough[b as keyof typeof byBorough].sort((a, c) => c.o - a.o);
+        });
+        
+        cachedSchoolSummary = JSON.stringify(byBorough);
       }
 
-      const systemMessage = `You are a helpful assistant for parents looking for schools in NYC. You have access to REAL data from NYC public and charter schools across all 5 boroughs (Manhattan, Bronx, Brooklyn, Queens, Staten Island).
+      const systemMessage = `You are a focused, helpful assistant for parents looking for schools in NYC. You have access to COMPLETE data for ALL 1,500+ NYC public and charter schools.
+
+CRITICAL RULES - FOLLOW STRICTLY:
+
+1. **ALWAYS ASK CLARIFYING QUESTIONS** before recommending schools if the user hasn't specified:
+   - Grade level (elementary, middle, high school, early childhood/3K/Pre-K)
+   - Borough or neighborhood preference
+   - Any special programs they're looking for (G&T, Dual Language, etc.)
+   
+   Example: "I'd be happy to help! To give you the best recommendations, could you tell me:
+   - What grade level are you looking for?
+   - Which borough(s) are you considering?"
+
+2. **STRICT FILTERING**: When a user specifies criteria, ONLY recommend schools that match ALL their criteria:
+   - If they say "elementary schools" → ONLY show schools with grade_band containing K-5, PK-5, K-2, 3-5, etc.
+   - If they say "Brooklyn" → ONLY show schools with borough "K"
+   - If they say "G&T" → ONLY show schools with has_gt: true
+   - NEVER include schools outside their specified criteria
+   
+3. **CONCISE RESPONSES**: Limit recommendations to 3-5 schools maximum. Quality over quantity.
+
+4. **ACKNOWLEDGE FILTERS**: Start your recommendation by confirming what criteria you're filtering by:
+   "Based on your criteria (elementary schools in Brooklyn with Dual Language), here are my top 3 recommendations..."
+
+Borough codes in the data:
+- M = Manhattan
+- X = Bronx  
+- K = Brooklyn
+- Q = Queens
+- R = Staten Island
+
+Grade band patterns:
+- Elementary: K-5, PK-5, K-2, 3-5, K-8 (elementary portion)
+- Middle: 6-8, 5-8
+- High: 9-12
+- Early Childhood: 3K, PK, Pre-K
+
 ${currentSchoolContext}
 School Data Overview:
 - Districts: 1-32 (community school districts)
-- Metrics available: Overall Score, Academics Score, Climate Score, Progress Score, ELA Proficiency, Math Proficiency, Enrollment, Student-Teacher Ratio, NYC School Survey scores
-- HISTORICAL DATA: You have access to year-by-year test scores spanning multiple years. When asked about trends or how scores have changed, use the historical data provided above.
-- For high schools: Graduation rates, SAT scores, College readiness, AP courses
-
-Overall Score calculation: 40% academics + 30% climate + 30% progress
+- Metrics: Overall Score (40% academics + 30% climate + 30% progress), ELA/Math Proficiency, Enrollment, Student-Teacher Ratio
+- Programs: G&T (has_gt), Dual Language (has_dual_lang), 3K/Pre-K (has_3k, has_prek)
+- HISTORICAL DATA: You have access to year-by-year test scores when provided above.
 
 Score Ranges:
-- 90+: Outstanding (Green)
-- 80-89: Strong (Yellow)
-- 70-79: Average (Amber)
-- Below 70: Needs Improvement (Red)
+- 90+: Outstanding | 80-89: Strong | 70-79: Average | Below 70: Needs Improvement
 
-Here's a sample of other schools for comparison:
+SCHOOL DATABASE (grouped by borough, sorted by overall score):
+Data format: d=DBN, n=Name, g=GradeBand, o=OverallScore, f=Flags (GT=Gifted&Talented, GT+=Citywide G&T, DL=DualLanguage, 3K=Has3K, PK=HasPreK)
 ${cachedSchoolSummary}
 
-When answering questions:
-1. Be specific and helpful - USE THE ACTUAL DATA PROVIDED
-2. Reference actual school names, districts, and scores when possible
-3. Explain what metrics mean in parent-friendly language
-4. If asked to compare schools, focus on key differences
-5. IMPORTANT: When asked about historical trends or how scores changed over time, use the year-by-year historical data provided above. Do NOT say you don't have access to this data - you do.
-6. If you don't have exact data for a specific question that isn't provided, acknowledge the limitation
-
-Remember: Schools are in the database, but you're seeing a sample. For comprehensive searches across all schools, suggest using the search and filter tools on the website.`;
+When answering:
+1. Be specific - USE THE ACTUAL DATA provided above
+2. Reference actual school names, DBNs, and scores
+3. Explain metrics in parent-friendly language
+4. Keep responses focused and actionable
+5. If asked about trends, use historical data when provided
+6. If data isn't available for a specific question, say so honestly`;
 
       // Set up streaming response
       res.setHeader("Content-Type", "text/event-stream");
@@ -1724,13 +1771,13 @@ Remember: Schools are in the database, but you're seeing a sample. For comprehen
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI
+      // Stream response from OpenAI - lower temperature for focused, deterministic responses
       const stream = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages,
         stream: true,
-        temperature: 0.7,
-        max_tokens: 1000,
+        temperature: 0.5,
+        max_tokens: 800,
       });
 
       let fullResponse = "";
