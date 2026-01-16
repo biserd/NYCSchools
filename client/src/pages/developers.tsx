@@ -101,28 +101,12 @@ export default function DevelopersPage() {
                   Power your applications with academic metrics, demographics, program information, and more.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  {hasApiAccess ? (
-                    <Link href="/developers/docs">
-                      <Button size="lg" data-testid="button-view-docs">
-                        <BookOpen className="w-5 h-5 mr-2" />
-                        View API Documentation
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Button 
-                      size="lg" 
-                      onClick={startCheckout}
-                      disabled={checkoutLoading}
-                      data-testid="button-get-api-access"
-                    >
-                      {checkoutLoading ? (
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      ) : (
-                        <Star className="w-5 h-5 mr-2" />
-                      )}
-                      Get API Access - $4.99/mo
+                  <Link href="/contact">
+                    <Button size="lg" data-testid="button-contact-api">
+                      <ArrowRight className="w-5 h-5 mr-2" />
+                      Talk to us for API Access
                     </Button>
-                  )}
+                  </Link>
                   <Link href="/developers/docs">
                     <Button variant="outline" size="lg" data-testid="button-explore-docs">
                       Explore Documentation
@@ -221,7 +205,7 @@ export default function DevelopersPage() {
                     Ready to Get Started?
                   </CardTitle>
                   <CardDescription className="text-lg">
-                    API access is included with our Premium plan at just $4.99/month.
+                    Contact us for enterprise-grade API access tailored to your needs.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -231,44 +215,19 @@ export default function DevelopersPage() {
                       <div className="text-sm text-muted-foreground">NYC Schools</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">10,000</div>
-                      <div className="text-sm text-muted-foreground">API Requests/Month</div>
+                      <div className="text-3xl font-bold text-primary">Custom</div>
+                      <div className="text-sm text-muted-foreground">Rate Limits</div>
                     </div>
                     <div className="text-center">
                       <div className="text-3xl font-bold text-primary">99.9%</div>
                       <div className="text-sm text-muted-foreground">Uptime SLA</div>
                     </div>
                   </div>
-                  {hasApiAccess ? (
-                    <div className="space-y-4">
-                      <Badge variant="secondary" className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                        <Check className="w-4 h-4 mr-1" />
-                        API Access Active
-                      </Badge>
-                      <div>
-                        <Link href="/developers/docs">
-                          <Button size="lg" data-testid="button-go-to-docs">
-                            <BookOpen className="w-5 h-5 mr-2" />
-                            Go to Documentation
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button 
-                      size="lg" 
-                      onClick={startCheckout}
-                      disabled={checkoutLoading}
-                      data-testid="button-subscribe-api"
-                    >
-                      {checkoutLoading ? (
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      ) : (
-                        <Star className="w-5 h-5 mr-2" />
-                      )}
-                      Subscribe to Premium
+                  <Link href="/contact">
+                    <Button size="lg" data-testid="button-contact-footer">
+                      Contact Sales
                     </Button>
-                  )}
+                  </Link>
                 </CardContent>
               </Card>
             </div>
