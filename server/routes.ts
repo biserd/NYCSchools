@@ -390,8 +390,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(null);
       }
       
-      setCache(cacheKey, zone, CACHE_TTL_LONG);
-      res.json(zone);
+      // Find other schools that fall within this zone's boundary
+      // We'll search for schools in the same district to narrow down the search
+      const allSchoolsInDistrict = await storage.getSchoolsByDistrict(zone.district || 0);
+      const otherSchoolsInZone = [];
+      
+      try {
+        const { default: booleanPointInPolygon } = await import("@turf/boolean-point-in-polygon");
+        const { point } = await import("@turf/helpers");
+        
+        const zoneGeometry = zone.geometry as any;
+        
+        for (const s of allSchoolsInDistrict) {
+          if (s.dbn === dbn) continue; // Skip the current school
+          if (s.latitude && s.longitude) {
+            const p = point([s.longitude, s.latitude]);
+            if (booleanPointInPolygon(p, zoneGeometry)) {
+              otherSchoolsInZone.push({
+                dbn: s.dbn,
+                name: s.name,
+                latitude: s.latitude,
+                longitude: s.longitude,
+                overall_score: s.academics_score + s.climate_score + s.progress_score, // Basic score calc if needed
+                grade_band: s.grade_band
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error finding other schools in zone:", err);
+      }
+      
+      const responseData = { ...zone, otherSchools: otherSchoolsInZone };
+      setCache(cacheKey, responseData, CACHE_TTL_LONG);
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching school zone:", error);
       res.status(500).json({ error: "Failed to fetch school zone" });

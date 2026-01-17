@@ -9,6 +9,14 @@ interface SchoolZoneData {
   schoolName: string | null;
   gradeLevel: string;
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
+  otherSchools?: {
+    dbn: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    overall_score?: number;
+    grade_band?: string;
+  }[];
 }
 
 interface SchoolZoneMapProps {
@@ -46,35 +54,46 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
       maxZoom: 19,
     }).addTo(map);
 
-    const schoolIcon = L.divIcon({
+    const createMarkerIcon = (color: string, isMain: boolean = false) => L.divIcon({
       className: "school-marker",
       html: `
         <div style="
-          background: #2563eb;
+          background: ${color};
           color: white;
           border-radius: 50%;
-          width: 32px;
-          height: 32px;
+          width: ${isMain ? '32px' : '24px'};
+          height: ${isMain ? '32px' : '24px'};
           display: flex;
           align-items: center;
           justify-content: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           border: 2px solid white;
+          z-index: ${isMain ? 1000 : 500};
         ">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="${isMain ? '18' : '14'}" height="${isMain ? '18' : '14'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
             <path d="M6 12v5c3 3 9 3 12 0v-5"/>
           </svg>
         </div>
       `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16],
+      iconSize: [isMain ? 32 : 24, isMain ? 32 : 24],
+      iconAnchor: [isMain ? 16 : 12, isMain ? 16 : 12],
+      popupAnchor: [0, isMain ? -16 : -12],
     });
 
-    L.marker([latitude, longitude], { icon: schoolIcon })
+    // Add main school marker
+    L.marker([latitude, longitude], { icon: createMarkerIcon("#2563eb", true) })
       .addTo(map)
-      .bindPopup(`<strong>${schoolName}</strong><br/>${schoolDbn}`);
+      .bindPopup(`<strong>${schoolName}</strong> (Current)<br/>${schoolDbn}`);
+
+    // Add other schools in the same zone
+    if (zoneData?.otherSchools) {
+      zoneData.otherSchools.forEach(other => {
+        L.marker([other.latitude, other.longitude], { icon: createMarkerIcon("#64748b") })
+          .addTo(map)
+          .bindPopup(`<strong>${other.name}</strong><br/>${other.dbn}<br/>Grades: ${other.grade_band || 'N/A'}`);
+      });
+    }
 
     if (zoneData?.geometry) {
       const zoneLayer = L.geoJSON(
@@ -146,6 +165,18 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
           className="h-64 rounded-lg border"
           data-testid="map-school-zone"
         />
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb] border border-white shadow-sm" />
+            <span>Current School</span>
+          </div>
+          {zoneData?.otherSchools && zoneData.otherSchools.length > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#64748b] border border-white shadow-sm" />
+              <span>Other schools in this zone</span>
+            </div>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground mt-2">
           {zoneData 
             ? "Zone boundaries from NYC Department of Education. Verify with DOE for official enrollment eligibility."
