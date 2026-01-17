@@ -99,7 +99,7 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
               </div>
               <a 
                 href="/school/${other.dbn}" 
-                class="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-3 w-full"
+                class="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-white text-primary border border-input hover:bg-accent hover:text-accent-foreground h-7 px-3 w-full"
                 onclick="window.location.href='/school/${other.dbn}'; return false;"
               >
                 View School Profile
