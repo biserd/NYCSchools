@@ -1163,14 +1163,6 @@ export default function SchoolDetail() {
             </CardContent>
           </Card>
 
-          {/* School Zone Map */}
-          <SchoolZoneMap 
-            schoolDbn={schoolWithScore.dbn}
-            schoolName={schoolWithScore.name}
-            latitude={schoolWithScore.latitude}
-            longitude={schoolWithScore.longitude}
-          />
-
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 
             schoolWithScore.iep_percent !== null || schoolWithScore.asian_percent !== null || 

@@ -391,9 +391,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Find other schools that fall within this zone's boundary
-      // We'll search for schools in the same district to narrow down the search
-      const allSchoolsInDistrict = await storage.getSchoolsByDistrict(zone.district || 0);
-      const otherSchoolsInZone = [];
+      // Get all schools and filter by district
+      const allSchools = await storage.getSchools();
+      const school = await storage.getSchool(dbn);
+      const allSchoolsInDistrict = school ? allSchools.filter(s => s.district === school.district) : [];
+      const otherSchoolsInZone: Array<{dbn: string; name: string; latitude: number; longitude: number; overall_score: number; grade_band: string}> = [];
       
       try {
         const { default: booleanPointInPolygon } = await import("@turf/boolean-point-in-polygon");
