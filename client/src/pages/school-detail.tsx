@@ -1185,14 +1185,7 @@ export default function SchoolDetail() {
                 {schoolWithScore.phone && (
                   <div>
                     <dt className="text-sm text-muted-foreground">Phone</dt>
-                    <dd className="text-lg font-semibold" data-testid="text-phone">
-                      <a 
-                        href={`tel:${schoolWithScore.phone}`}
-                        className="text-primary hover:underline"
-                      >
-                        {schoolWithScore.phone}
-                      </a>
-                    </dd>
+                    <dd className="text-lg font-semibold" data-testid="text-phone">{schoolWithScore.phone}</dd>
                   </div>
                 )}
                 {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
