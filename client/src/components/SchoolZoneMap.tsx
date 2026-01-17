@@ -115,7 +115,7 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <MapPin className="w-5 h-5" />
-            School Location
+            {schoolName} location and zone boundary
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -132,7 +132,7 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <MapPin className="w-5 h-5" />
-          {zoneData ? "School Zone Map" : "School Location"}
+          {schoolName} location and zone boundary
         </CardTitle>
         {zoneData && (
           <p className="text-sm text-muted-foreground">
