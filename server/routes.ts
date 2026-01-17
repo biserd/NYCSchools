@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
@@ -360,6 +361,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching admissions data:", error);
       res.status(500).json({ error: "Failed to fetch admissions data" });
+    }
+  });
+
+  // Get school zone boundary (GeoJSON geometry) for map overlay
+  app.get("/api/schools/:dbn/zone", async (req: Request, res: Response) => {
+    try {
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `school-zone-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      // Look up zone boundary from school_zones table
+      const [zone] = await db.select({
+        dbn: schoolZones.dbn,
+        schoolName: schoolZones.schoolName,
+        gradeLevel: schoolZones.gradeLevel,
+        geometry: schoolZones.geometry,
+      })
+        .from(schoolZones)
+        .where(eq(schoolZones.dbn, dbn))
+        .limit(1);
+      
+      if (!zone) {
+        return res.json(null);
+      }
+      
+      setCache(cacheKey, zone, CACHE_TTL_LONG);
+      res.json(zone);
+    } catch (error) {
+      console.error("Error fetching school zone:", error);
+      res.status(500).json({ error: "Failed to fetch school zone" });
     }
   });
 

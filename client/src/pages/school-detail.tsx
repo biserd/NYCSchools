@@ -20,6 +20,7 @@ import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
 import { AdmissionsSection } from "@/components/AdmissionsSection";
+import { SchoolZoneMap } from "@/components/SchoolZoneMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
@@ -1153,6 +1154,14 @@ export default function SchoolDetail() {
               </dl>
             </CardContent>
           </Card>
+
+          {/* School Zone Map */}
+          <SchoolZoneMap 
+            schoolDbn={schoolWithScore.dbn}
+            schoolName={schoolWithScore.name}
+            latitude={schoolWithScore.latitude}
+            longitude={schoolWithScore.longitude}
+          />
 
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 
