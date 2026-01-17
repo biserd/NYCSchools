@@ -295,7 +295,7 @@ export default function SchoolDetail() {
                   </span>
                 )}
                 <Link 
-                  href={`/?districtId=${schoolWithScore.district}`}
+                  href={`/?district=${schoolWithScore.district}`}
                   className="text-sm text-primary hover:underline cursor-pointer" 
                   data-testid="link-district"
                 >
@@ -1261,9 +1261,6 @@ export default function SchoolDetail() {
             </Card>
           )}
 
-          {/* Reviews Section */}
-          <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
-          
           {/* Other Schools in District Section */}
           {topDistrictSchools.length > 0 && (
             <Card data-testid="card-other-district-schools">
@@ -1309,7 +1306,7 @@ export default function SchoolDetail() {
                   })}
                 </div>
                 <div className="mt-4 text-center">
-                  <Link href={`/?districtId=${schoolWithScore.district}`}>
+                  <Link href={`/?district=${schoolWithScore.district}`}>
                     <Button variant="outline" size="sm" data-testid="button-view-all-district-schools">
                       View All District {schoolWithScore.district} Schools
                     </Button>
@@ -1318,6 +1315,9 @@ export default function SchoolDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* Reviews Section */}
+          <ReviewsSection schoolName={schoolWithScore.name} schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
             <p>Data from NYC Department of Education School Survey and public records.</p>
@@ -1331,7 +1331,7 @@ export default function SchoolDetail() {
   );
 }
 
-function ReviewsSection({ schoolDbn, userId, isAuthenticated }: { schoolDbn: string; userId?: string; isAuthenticated: boolean }) {
+function ReviewsSection({ schoolName, schoolDbn, userId, isAuthenticated }: { schoolName: string; schoolDbn: string; userId?: string; isAuthenticated: boolean }) {
   const { data: stats } = useQuery<{ averageRating: number; totalReviews: number }>({
     queryKey: ["/api/schools", schoolDbn, "reviews", "stats"],
   });
@@ -1357,7 +1357,7 @@ function ReviewsSection({ schoolDbn, userId, isAuthenticated }: { schoolDbn: str
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
-            <CardTitle>Parent Reviews</CardTitle>
+            <CardTitle>Parent Reviews for {schoolName}</CardTitle>
           </div>
           {stats && stats.totalReviews > 0 && (
             <div className="flex items-center gap-2">
