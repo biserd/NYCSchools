@@ -307,6 +307,42 @@ export default function SchoolDetail() {
                 </Link>
               </div>
               <CommuteTime schoolDbn={schoolWithScore.dbn} />
+              
+              {/* Contact Information */}
+              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
+                  <div className="flex items-center gap-2" data-testid="header-address">
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    <span>{schoolWithScore.address}</span>
+                  </div>
+                )}
+                {schoolWithScore.phone && (
+                  <div className="flex items-center gap-2" data-testid="header-phone">
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <span>{schoolWithScore.phone}</span>
+                  </div>
+                )}
+                {schoolWithScore.principal_name && (
+                  <div className="flex items-center gap-2" data-testid="header-principal">
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span>Principal: {schoolWithScore.principal_name}</span>
+                  </div>
+                )}
+                {schoolWithScore.website && (
+                  <div className="flex items-center gap-2" data-testid="header-website">
+                    <Globe className="w-4 h-4 shrink-0" />
+                    <a 
+                      href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
+                      target="_blank"
+                      rel="nofollow noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      School Website
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <FavoriteButton 
@@ -1156,69 +1192,10 @@ export default function SchoolDetail() {
                   <dt className="text-sm text-muted-foreground">Student-Teacher Ratio</dt>
                   <dd className="text-lg font-semibold" data-testid="text-ratio">{schoolWithScore.student_teacher_ratio}:1</dd>
                 </div>
-                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
-                  <div className="md:col-span-2">
-                    <dt className="text-sm text-muted-foreground">Address</dt>
-                    <dd className="text-lg font-semibold" data-testid="text-address">{schoolWithScore.address}</dd>
-                  </div>
-                )}
               </dl>
             </CardContent>
           </Card>
 
-          {/* Contact Information Card */}
-          <Card data-testid="card-contact">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="w-5 h-5" />
-                Contact Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {schoolWithScore.principal_name && (
-                  <div>
-                    <dt className="text-sm text-muted-foreground">Principal</dt>
-                    <dd className="text-lg font-semibold" data-testid="text-principal">{schoolWithScore.principal_name}</dd>
-                  </div>
-                )}
-                {schoolWithScore.phone && (
-                  <div>
-                    <dt className="text-sm text-muted-foreground">Phone</dt>
-                    <dd className="text-lg font-semibold" data-testid="text-phone">{schoolWithScore.phone}</dd>
-                  </div>
-                )}
-                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
-                  <div className="md:col-span-2">
-                    <dt className="text-sm text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      Address
-                    </dt>
-                    <dd className="text-lg font-semibold" data-testid="text-contact-address">{schoolWithScore.address}</dd>
-                  </div>
-                )}
-                {schoolWithScore.website && (
-                  <div className="md:col-span-2">
-                    <dt className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Globe className="w-3 h-3" />
-                      Website
-                    </dt>
-                    <dd className="text-lg" data-testid="text-website">
-                      <a 
-                        href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
-                        target="_blank"
-                        rel="nofollow noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Visit School Website
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </CardContent>
-          </Card>
 
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 
