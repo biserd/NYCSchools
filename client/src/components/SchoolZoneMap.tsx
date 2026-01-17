@@ -89,9 +89,23 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
     // Add other schools in the same zone
     if (zoneData?.otherSchools) {
       zoneData.otherSchools.forEach(other => {
-        L.marker([other.latitude, other.longitude], { icon: createMarkerIcon("#64748b") })
+        const marker = L.marker([other.latitude, other.longitude], { icon: createMarkerIcon("#64748b") })
           .addTo(map)
-          .bindPopup(`<strong>${other.name}</strong><br/>${other.dbn}<br/>Grades: ${other.grade_band || 'N/A'}`);
+          .bindPopup(`
+            <div class="p-1">
+              <strong class="block text-sm mb-1">${other.name}</strong>
+              <div class="text-xs text-muted-foreground mb-2">
+                ${other.dbn} • Grades: ${other.grade_band || 'N/A'}
+              </div>
+              <a 
+                href="/school/${other.dbn}" 
+                class="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-3 w-full"
+                onclick="window.location.href='/school/${other.dbn}'; return false;"
+              >
+                View School Profile
+              </a>
+            </div>
+          `);
       });
     }
 
