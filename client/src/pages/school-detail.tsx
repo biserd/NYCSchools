@@ -1207,7 +1207,7 @@ export default function SchoolDetail() {
                       <a 
                         href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="nofollow noopener noreferrer"
                         className="text-primary hover:underline inline-flex items-center gap-1"
                       >
                         Visit School Website
