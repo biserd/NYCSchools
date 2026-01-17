@@ -49,7 +49,9 @@ import {
   Zap,
   Loader2,
   LogIn,
-  Phone
+  Phone,
+  ExternalLink,
+  Globe
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
@@ -1165,54 +1167,65 @@ export default function SchoolDetail() {
           </Card>
 
           {/* Contact Information Card */}
-          {(schoolWithScore.principal_name || schoolWithScore.phone || schoolWithScore.website) && (
-            <Card data-testid="card-contact">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {schoolWithScore.principal_name && (
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Principal</dt>
-                      <dd className="text-lg font-semibold" data-testid="text-principal">{schoolWithScore.principal_name}</dd>
-                    </div>
-                  )}
-                  {schoolWithScore.phone && (
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Phone</dt>
-                      <dd className="text-lg font-semibold" data-testid="text-phone">
-                        <a 
-                          href={`tel:${schoolWithScore.phone}`}
-                          className="text-primary hover:underline"
-                        >
-                          {schoolWithScore.phone}
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                  {schoolWithScore.website && (
-                    <div className="md:col-span-2">
-                      <dt className="text-sm text-muted-foreground">Website</dt>
-                      <dd className="text-lg font-semibold" data-testid="text-website">
-                        <a 
-                          href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {schoolWithScore.website}
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              </CardContent>
-            </Card>
-          )}
+          <Card data-testid="card-contact">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="w-5 h-5" />
+                Contact Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {schoolWithScore.principal_name && (
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Principal</dt>
+                    <dd className="text-lg font-semibold" data-testid="text-principal">{schoolWithScore.principal_name}</dd>
+                  </div>
+                )}
+                {schoolWithScore.phone && (
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Phone</dt>
+                    <dd className="text-lg font-semibold" data-testid="text-phone">
+                      <a 
+                        href={`tel:${schoolWithScore.phone}`}
+                        className="text-primary hover:underline"
+                      >
+                        {schoolWithScore.phone}
+                      </a>
+                    </dd>
+                  </div>
+                )}
+                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
+                  <div className="md:col-span-2">
+                    <dt className="text-sm text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      Address
+                    </dt>
+                    <dd className="text-lg font-semibold" data-testid="text-contact-address">{schoolWithScore.address}</dd>
+                  </div>
+                )}
+                {schoolWithScore.website && (
+                  <div className="md:col-span-2">
+                    <dt className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      Website
+                    </dt>
+                    <dd className="text-lg" data-testid="text-website">
+                      <a 
+                        href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Visit School Website
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </CardContent>
+          </Card>
 
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 
