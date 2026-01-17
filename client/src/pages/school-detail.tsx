@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend } from "@shared/schema";
@@ -102,6 +102,22 @@ export default function SchoolDetail() {
     enabled: !!dbn,
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
+
+  // Fetch all schools to get top schools in the same district
+  const { data: allSchools } = useQuery<School[]>({
+    queryKey: ["/api/schools"],
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  // Get top 3 schools in the same district (excluding current school) - memoized for performance
+  const topDistrictSchools = useMemo(() => {
+    if (!allSchools || !school) return [];
+    return allSchools
+      .filter(s => s.district === school.district && s.dbn !== dbn)
+      .map(s => ({ ...s, overall_score: calculateOverallScore(s) }))
+      .sort((a, b) => b.overall_score - a.overall_score)
+      .slice(0, 3);
+  }, [allSchools, school?.district, dbn]);
 
   if (isLoading) {
     return (
@@ -218,9 +234,9 @@ export default function SchoolDetail() {
           {/* School Header */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-3xl font-bold mb-2" data-testid="text-school-name">
+              <h1 className="text-3xl font-bold mb-2" data-testid="text-school-name">
                 {schoolWithScore.name}
-              </h2>
+              </h1>
               <div className="flex items-center gap-3 flex-wrap mb-3">
                 <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
                 {schoolWithScore.grade_band && (
@@ -278,9 +294,13 @@ export default function SchoolDetail() {
                     {borough}
                   </span>
                 )}
-                <span className="text-sm text-muted-foreground" data-testid="text-district">
+                <Link 
+                  href={`/?districtId=${schoolWithScore.district}`}
+                  className="text-sm text-primary hover:underline cursor-pointer" 
+                  data-testid="link-district"
+                >
                   District {schoolWithScore.district}
-                </span>
+                </Link>
               </div>
               <CommuteTime schoolDbn={schoolWithScore.dbn} />
             </div>
@@ -1243,6 +1263,61 @@ export default function SchoolDetail() {
 
           {/* Reviews Section */}
           <ReviewsSection schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
+          
+          {/* Other Schools in District Section */}
+          {topDistrictSchools.length > 0 && (
+            <Card data-testid="card-other-district-schools">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5" />
+                  Check Out Other Schools in District {schoolWithScore.district}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3">
+                  {topDistrictSchools.map((districtSchool, index) => {
+                    const schoolSlugForLink = `${districtSchool.dbn.toLowerCase()}-${districtSchool.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+                    const schoolScoreColor = getScoreColor(districtSchool.overall_score);
+                    return (
+                      <Link 
+                        key={districtSchool.dbn} 
+                        href={`/school/${schoolSlugForLink}`}
+                        className="block"
+                        data-testid={`link-district-school-${index}`}
+                      >
+                        <div className="flex items-center justify-between p-3 rounded-lg border hover-elevate cursor-pointer transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-foreground truncate" data-testid={`text-district-school-name-${index}`}>
+                              {districtSchool.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                              <span>{districtSchool.dbn}</span>
+                              {districtSchool.grade_band && (
+                                <span>• Grades {districtSchool.grade_band}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-3">
+                            <div className={`w-3 h-3 rounded-full ${colorMap[schoolScoreColor]}`} />
+                            <span className="font-bold tabular-nums" data-testid={`text-district-school-score-${index}`}>
+                              {districtSchool.overall_score === -1 ? 'N/A' : districtSchool.overall_score}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 text-center">
+                  <Link href={`/?districtId=${schoolWithScore.district}`}>
+                    <Button variant="outline" size="sm" data-testid="button-view-all-district-schools">
+                      View All District {schoolWithScore.district} Schools
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
             <p>Data from NYC Department of Education School Survey and public records.</p>
