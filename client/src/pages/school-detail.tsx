@@ -21,6 +21,7 @@ import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewsList } from "@/components/ReviewsList";
 import { AdmissionsSection } from "@/components/AdmissionsSection";
 import { SchoolZoneMap } from "@/components/SchoolZoneMap";
+import { SchoolFAQ } from "@/components/SchoolFAQ";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
@@ -1358,6 +1359,9 @@ export default function SchoolDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* FAQ Section */}
+          <SchoolFAQ school={schoolWithScore} />
 
           {/* Reviews Section */}
           <ReviewsSection schoolName={schoolWithScore.name} schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
