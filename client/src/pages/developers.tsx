@@ -39,7 +39,7 @@ export default function DevelopersPage() {
     {
       icon: Database,
       title: "Comprehensive School Data",
-      description: "Access data for 1,500+ NYC public and charter schools including academic scores, demographics, and program information.",
+      description: "Access data for 2,100+ NYC public, charter, and private schools including academic scores, demographics, tuition, and program information.",
     },
     {
       icon: Zap,
@@ -97,8 +97,8 @@ export default function DevelopersPage() {
                   Build with NYC School Data
                 </h1>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Access comprehensive data for 1,500+ NYC public and charter schools through our RESTful API.
-                  Power your applications with academic metrics, demographics, program information, and more.
+                  Access comprehensive data for 2,100+ NYC public, charter, and private schools through our RESTful API.
+                  Power your applications with academic metrics, demographics, tuition, program information, and more.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/contact">
@@ -211,7 +211,7 @@ export default function DevelopersPage() {
                 <CardContent>
                   <div className="grid sm:grid-cols-3 gap-6 mb-8">
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">1,500+</div>
+                      <div className="text-3xl font-bold text-primary">2,100+</div>
                       <div className="text-sm text-muted-foreground">NYC Schools</div>
                     </div>
                     <div className="text-center">

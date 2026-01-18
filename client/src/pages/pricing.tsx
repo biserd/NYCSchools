@@ -37,7 +37,8 @@ interface PricingFeature {
 }
 
 const features: PricingFeature[] = [
-  { name: "Browse 1,500+ NYC Schools", free: true, premium: true },
+  { name: "Browse 2,100+ NYC Schools", free: true, premium: true },
+  { name: "Public, Charter & Private Schools", free: true, premium: true },
   { name: "Interactive Map View", free: true, premium: true },
   { name: "Basic School Details", free: true, premium: true },
   { name: "District & Grade Filtering", free: true, premium: true },
@@ -74,7 +75,7 @@ const testimonials = [
 ];
 
 const stats = [
-  { value: "1,533", label: "Schools Analyzed", icon: School },
+  { value: "2,100+", label: "Schools Analyzed", icon: School },
   { value: "50K+", label: "Parents Helped", icon: Users },
   { value: "4.8", label: "Average Rating", icon: Star },
   { value: "2hrs", label: "Avg. Time Saved", icon: Clock },
@@ -281,7 +282,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
         title="Pricing - NYC School Ratings"
-        description="Find your child's perfect NYC school faster. Premium features include unlimited AI assistance, commute calculator, and personalized recommendations. Try free for 7 days."
+        description="Find your child's perfect NYC school faster. Browse 2,100+ public, charter, and private schools. Premium features include unlimited AI assistance, commute calculator, and personalized recommendations."
         canonicalPath="/pricing"
       />
 
@@ -378,7 +379,7 @@ export default function PricingPage() {
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm">
                     <Check className="w-4 h-4 text-emerald-500" />
-                    Browse all 1,500+ NYC schools
+                    Browse all 2,100+ NYC schools
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Check className="w-4 h-4 text-emerald-500" />

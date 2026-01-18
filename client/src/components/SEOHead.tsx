@@ -12,8 +12,8 @@ interface SEOHeadProps {
 }
 
 const DEFAULT_TITLE = 'NYC School Ratings';
-const DEFAULT_DESCRIPTION = 'Find and compare NYC public and charter elementary schools with ratings and detailed metrics. Browse 1,500+ schools with test scores, demographics, and parent reviews.';
-const DEFAULT_KEYWORDS = 'NYC schools, elementary schools, public schools, charter schools, school ratings, school finder, New York City education, school comparison, parent reviews';
+const DEFAULT_DESCRIPTION = 'Find and compare 2,100+ NYC public, charter, and private schools with ratings and detailed metrics. Browse test scores, tuition, demographics, and parent reviews.';
+const DEFAULT_KEYWORDS = 'NYC schools, elementary schools, public schools, charter schools, private schools, school ratings, school finder, New York City education, school comparison, parent reviews, private school tuition';
 const DEFAULT_OG_IMAGE = 'https://nycschoolsratings.com/og-image.png';
 const SITE_URL = 'https://nycschoolsratings.com';
 

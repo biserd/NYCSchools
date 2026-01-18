@@ -258,6 +258,12 @@ export default function Home() {
     staleTime: 1000 * 60 * 30, // 30 minutes cache
   });
 
+  // Fetch private schools stats
+  const { data: privateSchoolsStats, isLoading: privateSchoolsLoading } = useQuery<{ totalSchools: number }>({
+    queryKey: ['/api/private-schools-stats'],
+    staleTime: 1000 * 60 * 30, // 30 minutes cache
+  });
+
   const schools = useMemo(() => {
     if (!rawSchools) return [];
     
@@ -306,8 +312,9 @@ export default function Home() {
       dualLanguage,
       improving,
       nyceecCenters: nyceecCenters?.length || 0,
+      privateSchools: privateSchoolsStats?.totalSchools || 0,
     };
-  }, [schools, trends, nyceecCenters]);
+  }, [schools, trends, nyceecCenters, privateSchoolsStats]);
 
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
@@ -590,7 +597,7 @@ export default function Home() {
     "@type": "Organization",
     "name": "NYC School Ratings",
     "url": "https://nycschoolsratings.com",
-    "description": "Find and compare NYC public and charter elementary schools with ratings, test scores, and parent reviews",
+    "description": "Find and compare 2,100+ NYC public, charter, and private schools with ratings, test scores, and parent reviews",
     "sameAs": []
   };
 
@@ -609,8 +616,8 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background" data-testid="home-page">
       <SEOHead 
-        description="Find and compare NYC public and charter elementary schools. Browse 1,500+ schools with ratings, test scores, demographics, and parent reviews to make informed kindergarten enrollment decisions."
-        keywords="NYC schools, kindergarten, elementary schools, public schools, charter schools, school ratings, school finder, New York City education, school comparison, parent reviews, NYC DOE"
+        description="Find and compare 2,100+ NYC public, charter, and private schools. Browse ratings, test scores, tuition, demographics, and parent reviews to make informed school decisions."
+        keywords="NYC schools, kindergarten, elementary schools, public schools, charter schools, private schools, school ratings, school finder, New York City education, school comparison, parent reviews, NYC DOE, private school tuition"
         canonicalPath="/"
       />
       <StructuredData data={organizationSchema} />
@@ -623,7 +630,7 @@ export default function Home() {
                 NYC School Ratings
               </h1>
               <p className="text-muted-foreground text-sm hidden sm:block" data-testid="text-page-subtitle">
-                Find and compare NYC public and charter elementary schools
+                Find and compare NYC public, charter, and private schools
               </p>
             </div>
             
@@ -842,6 +849,15 @@ export default function Home() {
                 <span className="font-medium text-foreground">{schoolCounts.nyceecCenters.toLocaleString()}</span>
               )}
               <span>Early Ed Centers</span>
+            </Link>
+            <Link href="/private-schools" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-private">
+              <Building2 className="w-3.5 h-3.5 text-purple-500" />
+              {privateSchoolsLoading ? (
+                <Skeleton className="h-4 w-8" />
+              ) : (
+                <span className="font-medium text-foreground">{schoolCounts.privateSchools.toLocaleString()}</span>
+              )}
+              <span>Private Schools</span>
             </Link>
           </div>
         </div>

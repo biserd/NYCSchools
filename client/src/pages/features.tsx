@@ -66,7 +66,7 @@ export default function FeaturesPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
         title="Features - NYC School Ratings"
-        description="Explore all the features of NYC School Ratings - AI assistant, interactive maps, school comparison, filtering, and more to help you secure your child's spot at the right school."
+        description="Explore all the features of NYC School Ratings - browse 2,100+ public, charter, and private schools with AI assistant, interactive maps, school comparison, filtering, and more."
         canonicalPath="/features"
       />
 

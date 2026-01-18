@@ -169,7 +169,7 @@ const releaseNotes: ReleaseNote[] = [
     date: "September 2025",
     title: "Initial Launch",
     highlights: [
-      "Comprehensive data for 1,533 NYC public and charter schools",
+      "Comprehensive data for NYC public, charter, and private schools",
       "Search, filter, and compare schools easily",
     ],
     features: [
