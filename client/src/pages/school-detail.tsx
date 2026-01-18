@@ -22,7 +22,6 @@ import { ReviewsList } from "@/components/ReviewsList";
 import { AdmissionsSection } from "@/components/AdmissionsSection";
 import { SchoolZoneMap } from "@/components/SchoolZoneMap";
 import { SchoolFAQ } from "@/components/SchoolFAQ";
-import { LocationMap } from "@/components/LocationMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
@@ -334,37 +333,31 @@ export default function SchoolDetail() {
 
           {/* Two-Column Layout: Location & School Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Location & Directions Card - Takes 2 columns */}
-            <Card className="lg:col-span-2" data-testid="card-location">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MapPin className="w-5 h-5" />
-                  Location & Directions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Embedded Map */}
-                {schoolWithScore.latitude && schoolWithScore.longitude && (
-                  <LocationMap
-                    latitude={schoolWithScore.latitude}
-                    longitude={schoolWithScore.longitude}
-                    schoolName={schoolWithScore.name}
-                    address={schoolWithScore.address || undefined}
-                  />
-                )}
-                
-                {/* Address */}
-                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
-                  <div className="flex items-start gap-2" data-testid="location-address">
-                    <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
-                    <span className="text-sm">{schoolWithScore.address}</span>
-                  </div>
-                )}
-                
-                {/* Commute Time */}
-                <CommuteTime schoolDbn={schoolWithScore.dbn} />
-              </CardContent>
-            </Card>
+            {/* Location & Zone Map - Takes 2 columns */}
+            <div className="lg:col-span-2 space-y-4" data-testid="card-location">
+              <SchoolZoneMap
+                schoolDbn={schoolWithScore.dbn}
+                schoolName={schoolWithScore.name}
+                latitude={schoolWithScore.latitude}
+                longitude={schoolWithScore.longitude}
+              />
+              
+              {/* Address & Commute Section */}
+              <Card>
+                <CardContent className="pt-4 space-y-3">
+                  {/* Address */}
+                  {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
+                    <div className="flex items-start gap-2" data-testid="location-address">
+                      <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
+                      <span className="text-sm">{schoolWithScore.address}</span>
+                    </div>
+                  )}
+                  
+                  {/* Commute Time */}
+                  <CommuteTime schoolDbn={schoolWithScore.dbn} />
+                </CardContent>
+              </Card>
+            </div>
 
             {/* School Information Card */}
             <Card data-testid="card-school-info">
