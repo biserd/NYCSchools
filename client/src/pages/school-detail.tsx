@@ -861,14 +861,6 @@ export default function SchoolDetail() {
             </Card>
           )}
 
-          {/* School Zone Map */}
-          <SchoolZoneMap 
-            schoolDbn={schoolWithScore.dbn}
-            schoolName={schoolWithScore.name}
-            latitude={schoolWithScore.latitude}
-            longitude={schoolWithScore.longitude}
-          />
-
           {/* Admissions & Demand Section - for K/Pre-K/3K schools */}
           <AdmissionsSection 
             dbn={schoolWithScore.dbn}
