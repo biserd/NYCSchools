@@ -10,6 +10,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { PrivateSchoolMap } from "@/components/PrivateSchoolMap";
+import { useAuth } from "@/hooks/useAuth";
 import {
   MapPin,
   Phone,
@@ -29,10 +30,103 @@ import {
   AlertCircle,
   CheckCircle,
   Mail,
+  Lock,
 } from "lucide-react";
+
+function EnrollmentByGradeChart({ enrollmentByGrade }: { enrollmentByGrade: Record<string, number> }) {
+  const gradeOrder = ['PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const sortedGrades = Object.entries(enrollmentByGrade)
+    .sort((a, b) => {
+      const aIdx = gradeOrder.indexOf(a[0]);
+      const bIdx = gradeOrder.indexOf(b[0]);
+      return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+    });
+  const maxEnrollment = Math.max(...sortedGrades.map(([, count]) => count));
+  
+  return (
+    <div className="space-y-2">
+      {sortedGrades.map(([grade, count]) => (
+        <div key={grade} className="flex items-center gap-3">
+          <div className="w-12 text-sm font-medium text-muted-foreground">
+            {grade === 'PK' ? 'Pre-K' : grade === 'K' ? 'Kinder' : `Grade ${grade}`}
+          </div>
+          <div className="flex-1 h-6 bg-muted/50 rounded overflow-hidden">
+            <div 
+              className="h-full bg-primary/80 rounded transition-all"
+              style={{ width: `${(count / maxEnrollment) * 100}%` }}
+            />
+          </div>
+          <div className="w-10 text-sm font-medium text-right">{count}</div>
+        </div>
+      ))}
+      <div className="pt-2 border-t mt-3">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Total Enrollment</span>
+          <span className="font-bold">{Object.values(enrollmentByGrade).reduce((a, b) => a + b, 0)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DemographicData {
+  asianPercent: number | null;
+  blackPercent: number | null;
+  hispanicPercent: number | null;
+  whitePercent: number | null;
+  pacificIslanderPercent: number | null;
+  americanIndianPercent: number | null;
+  multiRacialPercent: number | null;
+}
+
+function DemographicsChart({ data }: { data: DemographicData }) {
+  const demographics = [
+    { label: 'White', value: data.whitePercent, color: '#3b82f6' },
+    { label: 'Hispanic/Latino', value: data.hispanicPercent, color: '#f59e0b' },
+    { label: 'Black', value: data.blackPercent, color: '#10b981' },
+    { label: 'Asian', value: data.asianPercent, color: '#ef4444' },
+    { label: 'Multi-Racial', value: data.multiRacialPercent, color: '#8b5cf6' },
+    { label: 'Pacific Islander', value: data.pacificIslanderPercent, color: '#06b6d4' },
+    { label: 'American Indian', value: data.americanIndianPercent, color: '#ec4899' },
+  ].filter(d => d.value !== null && d.value !== undefined && d.value > 0)
+   .sort((a, b) => (b.value || 0) - (a.value || 0));
+  
+  if (demographics.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <AlertCircle className="w-4 h-4" />
+        <span>Demographic data not available for this school.</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-3">
+      {demographics.map((demo) => (
+        <div key={demo.label} className="flex items-center gap-3">
+          <div className="w-32 text-sm text-muted-foreground">{demo.label}</div>
+          <div className="flex-1 h-5 bg-muted/50 rounded overflow-hidden">
+            <div 
+              className="h-full rounded transition-all"
+              style={{ 
+                width: `${demo.value}%`,
+                backgroundColor: demo.color
+              }}
+            />
+          </div>
+          <div className="w-14 text-sm font-medium text-right">{demo.value?.toFixed(1)}%</div>
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground pt-2 border-t mt-3">
+        Source: NCES Private School Universe Survey (PSS) 2023-24
+      </p>
+    </div>
+  );
+}
 
 export default function PrivateSchoolDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
   
   // Extract ncesId from SEO-friendly slug (e.g., "00921917-academy-of-st-joseph" -> "00921917")
   const ncesId = slug ? extractNcesIdFromSlug(slug) : undefined;
@@ -42,6 +136,15 @@ export default function PrivateSchoolDetail() {
     enabled: !!ncesId,
     retry: 1,
   });
+
+  // Check subscription status for premium features
+  const { data: subscription } = useQuery<{ status: string; plan: string }>({
+    queryKey: ["/api/subscription-status"],
+    enabled: !!user,
+  });
+
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 
   if (isLoading) {
     return (
@@ -206,57 +309,60 @@ export default function PrivateSchoolDetail() {
               </CardContent>
             </Card>
 
-            {/* Enrollment by Grade - only show if data exists */}
+            {/* Enrollment by Grade - Premium gated */}
             {school.enrollmentByGrade && typeof school.enrollmentByGrade === 'object' && Object.keys(school.enrollmentByGrade).length > 0 && (
               <Card data-testid="card-enrollment-by-grade">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Users className="w-5 h-5" />
                     Enrollment by Grade
+                    {!isPremium && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        <Lock className="w-3 h-3 mr-1" />
+                        Premium
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {(() => {
-                    const gradeData = school.enrollmentByGrade as Record<string, number>;
-                    const gradeOrder = ['PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-                    const sortedGrades = Object.entries(gradeData)
-                      .sort((a, b) => {
-                        const aIdx = gradeOrder.indexOf(a[0]);
-                        const bIdx = gradeOrder.indexOf(b[0]);
-                        return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
-                      });
-                    const maxEnrollment = Math.max(...sortedGrades.map(([, count]) => count));
-                    
-                    return (
-                      <div className="space-y-2">
-                        {sortedGrades.map(([grade, count]) => (
+                  {isPremium ? (
+                    <EnrollmentByGradeChart enrollmentByGrade={school.enrollmentByGrade as Record<string, number>} />
+                  ) : (
+                    <div className="relative" data-testid="locked-enrollment">
+                      <div className="blur-md select-none pointer-events-none space-y-2" aria-hidden="true">
+                        {['Pre-K', 'Kinder', 'Grade 1', 'Grade 2', 'Grade 3'].map((grade, i) => (
                           <div key={grade} className="flex items-center gap-3">
-                            <div className="w-12 text-sm font-medium text-muted-foreground">
-                              {grade === 'PK' ? 'Pre-K' : grade === 'K' ? 'Kinder' : `Grade ${grade}`}
-                            </div>
+                            <div className="w-12 text-sm font-medium text-muted-foreground">{grade}</div>
                             <div className="flex-1 h-6 bg-muted/50 rounded overflow-hidden">
-                              <div 
-                                className="h-full bg-primary/80 rounded transition-all"
-                                style={{ width: `${(count / maxEnrollment) * 100}%` }}
-                              />
+                              <div className="h-full bg-primary/80 rounded" style={{ width: `${60 - i * 10}%` }} />
                             </div>
-                            <div className="w-10 text-sm font-medium text-right">{count}</div>
+                            <div className="w-10 text-sm font-medium text-right">{15 - i * 2}</div>
                           </div>
                         ))}
-                        <div className="pt-2 border-t mt-3">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Total Enrollment</span>
-                            <span className="font-bold">{Object.values(gradeData).reduce((a, b) => a + b, 0)}</span>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 text-center shadow-lg border max-w-xs">
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 mb-3">
+                            <Lock className="w-5 h-5 text-primary" />
                           </div>
+                          <h4 className="font-semibold mb-1">Enrollment Breakdown</h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            See detailed enrollment by grade level
+                          </p>
+                          <Link href="/pricing">
+                            <Button size="sm" className="w-full">
+                              Upgrade to Premium
+                            </Button>
+                          </Link>
                         </div>
                       </div>
-                    );
-                  })()}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Student Demographics - only show if any demographic data exists */}
+            {/* Student Demographics - Premium gated */}
             {(school.asianPercent !== null || school.blackPercent !== null || school.hispanicPercent !== null || 
               school.whitePercent !== null || school.pacificIslanderPercent !== null || 
               school.americanIndianPercent !== null || school.multiRacialPercent !== null) && (
@@ -265,53 +371,61 @@ export default function PrivateSchoolDetail() {
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Users className="w-5 h-5" />
                     Student Demographics
+                    {!isPremium && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        <Lock className="w-3 h-3 mr-1" />
+                        Premium
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {(() => {
-                    const demographics = [
-                      { label: 'White', value: school.whitePercent, color: '#3b82f6' },
-                      { label: 'Hispanic/Latino', value: school.hispanicPercent, color: '#f59e0b' },
-                      { label: 'Black', value: school.blackPercent, color: '#10b981' },
-                      { label: 'Asian', value: school.asianPercent, color: '#ef4444' },
-                      { label: 'Multi-Racial', value: school.multiRacialPercent, color: '#8b5cf6' },
-                      { label: 'Pacific Islander', value: school.pacificIslanderPercent, color: '#06b6d4' },
-                      { label: 'American Indian', value: school.americanIndianPercent, color: '#ec4899' },
-                    ].filter(d => d.value !== null && d.value !== undefined && d.value > 0)
-                     .sort((a, b) => (b.value || 0) - (a.value || 0));
-                    
-                    if (demographics.length === 0) {
-                      return (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <AlertCircle className="w-4 h-4" />
-                          <span>Demographic data not available for this school.</span>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div className="space-y-3">
-                        {demographics.map((demo) => (
+                  {isPremium ? (
+                    <DemographicsChart data={{
+                      asianPercent: school.asianPercent,
+                      blackPercent: school.blackPercent,
+                      hispanicPercent: school.hispanicPercent,
+                      whitePercent: school.whitePercent,
+                      pacificIslanderPercent: school.pacificIslanderPercent,
+                      americanIndianPercent: school.americanIndianPercent,
+                      multiRacialPercent: school.multiRacialPercent,
+                    }} />
+                  ) : (
+                    <div className="relative" data-testid="locked-demographics">
+                      <div className="blur-md select-none pointer-events-none space-y-3" aria-hidden="true">
+                        {[
+                          { label: 'White', pct: 45, color: '#3b82f6' },
+                          { label: 'Hispanic/Latino', pct: 25, color: '#f59e0b' },
+                          { label: 'Black', pct: 15, color: '#10b981' },
+                          { label: 'Asian', pct: 10, color: '#ef4444' },
+                        ].map((demo) => (
                           <div key={demo.label} className="flex items-center gap-3">
                             <div className="w-32 text-sm text-muted-foreground">{demo.label}</div>
                             <div className="flex-1 h-5 bg-muted/50 rounded overflow-hidden">
-                              <div 
-                                className="h-full rounded transition-all"
-                                style={{ 
-                                  width: `${demo.value}%`,
-                                  backgroundColor: demo.color
-                                }}
-                              />
+                              <div className="h-full rounded" style={{ width: `${demo.pct}%`, backgroundColor: demo.color }} />
                             </div>
-                            <div className="w-14 text-sm font-medium text-right">{demo.value?.toFixed(1)}%</div>
+                            <div className="w-14 text-sm font-medium text-right">{demo.pct}%</div>
                           </div>
                         ))}
-                        <p className="text-xs text-muted-foreground pt-2 border-t mt-3">
-                          Source: NCES Private School Universe Survey (PSS) 2023-24
-                        </p>
                       </div>
-                    );
-                  })()}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 text-center shadow-lg border max-w-xs">
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 mb-3">
+                            <Lock className="w-5 h-5 text-primary" />
+                          </div>
+                          <h4 className="font-semibold mb-1">Demographics Data</h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            See student race/ethnicity breakdown
+                          </p>
+                          <Link href="/pricing">
+                            <Button size="sm" className="w-full">
+                              Upgrade to Premium
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
