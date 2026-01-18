@@ -206,6 +206,116 @@ export default function PrivateSchoolDetail() {
               </CardContent>
             </Card>
 
+            {/* Enrollment by Grade - only show if data exists */}
+            {school.enrollmentByGrade && typeof school.enrollmentByGrade === 'object' && Object.keys(school.enrollmentByGrade).length > 0 && (
+              <Card data-testid="card-enrollment-by-grade">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Enrollment by Grade
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const gradeData = school.enrollmentByGrade as Record<string, number>;
+                    const gradeOrder = ['PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+                    const sortedGrades = Object.entries(gradeData)
+                      .sort((a, b) => {
+                        const aIdx = gradeOrder.indexOf(a[0]);
+                        const bIdx = gradeOrder.indexOf(b[0]);
+                        return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+                      });
+                    const maxEnrollment = Math.max(...sortedGrades.map(([, count]) => count));
+                    
+                    return (
+                      <div className="space-y-2">
+                        {sortedGrades.map(([grade, count]) => (
+                          <div key={grade} className="flex items-center gap-3">
+                            <div className="w-12 text-sm font-medium text-muted-foreground">
+                              {grade === 'PK' ? 'Pre-K' : grade === 'K' ? 'Kinder' : `Grade ${grade}`}
+                            </div>
+                            <div className="flex-1 h-6 bg-muted/50 rounded overflow-hidden">
+                              <div 
+                                className="h-full bg-primary/80 rounded transition-all"
+                                style={{ width: `${(count / maxEnrollment) * 100}%` }}
+                              />
+                            </div>
+                            <div className="w-10 text-sm font-medium text-right">{count}</div>
+                          </div>
+                        ))}
+                        <div className="pt-2 border-t mt-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Total Enrollment</span>
+                            <span className="font-bold">{Object.values(gradeData).reduce((a, b) => a + b, 0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Student Demographics - only show if any demographic data exists */}
+            {(school.asianPercent !== null || school.blackPercent !== null || school.hispanicPercent !== null || 
+              school.whitePercent !== null || school.pacificIslanderPercent !== null || 
+              school.americanIndianPercent !== null || school.multiRacialPercent !== null) && (
+              <Card data-testid="card-demographics">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Student Demographics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const demographics = [
+                      { label: 'White', value: school.whitePercent, color: '#3b82f6' },
+                      { label: 'Hispanic/Latino', value: school.hispanicPercent, color: '#f59e0b' },
+                      { label: 'Black', value: school.blackPercent, color: '#10b981' },
+                      { label: 'Asian', value: school.asianPercent, color: '#ef4444' },
+                      { label: 'Multi-Racial', value: school.multiRacialPercent, color: '#8b5cf6' },
+                      { label: 'Pacific Islander', value: school.pacificIslanderPercent, color: '#06b6d4' },
+                      { label: 'American Indian', value: school.americanIndianPercent, color: '#ec4899' },
+                    ].filter(d => d.value !== null && d.value !== undefined && d.value > 0)
+                     .sort((a, b) => (b.value || 0) - (a.value || 0));
+                    
+                    if (demographics.length === 0) {
+                      return (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Demographic data not available for this school.</span>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-3">
+                        {demographics.map((demo) => (
+                          <div key={demo.label} className="flex items-center gap-3">
+                            <div className="w-32 text-sm text-muted-foreground">{demo.label}</div>
+                            <div className="flex-1 h-5 bg-muted/50 rounded overflow-hidden">
+                              <div 
+                                className="h-full rounded transition-all"
+                                style={{ 
+                                  width: `${demo.value}%`,
+                                  backgroundColor: demo.color
+                                }}
+                              />
+                            </div>
+                            <div className="w-14 text-sm font-medium text-right">{demo.value?.toFixed(1)}%</div>
+                          </div>
+                        ))}
+                        <p className="text-xs text-muted-foreground pt-2 border-t mt-3">
+                          Source: NCES Private School Universe Survey (PSS) 2023-24
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
             <Card data-testid="card-tuition">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
