@@ -1210,6 +1210,21 @@ export const privateSchools = pgTable("private_schools", {
   hasFinancialAid: boolean("has_financial_aid").default(false),
   financialAidPercent: integer("financial_aid_percent"), // % of students receiving aid
   
+  // Demographics (from PSS survey)
+  asianPercent: real("asian_percent"),
+  blackPercent: real("black_percent"),
+  hispanicPercent: real("hispanic_percent"),
+  whitePercent: real("white_percent"),
+  pacificIslanderPercent: real("pacific_islander_percent"),
+  americanIndianPercent: real("american_indian_percent"),
+  multiRacialPercent: real("multi_racial_percent"),
+  
+  // Facilities
+  hasLibrary: boolean("has_library"),
+  
+  // School Associations (from PSS)
+  associations: text("associations").array(), // ['NAIS', 'NYSAIS', etc.]
+  
   // Accreditation & Affiliations
   accreditation: text("accreditation").array(), // ['NYSAIS', 'Middle States', etc.]
   networkAffiliation: varchar("network_affiliation"), // Archdiocese of NY, etc.
