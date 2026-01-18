@@ -11,7 +11,7 @@ import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-rea
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl, type PrivateSchool, getPrivateSchoolUrl } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 
@@ -55,7 +55,8 @@ const IEP_OPTIONS = [
 ];
 
 const DATA_SOURCE_OPTIONS = [
-  { value: "schools", label: "K-12 Schools" },
+  { value: "schools", label: "Public Schools" },
+  { value: "private", label: "Private Schools" },
   { value: "nyceec", label: "Early Childhood Centers" },
 ];
 
@@ -206,6 +207,11 @@ export default function MapPage() {
   const { data: allNyceecCenters } = useQuery<NyceecCenter[]>({
     queryKey: ["/api/nyceec-centers"],
     enabled: dataSource === "nyceec",
+  });
+
+  const { data: allPrivateSchools } = useQuery<PrivateSchool[]>({
+    queryKey: ["/api/private-schools"],
+    enabled: dataSource === "private",
   });
 
   // Filter schools that have geocoded coordinates
@@ -386,6 +392,40 @@ export default function MapPage() {
     
     return result;
   }, [allNyceecCenters, selectedDistrict, selectedNyceecType, selectedZipCode]);
+
+  // Filter private schools with coordinates
+  const filteredPrivateSchools = useMemo(() => {
+    if (!allPrivateSchools) return [];
+    
+    let result = allPrivateSchools.filter(
+      school => school.latitude !== null && school.longitude !== null
+    );
+    
+    // Zip code filter
+    if (selectedZipCode && selectedZipCode.length === 5) {
+      result = result.filter(s => s.zipCode === selectedZipCode);
+    }
+    
+    // Borough filter (using district selector - private schools don't have districts)
+    // Map district to borough for filtering
+    if (selectedDistrict !== "all" && selectedDistrict !== "2") {
+      // For private schools, we'll filter by borough instead
+      // Districts 1-6: Manhattan, 7-12: Bronx, 13-23: Brooklyn, 24-30: Queens, 31: Staten Island
+      const districtNum = parseInt(selectedDistrict);
+      let borough: string | null = null;
+      if (districtNum >= 1 && districtNum <= 6) borough = "Manhattan";
+      else if (districtNum >= 7 && districtNum <= 12) borough = "Bronx";
+      else if (districtNum >= 13 && districtNum <= 23) borough = "Brooklyn";
+      else if (districtNum >= 24 && districtNum <= 30) borough = "Queens";
+      else if (districtNum === 31) borough = "Staten Island";
+      
+      if (borough) {
+        result = result.filter(s => s.borough === borough);
+      }
+    }
+    
+    return result;
+  }, [allPrivateSchools, selectedZipCode, selectedDistrict]);
 
   // Count active filters (District 2 is default, "all" is expanded view - neither counts as active)
   const activeFilterCount = useMemo(() => {
@@ -703,6 +743,118 @@ export default function MapPage() {
         );
         mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
       }
+    } else if (dataSource === "private") {
+      // Add markers for private schools (purple markers)
+      filteredPrivateSchools.forEach(school => {
+        const markerHtml = `
+          <div style="
+            background-color: #7c3aed;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            cursor: pointer;
+            pointer-events: auto;
+          "></div>
+        `;
+
+        const marker = L.marker([school.latitude!, school.longitude!], {
+          icon: L.divIcon({
+            className: 'custom-marker private-school-marker',
+            html: markerHtml,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+          interactive: true,
+        });
+
+        // Build badges for popup
+        const badges: string[] = [];
+        if (school.religiousAffiliation && school.religiousAffiliation !== 'Not applicable') {
+          badges.push(`<span style="background: #7c3aed; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${school.religiousAffiliation}</span>`);
+        }
+        if (school.hasFinancialAid) {
+          badges.push(`<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px;">Financial Aid</span>`);
+        }
+
+        const tuitionRange = school.tuitionElementary || school.tuitionMiddle || school.tuitionHigh;
+        const schoolUrl = getPrivateSchoolUrl(school);
+        
+        marker.bindPopup(`
+          <div style="min-width: 220px;">
+            <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${school.name}</h3>
+            ${badges.length > 0 ? `<div style="margin-bottom: 8px;">${badges.join('')}</div>` : ''}
+            <p style="margin: 0; font-size: 12px; color: #666;">${school.address || ''}</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #666;">${school.borough || school.city}, NY ${school.zipCode || ''}</p>
+            ${school.gradesOffered ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">Grades: ${school.gradesOffered}</p>` : ''}
+            ${school.enrollment ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Enrollment:</strong> ${school.enrollment}</p>` : ''}
+            ${tuitionRange ? `<p style="margin: 4px 0; font-size: 12px;"><strong>Tuition:</strong> $${tuitionRange.toLocaleString()}</p>` : ''}
+            <a 
+              href="${schoolUrl}" 
+              data-private-school-id="${school.ncesId}"
+              style="
+                display: inline-block;
+                margin-top: 8px;
+                padding: 6px 12px;
+                background: #7c3aed;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+              "
+            >
+              View Details
+            </a>
+          </div>
+        `);
+
+        // Setup popup event listeners with proper cleanup
+        const handlePopupOpen = () => {
+          const popupElement = marker.getPopup()?.getElement();
+          const link = popupElement?.querySelector(`a[data-private-school-id="${school.ncesId}"]`) as HTMLElement;
+          
+          if (link) {
+            const handleClick = (e: Event) => {
+              e.preventDefault();
+              setLocation(schoolUrl);
+            };
+            
+            link.addEventListener('click', handleClick);
+            
+            // Store cleanup function
+            popupListenersRef.current.set(school.ncesId, () => {
+              link.removeEventListener('click', handleClick);
+            });
+          }
+        };
+
+        const handlePopupClose = () => {
+          const cleanup = popupListenersRef.current.get(school.ncesId);
+          if (cleanup) {
+            cleanup();
+            popupListenersRef.current.delete(school.ncesId);
+          }
+        };
+
+        marker.on('popupopen', handlePopupOpen);
+        marker.on('popupclose', handlePopupClose);
+
+        marker.addTo(mapInstanceRef.current!);
+        markersRef.current.push(marker);
+      });
+
+      // Fit map to show all private school markers if any exist
+      if (filteredPrivateSchools.length > 0) {
+        const bounds = L.latLngBounds(
+          filteredPrivateSchools
+            .filter(s => s.latitude && s.longitude)
+            .map(s => [s.latitude!, s.longitude!])
+        );
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
     }
 
     // Cleanup function for effect
@@ -710,7 +862,7 @@ export default function MapPage() {
       popupListenersRef.current.forEach(cleanup => cleanup());
       popupListenersRef.current.clear();
     };
-  }, [filteredSchools, filteredNyceecCenters, dataSource, setLocation]);
+  }, [filteredSchools, filteredNyceecCenters, filteredPrivateSchools, dataSource, setLocation]);
 
   // Clear all filters (reset to defaults)
   const clearFilters = () => {
@@ -972,11 +1124,30 @@ export default function MapPage() {
 
             {/* Legend */}
             <div className="mt-4 pt-3 border-t flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-              <span className="font-medium">Score Legend:</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> 90+</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-500"></span> 80-89</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-violet-500"></span> 70-79</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> &lt;70</span>
+              {dataSource === "schools" && (
+                <>
+                  <span className="font-medium">Score Legend:</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> 90+</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-500"></span> 80-89</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-violet-500"></span> 70-79</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500"></span> &lt;70</span>
+                </>
+              )}
+              {dataSource === "private" && (
+                <>
+                  <span className="font-medium">Private Schools:</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-[#7c3aed]"></span> Private School</span>
+                  <span className="text-muted-foreground">({filteredPrivateSchools.length} schools shown)</span>
+                </>
+              )}
+              {dataSource === "nyceec" && (
+                <>
+                  <span className="font-medium">Center Types:</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-orange-500"></span> Community-Based</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-blue-500"></span> DOE</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-violet-500"></span> Charter</span>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
