@@ -73,6 +73,20 @@ Performance optimizations for better LCP, INP, and FCP scores:
 - **Font Optimization**: Google Fonts loaded with media="print" onload trick and font-display: swap
 - **Static Asset Caching**: Production server configured with aggressive cache headers (1 year for hashed JS/CSS with immutable, 30 days for images/fonts, no-cache for HTML)
 
+### NYC Private Schools (`/private-schools`, `/private-school/:ncesId`)
+Browse and detail pages for 600+ NYC private schools from NCES Private School Universe Survey (PSS) data:
+- **Data Source**: NCES PSS 2021-22 survey data
+- **Browse Page Features**: Search by name, filter by borough, religious affiliation (Catholic, Jewish, Islamic, Non-Religious, etc.), coed status
+- **Detail Page Features**: Overview stats (enrollment, student-teacher ratio), tuition by grade level, financial aid, admissions requirements (testing, interviews, deadlines), program focus, accreditation, religious affiliation, contact info
+- **Database Tables**: `private_schools` (main data), `private_school_history` (historical trends)
+- **API Endpoints**:
+  - `GET /api/private-schools` - List all private schools with optional filters
+  - `GET /api/private-schools/:ncesId` - Single school detail
+  - `GET /api/private-schools/:ncesId/history` - Historical enrollment/staffing
+  - `GET /api/private-schools-stats` - Aggregate statistics by borough, affiliation
+- **Helper Functions** (in `shared/schema.ts`): `formatTuition()`, `getTuitionRange()`, `getGradeRangeDisplay()`, `getSelectivityDisplay()`, `getProgramEmphasisLabel()`
+- **Borough Distribution**: Brooklyn (198), Queens (182), Manhattan (138), Bronx (56), Staten Island (26)
+
 ## External Dependencies
 - **PostgreSQL**: Primary database.
 - **OpenAI**: AI chat assistant and smart recommendations (`gpt-4o-mini`).
@@ -86,3 +100,4 @@ Performance optimizations for better LCP, INP, and FCP scores:
 - **Resend**: Email service for password reset and welcome emails (via RESEND_API_KEY and RESEND_FROM_EMAIL environment variables).
 - **NYSED State Report Card Database**: Official ELA/Math test score data.
 - **NYC DOE InfoHub LL72 Reports**: K/3K/Pre-K admissions data (applications, offers, seats) via Local Law 72 reports.
+- **NCES Private School Universe Survey (PSS)**: Private school data including enrollment, tuition, religious affiliation, and admissions information.

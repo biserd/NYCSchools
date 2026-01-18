@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -114,6 +114,14 @@ export interface IStorage {
   
   // Guest user creation (for checkout without registration)
   createGuestUser(email: string, stripeCustomerId: string, firstName?: string, lastName?: string): Promise<User>;
+  
+  // Private School operations
+  getPrivateSchools(filters?: PrivateSchoolFilters): Promise<PrivateSchool[]>;
+  getPrivateSchool(ncesId: string): Promise<PrivateSchool | undefined>;
+  upsertPrivateSchool(school: InsertPrivateSchool): Promise<PrivateSchool>;
+  upsertPrivateSchools(schools: InsertPrivateSchool[]): Promise<void>;
+  getPrivateSchoolHistory(ncesId: string): Promise<PrivateSchoolHistory[]>;
+  upsertPrivateSchoolHistory(history: InsertPrivateSchoolHistory): Promise<PrivateSchoolHistory>;
 }
 
 export interface NyceecFilters {
@@ -122,6 +130,19 @@ export interface NyceecFilters {
   centerType?: string;
   zipCode?: string;
   search?: string;
+}
+
+export interface PrivateSchoolFilters {
+  borough?: string;
+  zipCode?: string;
+  religiousAffiliation?: string;
+  gradesOffered?: string;
+  coedStatus?: string;
+  hasFinancialAid?: boolean;
+  search?: string;
+  programEmphasis?: string;
+  minTuition?: number;
+  maxTuition?: number;
 }
 
 export interface DistrictAverages {
@@ -1394,6 +1415,166 @@ export class DbStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+  
+  // Private School operations
+  async getPrivateSchools(filters?: PrivateSchoolFilters): Promise<PrivateSchool[]> {
+    let query = db.select().from(privateSchools);
+    
+    if (filters) {
+      const conditions = [];
+      
+      if (filters.borough) {
+        conditions.push(eq(privateSchools.borough, filters.borough));
+      }
+      if (filters.zipCode) {
+        conditions.push(eq(privateSchools.zipCode, filters.zipCode));
+      }
+      if (filters.religiousAffiliation) {
+        if (filters.religiousAffiliation === 'Non-Religious') {
+          conditions.push(eq(privateSchools.isReligious, false));
+        } else {
+          conditions.push(eq(privateSchools.religiousAffiliation, filters.religiousAffiliation));
+        }
+      }
+      if (filters.coedStatus) {
+        conditions.push(eq(privateSchools.coedStatus, filters.coedStatus));
+      }
+      if (filters.hasFinancialAid) {
+        conditions.push(eq(privateSchools.hasFinancialAid, true));
+      }
+      if (filters.search) {
+        conditions.push(
+          or(
+            ilike(privateSchools.name, `%${filters.search}%`),
+            ilike(privateSchools.address, `%${filters.search}%`)
+          )
+        );
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as typeof query;
+      }
+    }
+    
+    return query.orderBy(asc(privateSchools.name));
+  }
+  
+  async getPrivateSchool(ncesId: string): Promise<PrivateSchool | undefined> {
+    const [school] = await db
+      .select()
+      .from(privateSchools)
+      .where(eq(privateSchools.ncesId, ncesId))
+      .limit(1);
+    return school;
+  }
+  
+  async upsertPrivateSchool(school: InsertPrivateSchool): Promise<PrivateSchool> {
+    const [result] = await db
+      .insert(privateSchools)
+      .values(school)
+      .onConflictDoUpdate({
+        target: privateSchools.ncesId,
+        set: {
+          ...school,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+  
+  async upsertPrivateSchools(schoolList: InsertPrivateSchool[]): Promise<void> {
+    if (schoolList.length === 0) return;
+    
+    // Batch upsert in chunks of 100
+    const chunkSize = 100;
+    for (let i = 0; i < schoolList.length; i += chunkSize) {
+      const chunk = schoolList.slice(i, i + chunkSize);
+      await db
+        .insert(privateSchools)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: privateSchools.ncesId,
+          set: {
+            name: sql`excluded.name`,
+            address: sql`excluded.address`,
+            city: sql`excluded.city`,
+            state: sql`excluded.state`,
+            zipCode: sql`excluded.zip_code`,
+            phone: sql`excluded.phone`,
+            website: sql`excluded.website`,
+            borough: sql`excluded.borough`,
+            neighborhood: sql`excluded.neighborhood`,
+            latitude: sql`excluded.latitude`,
+            longitude: sql`excluded.longitude`,
+            bbl: sql`excluded.bbl`,
+            bin: sql`excluded.bin`,
+            gradesOffered: sql`excluded.grades_offered`,
+            lowestGrade: sql`excluded.lowest_grade`,
+            highestGrade: sql`excluded.highest_grade`,
+            enrollment: sql`excluded.enrollment`,
+            enrollmentByGrade: sql`excluded.enrollment_by_grade`,
+            teachersFte: sql`excluded.teachers_fte`,
+            studentTeacherRatio: sql`excluded.student_teacher_ratio`,
+            coedStatus: sql`excluded.coed_status`,
+            religiousAffiliation: sql`excluded.religious_affiliation`,
+            religiousOrientation: sql`excluded.religious_orientation`,
+            isReligious: sql`excluded.is_religious`,
+            programEmphasis: sql`excluded.program_emphasis`,
+            schoolType: sql`excluded.school_type`,
+            hasExtendedDay: sql`excluded.has_extended_day`,
+            schoolDayMinutes: sql`excluded.school_day_minutes`,
+            schoolYearDays: sql`excluded.school_year_days`,
+            tuitionElementary: sql`excluded.tuition_elementary`,
+            tuitionMiddle: sql`excluded.tuition_middle`,
+            tuitionHigh: sql`excluded.tuition_high`,
+            hasFinancialAid: sql`excluded.has_financial_aid`,
+            financialAidPercent: sql`excluded.financial_aid_percent`,
+            accreditation: sql`excluded.accreditation`,
+            networkAffiliation: sql`excluded.network_affiliation`,
+            applicationDeadline: sql`excluded.application_deadline`,
+            hasRollingAdmissions: sql`excluded.has_rolling_admissions`,
+            admissionsSelectivity: sql`excluded.admissions_selectivity`,
+            requiresInterview: sql`excluded.requires_interview`,
+            requiresTesting: sql`excluded.requires_testing`,
+            testingTypes: sql`excluded.testing_types`,
+            dataSourceYear: sql`excluded.data_source_year`,
+            dataSourceVersion: sql`excluded.data_source_version`,
+            updatedAt: new Date(),
+          },
+        });
+    }
+  }
+  
+  async getPrivateSchoolHistory(ncesId: string): Promise<PrivateSchoolHistory[]> {
+    return db
+      .select()
+      .from(privateSchoolHistory)
+      .where(eq(privateSchoolHistory.ncesId, ncesId))
+      .orderBy(desc(privateSchoolHistory.schoolYear));
+  }
+  
+  async upsertPrivateSchoolHistory(history: InsertPrivateSchoolHistory): Promise<PrivateSchoolHistory> {
+    const [result] = await db
+      .insert(privateSchoolHistory)
+      .values(history)
+      .onConflictDoUpdate({
+        target: [privateSchoolHistory.ncesId, privateSchoolHistory.schoolYear],
+        set: {
+          enrollment: history.enrollment,
+          teachersFte: history.teachersFte,
+          studentTeacherRatio: history.studentTeacherRatio,
+          tuitionElementary: history.tuitionElementary,
+          tuitionMiddle: history.tuitionMiddle,
+          tuitionHigh: history.tuitionHigh,
+          schoolDayMinutes: history.schoolDayMinutes,
+          schoolYearDays: history.schoolYearDays,
+          dataSourceVersion: history.dataSourceVersion,
+        },
+      })
+      .returning();
+    return result;
   }
 }
 

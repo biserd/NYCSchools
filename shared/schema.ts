@@ -1152,3 +1152,226 @@ export function getCompetitivenessDisplay(level: string): { label: string; color
       return { label: 'Data Unavailable', color: 'gray', description: 'Insufficient data' };
   }
 }
+
+// ===============================
+// NYC Private Schools (NCES PSS)
+// ===============================
+
+// Private Schools Table - data from NCES Private School Universe Survey (PSS)
+export const privateSchools = pgTable("private_schools", {
+  // Primary identifier from NCES
+  ncesId: varchar("nces_id").primaryKey(), // NCES School ID (PPIN)
+  
+  // Basic Information
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: varchar("state", { length: 2 }).notNull().default('NY'),
+  zipCode: varchar("zip_code", { length: 10 }),
+  phone: varchar("phone"),
+  website: varchar("website"),
+  
+  // Location (from NYC Geoclient enrichment)
+  borough: varchar("borough"), // Manhattan, Bronx, Brooklyn, Queens, Staten Island
+  neighborhood: varchar("neighborhood"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  bbl: varchar("bbl"), // Borough-Block-Lot (NYC property identifier)
+  bin: varchar("bin"), // Building Identification Number
+  
+  // Grade Configuration
+  gradesOffered: text("grades_offered"), // e.g., "PK-12", "K-8", "9-12"
+  lowestGrade: varchar("lowest_grade"), // PK, K, 1, 2, etc.
+  highestGrade: varchar("highest_grade"), // 12, 8, etc.
+  
+  // Enrollment & Staff
+  enrollment: integer("enrollment"), // Total enrollment
+  enrollmentByGrade: jsonb("enrollment_by_grade"), // { "PK": 20, "K": 30, ... }
+  teachersFte: real("teachers_fte"), // Full-time equivalent teachers
+  studentTeacherRatio: real("student_teacher_ratio"),
+  
+  // School Characteristics
+  coedStatus: varchar("coed_status"), // 'coed', 'male', 'female'
+  religiousAffiliation: varchar("religious_affiliation"), // Catholic, Jewish, Episcopal, None, etc.
+  religiousOrientation: varchar("religious_orientation"), // Specific denomination
+  isReligious: boolean("is_religious").default(false),
+  
+  // Program & Focus
+  programEmphasis: text("program_emphasis").array(), // ['college_prep', 'montessori', 'stem', 'arts', etc.]
+  schoolType: varchar("school_type"), // 'day', 'boarding', 'day_boarding'
+  hasExtendedDay: boolean("has_extended_day").default(false),
+  schoolDayMinutes: integer("school_day_minutes"), // Length of school day
+  schoolYearDays: integer("school_year_days"), // Days per school year
+  
+  // Tuition & Financial Aid
+  tuitionElementary: integer("tuition_elementary"), // Annual tuition for elementary grades
+  tuitionMiddle: integer("tuition_middle"), // Annual tuition for middle grades  
+  tuitionHigh: integer("tuition_high"), // Annual tuition for high school
+  hasFinancialAid: boolean("has_financial_aid").default(false),
+  financialAidPercent: integer("financial_aid_percent"), // % of students receiving aid
+  
+  // Accreditation & Affiliations
+  accreditation: text("accreditation").array(), // ['NYSAIS', 'Middle States', etc.]
+  networkAffiliation: varchar("network_affiliation"), // Archdiocese of NY, etc.
+  
+  // Admissions Info
+  applicationDeadline: varchar("application_deadline"),
+  hasRollingAdmissions: boolean("has_rolling_admissions").default(false),
+  admissionsSelectivity: varchar("admissions_selectivity"), // 'highly_selective', 'selective', 'moderate', 'open'
+  requiresInterview: boolean("requires_interview").default(false),
+  requiresTesting: boolean("requires_testing").default(false),
+  testingTypes: text("testing_types").array(), // ['ISEE', 'SSAT', 'ERB', etc.]
+  
+  // Data Source Info
+  dataSourceYear: integer("data_source_year"), // Year of PSS survey
+  dataSourceVersion: varchar("data_source_version"), // PSS release version
+  
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("private_schools_borough_idx").on(table.borough),
+  index("private_schools_zip_idx").on(table.zipCode),
+  index("private_schools_religious_idx").on(table.religiousAffiliation),
+]);
+
+export const insertPrivateSchoolSchema = createInsertSchema(privateSchools);
+export type InsertPrivateSchool = z.infer<typeof insertPrivateSchoolSchema>;
+export type PrivateSchool = typeof privateSchools.$inferSelect;
+
+// Private School History Table - for tracking year-over-year changes
+export const privateSchoolHistory = pgTable("private_school_history", {
+  id: serial("id").primaryKey(),
+  ncesId: varchar("nces_id").notNull(),
+  schoolYear: integer("school_year").notNull(), // e.g., 2023 for 2023-24
+  
+  // Metrics that change over time
+  enrollment: integer("enrollment"),
+  teachersFte: real("teachers_fte"),
+  studentTeacherRatio: real("student_teacher_ratio"),
+  tuitionElementary: integer("tuition_elementary"),
+  tuitionMiddle: integer("tuition_middle"),
+  tuitionHigh: integer("tuition_high"),
+  schoolDayMinutes: integer("school_day_minutes"),
+  schoolYearDays: integer("school_year_days"),
+  
+  // Data source tracking
+  dataSourceVersion: varchar("data_source_version"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("private_school_history_nces_year_idx").on(table.ncesId, table.schoolYear),
+]);
+
+export const insertPrivateSchoolHistorySchema = createInsertSchema(privateSchoolHistory).omit({ id: true, createdAt: true });
+export type InsertPrivateSchoolHistory = z.infer<typeof insertPrivateSchoolHistorySchema>;
+export type PrivateSchoolHistory = typeof privateSchoolHistory.$inferSelect;
+
+// Extended type with computed fields for API responses
+export interface PrivateSchoolWithDetails extends PrivateSchool {
+  tuitionRange?: string; // e.g., "$25,000 - $45,000"
+  gradeRange?: string; // e.g., "Pre-K through 12th Grade"
+}
+
+// Helper to format tuition as currency
+export function formatTuition(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return "Not Available";
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+// Helper to get tuition range display
+export function getTuitionRange(school: PrivateSchool): string {
+  const tuitions = [school.tuitionElementary, school.tuitionMiddle, school.tuitionHigh]
+    .filter((t): t is number => t !== null && t !== undefined);
+  
+  if (tuitions.length === 0) return "Contact School";
+  
+  const min = Math.min(...tuitions);
+  const max = Math.max(...tuitions);
+  
+  if (min === max) return formatTuition(min);
+  return `${formatTuition(min)} - ${formatTuition(max)}`;
+}
+
+// Helper to get admissions selectivity display
+export function getSelectivityDisplay(level: string | null): { label: string; color: string; description: string } {
+  switch (level) {
+    case 'highly_selective':
+      return { label: 'Highly Selective', color: 'red', description: 'Very competitive admissions' };
+    case 'selective':
+      return { label: 'Selective', color: 'amber', description: 'Competitive admissions' };
+    case 'moderate':
+      return { label: 'Moderate', color: 'yellow', description: 'Moderately selective' };
+    case 'open':
+      return { label: 'Open Enrollment', color: 'green', description: 'Accepts most applicants' };
+    default:
+      return { label: 'Contact School', color: 'gray', description: 'Contact school for details' };
+  }
+}
+
+// Helper to format grade range
+export function getGradeRangeDisplay(school: PrivateSchool): string {
+  if (school.gradesOffered) return school.gradesOffered;
+  if (school.lowestGrade && school.highestGrade) {
+    return `${school.lowestGrade} - ${school.highestGrade}`;
+  }
+  return "Contact School";
+}
+
+// Religious affiliation categories for filtering
+export const RELIGIOUS_AFFILIATIONS = [
+  'Catholic',
+  'Jewish',
+  'Episcopal',
+  'Quaker',
+  'Lutheran',
+  'Baptist',
+  'Methodist',
+  'Presbyterian',
+  'Islamic',
+  'Greek Orthodox',
+  'Other Christian',
+  'Other Religious',
+  'Non-Religious',
+] as const;
+
+export type ReligiousAffiliation = typeof RELIGIOUS_AFFILIATIONS[number];
+
+// Program emphasis options
+export const PROGRAM_EMPHASIS_OPTIONS = [
+  'college_prep',
+  'montessori',
+  'waldorf',
+  'stem',
+  'arts',
+  'classical',
+  'special_education',
+  'gifted',
+  'international_baccalaureate',
+  'military',
+  'vocational',
+] as const;
+
+export type ProgramEmphasis = typeof PROGRAM_EMPHASIS_OPTIONS[number];
+
+// Helper to get program emphasis display label
+export function getProgramEmphasisLabel(emphasis: string): string {
+  const labels: Record<string, string> = {
+    'college_prep': 'College Preparatory',
+    'montessori': 'Montessori',
+    'waldorf': 'Waldorf',
+    'stem': 'STEM Focus',
+    'arts': 'Arts Focus',
+    'classical': 'Classical Education',
+    'special_education': 'Special Education',
+    'gifted': 'Gifted & Talented',
+    'international_baccalaureate': 'International Baccalaureate',
+    'military': 'Military Academy',
+    'vocational': 'Vocational/Technical',
+  };
+  return labels[emphasis] || emphasis;
+}

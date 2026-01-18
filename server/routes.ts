@@ -755,6 +755,169 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
+  // ========================================
+  // NYC Private Schools API (NCES PSS data)
+  // ========================================
+  
+  // List all private schools with optional filters
+  app.get("/api/private-schools", async (req: Request, res: Response) => {
+    try {
+      const { borough, zipCode, religiousAffiliation, coedStatus, hasFinancialAid, search, programEmphasis } = req.query;
+      
+      const filters: {
+        borough?: string;
+        zipCode?: string;
+        religiousAffiliation?: string;
+        coedStatus?: string;
+        hasFinancialAid?: boolean;
+        search?: string;
+        programEmphasis?: string;
+      } = {};
+      
+      if (borough && typeof borough === 'string') filters.borough = borough;
+      if (zipCode && typeof zipCode === 'string') filters.zipCode = zipCode;
+      if (religiousAffiliation && typeof religiousAffiliation === 'string') filters.religiousAffiliation = religiousAffiliation;
+      if (coedStatus && typeof coedStatus === 'string') filters.coedStatus = coedStatus;
+      if (hasFinancialAid === 'true') filters.hasFinancialAid = true;
+      if (search && typeof search === 'string') filters.search = search;
+      if (programEmphasis && typeof programEmphasis === 'string') filters.programEmphasis = programEmphasis;
+      
+      // Only cache if no filters
+      const hasFilters = Object.keys(filters).length > 0;
+      const cacheKey = "all-private-schools";
+      
+      if (!hasFilters) {
+        const cachedData = getCached(cacheKey);
+        if (cachedData) {
+          return res.json(cachedData);
+        }
+      }
+      
+      const schools = await storage.getPrivateSchools(hasFilters ? filters : undefined);
+      
+      if (!hasFilters) {
+        setCache(cacheKey, schools, CACHE_TTL_LONG);
+      }
+      
+      res.json(schools);
+    } catch (error) {
+      console.error("Error fetching private schools:", error);
+      res.status(500).json({ error: "Failed to fetch private schools" });
+    }
+  });
+  
+  // Get individual private school by NCES ID
+  app.get("/api/private-schools/:ncesId", async (req: Request, res: Response) => {
+    try {
+      const ncesId = req.params.ncesId;
+      const cacheKey = `private-school-${ncesId}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const school = await storage.getPrivateSchool(ncesId);
+      if (!school) {
+        return res.status(404).json({ error: "Private school not found" });
+      }
+      
+      setCache(cacheKey, school, CACHE_TTL_LONG);
+      res.json(school);
+    } catch (error) {
+      console.error("Error fetching private school:", error);
+      res.status(500).json({ error: "Failed to fetch private school" });
+    }
+  });
+  
+  // Get private school historical data
+  app.get("/api/private-schools/:ncesId/history", async (req: Request, res: Response) => {
+    try {
+      const ncesId = req.params.ncesId;
+      const cacheKey = `private-school-history-${ncesId}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const history = await storage.getPrivateSchoolHistory(ncesId);
+      setCache(cacheKey, history, CACHE_TTL_LONG);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching private school history:", error);
+      res.status(500).json({ error: "Failed to fetch private school history" });
+    }
+  });
+  
+  // Get private school summary stats
+  app.get("/api/private-schools-stats", async (req: Request, res: Response) => {
+    try {
+      const cacheKey = "private-schools-stats";
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const schools = await storage.getPrivateSchools();
+      
+      // Calculate aggregate stats
+      const stats = {
+        totalSchools: schools.length,
+        byBorough: {} as Record<string, number>,
+        byReligiousAffiliation: {} as Record<string, number>,
+        byCoedStatus: {} as Record<string, number>,
+        avgEnrollment: 0,
+        avgStudentTeacherRatio: 0,
+      };
+      
+      let totalEnrollment = 0;
+      let enrollmentCount = 0;
+      let totalRatio = 0;
+      let ratioCount = 0;
+      
+      for (const school of schools) {
+        // Borough counts
+        if (school.borough) {
+          stats.byBorough[school.borough] = (stats.byBorough[school.borough] || 0) + 1;
+        }
+        
+        // Religious affiliation counts
+        if (school.religiousAffiliation) {
+          stats.byReligiousAffiliation[school.religiousAffiliation] = 
+            (stats.byReligiousAffiliation[school.religiousAffiliation] || 0) + 1;
+        }
+        
+        // Coed status counts
+        if (school.coedStatus) {
+          stats.byCoedStatus[school.coedStatus] = (stats.byCoedStatus[school.coedStatus] || 0) + 1;
+        }
+        
+        // Enrollment averages
+        if (school.enrollment) {
+          totalEnrollment += school.enrollment;
+          enrollmentCount++;
+        }
+        
+        // Student-teacher ratio averages
+        if (school.studentTeacherRatio) {
+          totalRatio += school.studentTeacherRatio;
+          ratioCount++;
+        }
+      }
+      
+      stats.avgEnrollment = enrollmentCount > 0 ? Math.round(totalEnrollment / enrollmentCount) : 0;
+      stats.avgStudentTeacherRatio = ratioCount > 0 ? Math.round((totalRatio / ratioCount) * 10) / 10 : 0;
+      
+      setCache(cacheKey, stats, CACHE_TTL_LONG);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching private school stats:", error);
+      res.status(500).json({ error: "Failed to fetch private school stats" });
+    }
+  });
+
   // All school trends API (public) with caching
   app.get("/api/schools-trends", async (req: Request, res: Response) => {
     try {

@@ -43,6 +43,8 @@ const NyceecDetailPage = lazy(() => import("@/pages/nyceec-detail"));
 const ThanksPage = lazy(() => import("@/pages/thanks"));
 const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
 const MagicLinkCallbackPage = lazy(() => import("@/pages/magic-link-callback"));
+const PrivateSchoolsPage = lazy(() => import("@/pages/private-schools"));
+const PrivateSchoolDetailPage = lazy(() => import("@/pages/private-school-detail"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -100,6 +102,12 @@ function Router() {
         </Route>
         <Route path="/early-childhood/:slug">
           <NyceecDetailPage />
+        </Route>
+        <Route path="/private-schools">
+          <PrivateSchoolsPage />
+        </Route>
+        <Route path="/private-school/:ncesId">
+          <PrivateSchoolDetailPage />
         </Route>
         <Route path="/settings" component={SettingsPage} />
         <Route path="/privacy" component={PrivacyPage} />
