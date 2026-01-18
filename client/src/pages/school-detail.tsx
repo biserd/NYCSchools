@@ -52,7 +52,9 @@ import {
   LogIn,
   Phone,
   ExternalLink,
-  Globe
+  Globe,
+  Mail,
+  CheckCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
@@ -349,30 +351,109 @@ export default function SchoolDetail() {
             {/* School Information Card */}
             <Card data-testid="card-school-info">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">School Information</CardTitle>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-lg">School Information</CardTitle>
+                  <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700 dark:text-orange-400" data-testid="badge-unclaimed">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    Unclaimed
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Phone */}
-                {schoolWithScore.phone && (
-                  <div data-testid="info-phone">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>Phone</span>
+                {/* Profile Not Claimed Notice */}
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3" data-testid="notice-unclaimed">
+                  <div className="flex items-start gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Profile Not Claimed</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                        Information shown is from public sources. School administrators can claim this profile to verify details and add contact information.
+                      </p>
                     </div>
-                    <div className="font-medium">{schoolWithScore.phone}</div>
                   </div>
-                )}
+                  <Link href="/contact">
+                    <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-700 text-white" data-testid="button-claim-profile">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Claim School Profile
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Phone */}
+                <div data-testid="info-phone">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Phone</span>
+                  </div>
+                  <div className={schoolWithScore.phone ? "font-medium" : "text-sm text-muted-foreground italic"}>
+                    {schoolWithScore.phone || "Not provided"}
+                  </div>
+                </div>
+                
+                {/* Email */}
+                <div data-testid="info-email">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground italic">
+                    Not provided
+                  </div>
+                </div>
+                
+                {/* Website */}
+                <div data-testid="info-website">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Website</span>
+                  </div>
+                  {schoolWithScore.website ? (
+                    <a 
+                      href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
+                      target="_blank"
+                      rel="nofollow noopener noreferrer"
+                      className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {schoolWithScore.website}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">Not provided</div>
+                  )}
+                </div>
                 
                 {/* Principal */}
-                {schoolWithScore.principal_name && (
-                  <div data-testid="info-principal">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>Principal</span>
-                    </div>
-                    <div className="font-medium uppercase">{schoolWithScore.principal_name}</div>
+                <div data-testid="info-principal">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Principal</span>
                   </div>
-                )}
+                  <div className={schoolWithScore.principal_name ? "font-medium uppercase" : "text-sm text-muted-foreground italic"}>
+                    {schoolWithScore.principal_name || "Not provided"}
+                  </div>
+                </div>
+                
+                {/* Social Media */}
+                <div data-testid="info-social-media">
+                  <div className="text-xs text-muted-foreground mb-2">Social Media</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full border border-muted flex items-center justify-center text-muted-foreground/50" data-testid="social-instagram">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    </div>
+                    <div className="w-8 h-8 rounded-full border border-muted flex items-center justify-center text-muted-foreground/50" data-testid="social-facebook">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                    </div>
+                    <div className="w-8 h-8 rounded-full border border-muted flex items-center justify-center text-muted-foreground/50" data-testid="social-twitter">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Overall Rating with District Badge */}
                 <div data-testid="info-rating">
@@ -399,22 +480,6 @@ export default function SchoolDetail() {
                     {getScoreLabel(schoolWithScore.overall_score)}
                   </div>
                 </div>
-                
-                {/* Website Link */}
-                {schoolWithScore.website && (
-                  <div data-testid="info-website">
-                    <a 
-                      href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
-                      target="_blank"
-                      rel="nofollow noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <Globe className="w-4 h-4" />
-                      Visit School Website
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
