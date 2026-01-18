@@ -24,9 +24,11 @@ interface SchoolZoneMapProps {
   schoolName: string;
   latitude: number | null;
   longitude: number | null;
+  address?: string | null;
+  children?: React.ReactNode;
 }
 
-export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: SchoolZoneMapProps) {
+export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude, address, children }: SchoolZoneMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
@@ -196,6 +198,19 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude }: Sc
             ? "Zone boundaries from NYC Department of Education. Verify with DOE for official enrollment eligibility."
             : "School location shown. This school may not have geographic zone restrictions."}
         </p>
+        
+        {/* Address & Commute Section */}
+        {(address || children) && (
+          <div className="mt-4 pt-4 border-t space-y-3">
+            {address && address !== "TBD" && (
+              <div className="flex items-start gap-2" data-testid="location-address">
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
+                <span className="text-sm">{address}</span>
+              </div>
+            )}
+            {children}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
