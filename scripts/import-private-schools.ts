@@ -11,7 +11,8 @@ import { db } from '../server/db';
 import { privateSchools, privateSchoolHistory } from '../shared/schema';
 import { sql } from 'drizzle-orm';
 
-// PSS data column mappings (based on NCES codebook)
+// PSS data column mappings (based on NCES PSS 2021-22 codebook)
+// Actual column names from pss2122_pu.csv have year suffixes
 interface PssRecord {
   PPIN: string;        // Private School Permanent ID (NCES ID)
   PINST: string;       // School name
@@ -19,38 +20,35 @@ interface PssRecord {
   PCITY: string;       // City
   PSTABB: string;      // State abbreviation
   PZIP: string;        // ZIP code
-  P100: string;        // Phone
-  WEBSITE: string;     // Website
-  LOGR: string;        // Lowest grade offered
-  HIGR: string;        // Highest grade offered
+  PPHONE: string;      // Phone number (not P100!)
+  LOGR2022: string;    // Lowest grade offered (year-suffixed)
+  HIGR2022: string;    // Highest grade offered (year-suffixed)
   NUMSTUDS: string;    // Total enrollment
   NUMTEACH: string;    // Number of teachers (FTE)
-  PCTELIG: string;     // Percent eligible for free/reduced lunch
-  RESSION: string;     // Religious orientation (1-26)
-  ORIENT: string;      // Orientation category
+  RELIG: string;       // Religious affiliation code (1=Catholic, etc.)
+  ORIENT: string;      // Orientation category (1-30)
   TYPOLOGY: string;    // School typology
-  CESSION: string;     // Coeducational status
   LEVEL: string;       // School level
-  LATITUDE: string;    // Latitude
-  LONGITUDE: string;   // Longitude
-  DAYS: string;        // Days in school year
-  HRDAY: string;       // Hours per day
-  // Grade enrollment fields
-  PK?: string;
-  K?: string;
-  G1?: string;
-  G2?: string;
-  G3?: string;
-  G4?: string;
-  G5?: string;
-  G6?: string;
-  G7?: string;
-  G8?: string;
-  G9?: string;
-  G10?: string;
-  G11?: string;
-  G12?: string;
-  UG?: string;
+  LATITUDE22: string;  // Latitude (year-suffixed)
+  LONGITUDE22: string; // Longitude (year-suffixed)
+  TOTHRS: string;      // Total hours per school day
+  MALES: string;       // Number of male students (for deriving coed status)
+  // Grade enrollment fields (P-code format)
+  P140?: string;       // Pre-K enrollment
+  P150?: string;       // K enrollment
+  P160?: string;       // Grade 1 enrollment
+  P170?: string;       // Grade 2 enrollment
+  P180?: string;       // Grade 3 enrollment
+  P190?: string;       // Grade 4 enrollment
+  P200?: string;       // Grade 5 enrollment
+  P210?: string;       // Grade 6 enrollment
+  P220?: string;       // Grade 7 enrollment
+  P230?: string;       // Grade 8 enrollment
+  P240?: string;       // Grade 9 enrollment
+  P250?: string;       // Grade 10 enrollment
+  P260?: string;       // Grade 11 enrollment
+  P270?: string;       // Grade 12 enrollment
+  P280?: string;       // Ungraded enrollment
 }
 
 // Map NCES religious orientation codes to readable labels
@@ -105,38 +103,53 @@ function getSimplifiedAffiliation(code: string): string {
   return 'Other Religious';
 }
 
-// Map coed status codes
-function getCoedStatus(code: string): 'coed' | 'male' | 'female' {
-  switch (code) {
-    case '1': return 'coed';
-    case '2': return 'male';
-    case '3': return 'female';
-    default: return 'coed';
-  }
+// Derive coed status from enrollment data
+function getCoedStatus(males: number, totalEnrollment: number): 'coed' | 'male' | 'female' {
+  if (totalEnrollment === 0) return 'coed';
+  const malePercent = (males / totalEnrollment) * 100;
+  // If 90%+ are male, it's a boys school; if 90%+ are female, it's a girls school
+  if (malePercent >= 90) return 'male';
+  if (malePercent <= 10) return 'female';
+  return 'coed';
 }
 
-// Convert grade codes to display format
-function formatGradeRange(low: string, high: string): string {
-  const gradeMap: Record<string, string> = {
-    'PK': 'Pre-K',
-    'K': 'K',
-    '1': '1',
-    '2': '2',
-    '3': '3',
-    '4': '4',
-    '5': '5',
-    '6': '6',
-    '7': '7',
-    '8': '8',
-    '9': '9',
-    '10': '10',
-    '11': '11',
-    '12': '12',
-    'UG': 'Ungraded',
+// PSS grade code mapping (1-15)
+// 1=Pre-K, 2=K, 3-14=Grades 1-12, 15=Ungraded
+const PSS_GRADE_CODE_MAP: Record<string, string> = {
+  '1': 'PK',
+  '2': 'K',
+  '3': '1',
+  '4': '2',
+  '5': '3',
+  '6': '4',
+  '7': '5',
+  '8': '6',
+  '9': '7',
+  '10': '8',
+  '11': '9',
+  '12': '10',
+  '13': '11',
+  '14': '12',
+  '15': 'UG',
+};
+
+// Convert PSS grade codes to display format
+function formatGradeRange(lowCode: string, highCode: string): string | null {
+  const low = PSS_GRADE_CODE_MAP[lowCode];
+  const high = PSS_GRADE_CODE_MAP[highCode];
+  
+  if (!low || !high) return null;
+  
+  // Format for display
+  const formatGrade = (g: string) => {
+    if (g === 'PK') return 'Pre-K';
+    if (g === 'K') return 'K';
+    if (g === 'UG') return 'Ungraded';
+    return g;
   };
   
-  const lowDisplay = gradeMap[low] || low;
-  const highDisplay = gradeMap[high] || high;
+  const lowDisplay = formatGrade(low);
+  const highDisplay = formatGrade(high);
   
   if (lowDisplay === highDisplay) return lowDisplay;
   return `${lowDisplay}-${highDisplay}`;
@@ -286,15 +299,33 @@ async function downloadPssData(): Promise<PssRecord[]> {
 
 // Transform PSS record to our schema
 function transformPssRecord(pss: PssRecord, dataSourceYear: number): typeof privateSchools.$inferInsert {
-  const religiousCode = pss.RESSION || pss.ORIENT || '30';
-  const isReligious = religiousCode !== '30';
+  // Use RELIG (primary) or ORIENT as fallback for religious affiliation
+  const religiousCode = pss.RELIG || pss.ORIENT || '30';
+  const isReligious = religiousCode !== '30' && religiousCode !== '';
   const borough = getBoroughFromZip(pss.PZIP);
   
-  // Parse enrollment by grade
+  // Parse enrollment by grade using PSS P-codes
   const enrollmentByGrade: Record<string, number> = {};
-  const gradeFields = ['PK', 'K', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11', 'G12', 'UG'];
-  gradeFields.forEach(grade => {
-    const value = parseInt((pss as unknown as Record<string, string>)[grade] || '0');
+  const gradeFieldMap: Record<string, string> = {
+    'P140': 'PK',   // Pre-K enrollment
+    'P150': 'K',    // Kindergarten enrollment
+    'P160': 'G1',   // Grade 1 enrollment
+    'P170': 'G2',   // Grade 2 enrollment
+    'P180': 'G3',   // Grade 3 enrollment
+    'P190': 'G4',   // Grade 4 enrollment
+    'P200': 'G5',   // Grade 5 enrollment
+    'P210': 'G6',   // Grade 6 enrollment
+    'P220': 'G7',   // Grade 7 enrollment
+    'P230': 'G8',   // Grade 8 enrollment
+    'P240': 'G9',   // Grade 9 enrollment
+    'P250': 'G10',  // Grade 10 enrollment
+    'P260': 'G11',  // Grade 11 enrollment
+    'P270': 'G12',  // Grade 12 enrollment
+    'P280': 'UG',   // Ungraded enrollment
+  };
+  
+  Object.entries(gradeFieldMap).forEach(([pCode, grade]) => {
+    const value = parseInt((pss as unknown as Record<string, string>)[pCode] || '0');
     if (value > 0) {
       enrollmentByGrade[grade] = value;
     }
@@ -305,9 +336,19 @@ function transformPssRecord(pss: PssRecord, dataSourceYear: number): typeof priv
   const teachers = parseFloat(pss.NUMTEACH) || 0;
   const studentTeacherRatio = teachers > 0 ? Math.round((enrollment / teachers) * 10) / 10 : null;
   
-  // Calculate school day minutes (hours per day * 60)
-  const hoursPerDay = parseFloat(pss.HRDAY) || 0;
+  // Calculate school day minutes from TOTHRS (total hours per day)
+  const hoursPerDay = parseFloat(pss.TOTHRS) || 0;
   const schoolDayMinutes = hoursPerDay > 0 ? Math.round(hoursPerDay * 60) : null;
+  
+  // Derive coed status from male enrollment vs total
+  const maleEnrollment = parseInt(pss.MALES) || 0;
+  const coedStatus = getCoedStatus(maleEnrollment, enrollment);
+  
+  // Format phone number (remove any non-digits, then format as (xxx) xxx-xxxx)
+  let phone = pss.PPHONE?.replace(/\D/g, '') || null;
+  if (phone && phone.length === 10) {
+    phone = `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+  }
   
   return {
     ncesId: pss.PPIN,
@@ -316,22 +357,22 @@ function transformPssRecord(pss: PssRecord, dataSourceYear: number): typeof priv
     city: pss.PCITY,
     state: pss.PSTABB || 'NY',
     zipCode: pss.PZIP?.substring(0, 5),
-    phone: pss.P100 || null,
-    website: pss.WEBSITE || null,
+    phone,
+    website: null, // PSS 2021-22 doesn't include website field
     borough,
     neighborhood: null, // Will be enriched via Geoclient
-    latitude: pss.LATITUDE ? parseFloat(pss.LATITUDE) : null,
-    longitude: pss.LONGITUDE ? parseFloat(pss.LONGITUDE) : null,
+    latitude: pss.LATITUDE22 ? parseFloat(pss.LATITUDE22) : null,
+    longitude: pss.LONGITUDE22 ? parseFloat(pss.LONGITUDE22) : null,
     bbl: null, // Will be enriched via Geoclient
     bin: null, // Will be enriched via Geoclient
-    gradesOffered: formatGradeRange(pss.LOGR, pss.HIGR),
-    lowestGrade: pss.LOGR || null,
-    highestGrade: pss.HIGR || null,
+    gradesOffered: formatGradeRange(pss.LOGR2022, pss.HIGR2022),
+    lowestGrade: PSS_GRADE_CODE_MAP[pss.LOGR2022] || null,
+    highestGrade: PSS_GRADE_CODE_MAP[pss.HIGR2022] || null,
     enrollment: enrollment || null,
     enrollmentByGrade: Object.keys(enrollmentByGrade).length > 0 ? enrollmentByGrade : null,
     teachersFte: teachers || null,
     studentTeacherRatio,
-    coedStatus: getCoedStatus(pss.CESSION),
+    coedStatus,
     religiousAffiliation: getSimplifiedAffiliation(religiousCode),
     religiousOrientation: RELIGIOUS_ORIENTATION_MAP[religiousCode] || null,
     isReligious,
@@ -339,7 +380,7 @@ function transformPssRecord(pss: PssRecord, dataSourceYear: number): typeof priv
     schoolType: 'day', // Default to day school
     hasExtendedDay: false,
     schoolDayMinutes,
-    schoolYearDays: pss.DAYS ? parseInt(pss.DAYS) : null,
+    schoolYearDays: null, // PSS 2021-22 doesn't include school year days
     tuitionElementary: null, // PSS doesn't include tuition
     tuitionMiddle: null,
     tuitionHigh: null,
