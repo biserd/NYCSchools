@@ -106,7 +106,7 @@ function Router() {
         <Route path="/private-schools">
           <PrivateSchoolsPage />
         </Route>
-        <Route path="/private-school/:ncesId">
+        <Route path="/private-school/:slug">
           <PrivateSchoolDetailPage />
         </Route>
         <Route path="/settings" component={SettingsPage} />

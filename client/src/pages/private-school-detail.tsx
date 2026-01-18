@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { type PrivateSchool, formatTuition, getTuitionRange, getSelectivityDisplay, getGradeRangeDisplay, getProgramEmphasisLabel } from "@shared/schema";
+import { type PrivateSchool, formatTuition, getTuitionRange, getSelectivityDisplay, getGradeRangeDisplay, getProgramEmphasisLabel, extractNcesIdFromSlug, getPrivateSchoolSlug } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,10 @@ import {
 } from "lucide-react";
 
 export default function PrivateSchoolDetail() {
-  const { ncesId } = useParams();
+  const { slug } = useParams<{ slug: string }>();
+  
+  // Extract ncesId from SEO-friendly slug (e.g., "00921917-academy-of-st-joseph" -> "00921917")
+  const ncesId = slug ? extractNcesIdFromSlug(slug) : undefined;
 
   const { data: school, isLoading, error } = useQuery<PrivateSchool>({
     queryKey: ["/api/private-schools", ncesId],
@@ -96,7 +99,7 @@ export default function PrivateSchoolDetail() {
       <SEOHead
         title={pageTitle}
         description={pageDescription}
-        canonicalPath={`/private-school/${school.ncesId}`}
+        canonicalPath={`/private-school/${getPrivateSchoolSlug(school)}`}
         keywords={keywords}
       />
       <StructuredData

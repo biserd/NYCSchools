@@ -421,6 +421,32 @@ export function getSchoolUrl(school: Pick<School, 'name' | 'dbn'>): string {
   return `/school/${getSchoolSlug(school)}`;
 }
 
+// Helper function to generate URL-friendly slug from private school name and ncesId
+export function getPrivateSchoolSlug(school: Pick<PrivateSchool, 'name' | 'ncesId'>): string {
+  const nameSlug = school.name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  
+  return `${school.ncesId.toLowerCase()}-${nameSlug}`;
+}
+
+// Helper function to get private school URL path
+export function getPrivateSchoolUrl(school: Pick<PrivateSchool, 'name' | 'ncesId'>): string {
+  return `/private-school/${getPrivateSchoolSlug(school)}`;
+}
+
+// Extract ncesId from private school slug (e.g., "00921917-academy-of-st-joseph" -> "00921917")
+export function extractNcesIdFromSlug(slug: string): string {
+  const match = slug.match(/^([a-z0-9]+)-/i);
+  if (match) {
+    return match[1].toUpperCase();
+  }
+  return slug.toUpperCase();
+}
+
 // Extract school type abbreviation from school name (e.g., "P.S. 006" -> "PS", "I.S. 075" -> "IS")
 export function extractSchoolType(name: string): string {
   const typeMatch = name.match(/^(P\.?S\.?|I\.?S\.?|M\.?S\.?|H\.?S\.?|J\.?H\.?S\.?)/i);

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { type PrivateSchool, getTuitionRange, getGradeRangeDisplay } from "@shared/schema";
+import { type PrivateSchool, getTuitionRange, getGradeRangeDisplay, getPrivateSchoolUrl } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -136,7 +136,7 @@ export default function PrivateSchools() {
             <Badge variant="outline">{schools.length} Schools</Badge>
           </div>
           <h1 className="text-3xl font-bold mb-2">NYC Private Schools</h1>
-          <p className="text-muted-foreground max-w-2xl">
+          <p className="text-muted-foreground">
             Browse {schools.length}+ private schools across New York City. Filter by borough, religious affiliation, and more to find the right fit for your child.
           </p>
         </div>
@@ -266,7 +266,7 @@ export default function PrivateSchools() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredSchools.map((school) => (
-                <Link key={school.ncesId} href={`/private-school/${school.ncesId}`}>
+                <Link key={school.ncesId} href={getPrivateSchoolUrl(school)}>
                   <Card className="hover-elevate cursor-pointer h-full" data-testid={`card-school-${school.ncesId}`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
