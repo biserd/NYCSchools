@@ -22,6 +22,7 @@ import { ReviewsList } from "@/components/ReviewsList";
 import { AdmissionsSection } from "@/components/AdmissionsSection";
 import { SchoolZoneMap } from "@/components/SchoolZoneMap";
 import { SchoolFAQ } from "@/components/SchoolFAQ";
+import { LocationMap } from "@/components/LocationMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
@@ -236,17 +237,16 @@ export default function SchoolDetail() {
             </div>
           </div>
           
-          {/* School Header */}
+          {/* School Header - Simplified */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2" data-testid="text-school-name">
                 {schoolWithScore.name}
               </h1>
-              <div className="flex items-center gap-3 flex-wrap mb-3">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
                 {schoolWithScore.grade_band && (
-                  <Badge variant="outline" className="text-xs gap-1" data-testid="badge-grades">
-                    <GraduationCap className="w-3 h-3" />
+                  <Badge variant="outline" className="text-xs" data-testid="badge-grades">
                     Grades {schoolWithScore.grade_band}
                   </Badge>
                 )}
@@ -294,55 +294,18 @@ export default function SchoolDetail() {
                   </Badge>
                 )}
                 {borough && (
-                  <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-borough">
-                    <MapPin className="w-3 h-3" />
+                  <Badge variant="outline" className="text-xs" data-testid="badge-borough">
                     {borough}
-                  </span>
+                  </Badge>
                 )}
                 <Link 
                   href={`/?district=${schoolWithScore.district}`}
-                  className="text-sm text-primary hover:underline cursor-pointer" 
                   data-testid="link-district"
                 >
-                  District {schoolWithScore.district}
+                  <Badge variant="outline" className="text-xs text-primary hover:bg-primary/10 cursor-pointer">
+                    District {schoolWithScore.district}
+                  </Badge>
                 </Link>
-              </div>
-              <CommuteTime schoolDbn={schoolWithScore.dbn} />
-              
-              {/* Contact Information */}
-              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
-                  <div className="flex items-center gap-2" data-testid="header-address">
-                    <MapPin className="w-4 h-4 shrink-0" />
-                    <span>{schoolWithScore.address}</span>
-                  </div>
-                )}
-                {schoolWithScore.phone && (
-                  <div className="flex items-center gap-2" data-testid="header-phone">
-                    <Phone className="w-4 h-4 shrink-0" />
-                    <span>{schoolWithScore.phone}</span>
-                  </div>
-                )}
-                {schoolWithScore.principal_name && (
-                  <div className="flex items-center gap-2" data-testid="header-principal">
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span>Principal: {schoolWithScore.principal_name}</span>
-                  </div>
-                )}
-                {schoolWithScore.website && (
-                  <div className="flex items-center gap-2" data-testid="header-website">
-                    <Globe className="w-4 h-4 shrink-0" />
-                    <a 
-                      href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
-                      target="_blank"
-                      rel="nofollow noopener noreferrer"
-                      className="text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      School Website
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -361,22 +324,130 @@ export default function SchoolDetail() {
             </div>
           </div>
 
-          {/* Overall Score Card */}
+          {/* Two-Column Layout: Location & School Info */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Location & Directions Card - Takes 2 columns */}
+            <Card className="lg:col-span-2" data-testid="card-location">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MapPin className="w-5 h-5" />
+                  Location & Directions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Embedded Map */}
+                {schoolWithScore.latitude && schoolWithScore.longitude && (
+                  <LocationMap
+                    latitude={schoolWithScore.latitude}
+                    longitude={schoolWithScore.longitude}
+                    schoolName={schoolWithScore.name}
+                    address={schoolWithScore.address || undefined}
+                  />
+                )}
+                
+                {/* Address */}
+                {schoolWithScore.address && schoolWithScore.address !== "TBD" && (
+                  <div className="flex items-start gap-2" data-testid="location-address">
+                    <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
+                    <span className="text-sm">{schoolWithScore.address}</span>
+                  </div>
+                )}
+                
+                {/* Commute Time */}
+                <CommuteTime schoolDbn={schoolWithScore.dbn} />
+              </CardContent>
+            </Card>
+
+            {/* School Information Card */}
+            <Card data-testid="card-school-info">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">School Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Phone */}
+                {schoolWithScore.phone && (
+                  <div data-testid="info-phone">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Phone</span>
+                    </div>
+                    <div className="font-medium">{schoolWithScore.phone}</div>
+                  </div>
+                )}
+                
+                {/* Principal */}
+                {schoolWithScore.principal_name && (
+                  <div data-testid="info-principal">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Principal</span>
+                    </div>
+                    <div className="font-medium uppercase">{schoolWithScore.principal_name}</div>
+                  </div>
+                )}
+                
+                {/* Overall Rating with District Badge */}
+                <div data-testid="info-rating">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Star className="w-3.5 h-3.5" />
+                    <span>Overall Rating</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-3xl font-bold ${
+                      schoolWithScore.overall_score >= 80 ? 'text-emerald-600' :
+                      schoolWithScore.overall_score >= 70 ? 'text-yellow-600' :
+                      schoolWithScore.overall_score >= 0 ? 'text-red-600' : 'text-muted-foreground'
+                    }`}>
+                      {schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}
+                    </span>
+                    {districtAverages && schoolWithScore.overall_score >= 0 && (
+                      <DistrictComparisonBadge 
+                        value={schoolWithScore.overall_score} 
+                        districtAvg={districtAverages.overallScore} 
+                      />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {getScoreLabel(schoolWithScore.overall_score)}
+                  </div>
+                </div>
+                
+                {/* Website Link */}
+                {schoolWithScore.website && (
+                  <div data-testid="info-website">
+                    <a 
+                      href={schoolWithScore.website.startsWith('http') ? schoolWithScore.website : `https://${schoolWithScore.website}`}
+                      target="_blank"
+                      rel="nofollow noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Visit School Website
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Overall Snapshot - Horizontal 4-Card Grid */}
           <Card data-testid="card-overall-score">
-            <CardHeader>
-              <CardTitle>Overall Snapshot</CardTitle>
-              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap" data-testid="score-legend">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Overall Snapshot</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">Performance across key metrics</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground flex-wrap" data-testid="score-legend">
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span>90+ Outstanding</span>
+                  <span>80+ Outstanding</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                  <span>80-89 Strong</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
-                  <span>70-79 Average</span>
+                  <span>70-79 Strong</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
@@ -389,96 +460,212 @@ export default function SchoolDetail() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <div className={`w-4 h-4 rounded-full ${colorMap[scoreColor]}`} data-testid="indicator-overall" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="text-5xl font-bold tabular-nums" data-testid="score-overall">
-                      {schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}
+              {isPremium ? (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-testid="snapshot-grid">
+                  {/* Overall Score Card */}
+                  <div className="border rounded-lg p-4 relative" data-testid="snapshot-overall">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-primary">Overall</span>
+                      <div className={`w-2.5 h-2.5 rounded-full ${colorMap[scoreColor]}`} />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-4xl font-bold ${
+                        schoolWithScore.overall_score >= 80 ? 'text-emerald-600' :
+                        schoolWithScore.overall_score >= 70 ? 'text-yellow-600' :
+                        schoolWithScore.overall_score >= 0 ? 'text-red-600' : 'text-muted-foreground'
+                      }`}>
+                        {schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}
+                      </span>
+                      {districtAverages && schoolWithScore.overall_score >= 0 && (
+                        <span className={`text-sm font-medium ${
+                          schoolWithScore.overall_score > districtAverages.overallScore ? 'text-emerald-600' :
+                          schoolWithScore.overall_score < districtAverages.overallScore ? 'text-red-600' : 'text-muted-foreground'
+                        }`}>
+                          {schoolWithScore.overall_score > districtAverages.overallScore 
+                            ? `+${schoolWithScore.overall_score - districtAverages.overallScore}` 
+                            : schoolWithScore.overall_score < districtAverages.overallScore 
+                              ? `${schoolWithScore.overall_score - districtAverages.overallScore}`
+                              : '±0'}
+                        </span>
+                      )}
                     </div>
                     {districtAverages && (
-                      <DistrictComparisonBadge 
-                        value={schoolWithScore.overall_score} 
-                        districtAvg={districtAverages.overallScore} 
-                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Dist. avg: {districtAverages.overallScore}
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {getScoreLabel(schoolWithScore.overall_score)}
+                    </div>
+                  </div>
+
+                  {/* Academics Score Card */}
+                  <div className="border rounded-lg p-4 relative" data-testid="snapshot-academics">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-primary">Academics</span>
+                      <div className={`w-2.5 h-2.5 rounded-full ${colorMap[getScoreColor(schoolWithScore.academics_score ?? -1)]}`} />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-4xl font-bold ${
+                        (schoolWithScore.academics_score ?? -1) >= 80 ? 'text-emerald-600' :
+                        (schoolWithScore.academics_score ?? -1) >= 70 ? 'text-yellow-600' :
+                        (schoolWithScore.academics_score ?? -1) >= 0 ? 'text-red-600' : 'text-muted-foreground'
+                      }`}>
+                        {schoolWithScore.academics_score === null || schoolWithScore.academics_score === undefined ? 'N/A' : schoolWithScore.academics_score}
+                      </span>
+                      {districtAverages && schoolWithScore.academics_score !== null && schoolWithScore.academics_score !== undefined && (
+                        <span className={`text-sm font-medium ${
+                          schoolWithScore.academics_score > districtAverages.academicsScore ? 'text-emerald-600' :
+                          schoolWithScore.academics_score < districtAverages.academicsScore ? 'text-red-600' : 'text-muted-foreground'
+                        }`}>
+                          {schoolWithScore.academics_score > districtAverages.academicsScore 
+                            ? `+${schoolWithScore.academics_score - districtAverages.academicsScore}` 
+                            : schoolWithScore.academics_score < districtAverages.academicsScore 
+                              ? `${schoolWithScore.academics_score - districtAverages.academicsScore}`
+                              : '±0'}
+                        </span>
+                      )}
+                    </div>
+                    {districtAverages && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Dist. avg: {districtAverages.academicsScore}
+                      </div>
                     )}
                   </div>
-                  <div className="text-sm text-muted-foreground" data-testid="label-overall">
-                    {getScoreLabel(schoolWithScore.overall_score)}
+
+                  {/* Climate Score Card */}
+                  <div className="border rounded-lg p-4 relative" data-testid="snapshot-climate">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-primary">Climate</span>
+                      <div className={`w-2.5 h-2.5 rounded-full ${colorMap[getScoreColor(schoolWithScore.climate_score ?? -1)]}`} />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-4xl font-bold ${
+                        (schoolWithScore.climate_score ?? -1) >= 80 ? 'text-emerald-600' :
+                        (schoolWithScore.climate_score ?? -1) >= 70 ? 'text-yellow-600' :
+                        (schoolWithScore.climate_score ?? -1) >= 0 ? 'text-red-600' : 'text-muted-foreground'
+                      }`}>
+                        {schoolWithScore.climate_score === null || schoolWithScore.climate_score === undefined ? 'N/A' : schoolWithScore.climate_score}
+                      </span>
+                      {districtAverages && schoolWithScore.climate_score !== null && schoolWithScore.climate_score !== undefined && (
+                        <span className={`text-sm font-medium ${
+                          schoolWithScore.climate_score > districtAverages.climateScore ? 'text-emerald-600' :
+                          schoolWithScore.climate_score < districtAverages.climateScore ? 'text-red-600' : 'text-muted-foreground'
+                        }`}>
+                          {schoolWithScore.climate_score > districtAverages.climateScore 
+                            ? `+${schoolWithScore.climate_score - districtAverages.climateScore}` 
+                            : schoolWithScore.climate_score < districtAverages.climateScore 
+                              ? `${schoolWithScore.climate_score - districtAverages.climateScore}`
+                              : '±0'}
+                        </span>
+                      )}
+                    </div>
+                    {districtAverages && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Dist. avg: {districtAverages.climateScore}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Progress Score Card */}
+                  <div className="border rounded-lg p-4 relative" data-testid="snapshot-progress">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-primary">Progress</span>
+                      <div className={`w-2.5 h-2.5 rounded-full ${colorMap[getScoreColor(schoolWithScore.progress_score ?? -1)]}`} />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-4xl font-bold ${
+                        (schoolWithScore.progress_score ?? -1) >= 80 ? 'text-emerald-600' :
+                        (schoolWithScore.progress_score ?? -1) >= 70 ? 'text-yellow-600' :
+                        (schoolWithScore.progress_score ?? -1) >= 0 ? 'text-red-600' : 'text-muted-foreground'
+                      }`}>
+                        {schoolWithScore.progress_score === null || schoolWithScore.progress_score === undefined ? 'N/A' : schoolWithScore.progress_score}
+                      </span>
+                      {districtAverages && schoolWithScore.progress_score !== null && schoolWithScore.progress_score !== undefined && (
+                        <span className={`text-sm font-medium ${
+                          schoolWithScore.progress_score > districtAverages.progressScore ? 'text-emerald-600' :
+                          schoolWithScore.progress_score < districtAverages.progressScore ? 'text-red-600' : 'text-muted-foreground'
+                        }`}>
+                          {schoolWithScore.progress_score > districtAverages.progressScore 
+                            ? `+${schoolWithScore.progress_score - districtAverages.progressScore}` 
+                            : schoolWithScore.progress_score < districtAverages.progressScore 
+                              ? `${schoolWithScore.progress_score - districtAverages.progressScore}`
+                              : '±0'}
+                        </span>
+                      )}
+                    </div>
+                    {districtAverages && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Dist. avg: {districtAverages.progressScore}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-              
-              {/* District Comparison Summary - shows unique metrics not duplicated below */}
-              {districtAverages && (
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <div className="text-sm font-medium mb-2 text-muted-foreground">District {schoolWithScore.district} Comparison</div>
-                  {isPremium ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-testid="district-comparison-summary">
-                      <ComparisonStat 
-                        label="Overall" 
-                        schoolValue={schoolWithScore.overall_score} 
-                        districtAvg={districtAverages.overallScore}
-                      />
-                      <ComparisonStat 
-                        label="Academics" 
-                        schoolValue={schoolWithScore.academics_score} 
-                        districtAvg={districtAverages.academicsScore}
-                      />
-                      <ComparisonStat 
-                        label="Climate" 
-                        schoolValue={schoolWithScore.climate_score} 
-                        districtAvg={districtAverages.climateScore}
-                      />
-                      <ComparisonStat 
-                        label="Progress" 
-                        schoolValue={schoolWithScore.progress_score} 
-                        districtAvg={districtAverages.progressScore}
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative" data-testid="locked-district-comparison">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm blur-sm select-none pointer-events-none" aria-hidden="true">
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <div className="text-xs text-muted-foreground">Overall</div>
-                          <div className="font-medium tabular-nums">{schoolWithScore.overall_score}</div>
-                          <div className="text-xs text-emerald-600">+5 vs avg</div>
-                        </div>
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <div className="text-xs text-muted-foreground">Academics</div>
-                          <div className="font-medium tabular-nums">{schoolWithScore.academics_score}</div>
-                          <div className="text-xs text-emerald-600">+3 vs avg</div>
-                        </div>
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <div className="text-xs text-muted-foreground">Climate</div>
-                          <div className="font-medium tabular-nums">{schoolWithScore.climate_score}</div>
-                          <div className="text-xs text-yellow-600">At avg</div>
-                        </div>
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <div className="text-xs text-muted-foreground">Progress</div>
-                          <div className="font-medium tabular-nums">{schoolWithScore.progress_score}</div>
-                          <div className="text-xs text-emerald-600">+2 vs avg</div>
-                        </div>
+              ) : (
+                <div className="relative" data-testid="locked-snapshot">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 blur-sm select-none pointer-events-none" aria-hidden="true">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-primary">Overall</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       </div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 text-center shadow-lg border">
-                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 mb-3">
-                            <Lock className="w-5 h-5 text-primary" />
-                          </div>
-                          <h4 className="font-semibold text-sm mb-1">Unlock District Comparison</h4>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            See how this school compares to District {schoolWithScore.district} averages
-                          </p>
-                          <Link href="/pricing">
-                            <Button size="sm" data-testid="button-unlock-comparison">
-                              <Lock className="w-3 h-3 mr-1" />
-                              Unlock for $29
-                            </Button>
-                          </Link>
-                        </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-emerald-600">{schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}</span>
+                        <span className="text-sm font-medium text-emerald-600">+8</span>
                       </div>
+                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 80</div>
                     </div>
-                  )}
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-primary">Academics</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-emerald-600">92</span>
+                        <span className="text-sm font-medium text-emerald-600">+12</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 80</div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-primary">Climate</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-yellow-600">78</span>
+                        <span className="text-sm font-medium text-muted-foreground">±0</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 78</div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-primary">Progress</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-emerald-600">85</span>
+                        <span className="text-sm font-medium text-emerald-600">+5</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 80</div>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-background/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg border max-w-sm">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                        <Lock className="w-6 h-6 text-primary" />
+                      </div>
+                      <h4 className="font-semibold text-lg mb-2">Unlock Detailed Scores</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        See how {schoolWithScore.name} compares to District {schoolWithScore.district} across all key metrics
+                      </p>
+                      <Link href="/pricing">
+                        <Button data-testid="button-unlock-snapshot">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Unlock for $29
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
