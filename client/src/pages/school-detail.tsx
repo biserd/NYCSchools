@@ -64,6 +64,14 @@ interface SubscriptionStatus {
   plan: string;
 }
 
+// Helper to format district comparison delta with proper rounding
+function formatDelta(value: number, compare: number): string {
+  const diff = Math.round(value - compare);
+  if (diff > 0) return `+${diff}`;
+  if (diff < 0) return `${diff}`;
+  return '±0';
+}
+
 export default function SchoolDetail() {
   const { slug } = useParams();
   const [, setLocation] = useLocation();
@@ -210,7 +218,7 @@ export default function SchoolDetail() {
       <StructuredData data={educationalOrgSchema} />
       <AppHeader />
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="mx-auto w-full max-w-7xl px-4 md:px-8 py-8">
         <div className="space-y-6">
           {/* AI Assistant Banner */}
           <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 rounded-lg p-4" data-testid="banner-ai-assistant">
@@ -481,11 +489,7 @@ export default function SchoolDetail() {
                           schoolWithScore.overall_score > districtAverages.overallScore ? 'text-emerald-600' :
                           schoolWithScore.overall_score < districtAverages.overallScore ? 'text-red-600' : 'text-muted-foreground'
                         }`}>
-                          {schoolWithScore.overall_score > districtAverages.overallScore 
-                            ? `+${schoolWithScore.overall_score - districtAverages.overallScore}` 
-                            : schoolWithScore.overall_score < districtAverages.overallScore 
-                              ? `${schoolWithScore.overall_score - districtAverages.overallScore}`
-                              : '±0'}
+                          {formatDelta(schoolWithScore.overall_score, districtAverages.overallScore)}
                         </span>
                       )}
                     </div>
@@ -518,11 +522,7 @@ export default function SchoolDetail() {
                           schoolWithScore.academics_score > districtAverages.academicsScore ? 'text-emerald-600' :
                           schoolWithScore.academics_score < districtAverages.academicsScore ? 'text-red-600' : 'text-muted-foreground'
                         }`}>
-                          {schoolWithScore.academics_score > districtAverages.academicsScore 
-                            ? `+${schoolWithScore.academics_score - districtAverages.academicsScore}` 
-                            : schoolWithScore.academics_score < districtAverages.academicsScore 
-                              ? `${schoolWithScore.academics_score - districtAverages.academicsScore}`
-                              : '±0'}
+                          {formatDelta(schoolWithScore.academics_score, districtAverages.academicsScore)}
                         </span>
                       )}
                     </div>
@@ -552,11 +552,7 @@ export default function SchoolDetail() {
                           schoolWithScore.climate_score > districtAverages.climateScore ? 'text-emerald-600' :
                           schoolWithScore.climate_score < districtAverages.climateScore ? 'text-red-600' : 'text-muted-foreground'
                         }`}>
-                          {schoolWithScore.climate_score > districtAverages.climateScore 
-                            ? `+${schoolWithScore.climate_score - districtAverages.climateScore}` 
-                            : schoolWithScore.climate_score < districtAverages.climateScore 
-                              ? `${schoolWithScore.climate_score - districtAverages.climateScore}`
-                              : '±0'}
+                          {formatDelta(schoolWithScore.climate_score, districtAverages.climateScore)}
                         </span>
                       )}
                     </div>
@@ -586,11 +582,7 @@ export default function SchoolDetail() {
                           schoolWithScore.progress_score > districtAverages.progressScore ? 'text-emerald-600' :
                           schoolWithScore.progress_score < districtAverages.progressScore ? 'text-red-600' : 'text-muted-foreground'
                         }`}>
-                          {schoolWithScore.progress_score > districtAverages.progressScore 
-                            ? `+${schoolWithScore.progress_score - districtAverages.progressScore}` 
-                            : schoolWithScore.progress_score < districtAverages.progressScore 
-                              ? `${schoolWithScore.progress_score - districtAverages.progressScore}`
-                              : '±0'}
+                          {formatDelta(schoolWithScore.progress_score, districtAverages.progressScore)}
                         </span>
                       )}
                     </div>
