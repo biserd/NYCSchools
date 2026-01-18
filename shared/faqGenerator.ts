@@ -66,9 +66,7 @@ function generateIsGoodSchoolAnswer(school: SchoolWithOverallScore): string {
     details.push(`Parent satisfaction is high`);
   }
 
-  let conclusion = ' View the full school profile for detailed scores and metrics.';
-
-  return intro + (details.length > 0 ? ' ' + details.join('. ') + '.' : '') + conclusion;
+  return intro + (details.length > 0 ? ' ' + details.join('. ') + '.' : '');
 }
 
 function generateStrengthsWeaknessesAnswer(school: SchoolWithOverallScore): string {
@@ -147,8 +145,6 @@ function generateStrengthsWeaknessesAnswer(school: SchoolWithOverallScore): stri
     answer += 'No significant areas of concern identified.';
   }
 
-  answer += ' See the full school profile for specific metrics and comparisons.';
-
   return answer;
 }
 
@@ -207,8 +203,6 @@ function generateBestForAnswer(school: SchoolWithOverallScore): string {
     }
     answer += ', offering a standard educational experience.';
   }
-
-  answer += '\n\nExplore the full school profile for detailed demographics, test scores, and program information.';
 
   return answer;
 }
