@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
+import { PrivateSchoolMap } from "@/components/PrivateSchoolMap";
 import {
   MapPin,
   Phone,
@@ -172,6 +173,13 @@ export default function PrivateSchoolDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
+            <PrivateSchoolMap
+              schoolName={school.name}
+              latitude={school.latitude}
+              longitude={school.longitude}
+              address={school.address}
+            />
+            
             <Card data-testid="card-overview">
               <CardHeader>
                 <CardTitle className="text-lg">School Overview</CardTitle>
