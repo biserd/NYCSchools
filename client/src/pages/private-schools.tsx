@@ -36,6 +36,33 @@ export default function PrivateSchools() {
   const [boroughFilter, setBoroughFilter] = useState("all");
   const [religiousFilter, setReligiousFilter] = useState("all");
   const [coedFilter, setCoedFilter] = useState("all");
+  const [gradeLevelFilter, setGradeLevelFilter] = useState("all");
+
+  // Helper to check if school serves a given grade level
+  const schoolServesGradeLevel = (school: PrivateSchool, level: string): boolean => {
+    const low = school.lowestGrade;
+    const high = school.highestGrade;
+    if (!low || !high) return false;
+    
+    // Grade order for comparison
+    const gradeOrder = ['PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const lowIdx = gradeOrder.indexOf(low);
+    const highIdx = gradeOrder.indexOf(high);
+    if (lowIdx === -1 || highIdx === -1) return false;
+    
+    // Check grade levels
+    if (level === 'elementary') {
+      // Elementary: Pre-K through 5
+      return lowIdx <= 6 && highIdx >= 0; // Overlaps with PK-5
+    } else if (level === 'middle') {
+      // Middle: 6-8
+      return lowIdx <= 9 && highIdx >= 7; // Overlaps with 6-8
+    } else if (level === 'high') {
+      // High: 9-12
+      return lowIdx <= 13 && highIdx >= 10; // Overlaps with 9-12
+    }
+    return true;
+  };
 
   const { data: schools = [], isLoading } = useQuery<PrivateSchool[]>({
     queryKey: ["/api/private-schools"],
@@ -63,17 +90,21 @@ export default function PrivateSchools() {
       if (coedFilter !== "all" && school.coedStatus !== coedFilter) {
         return false;
       }
+      if (gradeLevelFilter !== "all" && !schoolServesGradeLevel(school, gradeLevelFilter)) {
+        return false;
+      }
       return true;
     });
-  }, [schools, searchQuery, boroughFilter, religiousFilter, coedFilter]);
+  }, [schools, searchQuery, boroughFilter, religiousFilter, coedFilter, gradeLevelFilter]);
 
-  const hasFilters = searchQuery || boroughFilter !== "all" || religiousFilter !== "all" || coedFilter !== "all";
+  const hasFilters = searchQuery || boroughFilter !== "all" || religiousFilter !== "all" || coedFilter !== "all" || gradeLevelFilter !== "all";
 
   const clearFilters = () => {
     setSearchQuery("");
     setBoroughFilter("all");
     setReligiousFilter("all");
     setCoedFilter("all");
+    setGradeLevelFilter("all");
   };
 
   const religiousOptions = useMemo(() => {
@@ -92,7 +123,7 @@ export default function PrivateSchools() {
         title="NYC Private Schools Directory | Browse 600+ Schools"
         description="Explore 600+ NYC private schools with enrollment data, religious affiliations, and grade information. Find the perfect private school for your child in Manhattan, Brooklyn, Queens, Bronx, and Staten Island."
         canonicalPath="/private-schools"
-        keywords={["NYC private schools", "private school directory", "New York City private schools", "Catholic schools NYC", "independent schools"]}
+        keywords="NYC private schools, private school directory, New York City private schools, Catholic schools NYC, independent schools"
       />
       <AppHeader />
 
@@ -185,6 +216,18 @@ export default function PrivateSchools() {
                   <SelectItem value="coed">Coeducational</SelectItem>
                   <SelectItem value="male">All Boys</SelectItem>
                   <SelectItem value="female">All Girls</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
+                <SelectTrigger className="w-full md:w-40" data-testid="select-grade-level">
+                  <SelectValue placeholder="Grade Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Grades</SelectItem>
+                  <SelectItem value="elementary">Elementary (PK-5)</SelectItem>
+                  <SelectItem value="middle">Middle (6-8)</SelectItem>
+                  <SelectItem value="high">High School (9-12)</SelectItem>
                 </SelectContent>
               </Select>
               
