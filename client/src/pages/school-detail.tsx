@@ -618,7 +618,7 @@ export default function SchoolDetail() {
                 </div>
               ) : (
                 <div className="relative" data-testid="locked-snapshot">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 blur-sm select-none pointer-events-none" aria-hidden="true">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 blur-md select-none pointer-events-none" aria-hidden="true">
                     <div className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-primary">Overall</span>
