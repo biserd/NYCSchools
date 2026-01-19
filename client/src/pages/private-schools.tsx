@@ -31,12 +31,15 @@ interface PrivateSchoolStats {
   avgStudentTeacherRatio: number;
 }
 
+const SCHOOLS_PER_PAGE = 50;
+
 export default function PrivateSchools() {
   const [searchQuery, setSearchQuery] = useState("");
   const [boroughFilter, setBoroughFilter] = useState("all");
   const [religiousFilter, setReligiousFilter] = useState("all");
   const [coedFilter, setCoedFilter] = useState("all");
   const [gradeLevelFilter, setGradeLevelFilter] = useState("all");
+  const [displayCount, setDisplayCount] = useState(SCHOOLS_PER_PAGE);
 
   // Helper to check if school serves a given grade level
   const schoolServesGradeLevel = (school: PrivateSchool, level: string): boolean => {
@@ -105,7 +108,41 @@ export default function PrivateSchools() {
     setReligiousFilter("all");
     setCoedFilter("all");
     setGradeLevelFilter("all");
+    setDisplayCount(SCHOOLS_PER_PAGE);
   };
+
+  // Reset display count when filters change
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setDisplayCount(SCHOOLS_PER_PAGE);
+  };
+  
+  const handleBoroughChange = (value: string) => {
+    setBoroughFilter(value);
+    setDisplayCount(SCHOOLS_PER_PAGE);
+  };
+  
+  const handleReligiousChange = (value: string) => {
+    setReligiousFilter(value);
+    setDisplayCount(SCHOOLS_PER_PAGE);
+  };
+  
+  const handleCoedChange = (value: string) => {
+    setCoedFilter(value);
+    setDisplayCount(SCHOOLS_PER_PAGE);
+  };
+  
+  const handleGradeLevelChange = (value: string) => {
+    setGradeLevelFilter(value);
+    setDisplayCount(SCHOOLS_PER_PAGE);
+  };
+
+  const loadMoreSchools = () => {
+    setDisplayCount(prev => prev + SCHOOLS_PER_PAGE);
+  };
+
+  const displayedSchools = filteredSchools.slice(0, displayCount);
+  const hasMoreSchools = displayCount < filteredSchools.length;
 
   const religiousOptions = useMemo(() => {
     const affiliations = new Set<string>();
@@ -174,13 +211,13 @@ export default function PrivateSchools() {
                 <Input
                   placeholder="Search by school name..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
                   data-testid="input-search"
                 />
               </div>
               
-              <Select value={boroughFilter} onValueChange={setBoroughFilter}>
+              <Select value={boroughFilter} onValueChange={handleBoroughChange}>
                 <SelectTrigger className="w-full md:w-40" data-testid="select-borough">
                   <SelectValue placeholder="Borough" />
                 </SelectTrigger>
@@ -194,7 +231,7 @@ export default function PrivateSchools() {
                 </SelectContent>
               </Select>
               
-              <Select value={religiousFilter} onValueChange={setReligiousFilter}>
+              <Select value={religiousFilter} onValueChange={handleReligiousChange}>
                 <SelectTrigger className="w-full md:w-48" data-testid="select-religious">
                   <SelectValue placeholder="Affiliation" />
                 </SelectTrigger>
@@ -207,7 +244,7 @@ export default function PrivateSchools() {
                 </SelectContent>
               </Select>
               
-              <Select value={coedFilter} onValueChange={setCoedFilter}>
+              <Select value={coedFilter} onValueChange={handleCoedChange}>
                 <SelectTrigger className="w-full md:w-40" data-testid="select-coed">
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
@@ -219,7 +256,7 @@ export default function PrivateSchools() {
                 </SelectContent>
               </Select>
               
-              <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
+              <Select value={gradeLevelFilter} onValueChange={handleGradeLevelChange}>
                 <SelectTrigger className="w-full md:w-40" data-testid="select-grade-level">
                   <SelectValue placeholder="Grade Level" />
                 </SelectTrigger>
@@ -260,12 +297,13 @@ export default function PrivateSchools() {
           <>
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-muted-foreground">
-                Showing {filteredSchools.length} of {schools.length} schools
+                Showing {displayedSchools.length} of {filteredSchools.length} schools
+                {filteredSchools.length !== schools.length && ` (${schools.length} total)`}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredSchools.map((school) => (
+              {displayedSchools.map((school) => (
                 <Link key={school.ncesId} href={getPrivateSchoolUrl(school)}>
                   <Card className="hover-elevate cursor-pointer h-full" data-testid={`card-school-${school.ncesId}`}>
                     <CardContent className="p-4">
@@ -318,6 +356,19 @@ export default function PrivateSchools() {
                 </Link>
               ))}
             </div>
+
+            {hasMoreSchools && (
+              <div className="flex justify-center mt-8">
+                <Button 
+                  onClick={loadMoreSchools} 
+                  variant="outline" 
+                  size="lg"
+                  data-testid="button-load-more"
+                >
+                  Load More Schools ({filteredSchools.length - displayCount} remaining)
+                </Button>
+              </div>
+            )}
 
             {filteredSchools.length === 0 && (
               <div className="text-center py-12">
