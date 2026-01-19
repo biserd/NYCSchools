@@ -1537,6 +1537,64 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
     }
   });
 
+  // Coordinate-based Commute API - for private schools and NYCEEC centers
+  // Uses destination coordinates directly instead of school DBN
+  app.get("/api/commute/calculate", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Check premium status
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({
+          error: "Premium feature",
+          code: "PREMIUM_REQUIRED", 
+          message: "Commute time calculator is available for Premium subscribers.",
+        });
+      }
+      
+      const destLat = req.query.destLat ? parseFloat(req.query.destLat as string) : null;
+      const destLng = req.query.destLng ? parseFloat(req.query.destLng as string) : null;
+      const originLat = req.query.originLat ? parseFloat(req.query.originLat as string) : null;
+      const originLng = req.query.originLng ? parseFloat(req.query.originLng as string) : null;
+
+      if (!destLat || !destLng || !originLat || !originLng) {
+        return res.json({ duration: null, distance: null, error: "Missing coordinates" });
+      }
+
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!googleMapsApiKey) {
+        return res.json({ duration: null, distance: null, error: "Google Maps API not configured" });
+      }
+
+      const origin = `${originLat},${originLng}`;
+      const destination = `${destLat},${destLng}`;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=transit&key=${googleMapsApiKey}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status !== "OK" || !data.rows[0]?.elements[0]) {
+        return res.json({ duration: null, distance: null, error: "Unable to calculate route" });
+      }
+
+      const element = data.rows[0].elements[0];
+      if (element.status !== "OK") {
+        return res.json({ duration: null, distance: null, error: "Route not available" });
+      }
+
+      res.json({
+        duration: element.duration.text,
+        durationMinutes: Math.round(element.duration.value / 60),
+        distance: element.distance.text,
+        distanceMeters: element.distance.value,
+      });
+    } catch (error) {
+      console.error("Error calculating commute by coordinates:", error);
+      res.status(500).json({ error: "Failed to calculate commute time" });
+    }
+  });
+
   // Reviews API
   app.get("/api/schools/:dbn/reviews", async (req: Request, res: Response) => {
     try {
