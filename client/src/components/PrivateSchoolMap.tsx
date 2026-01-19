@@ -3,12 +3,13 @@ import L from "leaflet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Zap } from "lucide-react";
+import { MapPin, Clock, Zap, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
 
 interface PrivateSchoolMapProps {
   schoolName: string;
@@ -26,7 +27,7 @@ interface UserProfile {
 export function PrivateSchoolMap({ schoolName, latitude, longitude, address }: PrivateSchoolMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { startCheckout, isLoading: checkoutLoading } = useCheckout();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -37,7 +38,34 @@ export function PrivateSchoolMap({ schoolName, latitude, longitude, address }: P
     retry: false,
   });
 
+  // Check subscription status for premium features
+  const { data: subscription } = useQuery<{ status: string; plan: string } | null>({
+    queryKey: ["/api/subscription"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!user,
+  });
+
+  const isPremium = subscription?.status === "active" && 
+    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
+
   const hasAddress = profile?.latitude && profile?.longitude;
+  
+  // Fetch commute time for premium users
+  const { data: commuteData, isLoading: commuteLoading } = useQuery<{ duration: string; distance: string } | null>({
+    queryKey: ["/api/commute/private-school", latitude, longitude, profile?.latitude, profile?.longitude],
+    queryFn: async () => {
+      if (!latitude || !longitude || !profile?.latitude || !profile?.longitude) return null;
+      const response = await fetch(
+        `/api/commute/calculate?destLat=${latitude}&destLng=${longitude}&originLat=${profile.latitude}&originLng=${profile.longitude}`,
+        { credentials: "include" }
+      );
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: isPremium && !!hasAddress && !!latitude && !!longitude,
+    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+    retry: false,
+  });
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -160,6 +188,48 @@ export function PrivateSchoolMap({ schoolName, latitude, longitude, address }: P
       );
     }
 
+    // Premium user with address set - show commute time
+    if (isPremium) {
+      if (commuteLoading) {
+        return (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="commute-loading">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Calculating commute time...</span>
+          </div>
+        );
+      }
+
+      if (commuteData?.duration) {
+        return (
+          <div 
+            className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700" 
+            data-testid="commute-result"
+          >
+            <div className="flex items-center justify-center h-8 w-8 shrink-0 rounded-full bg-green-100 dark:bg-green-900/30">
+              <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                Commute from Home
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                {commuteData.duration} {commuteData.distance && `(${commuteData.distance})`}
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // Premium user but couldn't calculate commute
+      return (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="commute-unavailable">
+          <AlertCircle className="h-4 w-4" />
+          <span>Commute time unavailable for this location</span>
+        </div>
+      );
+    }
+
+    // Non-premium user - show upgrade prompt
     return (
       <>
         <div 
