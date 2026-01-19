@@ -738,18 +738,17 @@ export default function PrivateSchoolDetail() {
                   <span className="text-sm text-muted-foreground">{school.dataSourceVersion}</span>
                 </div>
                 {school.associations && Array.isArray(school.associations) && school.associations.length > 0 && (
-                  <>
-                    <div className="border-t pt-3 mt-3">
-                      <div className="text-sm text-muted-foreground mb-2">Associations & Memberships</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {school.associations.map((assoc, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {assoc}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </>
+                  <div className="border-t pt-3 mt-1">
+                    <div className="text-sm text-muted-foreground mb-2">Associations & Memberships</div>
+                    <ul className="space-y-1.5">
+                      {school.associations.map((assoc, idx) => (
+                        <li key={idx} className="text-sm flex items-start gap-2">
+                          <CheckCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                          <span>{assoc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </CardContent>
             </Card>
