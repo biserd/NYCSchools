@@ -1522,10 +1522,13 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
         return res.json({ duration: null, distance: null, error: "Route not available" });
       }
 
+      // Convert meters to miles (1 mile = 1609.34 meters)
+      const distanceMiles = (element.distance.value / 1609.34).toFixed(1);
+      
       res.json({
         duration: element.duration.text,
         durationMinutes: Math.round(element.duration.value / 60),
-        distance: element.distance.text,
+        distance: `${distanceMiles} mi`,
         distanceMeters: element.distance.value,
       });
     } catch (error) {
