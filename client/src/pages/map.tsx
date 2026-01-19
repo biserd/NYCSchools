@@ -661,7 +661,7 @@ export default function MapPage() {
         const bounds = L.latLngBounds(filteredSchools.map(s => [s.lat, s.lng]));
         mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
       }
-    } else {
+    } else if (dataSource === "nyceec") {
       // Add markers for NYCEEC centers (orange markers)
       filteredNyceecCenters.forEach(center => {
         const centerTypeColor = center.centerType === "NYCEEC" ? "#f97316" : 

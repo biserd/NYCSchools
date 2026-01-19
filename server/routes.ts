@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
@@ -2825,6 +2825,39 @@ When answering:
         xml += `    <priority>0.8</priority>\n`;
         xml += '  </url>\n';
       });
+      
+      // Add private schools browse page
+      xml += '  <url>\n';
+      xml += `    <loc>https://nycschoolsratings.com/private-schools</loc>\n`;
+      xml += `    <lastmod>${today}</lastmod>\n`;
+      xml += `    <changefreq>weekly</changefreq>\n`;
+      xml += `    <priority>0.8</priority>\n`;
+      xml += '  </url>\n';
+      
+      // Add private school detail pages
+      try {
+        const privateSchoolsList = await db.select({
+          ncesId: privateSchools.ncesId,
+          name: privateSchools.name,
+        }).from(privateSchools);
+        
+        privateSchoolsList.forEach(school => {
+          const nameSlug = school.name.toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+          const slug = `${nameSlug}-${school.ncesId.toLowerCase()}`;
+          xml += '  <url>\n';
+          xml += `    <loc>https://nycschoolsratings.com/private-school/${slug}</loc>\n`;
+          xml += `    <lastmod>${today}</lastmod>\n`;
+          xml += `    <changefreq>monthly</changefreq>\n`;
+          xml += `    <priority>0.7</priority>\n`;
+          xml += '  </url>\n';
+        });
+      } catch (privateSchoolError) {
+        console.error("Error fetching private schools for sitemap:", privateSchoolError);
+      }
       
       xml += '</urlset>';
       
