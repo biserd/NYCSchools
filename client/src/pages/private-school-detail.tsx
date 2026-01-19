@@ -595,6 +595,26 @@ export default function PrivateSchoolDetail() {
                 </CardContent>
               </Card>
             )}
+
+            {school.associations && Array.isArray(school.associations) && school.associations.length > 0 && (
+              <Card data-testid="card-associations">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    Associations & Memberships
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {school.associations.map((assoc, idx) => (
+                      <Badge key={idx} variant="secondary">
+                        {assoc}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div className="space-y-6">
