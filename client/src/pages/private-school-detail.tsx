@@ -596,25 +596,6 @@ export default function PrivateSchoolDetail() {
               </Card>
             )}
 
-            {school.associations && Array.isArray(school.associations) && school.associations.length > 0 && (
-              <Card data-testid="card-associations">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    Associations & Memberships
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {school.associations.map((assoc, idx) => (
-                      <Badge key={idx} variant="secondary">
-                        {assoc}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           <div className="space-y-6">
@@ -756,6 +737,20 @@ export default function PrivateSchoolDetail() {
                   <span className="text-sm text-muted-foreground">Data Source</span>
                   <span className="text-sm text-muted-foreground">{school.dataSourceVersion}</span>
                 </div>
+                {school.associations && Array.isArray(school.associations) && school.associations.length > 0 && (
+                  <>
+                    <div className="border-t pt-3 mt-3">
+                      <div className="text-sm text-muted-foreground mb-2">Associations & Memberships</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {school.associations.map((assoc, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {assoc}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
