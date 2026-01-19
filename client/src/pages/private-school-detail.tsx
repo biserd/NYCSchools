@@ -1,6 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type PrivateSchool, formatTuition, getTuitionRange, getSelectivityDisplay, getGradeRangeDisplay, getProgramEmphasisLabel, extractNcesIdFromSlug, getPrivateSchoolSlug } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -138,8 +139,12 @@ export default function PrivateSchoolDetail() {
   });
 
   // Check subscription status for premium features
-  const { data: subscription } = useQuery<{ status: string; plan: string }>({
-    queryKey: ["/api/subscription-status"],
+  const { data: subscription } = useQuery<{ 
+    status: string; 
+    plan: string;
+  } | null>({
+    queryKey: ["/api/subscription"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user,
   });
 
@@ -288,20 +293,20 @@ export default function PrivateSchoolDetail() {
                 <CardTitle className="text-lg">School Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="flex flex-wrap justify-center gap-4">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg min-w-[120px] flex-1 max-w-[160px]">
                     <div className="text-2xl font-bold text-primary">{school.enrollment || '—'}</div>
                     <div className="text-xs text-muted-foreground">Total Students</div>
                   </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg min-w-[120px] flex-1 max-w-[160px]">
                     <div className="text-2xl font-bold text-primary">{school.studentTeacherRatio ? `${school.studentTeacherRatio}:1` : '—'}</div>
                     <div className="text-xs text-muted-foreground">Student-Teacher Ratio</div>
                   </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg min-w-[120px] flex-1 max-w-[160px]">
                     <div className="text-2xl font-bold text-primary">{school.teachersFte ? Math.round(school.teachersFte) : '—'}</div>
                     <div className="text-xs text-muted-foreground">Teachers (FTE)</div>
                   </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg min-w-[120px] flex-1 max-w-[160px]">
                     <div className="text-2xl font-bold text-primary">{school.schoolYearDays || '—'}</div>
                     <div className="text-xs text-muted-foreground">School Days/Year</div>
                   </div>
