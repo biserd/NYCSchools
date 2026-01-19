@@ -1445,10 +1445,12 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
             validSchools.forEach(({ dbn }, index) => {
               const element = data.rows[0].elements[index];
               if (element?.status === "OK") {
+                // Convert meters to miles (1 mile = 1609.34 meters)
+                const distanceMiles = (element.distance.value / 1609.34).toFixed(1);
                 const result = {
                   commuteTime: element.duration.text,
                   commuteMinutes: Math.round(element.duration.value / 60),
-                  distance: element.distance.text,
+                  distance: `${distanceMiles} mi`,
                   distanceMeters: element.distance.value,
                 };
                 results[dbn] = result;
@@ -1587,10 +1589,13 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
         return res.json({ commuteTime: null, distance: null, error: "Route not available" });
       }
 
+      // Convert meters to miles (1 mile = 1609.34 meters)
+      const distanceMiles = (element.distance.value / 1609.34).toFixed(1);
+      
       res.json({
         commuteTime: element.duration.text,
         commuteMinutes: Math.round(element.duration.value / 60),
-        distance: element.distance.text,
+        distance: `${distanceMiles} mi`,
         distanceMeters: element.distance.value,
       });
     } catch (error) {
