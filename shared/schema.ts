@@ -430,7 +430,7 @@ export function getPrivateSchoolSlug(school: Pick<PrivateSchool, 'name' | 'ncesI
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  return `${school.ncesId.toLowerCase()}-${nameSlug}`;
+  return `${nameSlug}-${school.ncesId.toLowerCase()}`;
 }
 
 // Helper function to get private school URL path
@@ -438,9 +438,10 @@ export function getPrivateSchoolUrl(school: Pick<PrivateSchool, 'name' | 'ncesId
   return `/private-school/${getPrivateSchoolSlug(school)}`;
 }
 
-// Extract ncesId from private school slug (e.g., "00921917-academy-of-st-joseph" -> "00921917")
+// Extract ncesId from private school slug (e.g., "academy-of-st-joseph-00921917" -> "00921917")
 export function extractNcesIdFromSlug(slug: string): string {
-  const match = slug.match(/^([a-z0-9]+)-/i);
+  // Format: "school-name-ncesid" - extract ncesId from end
+  const match = slug.match(/-([a-z0-9]+)$/i);
   if (match) {
     return match[1].toUpperCase();
   }
