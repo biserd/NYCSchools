@@ -54,7 +54,7 @@ const ORIENT_CODE_MAP: Record<string, string> = {
   "17": "Islamic",
   "18": "Jewish",
   "27": "Seventh-day Adventist",
-  "30": "Non-Denominational",
+  "30": "Nonsectarian",
 };
 
 function parseCSV(content: string): Record<string, string>[] {

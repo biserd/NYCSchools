@@ -727,6 +727,12 @@ export default function PrivateSchoolDetail() {
                   <span className="text-sm text-muted-foreground">Extended Day</span>
                   <span className="text-sm font-medium">{school.hasExtendedDay ? 'Yes' : 'No'}</span>
                 </div>
+                {school.religiousOrientation && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Orientation</span>
+                    <span className="text-sm font-medium">{school.religiousOrientation}</span>
+                  </div>
+                )}
                 {school.schoolDayMinutes && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">School Day</span>
