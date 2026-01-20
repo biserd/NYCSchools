@@ -16,6 +16,27 @@ export const schools = pgTable("schools", {
   progress_score: integer("progress_score").notNull(),
   ela_proficiency: integer("ela_proficiency").notNull(),
   math_proficiency: integer("math_proficiency").notNull(),
+  science_proficiency: integer("science_proficiency"), // Science % Level 3+4 (Grades 5 & 8)
+  
+  // Grade-Level Assessment Breakdowns (NYSED Grades 3-8)
+  ela_grade3: integer("ela_grade3"), // ELA % proficient Grade 3
+  ela_grade4: integer("ela_grade4"), // ELA % proficient Grade 4
+  ela_grade5: integer("ela_grade5"), // ELA % proficient Grade 5
+  ela_grade6: integer("ela_grade6"), // ELA % proficient Grade 6
+  ela_grade7: integer("ela_grade7"), // ELA % proficient Grade 7
+  ela_grade8: integer("ela_grade8"), // ELA % proficient Grade 8
+  math_grade3: integer("math_grade3"), // Math % proficient Grade 3
+  math_grade4: integer("math_grade4"), // Math % proficient Grade 4
+  math_grade5: integer("math_grade5"), // Math % proficient Grade 5
+  math_grade6: integer("math_grade6"), // Math % proficient Grade 6
+  math_grade7: integer("math_grade7"), // Math % proficient Grade 7
+  math_grade8: integer("math_grade8"), // Math % proficient Grade 8
+  science_grade5: integer("science_grade5"), // Science % proficient Grade 5
+  science_grade8: integer("science_grade8"), // Science % proficient Grade 8
+  
+  // Assessment Data Source Metadata
+  assessment_year: varchar("assessment_year"), // School year (e.g., "2024-25")
+  assessment_source: varchar("assessment_source"), // Data source (e.g., "NYSED")
   
   // School Info
   enrollment: integer("enrollment").notNull(),
@@ -120,6 +141,8 @@ export const schoolHistoricalScores = pgTable("school_historical_scores", {
   year: integer("year").notNull(),
   ela_proficiency: integer("ela_proficiency"), // ELA % Level 3+4
   math_proficiency: integer("math_proficiency"), // Math % Level 3+4
+  science_proficiency: integer("science_proficiency"), // Science % Level 3+4 (Grades 5 & 8)
+  data_source: varchar("data_source"), // Data source (e.g., "NYSED")
   data_source_release: varchar("data_source_release"), // NYSED release date, e.g., "2025-12-03"
 }, (table) => ({
   dbnYearIdx: index("historical_dbn_year_idx").on(table.dbn, table.year),
