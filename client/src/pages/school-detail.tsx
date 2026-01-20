@@ -1001,7 +1001,7 @@ export default function SchoolDetail() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    ELA and Math proficiency trends from NYS grades 3-8 standardized tests over {historicalTrend.yearsAnalyzed} years.
+                    ELA, Math{historicalTrend.historicalData.some(d => d.science_proficiency != null) ? ', and Science' : ''} proficiency trends from NYS standardized tests over {historicalTrend.yearsAnalyzed} years.
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -1012,6 +1012,7 @@ export default function SchoolDetail() {
                           year: d.year,
                           ELA: d.ela_proficiency,
                           Math: d.math_proficiency,
+                          Science: d.science_proficiency,
                         }))}
                         margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
                       >
@@ -1063,6 +1064,16 @@ export default function SchoolDetail() {
                           dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }}
                           name="Math Proficiency"
                         />
+                        {historicalTrend.historicalData.some(d => d.science_proficiency != null) && (
+                          <Line 
+                            type="monotone" 
+                            dataKey="Science" 
+                            stroke="hsl(var(--chart-3))" 
+                            strokeWidth={2}
+                            dot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2 }}
+                            name="Science Proficiency"
+                          />
+                        )}
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1072,7 +1083,7 @@ export default function SchoolDetail() {
                     <table className="w-full text-sm" data-testid="table-historical-data">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-2 px-2 font-medium">Year</th>
+                          <th className="text-left py-2 px-2 font-medium">Subject</th>
                           {historicalTrend.historicalData.map(d => (
                             <th key={d.year} className="text-center py-2 px-2 font-medium">{d.year}</th>
                           ))}
@@ -1082,15 +1093,23 @@ export default function SchoolDetail() {
                         <tr className="border-b">
                           <td className="py-2 px-2 text-muted-foreground">ELA</td>
                           {historicalTrend.historicalData.map(d => (
-                            <td key={d.year} className="text-center py-2 px-2 font-medium">{d.ela_proficiency ?? 'N/A'}%</td>
+                            <td key={d.year} className="text-center py-2 px-2 font-medium">{d.ela_proficiency != null ? `${d.ela_proficiency}%` : '—'}</td>
                           ))}
                         </tr>
-                        <tr>
+                        <tr className={historicalTrend.historicalData.some(d => d.science_proficiency != null) ? 'border-b' : ''}>
                           <td className="py-2 px-2 text-muted-foreground">Math</td>
                           {historicalTrend.historicalData.map(d => (
-                            <td key={d.year} className="text-center py-2 px-2 font-medium">{d.math_proficiency ?? 'N/A'}%</td>
+                            <td key={d.year} className="text-center py-2 px-2 font-medium">{d.math_proficiency != null ? `${d.math_proficiency}%` : '—'}</td>
                           ))}
                         </tr>
+                        {historicalTrend.historicalData.some(d => d.science_proficiency != null) && (
+                          <tr>
+                            <td className="py-2 px-2 text-muted-foreground">Science</td>
+                            {historicalTrend.historicalData.map(d => (
+                              <td key={d.year} className="text-center py-2 px-2 font-medium">{d.science_proficiency != null ? `${d.science_proficiency}%` : '—'}</td>
+                            ))}
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
