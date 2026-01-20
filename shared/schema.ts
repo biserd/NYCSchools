@@ -14,8 +14,8 @@ export const schools = pgTable("schools", {
   academics_score: integer("academics_score").notNull(),
   climate_score: integer("climate_score").notNull(),
   progress_score: integer("progress_score").notNull(),
-  ela_proficiency: integer("ela_proficiency").notNull(),
-  math_proficiency: integer("math_proficiency").notNull(),
+  ela_proficiency: integer("ela_proficiency"), // Nullable - NULL means no data available
+  math_proficiency: integer("math_proficiency"), // Nullable - NULL means no data available
   science_proficiency: integer("science_proficiency"), // Science % Level 3+4 (Grades 5 & 8)
   
   // Grade-Level Assessment Breakdowns (NYSED Grades 3-8)
@@ -395,8 +395,10 @@ export function calculateOverallScore(school: School): number {
   }
   
   // Elementary/Middle schools use test proficiency
-  // Check if using placeholder values (50/50 with no real test data)
-  const isPlaceholderData = school.ela_proficiency === 50 && school.math_proficiency === 50;
+  // Check if proficiency data is missing (NULL means no data available)
+  if (school.ela_proficiency === null || school.math_proficiency === null) {
+    return -1; // Insufficient data
+  }
   
   // Calculate test proficiency as average of ELA and Math
   const testProficiency = (school.ela_proficiency + school.math_proficiency) / 2;
@@ -414,8 +416,8 @@ export function hasInsufficientData(school: School): boolean {
   if (isHighSchool(school)) {
     return school.graduation_rate_4yr === null || school.graduation_rate_4yr === undefined;
   }
-  // Elementary/Middle with placeholder proficiency data
-  return school.ela_proficiency === 50 && school.math_proficiency === 50;
+  // Elementary/Middle with missing proficiency data
+  return school.ela_proficiency === null || school.math_proficiency === null;
 }
 
 export function getScoreLabel(score: number): string {
