@@ -812,33 +812,53 @@ export default function SchoolDetail() {
             </Card>
           )}
 
-          {/* Academic Performance with ELA/Math - Only shown for schools with grades 3-8 (not pure high schools like 9-12) */}
-          {!isPureHighSchool(schoolWithScore) && (
+          {/* Academic Performance with ELA/Math/Science - Only shown for schools with grades 3-8 (not pure high schools like 9-12) */}
+          {!isPureHighSchool(schoolWithScore) && (schoolWithScore.ela_proficiency != null || schoolWithScore.math_proficiency != null || schoolWithScore.science_proficiency != null) && (
             <Card data-testid="card-academics-ela-math">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5" />
-                  Academic Performance
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5" />
+                    Academic Performance
+                  </div>
+                  {schoolWithScore.assessment_year && (
+                    <span className="text-xs font-normal text-muted-foreground" data-testid="text-assessment-source">
+                      {schoolWithScore.assessment_year} | {schoolWithScore.assessment_source || 'NYSED'}
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <MetricCard
-                    label="ELA Proficiency"
-                    value={`${schoolWithScore.ela_proficiency}%`}
-                    tooltip={METRIC_TOOLTIPS.elaProficiency.tooltip}
-                    testId="ela"
-                    numericValue={schoolWithScore.ela_proficiency}
-                    districtAvg={districtAverages?.elaProficiency}
-                  />
-                  <MetricCard
-                    label="Math Proficiency"
-                    value={`${schoolWithScore.math_proficiency}%`}
-                    tooltip={METRIC_TOOLTIPS.mathProficiency.tooltip}
-                    testId="math"
-                    numericValue={schoolWithScore.math_proficiency}
-                    districtAvg={districtAverages?.mathProficiency}
-                  />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {schoolWithScore.ela_proficiency != null && (
+                    <MetricCard
+                      label="ELA Proficiency"
+                      value={`${schoolWithScore.ela_proficiency}%`}
+                      tooltip={METRIC_TOOLTIPS.elaProficiency.tooltip}
+                      testId="ela"
+                      numericValue={schoolWithScore.ela_proficiency}
+                      districtAvg={districtAverages?.elaProficiency}
+                    />
+                  )}
+                  {schoolWithScore.math_proficiency != null && (
+                    <MetricCard
+                      label="Math Proficiency"
+                      value={`${schoolWithScore.math_proficiency}%`}
+                      tooltip={METRIC_TOOLTIPS.mathProficiency.tooltip}
+                      testId="math"
+                      numericValue={schoolWithScore.math_proficiency}
+                      districtAvg={districtAverages?.mathProficiency}
+                    />
+                  )}
+                  {schoolWithScore.science_proficiency != null && (
+                    <MetricCard
+                      label="Science Proficiency"
+                      value={`${schoolWithScore.science_proficiency}%`}
+                      tooltip={METRIC_TOOLTIPS.scienceProficiency.tooltip}
+                      testId="science"
+                      numericValue={schoolWithScore.science_proficiency}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>

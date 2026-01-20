@@ -38,6 +38,17 @@ export const METRIC_TOOLTIPS = {
     tooltip: "Percentage of students who met or exceeded New York State standards on the Math exam. This measures mathematical reasoning and problem-solving abilities.",
   },
   
+  scienceProficiency: {
+    label: "Science Proficient",
+    tooltip: "Percentage of students who met or exceeded New York State standards on the Science exam (administered in grades 5 and 8). This measures scientific inquiry, reasoning, and understanding of core concepts.",
+  },
+  
+  // Grade-Level Breakdowns
+  gradeLevel: {
+    label: "Grade-Level Proficiency",
+    tooltip: "Proficiency percentage for a specific grade level on NYS standardized tests. Shows how students in each grade perform compared to state standards.",
+  },
+  
   // School Details
   enrollment: {
     label: "Enrollment",
