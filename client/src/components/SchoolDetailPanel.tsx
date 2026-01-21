@@ -400,6 +400,87 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                   </div>
                 </div>
               </div>
+              
+              {/* Grade-Level Breakdown */}
+              {(school.ela_grade3 || school.ela_grade4 || school.ela_grade5 || school.ela_grade6 || school.ela_grade7 || school.ela_grade8 ||
+                school.math_grade3 || school.math_grade4 || school.math_grade5 || school.math_grade6 || school.math_grade7 || school.math_grade8) && (
+                <div className="mt-6 pt-4 border-t" data-testid="container-grade-breakdown">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground">Scores by Grade</h4>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Grade-level scores information">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">Percentage of students scoring proficient (Level 3+4) on state tests in each grade. 2024-25 data from NYC DOE.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm" data-testid="table-grade-breakdown">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Subject</th>
+                          {[3, 4, 5, 6, 7, 8].map(grade => {
+                            const hasEla = school[`ela_grade${grade}` as keyof typeof school];
+                            const hasMath = school[`math_grade${grade}` as keyof typeof school];
+                            if (hasEla !== null && hasEla !== undefined || hasMath !== null && hasMath !== undefined) {
+                              return <th key={grade} className="text-center py-2 px-2 font-medium text-muted-foreground">Gr {grade}</th>;
+                            }
+                            return null;
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b">
+                          <td className="py-2 pr-4 font-medium">ELA</td>
+                          {[3, 4, 5, 6, 7, 8].map(grade => {
+                            const elaScore = school[`ela_grade${grade}` as keyof typeof school] as number | null;
+                            const mathScore = school[`math_grade${grade}` as keyof typeof school] as number | null;
+                            if (elaScore !== null && elaScore !== undefined || mathScore !== null && mathScore !== undefined) {
+                              return (
+                                <td key={grade} className="text-center py-2 px-2" data-testid={`cell-ela-grade${grade}`}>
+                                  {elaScore !== null && elaScore !== undefined ? (
+                                    <span className={`font-semibold ${elaScore >= 60 ? 'text-green-600 dark:text-green-400' : elaScore >= 40 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                                      {elaScore}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
+                              );
+                            }
+                            return null;
+                          })}
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-4 font-medium">Math</td>
+                          {[3, 4, 5, 6, 7, 8].map(grade => {
+                            const elaScore = school[`ela_grade${grade}` as keyof typeof school] as number | null;
+                            const mathScore = school[`math_grade${grade}` as keyof typeof school] as number | null;
+                            if (elaScore !== null && elaScore !== undefined || mathScore !== null && mathScore !== undefined) {
+                              return (
+                                <td key={grade} className="text-center py-2 px-2" data-testid={`cell-math-grade${grade}`}>
+                                  {mathScore !== null && mathScore !== undefined ? (
+                                    <span className={`font-semibold ${mathScore >= 60 ? 'text-green-600 dark:text-green-400' : mathScore >= 40 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                                      {mathScore}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
+                              );
+                            }
+                            return null;
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </Card>
           )}
 
