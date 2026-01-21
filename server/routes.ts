@@ -3264,6 +3264,63 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     }
   });
 
+  // Admin endpoint to send test newsletter email
+  // Rate limiting: track last send time per admin to prevent abuse
+  const newsletterRateLimits = new Map<string, number>();
+  const NEWSLETTER_RATE_LIMIT_MS = 10000; // 10 seconds between sends
+  
+  app.post("/api/admin/send-newsletter-test", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userEmail = req.user?.email;
+      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
+      
+      if (!userEmail || !adminEmails.includes(userEmail)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      // Rate limiting check
+      const lastSendTime = newsletterRateLimits.get(userEmail) || 0;
+      const timeSinceLastSend = Date.now() - lastSendTime;
+      if (timeSinceLastSend < NEWSLETTER_RATE_LIMIT_MS) {
+        const waitTime = Math.ceil((NEWSLETTER_RATE_LIMIT_MS - timeSinceLastSend) / 1000);
+        return res.status(429).json({ 
+          error: `Rate limited. Please wait ${waitTime} seconds before sending another email.` 
+        });
+      }
+      
+      const { email, firstName } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email address is required' });
+      }
+      
+      // Basic email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+      
+      const { sendNewsletterJanuary2025 } = await import('./emailService');
+      const success = await sendNewsletterJanuary2025(email, firstName);
+      
+      // Update rate limit tracker on success
+      if (success) {
+        newsletterRateLimits.set(userEmail, Date.now());
+      }
+      
+      res.json({ success, message: success ? 'Newsletter sent successfully' : 'Failed to send newsletter' });
+    } catch (error: any) {
+      // Handle Resend rate limit errors (429)
+      if (error.statusCode === 429 || error.message?.includes('rate limit')) {
+        console.error('Resend rate limit hit:', error);
+        return res.status(429).json({ 
+          error: 'Email provider rate limit reached. Please try again in a few minutes.' 
+        });
+      }
+      console.error('Error sending newsletter:', error);
+      res.status(500).json({ error: 'Failed to send newsletter' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -846,6 +846,106 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
   }
 }
 
+// Newsletter email for January 2025 updates
+export async function sendNewsletterJanuary2025(userEmail: string, firstName?: string): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    
+    const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+    
+    const result = await client.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: 'NYC School Ratings - January 2025 Updates',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+          
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin-bottom: 10px;">What's New at NYC School Ratings</h1>
+            <p style="color: #6b7280; font-size: 16px;">January 2025 Updates</p>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
+          
+          <p style="font-size: 16px; line-height: 1.6;">
+            We've been working hard to make NYC School Ratings even more helpful for your school search. Here's what's new:
+          </p>
+          
+          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Latest Updates</h2>
+          
+          <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                <span style="color: #10b981; font-weight: bold; font-size: 18px;">&#10003;</span>
+                <strong style="margin-left: 10px; color: #1f2937;">2024-25 Test Scores Now Available</strong>
+                <span style="color: #6b7280; display: block; margin-left: 28px; font-size: 14px; margin-top: 4px;">
+                  Updated ELA, Math, and Science proficiency data from NYC DOE InfoHub for 1,100+ schools, including grade-level breakdowns (Grades 3-8)
+                </span>
+              </li>
+              <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                <span style="color: #10b981; font-weight: bold; font-size: 18px;">&#10003;</span>
+                <strong style="margin-left: 10px; color: #1f2937;">623 Private Schools Added</strong>
+                <span style="color: #6b7280; display: block; margin-left: 28px; font-size: 14px; margin-top: 4px;">
+                  Browse NYC private schools with enrollment by grade, tuition info, religious affiliation, and admissions details from the NCES Private School Survey
+                </span>
+              </li>
+              <li style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                <span style="color: #10b981; font-weight: bold; font-size: 18px;">&#10003;</span>
+                <strong style="margin-left: 10px; color: #1f2937;">Interactive School Zone Maps</strong>
+                <span style="color: #6b7280; display: block; margin-left: 28px; font-size: 14px; margin-top: 4px;">
+                  Visual maps with plotted school zone boundaries so you can see actual coverage areas
+                </span>
+              </li>
+              <li style="padding: 12px 0;">
+                <span style="color: #10b981; font-weight: bold; font-size: 18px;">&#10003;</span>
+                <strong style="margin-left: 10px; color: #1f2937;">Correct Grade Bands</strong>
+                <span style="color: #6b7280; display: block; margin-left: 28px; font-size: 14px; margin-top: 4px;">
+                  Updated 1,953 schools with accurate grade band information from NYC DOE LCGMS dataset
+                </span>
+              </li>
+            </ul>
+          </div>
+          
+          <h2 style="color: #7c3aed; font-size: 18px; margin-top: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Coming Soon</h2>
+          
+          <div style="background: #faf5ff; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9d5ff;">
+            <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+              <strong style="color: #7c3aed;">Neighborhood Safety Index</strong> - A new metric reflecting the volume of reported incidents near school locations over the last 12 months (within 0.5 miles). This provides neighborhood context to help with your decision-making.
+            </p>
+          </div>
+          
+          <p style="font-size: 15px; line-height: 1.6; color: #6b7280; margin-top: 30px;">
+            We'd love to hear your thoughts! Feel free to reply to this email with any suggestions or features you'd like to see.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://nycschoolsratings.com" 
+               style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Explore the Updates
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              NYC School Ratings - Helping NYC families find the right school
+            </p>
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 10px;">
+              <a href="https://nycschoolsratings.com" style="color: #6b7280;">nycschoolsratings.com</a>
+            </p>
+          </div>
+          
+        </div>
+      `,
+    });
+    
+    logEmail('INFO', 'Newsletter January 2025 sent', { to: userEmail, result });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send newsletter January 2025', { error: error.message, userEmail });
+    return false;
+  }
+}
+
 export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
@@ -859,4 +959,6 @@ export const emailService = {
   sendDripAiSpotlight,
   sendDripDataInsight,
   sendDripUpgradeNudge,
+  // Newsletter emails
+  sendNewsletterJanuary2025,
 };
