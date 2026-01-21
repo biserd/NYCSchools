@@ -867,18 +867,9 @@ export default function SchoolDetail() {
                   schoolWithScore.math_grade3 != null || schoolWithScore.math_grade4 != null || schoolWithScore.math_grade5 != null || 
                   schoolWithScore.math_grade6 != null || schoolWithScore.math_grade7 != null || schoolWithScore.math_grade8 != null) && (
                   <div className="mt-6 pt-4 border-t" data-testid="container-grade-breakdown">
-                    <div className="flex items-center gap-2 mb-4">
-                      <h4 className="text-sm font-semibold text-muted-foreground">Scores by Grade</h4>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0" aria-label="Grade-level scores information">
-                            <Info className="h-3 w-3 text-muted-foreground" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-sm">Percentage of students scoring proficient (Level 3+4) on state tests in each grade. Data from NYC DOE.</p>
-                        </TooltipContent>
-                      </Tooltip>
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold text-muted-foreground mb-1">Scores by Grade</h4>
+                      <p className="text-xs text-muted-foreground">Percentage of students scoring proficient (Level 3+4) on state tests in each grade. Data from NYC DOE.</p>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm" data-testid="table-grade-breakdown">
