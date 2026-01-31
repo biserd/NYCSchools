@@ -10,6 +10,36 @@ export interface SchoolFAQ {
   lastUpdated: string;
 }
 
+// Check if school's grade band actually includes early childhood (Pre-K, 3K)
+// Only returns true if grade band explicitly starts with K, PK, 3K, or Pre-K
+function schoolServesEarlyChildhood(gradeBand: string | null | undefined): boolean {
+  if (!gradeBand) return false;
+  
+  // Normalize: lowercase, replace en/em dashes and spaces with hyphen, trim
+  const normalized = gradeBand.toLowerCase()
+    .replace(/[\u2013\u2014]/g, '-')  // en-dash/em-dash to hyphen
+    .replace(/\s+/g, '')              // remove spaces
+    .trim();
+  
+  // Middle/High schools that don't serve early childhood
+  // Match patterns like "6-8", "6-12", "9-12" - start with digit 6 or higher
+  if (/^[6-9]+-\d+$/.test(normalized)) {
+    return false;
+  }
+  
+  // Explicitly check for early childhood indicators at the START of grade band
+  // K-5, K-8, K-12, PK-5, PK-8, PK-12, 3K-5, 3K-12, Pre-K-8, etc.
+  const earlyChildhoodPatterns = [
+    /^k-/,           // K-5, K-8, K-12
+    /^pk/,           // PK-5, PK-8, PK3, etc.
+    /^3k/,           // 3K, 3K-5, etc.
+    /^pre-?k/,       // Pre-K, PreK, Pre-K-8
+    /^0k/,           // 0K variants
+  ];
+  
+  return earlyChildhoodPatterns.some(pattern => pattern.test(normalized));
+}
+
 function getScoreTier(score: number): 'outstanding' | 'strong' | 'average' | 'below_average' {
   if (score >= 90) return 'outstanding';
   if (score >= 80) return 'strong';
@@ -122,7 +152,8 @@ function generateStrengthsWeaknessesAnswer(school: SchoolWithOverallScore): stri
     strengths.push(`Dual Language program`);
   }
 
-  if (school.has_3k || school.has_prek) {
+  // Only mention Pre-K/3K if the school's grade band actually includes early childhood
+  if ((school.has_3k || school.has_prek) && schoolServesEarlyChildhood(school.grade_band)) {
     const programs = [school.has_3k ? '3-K' : null, school.has_prek ? 'Pre-K' : null].filter(Boolean).join(' and ');
     strengths.push(`Early childhood programs (${programs})`);
   }
@@ -184,7 +215,8 @@ function generateBestForAnswer(school: SchoolWithOverallScore): string {
     suitableFor.push(`**Safety-conscious families:** Students report feeling very safe`);
   }
 
-  if (school.has_3k || school.has_prek) {
+  // Only mention Pre-K/3K if the school's grade band actually includes early childhood
+  if ((school.has_3k || school.has_prek) && schoolServesEarlyChildhood(school.grade_band)) {
     const programs = [school.has_3k ? '3-K' : null, school.has_prek ? 'Pre-K' : null].filter(Boolean).join(' and ');
     suitableFor.push(`**Families with young children:** ${programs} programs available for early enrollment`);
   }
