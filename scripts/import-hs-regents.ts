@@ -4,7 +4,7 @@ import { hsRegents, schools } from '../shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 const parsePct = (value: any): number | null => {
-  if (value == null || value === '' || value === 's' || value === 'N/A' || value === '-') return null;
+  if (value == null || value === '' || value === 's' || value === 'N/A' || value === '-' || value === 'na') return null;
   const str = String(value).replace('%', '').trim();
   const num = Number(str);
   if (isNaN(num)) return null;
@@ -12,7 +12,7 @@ const parsePct = (value: any): number | null => {
 };
 
 const parseCount = (value: any): number | null => {
-  if (value == null || value === '' || value === 's' || value === 'N/A' || value === '-') return null;
+  if (value == null || value === '' || value === 's' || value === 'N/A' || value === '-' || value === 'na') return null;
   const num = Number(String(value).replace(',', '').trim());
   if (isNaN(num)) return null;
   return Math.round(num);
@@ -20,25 +20,25 @@ const parseCount = (value: any): number | null => {
 
 const normalizeExamName = (raw: string): string => {
   const s = raw.trim();
-  if (/english/i.test(s) || /ela/i.test(s) || /comprehensive english/i.test(s)) return 'English';
-  if (/algebra\s*(i|1)(?!\s*\/)/i.test(s) || /^algebra$/i.test(s) || /cc.*algebra/i.test(s)) return 'Algebra I';
-  if (/geometry/i.test(s)) return 'Geometry';
-  if (/algebra\s*(ii|2|\/trig)/i.test(s) || /trig/i.test(s)) return 'Algebra II / Trigonometry';
+  if (/comprehensive english/i.test(s)) return 'English Language Arts';
+  if (/^english/i.test(s) || /ela/i.test(s)) return 'English Language Arts';
+  if (/cc\s*algebra\s*1/i.test(s) || /algebra\s*i(?!\s*i)/i.test(s) || /^algebra$/i.test(s)) return 'Algebra I';
+  if (/cc\s*geometry/i.test(s) || /^geometry$/i.test(s)) return 'Geometry';
+  if (/cc\s*algebra\s*2/i.test(s) || /algebra\s*(ii|2)/i.test(s) || /trig/i.test(s)) return 'Algebra II / Trigonometry';
   if (/living.*env/i.test(s) || /biology/i.test(s)) return 'Living Environment';
   if (/earth.*sci/i.test(s)) return 'Earth Science';
   if (/chemistry/i.test(s)) return 'Chemistry';
   if (/physics/i.test(s)) return 'Physics';
-  if (/global.*hist/i.test(s)) return 'Global History';
-  if (/us.*hist/i.test(s) || /u\.s\./i.test(s) || /american.*hist/i.test(s)) return 'US History';
+  if (/global.*hist.*geo\s*ii/i.test(s)) return 'Global History & Geography II';
+  if (/global.*hist/i.test(s)) return 'Global History & Geography';
+  if (/u\.?s\.?\s*hist/i.test(s) || /american.*hist/i.test(s)) return 'US History & Government';
+  if (/framework/i.test(s) && /us/i.test(s)) return 'US History & Government';
   return s;
 };
 
 async function importHSRegents() {
-  console.log('Starting HS Regents exam data import...');
-  console.log('');
-  console.log('USAGE: Place the InfoHub Regents Excel file in attached_assets/');
-  console.log('Expected file: attached_assets/regents-results.xlsx');
-  console.log('Download from: https://infohub.nyced.org/reports/academics/test-results');
+  console.log('Starting HS Regents exam data import from official NYC DOE InfoHub data...');
+  console.log('Source: https://infohub.nyced.org/reports/academics/test-results');
   console.log('');
 
   const filePath = process.argv[2] || 'attached_assets/regents-results.xlsx';
@@ -48,8 +48,7 @@ async function importHSRegents() {
     wb = XLSX.readFile(filePath);
   } catch (err) {
     console.error(`Could not read file: ${filePath}`);
-    console.error('Please provide the path to the InfoHub Regents Excel file as an argument.');
-    console.error('Example: npx tsx scripts/import-hs-regents.ts attached_assets/regents-results.xlsx');
+    console.error('Download from: https://infohub.nyced.org/reports/academics/test-results');
     process.exit(1);
   }
 
@@ -59,101 +58,89 @@ async function importHSRegents() {
   const schoolDbns = new Set(existingSchools.map(s => s.dbn.toUpperCase()));
   console.log(`Found ${schoolDbns.size} schools in database`);
 
+  console.log('\n--- Processing "All Students" sheet ---');
+  const sheet = wb.Sheets['All Students'];
+  if (!sheet) {
+    console.error('Could not find "All Students" sheet');
+    process.exit(1);
+  }
+
+  const rows = XLSX.utils.sheet_to_json(sheet) as any[];
+  console.log(`  ${rows.length} rows`);
+
+  if (rows.length > 0) {
+    console.log('  Headers:', Object.keys(rows[0]).join(', '));
+  }
+
   let totalImported = 0;
   let totalSkipped = 0;
+  const batch: any[] = [];
 
-  for (const sheetName of wb.SheetNames) {
-    const sheet = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet) as any[];
-    
-    if (rows.length === 0) continue;
-
-    const headers = Object.keys(rows[0]);
-    console.log(`\nSheet "${sheetName}": ${rows.length} rows`);
-    console.log('Sample headers:', headers.slice(0, 15).join(', '));
-
-    const dbnCol = headers.find(h => /^dbn$/i.test(h)) || headers.find(h => /dbn/i.test(h));
-    if (!dbnCol) {
-      console.log(`  Skipping sheet - no DBN column found`);
+  for (const row of rows) {
+    const dbn = String(row['School DBN'] || '').trim().toUpperCase();
+    if (!dbn || !schoolDbns.has(dbn)) {
+      totalSkipped++;
       continue;
     }
 
-    const findCol = (patterns: RegExp[]) => {
-      for (const p of patterns) {
-        const found = headers.find(h => p.test(h));
-        if (found) return found;
-      }
-      return undefined;
-    };
+    const category = String(row['Category'] || '').trim();
+    if (category && !/all\s*students/i.test(category)) {
+      continue;
+    }
 
-    const yearCol = findCol([/^year$/i, /school.*year/i, /sy/i]);
-    const examCol = findCol([/regents.*exam/i, /exam.*name/i, /subject/i, /^exam$/i, /test/i]);
-    const totalTestedCol = findCol([/total.*tested/i, /number.*tested/i, /^n$/i, /^tested$/i, /num.*test/i]);
-    const passRateCol = findCol([/pass.*rate/i, /pct.*pass/i, /%.*65/i, /scoring.*65/i, /65\+/i, /percent.*pass/i]);
-    const collegeReadyCol = findCol([/college.*ready/i, /80\+/i, /scoring.*80/i, /pct.*80/i]);
-    const masteryCol = findCol([/mastery/i, /90\+/i, /scoring.*90/i]);
-    const meanScoreCol = findCol([/mean.*score/i, /avg.*score/i, /average/i]);
+    const year = Number(row['Year']);
+    if (!year || isNaN(year)) {
+      totalSkipped++;
+      continue;
+    }
 
-    console.log(`  Columns: DBN=${dbnCol}, Year=${yearCol}, Exam=${examCol}, PassRate=${passRateCol}`);
+    const rawExam = String(row['Regents Exam'] || '').trim();
+    if (!rawExam) {
+      totalSkipped++;
+      continue;
+    }
+    const examName = normalizeExamName(rawExam);
 
-    const filterCol = headers.find(h => /category/i.test(h)) || headers.find(h => /group/i.test(h)) || headers.find(h => /demographic/i.test(h));
-    
-    for (const row of rows) {
-      if (filterCol) {
-        const category = String(row[filterCol] || '').trim();
-        if (category && !/all.*student/i.test(category) && !/total/i.test(category)) {
-          continue;
-        }
-      }
+    const totalTested = parseCount(row['Total Tested']);
+    const meanScore = parsePct(row['Mean Score']);
+    const passRate = parsePct(row['Percent Scoring 65 or Above']);
+    const collegeReadyRate = parsePct(row['Percent Scoring 80 or Above']);
 
-      const dbn = String(row[dbnCol] || '').trim().toUpperCase();
-      if (!dbn || !schoolDbns.has(dbn)) {
-        totalSkipped++;
-        continue;
-      }
+    if (passRate === null && meanScore === null) {
+      totalSkipped++;
+      continue;
+    }
 
-      let year = 0;
-      if (yearCol) {
-        const rawYear = String(row[yearCol] || '');
-        const yearMatch = rawYear.match(/(\d{4})/);
-        if (yearMatch) year = parseInt(yearMatch[1]);
-      }
-      if (!year) {
-        totalSkipped++;
-        continue;
-      }
+    batch.push({
+      dbn,
+      year,
+      exam_name: examName,
+      total_tested: totalTested,
+      pass_rate: passRate,
+      college_ready_rate: collegeReadyRate,
+      mastery_rate: null,
+      mean_score: meanScore,
+      data_source: 'NYC DOE InfoHub',
+    });
 
-      let examName = '';
-      if (examCol) {
-        examName = normalizeExamName(String(row[examCol] || ''));
+    if (batch.length >= 500) {
+      try {
+        await db.insert(hsRegents).values(batch).onConflictDoNothing();
+        totalImported += batch.length;
+      } catch (err) {
+        console.error('Batch insert error:', err);
       }
-      if (!examName) {
-        totalSkipped++;
-        continue;
-      }
+      batch.length = 0;
+      process.stdout.write(`  Inserted ${totalImported} records...\r`);
+    }
+  }
 
-      const passRate = passRateCol ? parsePct(row[passRateCol]) : null;
-      if (passRate === null) {
-        totalSkipped++;
-        continue;
-      }
-
-      await db
-        .insert(hsRegents)
-        .values({
-          dbn,
-          year,
-          exam_name: examName,
-          total_tested: totalTestedCol ? parseCount(row[totalTestedCol]) : null,
-          pass_rate: passRate,
-          college_ready_rate: collegeReadyCol ? parsePct(row[collegeReadyCol]) : null,
-          mastery_rate: masteryCol ? parsePct(row[masteryCol]) : null,
-          mean_score: meanScoreCol ? parsePct(row[meanScoreCol]) : null,
-          data_source: 'NYC DOE InfoHub',
-        })
-        .onConflictDoNothing();
-      
-      totalImported++;
+  if (batch.length > 0) {
+    try {
+      await db.insert(hsRegents).values(batch).onConflictDoNothing();
+      totalImported += batch.length;
+    } catch (err) {
+      console.error('Final batch insert error:', err);
     }
   }
 

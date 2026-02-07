@@ -87,6 +87,23 @@ Browse and detail pages for 600+ NYC private schools from NCES Private School Un
 - **Helper Functions** (in `shared/schema.ts`): `formatTuition()`, `getTuitionRange()`, `getGradeRangeDisplay()`, `getSelectivityDisplay()`, `getProgramEmphasisLabel()`
 - **Borough Distribution**: Brooklyn (198), Queens (182), Manhattan (138), Bronx (56), Staten Island (26)
 
+### High School Performance Dashboard
+Comprehensive performance data for NYC public high schools, displayed conditionally for schools where `isHighSchool(school)` returns true (grade_band contains "9-12"):
+- **Data Sources**: NYC DOE InfoHub graduation results (Cohorts 2012-2021, Classes of 2016-2025) and Regents exam results (2015-2023)
+- **Downloaded Files**: `attached_assets/graduation-results-school.xlsx` and `attached_assets/regents-results.xlsx`
+- **Database Tables**: `hs_graduation` (4,554 records, 464 schools), `hs_regents` (36,361 records, 833 schools)
+- **Import Scripts**:
+  - `scripts/import-hs-graduation.ts` - Imports from InfoHub graduation Excel; pivots multiple cohort rows (4yr/5yr/6yr June/August) into single records; merges subgroup data from Gender/Ethnicity/ELL/SWD/Poverty sheets
+  - `scripts/import-hs-regents.ts` - Imports from InfoHub Regents Excel "All Students" sheet with exam name normalization
+- **API Endpoints**:
+  - `GET /api/schools/:dbn/graduation` - Returns graduation records ordered by cohort_year DESC
+  - `GET /api/schools/:dbn/regents` - Returns Regents exam records ordered by year DESC
+- **UI Components** (in `school-detail.tsx`):
+  - Graduation Outcomes card: headline metrics (4yr/5yr/6yr grad rate, dropout rate), diploma breakdown (Advanced Regents/Regents/Local), multi-year trend chart, premium-gated subgroup bar chart
+  - Regents Exam Performance card: per-exam table (pass rate, college ready rate, mean score), multi-year trend chart
+  - College & Career Readiness card: college readiness rate, enrollment rate, AP courses
+- **Conditional Rendering**: `isHS` variable controls all HS-specific sections; elementary/middle pages unaffected
+
 ## External Dependencies
 - **PostgreSQL**: Primary database.
 - **OpenAI**: AI chat assistant and smart recommendations (`gpt-4o-mini`).

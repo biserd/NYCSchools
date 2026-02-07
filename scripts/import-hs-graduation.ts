@@ -18,23 +18,43 @@ const parseCount = (value: any): number | null => {
   return Math.round(num);
 };
 
+interface GradRecord {
+  dbn: string;
+  cohort_year: number;
+  cohort_label: string;
+  total_cohort: number | null;
+  grad_rate_4yr: number | null;
+  grad_rate_5yr: number | null;
+  grad_rate_6yr: number | null;
+  dropout_rate: number | null;
+  still_enrolled_rate: number | null;
+  diploma_regents_pct: number | null;
+  diploma_advanced_regents_pct: number | null;
+  diploma_local_pct: number | null;
+  grad_rate_male: number | null;
+  grad_rate_female: number | null;
+  grad_rate_asian: number | null;
+  grad_rate_black: number | null;
+  grad_rate_hispanic: number | null;
+  grad_rate_white: number | null;
+  grad_rate_ell: number | null;
+  grad_rate_swd: number | null;
+  grad_rate_econ_disadv: number | null;
+}
+
 async function importHSGraduation() {
-  console.log('Starting HS graduation data import...');
-  console.log('');
-  console.log('USAGE: Place the InfoHub graduation Excel file in attached_assets/');
-  console.log('Expected file: attached_assets/graduation-results.xlsx');
-  console.log('Download from: https://infohub.nyced.org/reports/academics/graduation-results');
+  console.log('Starting HS graduation data import from official NYC DOE InfoHub data...');
+  console.log('Source: https://infohub.nyced.org/reports/academics/graduation-results');
   console.log('');
 
-  const filePath = process.argv[2] || 'attached_assets/graduation-results.xlsx';
+  const filePath = process.argv[2] || 'attached_assets/graduation-results-school.xlsx';
 
   let wb: XLSX.WorkBook;
   try {
     wb = XLSX.readFile(filePath);
   } catch (err) {
     console.error(`Could not read file: ${filePath}`);
-    console.error('Please provide the path to the InfoHub graduation Excel file as an argument.');
-    console.error('Example: npx tsx scripts/import-hs-graduation.ts attached_assets/graduation-results.xlsx');
+    console.error('Download from: https://infohub.nyced.org/reports/academics/graduation-results');
     process.exit(1);
   }
 
@@ -44,98 +64,274 @@ async function importHSGraduation() {
   const schoolDbns = new Set(existingSchools.map(s => s.dbn.toUpperCase()));
   console.log(`Found ${schoolDbns.size} schools in database`);
 
-  let totalImported = 0;
-  let totalSkipped = 0;
+  const records = new Map<string, GradRecord>();
+  const key = (dbn: string, year: number) => `${dbn}|${year}`;
 
-  for (const sheetName of wb.SheetNames) {
-    const sheet = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet) as any[];
-    
-    if (rows.length === 0) continue;
-
-    const sampleRow = rows[0];
-    const headers = Object.keys(sampleRow);
-    console.log(`\nSheet "${sheetName}": ${rows.length} rows`);
-    console.log('Sample headers:', headers.slice(0, 15).join(', '));
-
-    const dbnCol = headers.find(h => /^dbn$/i.test(h)) || headers.find(h => /dbn/i.test(h));
-    if (!dbnCol) {
-      console.log(`  Skipping sheet - no DBN column found`);
-      continue;
+  const getOrCreate = (dbn: string, cohortYear: number): GradRecord => {
+    const k = key(dbn, cohortYear);
+    if (!records.has(k)) {
+      records.set(k, {
+        dbn,
+        cohort_year: cohortYear,
+        cohort_label: `Class of ${cohortYear + 4}`,
+        total_cohort: null,
+        grad_rate_4yr: null,
+        grad_rate_5yr: null,
+        grad_rate_6yr: null,
+        dropout_rate: null,
+        still_enrolled_rate: null,
+        diploma_regents_pct: null,
+        diploma_advanced_regents_pct: null,
+        diploma_local_pct: null,
+        grad_rate_male: null,
+        grad_rate_female: null,
+        grad_rate_asian: null,
+        grad_rate_black: null,
+        grad_rate_hispanic: null,
+        grad_rate_white: null,
+        grad_rate_ell: null,
+        grad_rate_swd: null,
+        grad_rate_econ_disadv: null,
+      });
     }
+    return records.get(k)!;
+  };
 
-    const cohortCol = headers.find(h => /cohort.*year/i.test(h)) || headers.find(h => /cohort/i.test(h)) || headers.find(h => /^year$/i.test(h));
-    const totalCohortCol = headers.find(h => /total.*cohort/i.test(h)) || headers.find(h => /^cohort.*size/i.test(h)) || headers.find(h => /^#.*cohort/i.test(h));
-    
-    const findCol = (patterns: RegExp[]) => {
-      for (const p of patterns) {
-        const found = headers.find(h => p.test(h));
-        if (found) return found;
-      }
-      return undefined;
-    };
+  console.log('\n--- Processing "All" sheet (main graduation rates) ---');
+  const allSheet = wb.Sheets['All'];
+  if (allSheet) {
+    const rows = XLSX.utils.sheet_to_json(allSheet) as any[];
+    console.log(`  ${rows.length} rows`);
 
-    const grad4yrCol = findCol([/4.*year.*grad/i, /grad.*rate.*4/i, /4.*yr/i, /four.*year/i]);
-    const grad5yrCol = findCol([/5.*year.*grad/i, /grad.*rate.*5/i, /5.*yr/i, /five.*year/i]);
-    const grad6yrCol = findCol([/6.*year.*grad/i, /grad.*rate.*6/i, /6.*yr/i, /six.*year/i]);
-    const dropoutCol = findCol([/dropout/i, /drop.*out/i]);
-    const stillEnrolledCol = findCol([/still.*enrolled/i, /enrolled/i]);
-    const regentsDiplomaCol = findCol([/regent.*diploma(?!.*adv)/i, /^regent.*%/i]);
-    const advRegentsCol = findCol([/adv.*regent/i, /advanced.*regent/i]);
-    const localDiplomaCol = findCol([/local.*diploma/i, /local/i]);
-
-    console.log(`  Columns found: DBN=${dbnCol}, Cohort=${cohortCol}, 4yr=${grad4yrCol}, 5yr=${grad5yrCol}, 6yr=${grad6yrCol}`);
-
+    let processed = 0;
     for (const row of rows) {
-      const dbn = String(row[dbnCol] || '').trim().toUpperCase();
-      if (!dbn || !schoolDbns.has(dbn)) {
-        totalSkipped++;
-        continue;
+      const dbn = String(row['DBN'] || '').trim().toUpperCase();
+      if (!dbn || !schoolDbns.has(dbn)) continue;
+
+      const cohortYear = Number(row['Cohort Year']);
+      if (!cohortYear || isNaN(cohortYear)) continue;
+
+      const cohortType = String(row['Cohort'] || '').toLowerCase();
+      const gradPct = parsePct(row['% Grads']);
+      const dropoutPct = parsePct(row['% Dropout']);
+      const stillEnrolledPct = parsePct(row['% Still Enrolled']);
+      const totalCohort = parseCount(row['# Total Cohort']);
+
+      const advRegentsPctCohort = parsePct(row['% Advanced Regents of Cohort']);
+      const regentsWithoutAdvPctCohort = parsePct(row['% Regents without Advanced of Cohort']);
+      const localPctCohort = parsePct(row['% Local of Cohort']);
+
+      const rec = getOrCreate(dbn, cohortYear);
+
+      if (cohortType.includes('4 year') && cohortType.includes('august')) {
+        rec.grad_rate_4yr = gradPct;
+        rec.dropout_rate = dropoutPct;
+        rec.still_enrolled_rate = stillEnrolledPct;
+        rec.total_cohort = totalCohort;
+        rec.diploma_advanced_regents_pct = advRegentsPctCohort;
+        rec.diploma_regents_pct = regentsWithoutAdvPctCohort;
+        rec.diploma_local_pct = localPctCohort;
+      } else if (cohortType.includes('5 year') && cohortType.includes('august')) {
+        rec.grad_rate_5yr = gradPct;
+      } else if (cohortType.includes('6 year') && cohortType.includes('august')) {
+        rec.grad_rate_6yr = gradPct;
+      } else if (cohortType.includes('4 year') && cohortType.includes('june') && rec.grad_rate_4yr === null) {
+        rec.grad_rate_4yr = gradPct;
+        rec.dropout_rate = dropoutPct;
+        rec.still_enrolled_rate = stillEnrolledPct;
+        rec.total_cohort = totalCohort;
+        rec.diploma_advanced_regents_pct = advRegentsPctCohort;
+        rec.diploma_regents_pct = regentsWithoutAdvPctCohort;
+        rec.diploma_local_pct = localPctCohort;
+      } else if (cohortType.includes('5 year') && cohortType.includes('june') && rec.grad_rate_5yr === null) {
+        rec.grad_rate_5yr = gradPct;
+      } else if (cohortType.includes('6 year') && cohortType.includes('june') && rec.grad_rate_6yr === null) {
+        rec.grad_rate_6yr = gradPct;
       }
 
-      let cohortYear = 0;
-      if (cohortCol) {
-        const rawCohort = String(row[cohortCol] || '');
-        const yearMatch = rawCohort.match(/(\d{4})/);
-        if (yearMatch) cohortYear = parseInt(yearMatch[1]);
-      }
-      if (!cohortYear) {
-        totalSkipped++;
-        continue;
-      }
+      processed++;
+    }
+    console.log(`  Processed ${processed} rows into ${records.size} unique school-cohort records`);
+  }
 
-      const grad4yr = grad4yrCol ? parsePct(row[grad4yrCol]) : null;
-      if (grad4yr === null && !grad5yrCol && !grad6yrCol) {
-        totalSkipped++;
-        continue;
+  console.log('\n--- Processing "Gender" sheet ---');
+  const genderSheet = wb.Sheets['Gender'];
+  if (genderSheet) {
+    const rows = XLSX.utils.sheet_to_json(genderSheet) as any[];
+    console.log(`  ${rows.length} rows`);
+    let matched = 0;
+    for (const row of rows) {
+      const dbn = String(row['DBN'] || '').trim().toUpperCase();
+      const cohortYear = Number(row['Cohort Year']);
+      const cohortType = String(row['Cohort'] || '').toLowerCase();
+      const category = String(row['Category'] || '').toLowerCase();
+
+      if (!cohortType.includes('4 year') || !cohortType.includes('august')) continue;
+
+      const k = key(dbn, cohortYear);
+      const rec = records.get(k);
+      if (!rec) continue;
+
+      const gradPct = parsePct(row['% Grads']);
+      if (gradPct === null) continue;
+
+      if (category === 'male') { rec.grad_rate_male = gradPct; matched++; }
+      else if (category === 'female') { rec.grad_rate_female = gradPct; matched++; }
+    }
+    console.log(`  Matched ${matched} gender records`);
+  }
+
+  console.log('\n--- Processing "Ethnicity" sheet ---');
+  const ethSheet = wb.Sheets['Ethnicity'];
+  if (ethSheet) {
+    const rows = XLSX.utils.sheet_to_json(ethSheet) as any[];
+    console.log(`  ${rows.length} rows`);
+    let matched = 0;
+    for (const row of rows) {
+      const dbn = String(row['DBN'] || '').trim().toUpperCase();
+      const cohortYear = Number(row['Cohort Year']);
+      const cohortType = String(row['Cohort'] || '').toLowerCase();
+      const category = String(row['Category'] || '').toLowerCase();
+
+      if (!cohortType.includes('4 year') || !cohortType.includes('august')) continue;
+
+      const k = key(dbn, cohortYear);
+      const rec = records.get(k);
+      if (!rec) continue;
+
+      const gradPct = parsePct(row['% Grads']);
+      if (gradPct === null) continue;
+
+      if (category.includes('asian')) { rec.grad_rate_asian = gradPct; matched++; }
+      else if (category.includes('black')) { rec.grad_rate_black = gradPct; matched++; }
+      else if (category.includes('hispanic')) { rec.grad_rate_hispanic = gradPct; matched++; }
+      else if (category.includes('white')) { rec.grad_rate_white = gradPct; matched++; }
+    }
+    console.log(`  Matched ${matched} ethnicity records`);
+  }
+
+  console.log('\n--- Processing "ELL" sheet ---');
+  const ellSheet = wb.Sheets['ELL'];
+  if (ellSheet) {
+    const rows = XLSX.utils.sheet_to_json(ellSheet) as any[];
+    console.log(`  ${rows.length} rows`);
+    let matched = 0;
+    for (const row of rows) {
+      const dbn = String(row['DBN'] || '').trim().toUpperCase();
+      const cohortYear = Number(row['Cohort Year']);
+      const cohortType = String(row['Cohort'] || '').toLowerCase();
+      const category = String(row['Category'] || '').toLowerCase();
+
+      if (!cohortType.includes('4 year') || !cohortType.includes('august')) continue;
+
+      const k = key(dbn, cohortYear);
+      const rec = records.get(k);
+      if (!rec) continue;
+
+      const gradPct = parsePct(row['% Grads']);
+      if (gradPct === null) continue;
+
+      if (category.includes('english language learner') || category === 'ell' || category === 'yes') {
+        rec.grad_rate_ell = gradPct; matched++;
       }
+    }
+    console.log(`  Matched ${matched} ELL records`);
+  }
 
-      const classYear = cohortYear + 4;
+  console.log('\n--- Processing "SWD" sheet ---');
+  const swdSheet = wb.Sheets['SWD'];
+  if (swdSheet) {
+    const rows = XLSX.utils.sheet_to_json(swdSheet) as any[];
+    console.log(`  ${rows.length} rows`);
+    let matched = 0;
+    for (const row of rows) {
+      const dbn = String(row['DBN'] || '').trim().toUpperCase();
+      const cohortYear = Number(row['Cohort Year']);
+      const cohortType = String(row['Cohort'] || '').toLowerCase();
+      const category = String(row['Category'] || '').toLowerCase();
 
-      await db
-        .insert(hsGraduation)
-        .values({
-          dbn,
-          cohort_year: cohortYear,
-          cohort_label: `Class of ${classYear}`,
-          total_cohort: totalCohortCol ? parseCount(row[totalCohortCol]) : null,
-          grad_rate_4yr: grad4yr,
-          grad_rate_5yr: grad5yrCol ? parsePct(row[grad5yrCol]) : null,
-          grad_rate_6yr: grad6yrCol ? parsePct(row[grad6yrCol]) : null,
-          dropout_rate: dropoutCol ? parsePct(row[dropoutCol]) : null,
-          still_enrolled_rate: stillEnrolledCol ? parsePct(row[stillEnrolledCol]) : null,
-          diploma_regents_pct: regentsDiplomaCol ? parsePct(row[regentsDiplomaCol]) : null,
-          diploma_advanced_regents_pct: advRegentsCol ? parsePct(row[advRegentsCol]) : null,
-          diploma_local_pct: localDiplomaCol ? parsePct(row[localDiplomaCol]) : null,
-          data_source: 'NYC DOE InfoHub',
-        })
-        .onConflictDoNothing();
-      
-      totalImported++;
+      if (!cohortType.includes('4 year') || !cohortType.includes('august')) continue;
+
+      const k = key(dbn, cohortYear);
+      const rec = records.get(k);
+      if (!rec) continue;
+
+      const gradPct = parsePct(row['% Grads']);
+      if (gradPct === null) continue;
+
+      if (category.includes('student with disability') || category === 'swd' || category === 'yes') {
+        rec.grad_rate_swd = gradPct; matched++;
+      }
+    }
+    console.log(`  Matched ${matched} SWD records`);
+  }
+
+  console.log('\n--- Processing "Poverty" sheet ---');
+  const povSheet = wb.Sheets['Poverty'];
+  if (povSheet) {
+    const rows = XLSX.utils.sheet_to_json(povSheet) as any[];
+    console.log(`  ${rows.length} rows`);
+    let matched = 0;
+    for (const row of rows) {
+      const dbn = String(row['DBN'] || '').trim().toUpperCase();
+      const cohortYear = Number(row['Cohort Year']);
+      const cohortType = String(row['Cohort'] || '').toLowerCase();
+      const category = String(row['Category'] || '').toLowerCase();
+
+      if (!cohortType.includes('4 year') || !cohortType.includes('august')) continue;
+
+      const k = key(dbn, cohortYear);
+      const rec = records.get(k);
+      if (!rec) continue;
+
+      const gradPct = parsePct(row['% Grads']);
+      if (gradPct === null) continue;
+
+      if (category.includes('econ') || category.includes('economically') || category.includes('poverty') || category === 'yes') {
+        rec.grad_rate_econ_disadv = gradPct; matched++;
+      }
+    }
+    console.log(`  Matched ${matched} poverty records`);
+  }
+
+  console.log(`\n--- Inserting ${records.size} graduation records into database ---`);
+
+  let inserted = 0;
+  let errors = 0;
+  const batch: any[] = [];
+
+  for (const rec of records.values()) {
+    if (rec.grad_rate_4yr === null && rec.grad_rate_5yr === null && rec.grad_rate_6yr === null) continue;
+
+    batch.push({
+      ...rec,
+      data_source: 'NYC DOE InfoHub',
+    });
+
+    if (batch.length >= 500) {
+      try {
+        await db.insert(hsGraduation).values(batch).onConflictDoNothing();
+        inserted += batch.length;
+      } catch (err) {
+        console.error('Batch insert error:', err);
+        errors += batch.length;
+      }
+      batch.length = 0;
+      process.stdout.write(`  Inserted ${inserted} records...\r`);
     }
   }
 
-  console.log(`\nImport complete: ${totalImported} records imported, ${totalSkipped} skipped`);
+  if (batch.length > 0) {
+    try {
+      await db.insert(hsGraduation).values(batch).onConflictDoNothing();
+      inserted += batch.length;
+    } catch (err) {
+      console.error('Final batch insert error:', err);
+      errors += batch.length;
+    }
+  }
+
+  console.log(`\nImport complete: ${inserted} records inserted, ${errors} errors`);
   process.exit(0);
 }
 
