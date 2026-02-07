@@ -1791,12 +1791,12 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI
+      // Stream response from OpenAI - low temperature to prevent hallucination
       const stream = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages,
         stream: true,
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 1000,
       });
 
@@ -1816,8 +1816,33 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
   });
 
   // AI Chat API (authenticated)
-  // Cache school summary to avoid fetching on every request
+  // Cache school summary and lookup maps to avoid fetching on every request
   let cachedSchoolSummary: string | null = null;
+  let cachedSchoolByDbn: Map<string, any> | null = null;
+  let cachedSchoolByNumber: Map<string, any[]> | null = null;
+  
+  async function getSchoolLookupMaps() {
+    if (cachedSchoolByDbn && cachedSchoolByNumber) {
+      return { byDbn: cachedSchoolByDbn, byNumber: cachedSchoolByNumber };
+    }
+    const allSchools = await storage.getSchools();
+    cachedSchoolByDbn = new Map();
+    cachedSchoolByNumber = new Map();
+    for (const s of allSchools) {
+      cachedSchoolByDbn.set(s.dbn, s);
+      const numMatch = s.name.match(/\b(\d{1,4})\b/);
+      if (numMatch) {
+        const borough = s.dbn.slice(2, 3);
+        const key = `${numMatch[1]}-${borough}`;
+        if (!cachedSchoolByNumber.has(key)) cachedSchoolByNumber.set(key, []);
+        cachedSchoolByNumber.get(key)!.push(s);
+        const genericKey = numMatch[1];
+        if (!cachedSchoolByNumber.has(genericKey)) cachedSchoolByNumber.set(genericKey, []);
+        cachedSchoolByNumber.get(genericKey)!.push(s);
+      }
+    }
+    return { byDbn: cachedSchoolByDbn, byNumber: cachedSchoolByNumber };
+  }
   
   app.post("/api/chat", isAuthenticated, async (req: any, res: Response) => {
     try {
@@ -1928,6 +1953,72 @@ When asked about score trends or how scores have changed over time, USE THE HIST
         }
       }
 
+      // Dynamic school lookup: detect DBNs or school names in user message and fetch full details
+      let mentionedSchoolsContext = "";
+      const dbnPattern = /\b(\d{2}[MXKQR]\d{3})\b/gi;
+      const dbnMatches = message.match(dbnPattern);
+      const mentionedDbns = new Set<string>();
+      
+      if (dbnMatches) {
+        dbnMatches.forEach((d: string) => mentionedDbns.add(d.toUpperCase()));
+      }
+      
+      // Check for "PS 123" / "P.S. 123" / "IS 123" / "MS 123" style references, optionally with borough suffix
+      const psPattern = /\b(?:P\.?S\.?|I\.?S\.?|M\.?S\.?|J\.?H\.?S\.?|H\.?S\.?)\s*(\d{1,4})\s*([MXKQR])?\b/gi;
+      const boroughNameMap: Record<string, string> = {
+        'manhattan': 'M', 'bronx': 'X', 'brooklyn': 'K', 'queens': 'Q', 'staten island': 'R',
+      };
+      const messageLower = message.toLowerCase();
+      const detectedBorough = Object.keys(boroughNameMap).find(b => messageLower.includes(b));
+      const boroughHint = detectedBorough ? boroughNameMap[detectedBorough] : null;
+      
+      const psMatches: { num: string; borough: string | null }[] = [];
+      let psMatch: RegExpExecArray | null;
+      while ((psMatch = psPattern.exec(message)) !== null) {
+        const boroughSuffix = psMatch[2] ? psMatch[2].toUpperCase() : null;
+        psMatches.push({ num: psMatch[1], borough: boroughSuffix || boroughHint });
+      }
+      
+      const formatSchoolContext = (school: any): string => {
+        const academics = typeof school.academics_score === 'number' ? school.academics_score : 0;
+        const climate = typeof school.climate_score === 'number' ? school.climate_score : 0;
+        const progress = typeof school.progress_score === 'number' ? school.progress_score : 0;
+        const overallScore = Math.round(0.4 * academics + 0.3 * climate + 0.3 * progress);
+        return `\nMentioned School: ${school.name} (DBN: ${school.dbn})
+District: ${school.district} | Grade Band: ${school.grade_band} | Address: ${school.address || 'N/A'}
+Overall Score: ${overallScore} | Academics: ${academics} | Climate: ${climate} | Progress: ${progress}
+ELA: ${school.ela_proficiency ?? 'N/A'}% | Math: ${school.math_proficiency ?? 'N/A'}%
+Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.student_teacher_ratio ?? 'N/A'}
+`;
+      };
+      
+      if (mentionedDbns.size > 0 || psMatches.length > 0) {
+        const { byDbn, byNumber } = await getSchoolLookupMaps();
+        
+        for (const dbn of Array.from(mentionedDbns)) {
+          if (dbn !== currentSchoolDbn && byDbn.has(dbn)) {
+            mentionedSchoolsContext += formatSchoolContext(byDbn.get(dbn));
+          }
+        }
+        
+        for (const pm of psMatches) {
+          const lookupKey = pm.borough ? `${pm.num}-${pm.borough}` : pm.num;
+          const candidates = byNumber.get(lookupKey) || [];
+          const filtered = candidates
+            .filter((s: any) => !mentionedDbns.has(s.dbn) && s.dbn !== currentSchoolDbn)
+            .slice(0, 3);
+          
+          for (const school of filtered) {
+            mentionedDbns.add(school.dbn);
+            mentionedSchoolsContext += formatSchoolContext(school);
+          }
+        }
+      }
+      
+      if (mentionedSchoolsContext) {
+        currentSchoolContext += `\nADDITIONAL SCHOOLS MENTIONED BY USER (use this data for accurate responses):${mentionedSchoolsContext}`;
+      }
+
       // Initialize OpenAI with Replit AI Integrations
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -1969,20 +2060,24 @@ When asked about score trends or how scores have changed over time, USE THE HIST
           const borough = s.dbn.slice(2, 3) as keyof typeof byBorough;
           if (byBorough[borough]) {
             const overall = Math.round(0.4 * (s.academics_score || 0) + 0.3 * (s.climate_score || 0) + 0.3 * (s.progress_score || 0));
-            // Compact format: DBN|Name|GradeBand|Overall|Flags
             const flags = [
               s.has_gifted_talented ? 'GT' + (s.gt_program_type === 'citywide' ? '+' : '') : '',
               s.has_dual_language ? 'DL' : '',
               s.has_3k ? '3K' : '',
               s.has_prek ? 'PK' : '',
             ].filter(Boolean).join(',');
-            byBorough[borough].push({
+            const entry: any = {
               d: s.dbn,
               n: s.name,
               g: s.grade_band,
               o: overall,
               f: flags || null,
-            });
+            };
+            if (s.enrollment != null) entry.e = s.enrollment;
+            if (s.ela_proficiency != null) entry.el = s.ela_proficiency;
+            if (s.math_proficiency != null) entry.ma = s.math_proficiency;
+            if (s.district != null) entry.di = s.district;
+            byBorough[borough].push(entry);
           }
         });
         
@@ -1995,6 +2090,13 @@ When asked about score trends or how scores have changed over time, USE THE HIST
       }
 
       const systemMessage = `You are a focused, helpful assistant for parents looking for schools in NYC. You have access to COMPLETE data for ALL 1,500+ NYC public and charter schools.
+
+ABSOLUTE RULE — NEVER FABRICATE DATA:
+- You MUST ONLY cite school names, DBNs, enrollment numbers, scores, and statistics that appear EXACTLY in the data provided below.
+- If a piece of information (enrollment, ELA score, math score, address, etc.) is NOT in the data below, say "I don't have that specific data available" — NEVER guess or make up a number.
+- NEVER invent or fabricate a DBN code. Every DBN you mention MUST appear in the school database below.
+- If you are unsure about any fact, say so. Accuracy is more important than sounding helpful.
+- Double-check that any DBN you cite matches the correct school name in the data below.
 
 CRITICAL RULES - FOLLOW STRICTLY:
 
@@ -2017,6 +2119,10 @@ CRITICAL RULES - FOLLOW STRICTLY:
 
 4. **ACKNOWLEDGE FILTERS**: Start your recommendation by confirming what criteria you're filtering by:
    "Based on your criteria (elementary schools in Brooklyn with Dual Language), here are my top 3 recommendations..."
+
+5. **DATA ACCURACY**: When citing a school's enrollment, ELA, or math proficiency:
+   - Use the EXACT numbers from the data fields: e=enrollment, el=ELA proficiency %, ma=Math proficiency %
+   - If a field is missing for a school, say "data not available" — do NOT estimate
 
 Borough codes in the data:
 - M = Manhattan
@@ -2042,16 +2148,16 @@ Score Ranges:
 - 90+: Outstanding | 80-89: Strong | 70-79: Average | Below 70: Needs Improvement
 
 SCHOOL DATABASE (grouped by borough, sorted by overall score):
-Data format: d=DBN, n=Name, g=GradeBand, o=OverallScore, f=Flags (GT=Gifted&Talented, GT+=Citywide G&T, DL=DualLanguage, 3K=Has3K, PK=HasPreK)
+Data format: d=DBN, n=Name, g=GradeBand, o=OverallScore, f=Flags (GT=Gifted&Talented, GT+=Citywide G&T, DL=DualLanguage, 3K=Has3K, PK=HasPreK), e=Enrollment, el=ELA%, ma=Math%, di=District
 ${cachedSchoolSummary}
 
 When answering:
-1. Be specific - USE THE ACTUAL DATA provided above
-2. Reference actual school names, DBNs, and scores
+1. ONLY USE DATA FROM THE DATABASE ABOVE — never rely on your own training knowledge for school-specific facts
+2. Reference actual school names, DBNs, and scores FROM THE DATA
 3. Explain metrics in parent-friendly language
 4. Keep responses focused and actionable
 5. If asked about trends, use historical data when provided
-6. If data isn't available for a specific question, say so honestly`;
+6. If data isn't available for a specific question, say "I don't have that data" honestly — do NOT make up an answer`;
 
       // Set up streaming response
       res.setHeader("Content-Type", "text/event-stream");
@@ -2070,12 +2176,12 @@ When answering:
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI - lower temperature for focused, deterministic responses
+      // Stream response from OpenAI - low temperature to prevent hallucination of school data
       const stream = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages,
         stream: true,
-        temperature: 0.5,
+        temperature: 0.3,
         max_tokens: 800,
       });
 
