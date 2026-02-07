@@ -662,7 +662,7 @@ export function ChatBot() {
           </div>
           <div>
             <CardTitle className="text-base font-semibold">AI School Assistant</CardTitle>
-            <p className="text-xs text-muted-foreground">Powered by OpenAI</p>
+            <p className="text-xs text-muted-foreground">Your NYC School Expert</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
