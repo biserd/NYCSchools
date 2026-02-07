@@ -9,100 +9,24 @@ I prefer detailed explanations. Ask before making major changes.
 ## System Architecture
 
 ### UI/UX Decisions
-The design emphasizes a clean, modern aesthetic with the Inter typeface and a primary blue color scheme, adhering to `design_guidelines.md`. It is responsive and accessible, featuring ARIA labels and keyboard navigation. Visual cues include color-coded indicators for scores and metrics with on-screen explanations. The AI assistant is prominent, with multiple entry points and a pulsing animation.
-
-**Header Architecture:**
-- `AppHeader`: Main navigation header used on most pages. Shows different navigation for logged-in/logged-out users.
-- `AuthPageHeader`: Minimal header with logo, page title breadcrumb, and theme toggle for auth pages (login, register, forgot-password, reset-password).
-- Home page has a custom header integrated with its hero section layout, but maintains consistent navigation buttons (Pricing, Log In, Sign Up for logged-out; Favorites, Settings, Logout for logged-in).
+The design emphasizes a clean, modern aesthetic with the Inter typeface and a primary blue color scheme, adhering to `design_guidelines.md`. It is responsive and accessible, featuring ARIA labels and keyboard navigation. Visual cues include color-coded indicators for scores and metrics. The AI assistant is prominent, with multiple entry points and a pulsing animation. Headers are designed for specific contexts: `AppHeader` for general navigation, `AuthPageHeader` for authentication flows, and a custom header for the home page.
 
 ### Technical Implementations
-The frontend utilizes React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing. Components are organized into `components/` and `pages/`. Data is sourced from PostgreSQL, with client-side calculations and state managed via React's `useState` and `useMemo`. `shared/schema.ts` defines data models. SEO is comprehensive, including dynamic meta tags, Structured Data, `Sitemap.xml`, `Robots.txt`, Open Graph, Twitter Cards, and canonical URLs. Geocoding uses NYC Open Data for map visualization and school zone detection.
+The frontend uses React 18 with TypeScript, Vite, Tailwind CSS, Shadcn UI, and Wouter for routing. Components are organized logically, and state is managed via React's `useState` and `useMemo`. Data models are defined in `shared/schema.ts`. Comprehensive SEO includes dynamic meta tags, Structured Data, `Sitemap.xml`, `Robots.txt`, Open Graph, Twitter Cards, and canonical URLs. Geocoding uses NYC Open Data for map visualization and school zone detection.
 
 ### Feature Specifications
-The platform provides comprehensive data for 1,533 NYC schools, including academic, climate, and progress scores, NYC School Survey results, demographics, and program information (3-K/Pre-K, G&T). Key features include filtering and sorting options (district, grade band, programs, zip code), historical trend visualization (3-5 years of ELA/Math/Science scores with data year and source labels like "2024-25 | NYSED"), **K/3K/Pre-K Admissions & Demand metrics** (seats, applicants, apps per seat, offer rate, competitiveness levels), and user authentication with email/password and PostgreSQL-backed sessions. **One Free School View**: Every visitor gets full premium access to the FIRST school they view, tracked via localStorage (anonymous) or database `freeViewSchoolDbn` field (logged-in). The `useFreeSchoolView` hook manages this with optimistic rendering and multiple guards against re-claiming. Password reset functionality is available via email with secure token-based verification (SHA-256 hashed, 30-minute expiration, single-use). Users can save favorite schools, access an OpenAI-powered AI Chat Assistant (`gpt-4o-mini`) with context and history (Premium feature), and utilize an Application Tracker (Premium) for managing school applications. Smart Recommendations (Find My Match) offer personalized school suggestions via an AI questionnaire. An Interactive Map View, Side-by-Side Comparison (Premium-gated), and District Comparison (Premium-gated) are available. Additional features include Parent Reviews & Ratings, a Commute Time Calculator (Auth-Gated), and a Subscription & Pricing system via Stripe (Freemium model with Premium and Season Pass tiers). Conversion optimization includes a redesigned pricing page and `UpgradeModal` components. Legal pages (Privacy Policy, Terms of Service) are present. A Data-Driven Blog features analytical articles with Recharts visualizations, including COVID Recovery analysis. A 3-K/Pre-K Lottery Simulator and Special Education (IEP) support are included. Official School Zone Detection uses NYC DOE boundaries and `turf.js`. NYCEEC Early Childhood Centers are browsable with filtering, map integration, and AI-generated insights. The **Overall Score** is calculated as: `Test Proficiency (40%) + Climate Score (30%) + Progress Score (30%)`.
+The platform provides comprehensive data for 1,533 NYC schools, including academic, climate, progress scores, NYC School Survey results, demographics, and program information. Key features include filtering and sorting, historical trend visualization of ELA/Math/Science scores, K/3K/Pre-K Admissions & Demand metrics, and user authentication with email/password. A "One Free School View" mechanism allows access to premium data for the first school viewed. Password reset functionality is available via email with secure token-based verification. Users can save favorite schools, access an OpenAI-powered AI Chat Assistant (Premium feature), and utilize an Application Tracker (Premium). Smart Recommendations (Find My Match) offer personalized school suggestions via an AI questionnaire. An Interactive Map View, Side-by-Side Comparison (Premium-gated), and District Comparison (Premium-gated) are available. Additional features include Parent Reviews & Ratings, a Commute Time Calculator (Auth-Gated), and a Stripe-powered Subscription & Pricing system (Freemium model). Legal pages (Privacy Policy, Terms of Service) are present. A Data-Driven Blog features analytical articles with Recharts visualizations. A 3-K/Pre-K Lottery Simulator and Special Education (IEP) support are included. Official School Zone Detection uses NYC DOE boundaries and `turf.js`. NYCEEC Early Childhood Centers are browsable. The **Overall Score** is calculated as: `Test Proficiency (40%) + Climate Score (30%) + Progress Score (30%)`.
+Specific additions include:
+- **NYC Private Schools**: Browse and detail pages for 600+ NYC private schools with filtering by borough, religious affiliation, and coed status, using NCES PSS data.
+- **High School Performance Dashboard**: Comprehensive performance data for NYC public high schools, including graduation and Regents exam results from NYC DOE InfoHub, with multi-year trends and subgroup analysis.
+- **School Attendance & Chronic Absenteeism**: Attendance and chronic absenteeism data for all NYC public schools (2018-19 through 2024-25) from NYC DOE InfoHub, with year-over-year changes and subgroup breakdowns.
 
 ### System Design Choices
 The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data fetching and AI integration. Error handling is graceful, and performance is optimized through pagination, search debounce, server-side caching, Gzip compression, code-splitting, and localStorage synchronization. Cost optimizations include auth-gated features.
-
-### Drip Email Campaign (`server/dripCampaign.ts`)
-Automated re-engagement email sequence for free users over 14 days:
-- **Global Control**: `app_settings` table with `drip_campaign_enabled` key (default: 'false' for safety)
-- **User Tracking**: Users table has `dripEmailsSent` (array), `emailUnsubscribed` (boolean), `lastDripEmailAt` (timestamp)
-- **Email Sequence**: 
-  1. Day 1: `welcome_tip` - Quick tip on using filters and favorites
-  2. Day 3: `ai_spotlight` - AI Chat Assistant feature spotlight
-  3. Day 7: `data_insight` - Data insight about NYC schools
-  4. Day 14: `upgrade_nudge` - Soft Season Pass upgrade nudge
-- **Targeting Rules**: Only sends to FREE users (skips anyone with paid subscription), respects `emailUnsubscribed` flag
-- **Rate Limiting**: Minimum 24 hours between drip emails per user
-- **Endpoints**:
-  - `GET /api/email/unsubscribe?userId=...` - User unsubscribe page
-  - `POST /api/cron/drip-campaign` - Cron trigger (requires `x-cron-secret` header)
-  - `GET /api/admin/drip-campaign/status` - Check if enabled (admin only)
-  - `POST /api/admin/drip-campaign/toggle` - Enable/disable campaign (admin only)
-- **To Enable**: 
-  1. Set `CRON_SECRET` environment variable to a strong random secret
-  2. Set `drip_campaign_enabled` to 'true' in `app_settings` table
-  3. Configure external cron service (e.g., cron-job.org) to call `POST /api/cron/drip-campaign` hourly with `x-cron-secret: YOUR_SECRET` header
-
-### Server-Side Caching (`server/cache.ts`)
-Centralized in-memory caching with configurable TTLs and mutation protection:
-- **TTL Tiers**: SHORT (1 min) for premium/subscription status, DEFAULT (5 min) for dynamic data, LONG (10 min) for static school/center data
-- **Mutation Protection**: Uses `structuredClone` on both read and write to prevent cached objects from being modified
-- **Automatic Cleanup**: Expired entries are cleaned every 5 minutes
-- **Webhook Invalidation**: `invalidateUserCaches(userId)` is called from webhookHandlers.ts after subscription changes to ensure immediate premium status updates
-- **Cached Endpoints**: Individual schools, school history, admissions data, NYCEEC centers, subscription status, premium user checks, school trends, district/citywide averages
-
-### Shareable Comparison URLs
-SEO-optimized comparison page with friendly slugs and dynamic meta tags:
-- **URL Format**: `/compare/PS006-M-vs-PS290-M` - School type + 3-digit number + borough letter
-- **Borough Codes**: M=Manhattan, X=Bronx, K=Brooklyn, Q=Queens, R=Staten Island  
-- **API Endpoint**: `GET /api/schools/by-slugs?slugs=PS006-M,PS290-M` - Supports both friendly slugs and legacy DBN format
-- **Dynamic SEO**: Title, description, keywords, and Open Graph meta tags update based on compared schools
-- **URL Updates**: Uses `window.history.replaceState()` for instant URL updates when schools change
-- **Free Preview**: Basic comparison (names, scores, grades) visible to all; detailed metrics premium-gated
-- **Neighborhood Seeding**: 25 pre-generated comparison URLs in `shared/neighborhoodComparisons.ts` for sitemap indexing
-- **Comparison Summary**: Single-sentence summary analyzing all 2-4 selected schools. Counts category wins per school (Overall Score, ELA, Math, Climate, Progress) and generates natural language like "PS 321 leads in 3 of 5 categories, including Overall Score and Math." Handles ties and close matches gracefully.
-
-### Core Web Vitals Optimizations
-Performance optimizations for better LCP, INP, and FCP scores:
-- **Lazy Loading**: Heavy pages (Home, SchoolDetail, ComparePage, BlogPage, BlogPostPage, PricingPage, etc.) are lazy-loaded with React.lazy() and Suspense
-- **React.memo**: SchoolCard component is wrapped in memo() to reduce unnecessary re-renders during filtering
-- **Deferred Analytics**: Google Analytics script is deferred and moved to end of body to not block rendering
-- **Font Optimization**: Google Fonts loaded with media="print" onload trick and font-display: swap
-- **Static Asset Caching**: Production server configured with aggressive cache headers (1 year for hashed JS/CSS with immutable, 30 days for images/fonts, no-cache for HTML)
-
-### NYC Private Schools (`/private-schools`, `/private-school/:ncesId`)
-Browse and detail pages for 600+ NYC private schools from NCES Private School Universe Survey (PSS) data:
-- **Data Source**: NCES PSS 2021-22 survey data
-- **Browse Page Features**: Search by name, filter by borough, religious affiliation (Catholic, Jewish, Islamic, Non-Religious, etc.), coed status
-- **Detail Page Features**: Overview stats (enrollment, student-teacher ratio), tuition by grade level, financial aid, admissions requirements (testing, interviews, deadlines), program focus, accreditation, religious affiliation, contact info
-- **Database Tables**: `private_schools` (main data), `private_school_history` (historical trends)
-- **API Endpoints**:
-  - `GET /api/private-schools` - List all private schools with optional filters
-  - `GET /api/private-schools/:ncesId` - Single school detail
-  - `GET /api/private-schools/:ncesId/history` - Historical enrollment/staffing
-  - `GET /api/private-schools-stats` - Aggregate statistics by borough, affiliation
-- **Helper Functions** (in `shared/schema.ts`): `formatTuition()`, `getTuitionRange()`, `getGradeRangeDisplay()`, `getSelectivityDisplay()`, `getProgramEmphasisLabel()`
-- **Borough Distribution**: Brooklyn (198), Queens (182), Manhattan (138), Bronx (56), Staten Island (26)
-
-### High School Performance Dashboard
-Comprehensive performance data for NYC public high schools, displayed conditionally for schools where `isHighSchool(school)` returns true (grade_band contains "9-12"):
-- **Data Sources**: NYC DOE InfoHub graduation results (Cohorts 2012-2021, Classes of 2016-2025) and Regents exam results (2015-2023)
-- **Downloaded Files**: `attached_assets/graduation-results-school.xlsx` and `attached_assets/regents-results.xlsx`
-- **Database Tables**: `hs_graduation` (4,554 records, 464 schools), `hs_regents` (36,361 records, 833 schools)
-- **Import Scripts**:
-  - `scripts/import-hs-graduation.ts` - Imports from InfoHub graduation Excel; pivots multiple cohort rows (4yr/5yr/6yr June/August) into single records; merges subgroup data from Gender/Ethnicity/ELL/SWD/Poverty sheets
-  - `scripts/import-hs-regents.ts` - Imports from InfoHub Regents Excel "All Students" sheet with exam name normalization
-- **API Endpoints**:
-  - `GET /api/schools/:dbn/graduation` - Returns graduation records ordered by cohort_year DESC
-  - `GET /api/schools/:dbn/regents` - Returns Regents exam records ordered by year DESC
-- **UI Components** (in `school-detail.tsx`):
-  - Graduation Outcomes card: headline metrics (4yr/5yr/6yr grad rate, dropout rate), diploma breakdown (Advanced Regents/Regents/Local), multi-year trend chart, premium-gated subgroup bar chart
-  - Regents Exam Performance card: per-exam table (pass rate, college ready rate, mean score), multi-year trend chart
-  - College & Career Readiness card: college readiness rate, enrollment rate, AP courses
-- **Conditional Rendering**: `isHS` variable controls all HS-specific sections; elementary/middle pages unaffected
+**Drip Email Campaign**: An automated, re-engagement email sequence for free users over 14 days, controlled by `app_settings` and user flags.
+**Server-Side Caching**: Centralized in-memory caching with configurable TTLs, mutation protection via `structuredClone`, automatic cleanup, and webhook-based invalidation.
+**Shareable Comparison URLs**: SEO-optimized comparison pages with friendly slugs (e.g., `/compare/PS006-M-vs-PS290-M`), dynamic SEO, and instant URL updates. Includes pre-generated URLs for sitemap indexing and a natural language comparison summary.
+**Core Web Vitals Optimizations**: Includes lazy loading for heavy pages, `React.memo` for component optimization, deferred analytics scripts, font optimization, and aggressive static asset caching.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.
@@ -114,7 +38,7 @@ Comprehensive performance data for NYC public high schools, displayed conditiona
 - **turf.js**: Geographic point-in-polygon matching.
 - **Google Maps APIs**: Geocoding API and Distance Matrix API.
 - **Stripe**: Payment processing and subscription management via `stripe-replit-sync`.
-- **Resend**: Email service for password reset and welcome emails (via RESEND_API_KEY and RESEND_FROM_EMAIL environment variables).
+- **Resend**: Email service for password reset and welcome emails.
 - **NYSED State Report Card Database**: Official ELA/Math test score data.
-- **NYC DOE InfoHub LL72 Reports**: K/3K/Pre-K admissions data (applications, offers, seats) via Local Law 72 reports.
-- **NCES Private School Universe Survey (PSS)**: Private school data including enrollment, tuition, religious affiliation, and admissions information.
+- **NYC DOE InfoHub LL72 Reports**: K/3K/Pre-K admissions data.
+- **NCES Private School Universe Survey (PSS)**: Private school data.

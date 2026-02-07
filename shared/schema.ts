@@ -301,6 +301,42 @@ export const REGENTS_EXAMS = [
 
 export type RegentsExam = typeof REGENTS_EXAMS[number];
 
+export const schoolAttendance = pgTable("school_attendance", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  year: varchar("year").notNull(), // e.g., "2018-19", "2024-25"
+  grade: varchar("grade").notNull().default("All Grades"),
+  total_days: integer("total_days"),
+  days_absent: integer("days_absent"),
+  days_present: integer("days_present"),
+  attendance_rate: real("attendance_rate"),
+  students_contributing: integer("students_contributing"),
+  chronically_absent_count: integer("chronically_absent_count"),
+  chronic_absenteeism_rate: real("chronic_absenteeism_rate"),
+  ca_rate_swd: real("ca_rate_swd"),
+  ca_rate_not_swd: real("ca_rate_not_swd"),
+  ca_rate_asian: real("ca_rate_asian"),
+  ca_rate_black: real("ca_rate_black"),
+  ca_rate_hispanic: real("ca_rate_hispanic"),
+  ca_rate_white: real("ca_rate_white"),
+  ca_rate_other: real("ca_rate_other"),
+  ca_rate_male: real("ca_rate_male"),
+  ca_rate_female: real("ca_rate_female"),
+  ca_rate_poverty: real("ca_rate_poverty"),
+  ca_rate_not_poverty: real("ca_rate_not_poverty"),
+  ca_rate_ell: real("ca_rate_ell"),
+  ca_rate_not_ell: real("ca_rate_not_ell"),
+  ca_rate_sth: real("ca_rate_sth"),
+  ca_rate_not_sth: real("ca_rate_not_sth"),
+  data_source: varchar("data_source").default("NYC DOE InfoHub"),
+}, (table) => ({
+  dbnYearIdx: index("school_attendance_dbn_year_idx").on(table.dbn, table.year),
+}));
+
+export const insertSchoolAttendanceSchema = createInsertSchema(schoolAttendance).omit({ id: true });
+export type InsertSchoolAttendance = z.infer<typeof insertSchoolAttendanceSchema>;
+export type SchoolAttendance = typeof schoolAttendance.$inferSelect;
+
 export interface SchoolWithOverallScore extends School {
   overall_score: number;
 }

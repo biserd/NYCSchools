@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, REGENTS_EXAMS } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, REGENTS_EXAMS } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -129,6 +129,12 @@ export default function SchoolDetail() {
   const { data: regentsData } = useQuery<HsRegents[]>({
     queryKey: ["/api/schools", dbn, "regents"],
     enabled: !!dbn && isHS,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: attendanceData } = useQuery<SchoolAttendance[]>({
+    queryKey: ["/api/schools", dbn, "attendance"],
+    enabled: !!dbn,
     staleTime: 1000 * 60 * 10,
   });
 
@@ -1645,6 +1651,179 @@ export default function SchoolDetail() {
               )}
             </>
           )}
+
+          {/* Attendance & Chronic Absenteeism */}
+          {attendanceData && attendanceData.length > 0 && (() => {
+            const latestYear = attendanceData[0];
+            const previousYear = attendanceData.length > 1 ? attendanceData[1] : null;
+            const attendanceRate = latestYear.attendance_rate;
+            const caRate = latestYear.chronic_absenteeism_rate;
+            const prevCaRate = previousYear?.chronic_absenteeism_rate ?? null;
+            const caChange = caRate !== null && prevCaRate !== null ? caRate - prevCaRate : null;
+
+            const attendanceTrend = attendanceData
+              .slice()
+              .reverse()
+              .map((d) => ({
+                year: d.year,
+                attendance: d.attendance_rate != null ? Math.round(d.attendance_rate * 10) / 10 : null,
+                chronicAbsent: d.chronic_absenteeism_rate != null ? Math.round(d.chronic_absenteeism_rate * 10) / 10 : null,
+              }));
+
+            const getCALevel = (rate: number | null) => {
+              if (rate === null) return { label: "N/A", color: "text-muted-foreground" };
+              if (rate < 15) return { label: "Low", color: "text-emerald-600 dark:text-emerald-400" };
+              if (rate < 25) return { label: "Moderate", color: "text-yellow-600 dark:text-yellow-400" };
+              if (rate < 40) return { label: "High", color: "text-orange-600 dark:text-orange-400" };
+              return { label: "Very High", color: "text-red-600 dark:text-red-400" };
+            };
+            const caLevel = getCALevel(caRate);
+
+            const subgroups = [
+              { label: "Male", value: latestYear.ca_rate_male },
+              { label: "Female", value: latestYear.ca_rate_female },
+              { label: "Asian", value: latestYear.ca_rate_asian },
+              { label: "Black", value: latestYear.ca_rate_black },
+              { label: "Hispanic", value: latestYear.ca_rate_hispanic },
+              { label: "White", value: latestYear.ca_rate_white },
+              { label: "SWD", value: latestYear.ca_rate_swd },
+              { label: "ELL", value: latestYear.ca_rate_ell },
+              { label: "Poverty", value: latestYear.ca_rate_poverty },
+              { label: "Temp. Housing", value: latestYear.ca_rate_sth },
+            ].filter(sg => sg.value !== null);
+
+            return (
+              <Card data-testid="card-attendance">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    <CardTitle>Attendance & Chronic Absenteeism</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Official NYC DOE attendance data ({latestYear.year}). Chronic absenteeism = students absent 10%+ of school days.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Headline Metrics */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-attendance-rate">
+                      <p className="text-sm text-muted-foreground mb-1">Attendance Rate</p>
+                      <p className="text-3xl font-bold">
+                        {attendanceRate !== null ? `${Math.round(attendanceRate * 10) / 10}%` : "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{latestYear.year}</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-chronic-absent-rate">
+                      <p className="text-sm text-muted-foreground mb-1">Chronically Absent</p>
+                      <p className="text-3xl font-bold">
+                        {caRate !== null ? `${Math.round(caRate * 10) / 10}%` : "N/A"}
+                      </p>
+                      <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
+                        <Badge variant="outline" className={`text-xs ${caLevel.color}`} data-testid="badge-ca-level">
+                          {caLevel.label}
+                        </Badge>
+                        {caChange !== null && (
+                          <span className={`text-xs flex items-center gap-0.5 ${caChange < 0 ? "text-emerald-600 dark:text-emerald-400" : caChange > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+                            {caChange < 0 ? <TrendingDown className="w-3 h-3" /> : caChange > 0 ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                            {caChange > 0 ? "+" : ""}{Math.round(caChange * 10) / 10}pp
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-students-tracked">
+                      <p className="text-sm text-muted-foreground mb-1">Students Tracked</p>
+                      <p className="text-3xl font-bold">
+                        {latestYear.students_contributing !== null ? latestYear.students_contributing.toLocaleString() : "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {latestYear.chronically_absent_count !== null ? `${latestYear.chronically_absent_count.toLocaleString()} chronically absent` : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Multi-year Trend Chart */}
+                  {attendanceTrend.length > 1 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-3">Multi-Year Trend</h4>
+                      <div className="h-64" data-testid="chart-attendance-trend">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={attendanceTrend} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                            <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
+                            <RechartsTooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "8px",
+                                fontSize: "12px",
+                              }}
+                              formatter={(value: number) => [`${value}%`]}
+                            />
+                            <Legend wrapperStyle={{ fontSize: "12px" }} />
+                            <Line
+                              type="monotone"
+                              dataKey="attendance"
+                              stroke="hsl(var(--chart-1))"
+                              strokeWidth={2}
+                              dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2 }}
+                              name="Attendance Rate"
+                              connectNulls
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="chronicAbsent"
+                              stroke="hsl(var(--chart-4))"
+                              strokeWidth={2}
+                              dot={{ fill: "hsl(var(--chart-4))", strokeWidth: 2 }}
+                              name="Chronic Absenteeism"
+                              connectNulls
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Source: NYC DOE InfoHub End-of-Year Attendance Data (2018-19 to 2024-25)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Subgroup Breakdown */}
+                  {subgroups.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-3">Chronic Absenteeism by Group ({latestYear.year})</h4>
+                      <div className="space-y-2" data-testid="attendance-subgroups">
+                        {subgroups.map((sg) => {
+                          const sgLevel = getCALevel(sg.value);
+                          const barWidth = sg.value !== null ? Math.min(sg.value, 100) : 0;
+                          return (
+                            <div key={sg.label} className="flex items-center gap-3" data-testid={`attendance-subgroup-${sg.label.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                              <span className="text-sm w-28 shrink-0 text-muted-foreground">{sg.label}</span>
+                              <div className="flex-1 h-5 bg-muted rounded-sm overflow-hidden">
+                                <div
+                                  className={`h-full rounded-sm ${sg.value !== null && sg.value < 15 ? "bg-emerald-500" : sg.value !== null && sg.value < 25 ? "bg-yellow-500" : sg.value !== null && sg.value < 40 ? "bg-orange-500" : "bg-red-500"}`}
+                                  style={{ width: `${barWidth}%` }}
+                                />
+                              </div>
+                              <span className={`text-sm font-medium w-14 text-right ${sgLevel.color}`}>
+                                {sg.value !== null ? `${Math.round(sg.value * 10) / 10}%` : "N/A"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> &lt;15% Low</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-yellow-500 inline-block" /> 15-25% Moderate</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-500 inline-block" /> 25-40% High</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" /> 40%+ Very High</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* School Survey Results */}
           {(schoolWithScore.student_safety !== null || 
