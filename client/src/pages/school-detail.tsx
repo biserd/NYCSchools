@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, REGENTS_EXAMS } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -116,6 +116,20 @@ export default function SchoolDetail() {
     queryKey: ["/api/schools", dbn, "history"],
     enabled: !!dbn,
     staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  const isHS = school ? isHighSchool(school) : false;
+
+  const { data: graduationData } = useQuery<HsGraduation[]>({
+    queryKey: ["/api/schools", dbn, "graduation"],
+    enabled: !!dbn && isHS,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: regentsData } = useQuery<HsRegents[]>({
+    queryKey: ["/api/schools", dbn, "regents"],
+    enabled: !!dbn && isHS,
+    staleTime: 1000 * 60 * 10,
   });
 
   // Fetch all schools to get top schools in the same district
@@ -1266,142 +1280,370 @@ export default function SchoolDetail() {
             )
           )}
 
-          {/* High School Metrics - Only shown for high schools with any HS data */}
-          {isHighSchool(schoolWithScore) && (
-            schoolWithScore.graduation_rate_4yr !== null ||
-            schoolWithScore.graduation_rate_6yr !== null ||
-            schoolWithScore.sat_avg_total !== null ||
-            schoolWithScore.sat_avg_reading !== null ||
-            schoolWithScore.college_readiness_rate !== null ||
-            schoolWithScore.ap_course_count !== null
-          ) && (
-            <Card data-testid="card-high-school-metrics">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-primary" />
-                  <CardTitle>High School Outcomes</CardTitle>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Key metrics for evaluating high school success: graduation rates, standardized test performance, and college preparation.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Graduation Rates */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4" />
-                    Graduation Rates
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {schoolWithScore.graduation_rate_4yr !== null && (
-                      <HSMetricCard
-                        label="4-Year Graduation Rate"
-                        value={schoolWithScore.graduation_rate_4yr}
-                        suffix="%"
-                        description="Percentage of students graduating within 4 years of entering high school."
-                        testId="grad-4yr"
-                      />
-                    )}
-                    {schoolWithScore.graduation_rate_6yr !== null && (
-                      <HSMetricCard
-                        label="6-Year Graduation Rate"
-                        value={schoolWithScore.graduation_rate_6yr}
-                        suffix="%"
-                        description="Percentage graduating within 6 years, including students who need additional time."
-                        testId="grad-6yr"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* SAT Scores - Historical Data */}
-                {(schoolWithScore.sat_avg_reading !== null || schoolWithScore.sat_avg_total !== null) && (
-                  <div className="opacity-60">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h4 className="font-semibold text-sm flex items-center gap-2">
-                        <BookOpen className="w-4 h-4" />
-                        SAT Performance
-                      </h4>
-                      <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
-                        2012 Data
-                      </Badge>
-                    </div>
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-3">
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        This SAT data is from 2012 and may not reflect current school performance. NYC DOE no longer publishes school-level SAT data.
+          {/* High School Performance Dashboard - Only shown for high schools */}
+          {isHS && (
+            <>
+              {/* Specialized HS Note */}
+              {schoolWithScore.is_specialized_hs && (
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800" data-testid="specialized-hs-note">
+                  <div className="flex items-start gap-3">
+                    <Star className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-indigo-800 dark:text-indigo-200">Specialized High School</p>
+                      <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
+                        This is one of New York City's nine specialized high schools. Admission requires passing the 
+                        Specialized High Schools Admissions Test (SHSAT) or meeting audition requirements.
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {schoolWithScore.sat_avg_reading !== null && (
-                        <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-reading">
-                          <p className="text-2xl font-bold tabular-nums text-muted-foreground" data-testid="text-sat-reading">{schoolWithScore.sat_avg_reading}</p>
-                          <p className="text-xs text-muted-foreground">Reading</p>
-                        </div>
-                      )}
-                      {schoolWithScore.sat_avg_math !== null && (
-                        <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-math">
-                          <p className="text-2xl font-bold tabular-nums text-muted-foreground" data-testid="text-sat-math">{schoolWithScore.sat_avg_math}</p>
-                          <p className="text-xs text-muted-foreground">Math</p>
-                        </div>
-                      )}
-                      {schoolWithScore.sat_avg_total !== null && (
-                        <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="container-sat-total">
-                          <p className="text-2xl font-bold tabular-nums text-muted-foreground" data-testid="text-sat-total">{schoolWithScore.sat_avg_total}</p>
-                          <p className="text-xs text-muted-foreground">Total</p>
-                        </div>
-                      )}
-                    </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* College Readiness */}
-                {(schoolWithScore.college_readiness_rate !== null || schoolWithScore.ap_course_count !== null) && (
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      College Preparation
-                    </h4>
+              {/* Graduation Outcomes - Hero Section for HS */}
+              <Card data-testid="card-graduation-outcomes">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-primary" />
+                    <CardTitle>Graduation Outcomes</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Multi-year graduation rates, diploma types, and dropout data from NYC DOE InfoHub.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {graduationData && graduationData.length > 0 ? (
+                    <>
+                      {/* Latest cohort headline stats */}
+                      {(() => {
+                        const latest = graduationData[0];
+                        return (
+                          <div>
+                            <div className="flex items-center gap-2 mb-4">
+                              <Badge variant="outline" className="text-xs" data-testid="badge-cohort-label">
+                                {latest.cohort_label || `Cohort ${latest.cohort_year}`}
+                              </Badge>
+                              {latest.total_cohort && (
+                                <span className="text-xs text-muted-foreground">{latest.total_cohort.toLocaleString()} students in cohort</span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              {latest.grad_rate_4yr !== null && (
+                                <HSMetricCard label="4-Year Grad Rate" value={latest.grad_rate_4yr} suffix="%" description="Students graduating within 4 years." testId="grad-4yr" />
+                              )}
+                              {latest.grad_rate_5yr !== null && (
+                                <HSMetricCard label="5-Year Grad Rate" value={latest.grad_rate_5yr} suffix="%" description="Students graduating within 5 years." testId="grad-5yr" />
+                              )}
+                              {latest.grad_rate_6yr !== null && (
+                                <HSMetricCard label="6-Year Grad Rate" value={latest.grad_rate_6yr} suffix="%" description="Students graduating within 6 years." testId="grad-6yr" />
+                              )}
+                              {latest.dropout_rate !== null && (
+                                <HSMetricCard label="Dropout Rate" value={latest.dropout_rate} suffix="%" description="Students who left school without graduating." testId="dropout-rate" isNegative />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Diploma Breakdown */}
+                      {(() => {
+                        const latest = graduationData[0];
+                        const hasDiplomaData = latest.diploma_regents_pct !== null || latest.diploma_advanced_regents_pct !== null || latest.diploma_local_pct !== null;
+                        if (!hasDiplomaData) return null;
+                        return (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                              <Award className="w-4 h-4" />
+                              Diploma Breakdown
+                            </h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {latest.diploma_advanced_regents_pct !== null && (
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center border border-emerald-200 dark:border-emerald-800" data-testid="container-adv-regents">
+                                  <p className="text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300" data-testid="text-adv-regents">{latest.diploma_advanced_regents_pct}%</p>
+                                  <p className="text-xs text-muted-foreground mt-1">Advanced Regents</p>
+                                </div>
+                              )}
+                              {latest.diploma_regents_pct !== null && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center border border-blue-200 dark:border-blue-800" data-testid="container-regents-diploma">
+                                  <p className="text-2xl font-bold tabular-nums text-blue-700 dark:text-blue-300" data-testid="text-regents-diploma">{latest.diploma_regents_pct}%</p>
+                                  <p className="text-xs text-muted-foreground mt-1">Regents Diploma</p>
+                                </div>
+                              )}
+                              {latest.diploma_local_pct !== null && (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center border border-amber-200 dark:border-amber-800" data-testid="container-local-diploma">
+                                  <p className="text-2xl font-bold tabular-nums text-amber-700 dark:text-amber-300" data-testid="text-local-diploma">{latest.diploma_local_pct}%</p>
+                                  <p className="text-xs text-muted-foreground mt-1">Local Diploma</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Graduation Rate Trend Chart */}
+                      {graduationData.length >= 2 && (
+                        <div>
+                          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" />
+                            Graduation Rate Trends
+                          </h4>
+                          <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={[...graduationData].reverse().map(g => ({
+                                label: g.cohort_label || `${g.cohort_year}`,
+                                '4-Year': g.grad_rate_4yr,
+                                '5-Year': g.grad_rate_5yr,
+                                '6-Year': g.grad_rate_6yr,
+                                'Dropout': g.dropout_rate,
+                              }))}>
+                                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                                <RechartsTooltip formatter={(value: number) => [`${value}%`]} />
+                                <Legend />
+                                <Line type="monotone" dataKey="4-Year" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
+                                <Line type="monotone" dataKey="5-Year" stroke="#7c3aed" strokeWidth={2} dot={{ r: 3 }} />
+                                <Line type="monotone" dataKey="6-Year" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} />
+                                <Line type="monotone" dataKey="Dropout" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="5 5" />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2 text-center">Source: NYC DOE InfoHub Graduation Results</p>
+                        </div>
+                      )}
+
+                      {/* Subgroup Graduation Rates */}
+                      {(() => {
+                        const latest = graduationData[0];
+                        const subgroups = [
+                          { label: 'Male', value: latest.grad_rate_male },
+                          { label: 'Female', value: latest.grad_rate_female },
+                          { label: 'Asian', value: latest.grad_rate_asian },
+                          { label: 'Black', value: latest.grad_rate_black },
+                          { label: 'Hispanic', value: latest.grad_rate_hispanic },
+                          { label: 'White', value: latest.grad_rate_white },
+                          { label: 'ELL', value: latest.grad_rate_ell },
+                          { label: 'SWD', value: latest.grad_rate_swd },
+                          { label: 'Econ. Disadv.', value: latest.grad_rate_econ_disadv },
+                        ].filter(s => s.value !== null);
+
+                        if (subgroups.length === 0) return null;
+
+                        return isPremium ? (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                              <Users className="w-4 h-4" />
+                              4-Year Grad Rate by Subgroup
+                            </h4>
+                            <div className="space-y-2">
+                              {subgroups.map(sg => (
+                                <div key={sg.label} className="flex items-center gap-3" data-testid={`subgroup-grad-${sg.label.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                                  <span className="text-sm w-28 shrink-0 text-muted-foreground">{sg.label}</span>
+                                  <div className="flex-1 bg-muted/50 rounded-full h-5 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${(sg.value ?? 0) >= 80 ? 'bg-emerald-500' : (sg.value ?? 0) >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                      style={{ width: `${Math.min(sg.value ?? 0, 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium tabular-nums w-12 text-right">{sg.value}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <div className="filter blur-sm pointer-events-none opacity-50">
+                              <h4 className="font-semibold text-sm mb-3">4-Year Grad Rate by Subgroup</h4>
+                              <div className="space-y-2">
+                                {subgroups.slice(0, 3).map(sg => (
+                                  <div key={sg.label} className="flex items-center gap-3">
+                                    <span className="text-sm w-28 shrink-0">{sg.label}</span>
+                                    <div className="flex-1 bg-muted/50 rounded-full h-5" />
+                                    <span className="text-sm w-12 text-right">--</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Link href="/pricing">
+                                <Button data-testid="button-unlock-subgroups">
+                                  <Lock className="w-4 h-4 mr-2" />
+                                  Unlock Subgroup Data
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    /* Fallback to basic fields if no detailed graduation data */
+                    (schoolWithScore.graduation_rate_4yr !== null || schoolWithScore.graduation_rate_6yr !== null) ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {schoolWithScore.graduation_rate_4yr !== null && (
+                          <HSMetricCard label="4-Year Graduation Rate" value={schoolWithScore.graduation_rate_4yr} suffix="%" description="Percentage of students graduating within 4 years." testId="grad-4yr" />
+                        )}
+                        {schoolWithScore.graduation_rate_6yr !== null && (
+                          <HSMetricCard label="6-Year Graduation Rate" value={schoolWithScore.graduation_rate_6yr} suffix="%" description="Percentage graduating within 6 years." testId="grad-6yr" />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground italic">
+                        Graduation outcome data is not yet available for this school. Data will be added as NYC DOE InfoHub files are imported.
+                      </div>
+                    )
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Regents Exam Performance */}
+              <Card data-testid="card-regents-performance">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    <CardTitle>Regents Exam Performance</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    School-level pass rates for core Regents exams. Pass = 65+, College Ready = 80+.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {regentsData && regentsData.length > 0 ? (
+                    (() => {
+                      const years = [...new Set(regentsData.map(r => r.year))].sort((a, b) => b - a);
+                      const latestYear = years[0];
+                      const latestExams = regentsData.filter(r => r.year === latestYear);
+                      const olderYears = years.filter(y => y !== latestYear);
+
+                      return (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="text-xs" data-testid="badge-regents-year">
+                              {latestYear}-{String(latestYear + 1).slice(-2)} School Year
+                            </Badge>
+                          </div>
+
+                          {/* Regents Grid */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm" data-testid="table-regents">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Exam</th>
+                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">Tested</th>
+                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">Pass Rate</th>
+                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">College Ready</th>
+                                  {latestExams.some(e => e.mean_score !== null) && (
+                                    <th className="text-right py-2 pl-3 font-medium text-muted-foreground">Avg Score</th>
+                                  )}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {latestExams.map(exam => (
+                                  <tr key={exam.exam_name} className="border-b last:border-0" data-testid={`row-regents-${exam.exam_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
+                                    <td className="py-2.5 pr-4 font-medium">{exam.exam_name}</td>
+                                    <td className="py-2.5 px-3 text-right tabular-nums text-muted-foreground">
+                                      {exam.total_tested?.toLocaleString() ?? '—'}
+                                    </td>
+                                    <td className="py-2.5 px-3 text-right">
+                                      {exam.pass_rate !== null ? (
+                                        <span className={`font-semibold tabular-nums ${exam.pass_rate >= 80 ? 'text-emerald-600' : exam.pass_rate >= 65 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {exam.pass_rate}%
+                                        </span>
+                                      ) : '—'}
+                                    </td>
+                                    <td className="py-2.5 px-3 text-right">
+                                      {exam.college_ready_rate !== null ? (
+                                        <span className={`font-semibold tabular-nums ${exam.college_ready_rate >= 50 ? 'text-emerald-600' : exam.college_ready_rate >= 30 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                          {exam.college_ready_rate}%
+                                        </span>
+                                      ) : '—'}
+                                    </td>
+                                    {latestExams.some(e => e.mean_score !== null) && (
+                                      <td className="py-2.5 pl-3 text-right tabular-nums text-muted-foreground">
+                                        {exam.mean_score !== null ? exam.mean_score.toFixed(0) : '—'}
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Regents Trend Chart (multi-year) */}
+                          {olderYears.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                <History className="w-4 h-4" />
+                                Regents Pass Rate Trends
+                              </h4>
+                              <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={years.sort((a, b) => a - b).map(year => {
+                                    const yearExams = regentsData.filter(r => r.year === year);
+                                    const entry: any = { year: `${year}-${String(year + 1).slice(-2)}` };
+                                    yearExams.forEach(e => { entry[e.exam_name] = e.pass_rate; });
+                                    return entry;
+                                  })}>
+                                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                    <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                                    <RechartsTooltip formatter={(value: number) => [`${value}%`]} />
+                                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                                    {(() => {
+                                      const examNames = [...new Set(regentsData.map(r => r.exam_name))];
+                                      const colors = ['#2563eb', '#dc2626', '#059669', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#4f46e5', '#65a30d', '#ea580c'];
+                                      return examNames.map((name, i) => (
+                                        <Line key={name} type="monotone" dataKey={name} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                                      ));
+                                    })()}
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2 text-center">Source: NYC DOE InfoHub Test Results</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : schoolWithScore.regents_pass_rate !== null ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <HSMetricCard label="Overall Regents Pass Rate" value={schoolWithScore.regents_pass_rate} suffix="%" description="Percentage of students scoring 65+ on Regents exams." testId="regents-overall" />
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">
+                      Regents exam data is not yet available for this school. Data will be added as NYC DOE InfoHub files are imported.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* College & Career Readiness */}
+              {(schoolWithScore.college_readiness_rate !== null || schoolWithScore.college_enrollment_rate !== null || schoolWithScore.ap_course_count !== null) && (
+                <Card data-testid="card-college-readiness">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      <CardTitle>College & Career Readiness</CardTitle>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Post-secondary preparation metrics including AP courses, readiness benchmarks, and college enrollment.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {schoolWithScore.college_readiness_rate !== null && (
-                        <HSMetricCard
-                          label="College & Career Readiness"
-                          value={schoolWithScore.college_readiness_rate}
-                          suffix="%"
-                          description="Percentage of students meeting NYC's college and career readiness benchmarks."
-                          testId="college-ready"
-                        />
+                        <HSMetricCard label="College & Career Readiness" value={schoolWithScore.college_readiness_rate} suffix="%" description="Students meeting NYC's college and career readiness benchmarks." testId="college-ready" />
+                      )}
+                      {schoolWithScore.college_enrollment_rate !== null && (
+                        <HSMetricCard label="College Enrollment Rate" value={schoolWithScore.college_enrollment_rate} suffix="%" description="Graduates enrolling in college within one year." testId="college-enroll" />
                       )}
                       {schoolWithScore.ap_course_count !== null && schoolWithScore.ap_course_count > 0 && (
-                        <HSMetricCard
-                          label="AP Courses Offered"
-                          value={schoolWithScore.ap_course_count}
-                          suffix=" courses"
-                          description="Number of Advanced Placement courses available for college-level study."
-                          testId="ap-courses"
-                          isCount={true}
-                        />
+                        <HSMetricCard label="AP Courses Offered" value={schoolWithScore.ap_course_count} suffix=" courses" description="Advanced Placement courses available." testId="ap-courses" isCount />
                       )}
                     </div>
-                  </div>
-                )}
-
-                {/* Specialized HS Note */}
-                {schoolWithScore.is_specialized_hs && (
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800" data-testid="specialized-hs-note">
-                    <div className="flex items-start gap-3">
-                      <Star className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-indigo-800 dark:text-indigo-200">Specialized High School</p>
-                        <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
-                          This is one of New York City's nine specialized high schools. Admission requires passing the 
-                          Specialized High Schools Admissions Test (SHSAT) or meeting audition requirements.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
           {/* School Survey Results */}
@@ -1878,7 +2120,8 @@ function HSMetricCard({
   suffix, 
   description, 
   testId,
-  isCount = false 
+  isCount = false,
+  isNegative = false
 }: { 
   label: string; 
   value: number; 
@@ -1886,9 +2129,15 @@ function HSMetricCard({
   description: string; 
   testId: string;
   isCount?: boolean;
+  isNegative?: boolean;
 }) {
   const getColor = () => {
     if (isCount) return "text-foreground";
+    if (isNegative) {
+      if (value <= 5) return "text-emerald-600 dark:text-emerald-400";
+      if (value <= 10) return "text-yellow-600 dark:text-yellow-400";
+      return "text-red-600 dark:text-red-400";
+    }
     if (value >= 90) return "text-emerald-600 dark:text-emerald-400";
     if (value >= 80) return "text-yellow-600 dark:text-yellow-400";
     if (value >= 70) return "text-violet-600 dark:text-violet-400";
@@ -1897,6 +2146,11 @@ function HSMetricCard({
 
   const getIndicatorColor = () => {
     if (isCount) return "bg-primary";
+    if (isNegative) {
+      if (value <= 5) return "bg-emerald-500";
+      if (value <= 10) return "bg-yellow-500";
+      return "bg-red-500";
+    }
     if (value >= 90) return "bg-emerald-500";
     if (value >= 80) return "bg-yellow-500";
     if (value >= 70) return "bg-violet-500";

@@ -364,6 +364,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get high school graduation outcomes (multi-year cohort data)
+  app.get("/api/schools/:dbn/graduation", async (req: Request, res: Response) => {
+    try {
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `hs-graduation-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const data = await storage.getHSGraduation(dbn);
+      setCache(cacheKey, data, CACHE_TTL_LONG);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching graduation data:", error);
+      res.status(500).json({ error: "Failed to fetch graduation data" });
+    }
+  });
+
+  // Get high school Regents exam results (multi-year, per-exam)
+  app.get("/api/schools/:dbn/regents", async (req: Request, res: Response) => {
+    try {
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `hs-regents-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const data = await storage.getHSRegents(dbn);
+      setCache(cacheKey, data, CACHE_TTL_LONG);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching Regents data:", error);
+      res.status(500).json({ error: "Failed to fetch Regents data" });
+    }
+  });
+
   // Get school zone boundary (GeoJSON geometry) for map overlay
   app.get("/api/schools/:dbn/zone", async (req: Request, res: Response) => {
     try {

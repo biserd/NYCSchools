@@ -219,6 +219,88 @@ export function calculateTrend(scores: HistoricalScore[]): SchoolTrend {
   };
 }
 
+// High School Graduation Outcomes - multi-year cohort data from NYC DOE InfoHub
+export const hsGraduation = pgTable("hs_graduation", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  cohort_year: integer("cohort_year").notNull(), // Cohort start year (e.g., 2020 for Class of 2024)
+  cohort_label: varchar("cohort_label"), // e.g., "Class of 2024"
+  total_cohort: integer("total_cohort"), // Total students in cohort
+  grad_rate_4yr: real("grad_rate_4yr"), // 4-year graduation rate %
+  grad_rate_5yr: real("grad_rate_5yr"), // 5-year graduation rate %
+  grad_rate_6yr: real("grad_rate_6yr"), // 6-year graduation rate %
+  dropout_rate: real("dropout_rate"), // Dropout rate %
+  still_enrolled_rate: real("still_enrolled_rate"), // Still enrolled rate %
+  diploma_regents_pct: real("diploma_regents_pct"), // Regents diploma %
+  diploma_advanced_regents_pct: real("diploma_advanced_regents_pct"), // Advanced Regents diploma %
+  diploma_local_pct: real("diploma_local_pct"), // Local diploma %
+  ged_rate: real("ged_rate"), // GED/TASC rate %
+  // Subgroup breakdowns (4-year grad rate for each)
+  grad_rate_male: real("grad_rate_male"),
+  grad_rate_female: real("grad_rate_female"),
+  grad_rate_asian: real("grad_rate_asian"),
+  grad_rate_black: real("grad_rate_black"),
+  grad_rate_hispanic: real("grad_rate_hispanic"),
+  grad_rate_white: real("grad_rate_white"),
+  grad_rate_ell: real("grad_rate_ell"), // English Language Learners
+  grad_rate_swd: real("grad_rate_swd"), // Students with Disabilities
+  grad_rate_econ_disadv: real("grad_rate_econ_disadv"), // Economically Disadvantaged
+  data_source: varchar("data_source").default("NYC DOE InfoHub"),
+}, (table) => ({
+  dbnCohortIdx: index("hs_grad_dbn_cohort_idx").on(table.dbn, table.cohort_year),
+}));
+
+export const insertHsGraduationSchema = createInsertSchema(hsGraduation).omit({ id: true });
+export type InsertHsGraduation = z.infer<typeof insertHsGraduationSchema>;
+export type HsGraduation = typeof hsGraduation.$inferSelect;
+
+// High School Regents Exam Results - per-exam, per-year from NYC DOE InfoHub
+export const hsRegents = pgTable("hs_regents", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  year: integer("year").notNull(), // School year start (e.g., 2024 for 2024-25)
+  exam_name: varchar("exam_name").notNull(), // e.g., "English", "Algebra I", "Living Environment"
+  total_tested: integer("total_tested"), // Number of students tested
+  pass_rate: real("pass_rate"), // % scoring 65+ (passing)
+  college_ready_rate: real("college_ready_rate"), // % scoring 80+ (college-ready threshold)
+  mastery_rate: real("mastery_rate"), // % scoring 90+ (mastery level)
+  mean_score: real("mean_score"), // Average score
+  // Subgroup pass rates
+  pass_rate_male: real("pass_rate_male"),
+  pass_rate_female: real("pass_rate_female"),
+  pass_rate_asian: real("pass_rate_asian"),
+  pass_rate_black: real("pass_rate_black"),
+  pass_rate_hispanic: real("pass_rate_hispanic"),
+  pass_rate_white: real("pass_rate_white"),
+  pass_rate_ell: real("pass_rate_ell"),
+  pass_rate_swd: real("pass_rate_swd"),
+  pass_rate_econ_disadv: real("pass_rate_econ_disadv"),
+  data_source: varchar("data_source").default("NYC DOE InfoHub"),
+}, (table) => ({
+  dbnYearIdx: index("hs_regents_dbn_year_idx").on(table.dbn, table.year),
+  dbnYearExamIdx: index("hs_regents_dbn_year_exam_idx").on(table.dbn, table.year, table.exam_name),
+}));
+
+export const insertHsRegentsSchema = createInsertSchema(hsRegents).omit({ id: true });
+export type InsertHsRegents = z.infer<typeof insertHsRegentsSchema>;
+export type HsRegents = typeof hsRegents.$inferSelect;
+
+// Standard Regents exam names for consistent display
+export const REGENTS_EXAMS = [
+  'English',
+  'Algebra I',
+  'Geometry',
+  'Algebra II / Trigonometry',
+  'Living Environment',
+  'Earth Science',
+  'Chemistry',
+  'Physics',
+  'Global History',
+  'US History',
+] as const;
+
+export type RegentsExam = typeof REGENTS_EXAMS[number];
+
 export interface SchoolWithOverallScore extends School {
   overall_score: number;
 }

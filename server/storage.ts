@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -122,6 +122,10 @@ export interface IStorage {
   upsertPrivateSchools(schools: InsertPrivateSchool[]): Promise<void>;
   getPrivateSchoolHistory(ncesId: string): Promise<PrivateSchoolHistory[]>;
   upsertPrivateSchoolHistory(history: InsertPrivateSchoolHistory): Promise<PrivateSchoolHistory>;
+
+  // High School Performance operations
+  getHSGraduation(dbn: string): Promise<HsGraduation[]>;
+  getHSRegents(dbn: string): Promise<HsRegents[]>;
 }
 
 export interface NyceecFilters {
@@ -1575,6 +1579,22 @@ export class DbStorage implements IStorage {
       })
       .returning();
     return result;
+  }
+
+  async getHSGraduation(dbn: string): Promise<HsGraduation[]> {
+    return db
+      .select()
+      .from(hsGraduation)
+      .where(eq(hsGraduation.dbn, dbn))
+      .orderBy(desc(hsGraduation.cohort_year));
+  }
+
+  async getHSRegents(dbn: string): Promise<HsRegents[]> {
+    return db
+      .select()
+      .from(hsRegents)
+      .where(eq(hsRegents.dbn, dbn))
+      .orderBy(desc(hsRegents.year), asc(hsRegents.exam_name));
   }
 }
 
