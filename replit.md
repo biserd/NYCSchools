@@ -20,6 +20,7 @@ Specific additions include:
 - **NYC Private Schools**: Browse and detail pages for 600+ NYC private schools with filtering by borough, religious affiliation, and coed status, using NCES PSS data.
 - **High School Performance Dashboard**: Comprehensive performance data for NYC public high schools, including graduation and Regents exam results from NYC DOE InfoHub, with multi-year trends and subgroup analysis.
 - **School Attendance & Chronic Absenteeism**: Attendance and chronic absenteeism data for all NYC public schools (2018-19 through 2024-25) from NYC DOE InfoHub, with year-over-year changes and subgroup breakdowns.
+- **School Discipline & Suspensions**: Discipline/suspension data for all NYC public schools (2018-19 through 2024-25) from NYC DOE InfoHub LL93 Reports, with breakdowns by type (removals, principal suspensions, superintendent suspensions), race/ethnicity, gender, SWD, ELL, and STH.
 
 ### System Design Choices
 The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data fetching and AI integration. Error handling is graceful, and performance is optimized through pagination, search debounce, server-side caching, Gzip compression, code-splitting, and localStorage synchronization. Cost optimizations include auth-gated features.

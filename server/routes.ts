@@ -424,6 +424,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get school discipline/suspension data (multi-year)
+  app.get("/api/schools/:dbn/discipline", async (req: Request, res: Response) => {
+    try {
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `school-discipline-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const data = await storage.getSchoolDiscipline(dbn);
+      setCache(cacheKey, data, CACHE_TTL_LONG);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching discipline data:", error);
+      res.status(500).json({ error: "Failed to fetch discipline data" });
+    }
+  });
+
   // Get school zone boundary (GeoJSON geometry) for map overlay
   app.get("/api/schools/:dbn/zone", async (req: Request, res: Response) => {
     try {

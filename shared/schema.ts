@@ -337,6 +337,43 @@ export const insertSchoolAttendanceSchema = createInsertSchema(schoolAttendance)
 export type InsertSchoolAttendance = z.infer<typeof insertSchoolAttendanceSchema>;
 export type SchoolAttendance = typeof schoolAttendance.$inferSelect;
 
+// School Discipline / Suspension Data - from NYC DOE InfoHub LL93 Reports
+export const schoolDiscipline = pgTable("school_discipline", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").notNull(),
+  year: varchar("year").notNull(), // e.g., "2024-25", "2023-24"
+  school_name: text("school_name"),
+  category: varchar("category"), // "Elementary", "K-8", "Middle", "High School", "Transfer", etc.
+  total_suspensions: integer("total_suspensions"), // Total removals + suspensions
+  teacher_removals: integer("teacher_removals"), // Teacher/classroom removals
+  principal_suspensions: integer("principal_suspensions"), // Principal suspensions (1-5 days)
+  superintendent_suspensions: integer("superintendent_suspensions"), // Superintendent suspensions (6-180 days)
+  // Race/ethnicity breakdowns (total suspensions)
+  susp_black: integer("susp_black"),
+  susp_hispanic: integer("susp_hispanic"),
+  susp_white: integer("susp_white"),
+  susp_asian: integer("susp_asian"),
+  susp_multi_racial: integer("susp_multi_racial"),
+  susp_native_american: integer("susp_native_american"),
+  // Gender breakdowns (total suspensions)
+  susp_male: integer("susp_male"),
+  susp_female: integer("susp_female"),
+  // Special population breakdowns (total suspensions)
+  susp_swd: integer("susp_swd"), // Students with Disabilities
+  susp_gen_ed: integer("susp_gen_ed"), // General Education
+  susp_ell: integer("susp_ell"), // English Language Learners
+  susp_non_ell: integer("susp_non_ell"),
+  susp_sth: integer("susp_sth"), // Students in Temporary Housing
+  susp_non_sth: integer("susp_non_sth"),
+  data_source: varchar("data_source").default("NYC DOE InfoHub LL93"),
+}, (table) => ({
+  dbnYearIdx: index("school_discipline_dbn_year_idx").on(table.dbn, table.year),
+}));
+
+export const insertSchoolDisciplineSchema = createInsertSchema(schoolDiscipline).omit({ id: true });
+export type InsertSchoolDiscipline = z.infer<typeof insertSchoolDisciplineSchema>;
+export type SchoolDiscipline = typeof schoolDiscipline.$inferSelect;
+
 export interface SchoolWithOverallScore extends School {
   overall_score: number;
 }

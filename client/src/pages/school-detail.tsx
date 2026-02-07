@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, REGENTS_EXAMS } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, REGENTS_EXAMS } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -134,6 +134,12 @@ export default function SchoolDetail() {
 
   const { data: attendanceData } = useQuery<SchoolAttendance[]>({
     queryKey: ["/api/schools", dbn, "attendance"],
+    enabled: !!dbn,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: disciplineData } = useQuery<SchoolDiscipline[]>({
+    queryKey: ["/api/schools", dbn, "discipline"],
     enabled: !!dbn,
     staleTime: 1000 * 60 * 10,
   });
@@ -1817,6 +1823,176 @@ export default function SchoolDetail() {
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-yellow-500 inline-block" /> 15-25% Moderate</span>
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-500 inline-block" /> 25-40% High</span>
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" /> 40%+ Very High</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Discipline & Suspensions */}
+          {disciplineData && disciplineData.length > 0 && (() => {
+            const latestYear = disciplineData[0];
+            const previousYear = disciplineData.length > 1 ? disciplineData[1] : null;
+            const total = latestYear.total_suspensions;
+            const prevTotal = previousYear?.total_suspensions;
+            const change = total !== null && prevTotal !== null ? total - prevTotal : null;
+
+            const disciplineTrend = [...disciplineData]
+              .reverse()
+              .filter(d => d.total_suspensions !== null)
+              .map(d => ({
+                year: d.year,
+                total: d.total_suspensions,
+                removals: d.teacher_removals ?? 0,
+                principal: d.principal_suspensions ?? 0,
+                superintendent: d.superintendent_suspensions ?? 0,
+              }));
+
+            const raceBreakdown = [
+              { label: "Black", value: latestYear.susp_black },
+              { label: "Hispanic", value: latestYear.susp_hispanic },
+              { label: "White", value: latestYear.susp_white },
+              { label: "Asian", value: latestYear.susp_asian },
+              { label: "Multi-Racial", value: latestYear.susp_multi_racial },
+            ].filter(r => r.value !== null && r.value > 0);
+
+            const populationBreakdown = [
+              { label: "SWD", value: latestYear.susp_swd, full: "Students with Disabilities" },
+              { label: "Gen Ed", value: latestYear.susp_gen_ed, full: "General Education" },
+              { label: "ELL", value: latestYear.susp_ell, full: "English Language Learners" },
+              { label: "Non-ELL", value: latestYear.susp_non_ell, full: "Non-ELL" },
+              { label: "STH", value: latestYear.susp_sth, full: "Temporary Housing" },
+              { label: "Non-STH", value: latestYear.susp_non_sth, full: "Not in Temp Housing" },
+            ].filter(r => r.value !== null && r.value > 0);
+
+            const maxRaceVal = Math.max(...raceBreakdown.map(r => r.value ?? 0), 1);
+            const maxPopVal = Math.max(...populationBreakdown.map(r => r.value ?? 0), 1);
+
+            return (
+              <Card data-testid="card-discipline">
+                <CardHeader>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                    <CardTitle>Discipline & Suspensions</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Official NYC DOE discipline data ({latestYear.year}). Includes teacher removals, principal suspensions (1-5 days), and superintendent suspensions (6+ days).
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-total-suspensions">
+                      <p className="text-sm text-muted-foreground mb-1">Total Actions</p>
+                      <p className="text-3xl font-bold">
+                        {total !== null ? total.toLocaleString() : "N/A"}
+                      </p>
+                      <div className="flex items-center justify-center gap-1 mt-1 flex-wrap">
+                        <span className="text-xs text-muted-foreground">{latestYear.year}</span>
+                        {change !== null && (
+                          <span className={`text-xs flex items-center gap-0.5 ${change < 0 ? "text-emerald-600 dark:text-emerald-400" : change > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+                            {change < 0 ? <TrendingDown className="w-3 h-3" /> : change > 0 ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                            {change > 0 ? "+" : ""}{change}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-removals">
+                      <p className="text-sm text-muted-foreground mb-1">Removals</p>
+                      <p className="text-3xl font-bold">
+                        {latestYear.teacher_removals !== null ? latestYear.teacher_removals.toLocaleString() : "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Classroom</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-principal-susp">
+                      <p className="text-sm text-muted-foreground mb-1">Principal Susp.</p>
+                      <p className="text-3xl font-bold">
+                        {latestYear.principal_suspensions !== null ? latestYear.principal_suspensions.toLocaleString() : "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">1-5 days</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-superintendent-susp">
+                      <p className="text-sm text-muted-foreground mb-1">Superintendent Susp.</p>
+                      <p className="text-3xl font-bold">
+                        {latestYear.superintendent_suspensions !== null ? latestYear.superintendent_suspensions.toLocaleString() : "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">6+ days</p>
+                    </div>
+                  </div>
+
+                  {disciplineTrend.length > 1 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-3">Multi-Year Trend</h4>
+                      <div className="h-64" data-testid="chart-discipline-trend">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={disciplineTrend} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                            <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} />
+                            <RechartsTooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "8px",
+                                fontSize: "12px",
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: "12px" }} />
+                            <Line type="monotone" dataKey="total" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-4))", strokeWidth: 2 }} name="Total" connectNulls />
+                            <Line type="monotone" dataKey="removals" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }} name="Removals" connectNulls />
+                            <Line type="monotone" dataKey="principal" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2 }} name="Principal" connectNulls />
+                            <Line type="monotone" dataKey="superintendent" stroke="hsl(var(--chart-5))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-5))", strokeWidth: 2 }} name="Superintendent" connectNulls />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Source: NYC DOE InfoHub LL93 Annual Reports on Student Discipline
+                      </p>
+                    </div>
+                  )}
+
+                  {raceBreakdown.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-3">By Race/Ethnicity ({latestYear.year})</h4>
+                      <div className="space-y-2" data-testid="discipline-race-breakdown">
+                        {raceBreakdown.map((item) => (
+                          <div key={item.label} className="flex items-center gap-3" data-testid={`discipline-race-${item.label.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                            <span className="text-sm w-24 shrink-0 text-muted-foreground">{item.label}</span>
+                            <div className="flex-1 h-5 bg-muted rounded-sm overflow-hidden">
+                              <div
+                                className="h-full rounded-sm bg-chart-4"
+                                style={{ width: `${(item.value! / maxRaceVal) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium w-12 text-right">{item.value!.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {populationBreakdown.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-3">By Population ({latestYear.year})</h4>
+                      <div className="space-y-2" data-testid="discipline-population-breakdown">
+                        {populationBreakdown.map((item) => (
+                          <div key={item.label} className="flex items-center gap-3" data-testid={`discipline-pop-${item.label.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-sm w-24 shrink-0 text-muted-foreground cursor-help">{item.label}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>{item.full}</TooltipContent>
+                            </Tooltip>
+                            <div className="flex-1 h-5 bg-muted rounded-sm overflow-hidden">
+                              <div
+                                className="h-full rounded-sm bg-chart-3"
+                                style={{ width: `${(item.value! / maxPopVal) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium w-12 text-right">{item.value!.toLocaleString()}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
