@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, type HsAdmissionsProgram, REGENTS_EXAMS } from "@shared/schema";
@@ -65,6 +65,61 @@ interface SubscriptionStatus {
   plan: string;
 }
 
+function useChartLegendToggle() {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const handleLegendClick = useCallback((e: any) => {
+    const key = e.dataKey || e.value;
+    if (!key) return;
+    setHidden(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+  const isHidden = useCallback((key: string) => hidden.has(key), [hidden]);
+  return { hidden, handleLegendClick, isHidden };
+}
+
+function InteractiveLegend({ payload, hidden, onClick }: { payload?: any[]; hidden: Set<string>; onClick: (e: any) => void }) {
+  if (!payload) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2" data-testid="interactive-legend">
+      {payload.map((entry: any) => {
+        const key = entry.dataKey;
+        if (!key) return null;
+        const isOff = hidden.has(key);
+        return (
+          <button
+            key={key}
+            type="button"
+            className={`flex items-center gap-1.5 text-xs cursor-pointer select-none transition-opacity ${isOff ? "opacity-35" : "opacity-100"}`}
+            onClick={() => onClick({ ...entry, dataKey: key })}
+            data-testid={`legend-toggle-${key.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+          >
+            <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: entry.color }} />
+            <span className={isOff ? "line-through" : ""}>{entry.value}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChartSourceLink({ text, url, testId }: { text: string; url?: string; testId?: string }) {
+  return (
+    <p className="text-xs text-muted-foreground mt-2 text-center" data-testid={testId}>
+      {url ? (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2">
+          {text}
+        </a>
+      ) : text}
+      {" "}
+      <span className="italic">Click legend items to show/hide series.</span>
+    </p>
+  );
+}
+
 // Helper to format district comparison delta with proper rounding
 function formatDelta(value: number, compare: number): string {
   const diff = Math.round(value - compare);
@@ -95,6 +150,12 @@ export default function SchoolDetail() {
   
   // Track free school view - visitors get one school with full access
   const { isThisFreeSchool, isLoading: freeViewLoading } = useFreeSchoolView(dbn);
+
+  const historicalLegend = useChartLegendToggle();
+  const gradLegend = useChartLegendToggle();
+  const regentsLegend = useChartLegendToggle();
+  const attendanceLegend = useChartLegendToggle();
+  const disciplineLegend = useChartLegendToggle();
 
   // Check for premium access - includes:
   // 1. Recurring subscriptions and Season Pass
@@ -1157,7 +1218,7 @@ export default function SchoolDetail() {
                           formatter={(value: number) => [`${value}%`, undefined]}
                           labelFormatter={(label) => `Year: ${label}`}
                         />
-                        <Legend />
+                        <Legend content={({ payload }) => <InteractiveLegend payload={payload} hidden={historicalLegend.hidden} onClick={historicalLegend.handleLegendClick} />} />
                         <Line 
                           type="monotone" 
                           dataKey="ELA" 
@@ -1165,6 +1226,7 @@ export default function SchoolDetail() {
                           strokeWidth={2}
                           dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2 }}
                           name="ELA Proficiency"
+                          hide={historicalLegend.isHidden("ELA")}
                         />
                         <Line 
                           type="monotone" 
@@ -1173,6 +1235,7 @@ export default function SchoolDetail() {
                           strokeWidth={2}
                           dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }}
                           name="Math Proficiency"
+                          hide={historicalLegend.isHidden("Math")}
                         />
                         {historicalTrend.historicalData.some(d => d.science_proficiency != null) && (
                           <Line 
@@ -1182,11 +1245,17 @@ export default function SchoolDetail() {
                             strokeWidth={2}
                             dot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2 }}
                             name="Science Proficiency"
+                            hide={historicalLegend.isHidden("Science")}
                           />
                         )}
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
+                  <ChartSourceLink
+                    text="Source: NYSED State Report Card Database (2015-2024)"
+                    url="https://data.nysed.gov/reportcard.php"
+                    testId="source-historical"
+                  />
                   
                   {/* Historical Data Table */}
                   <div className="mt-4 overflow-x-auto">
@@ -1400,10 +1469,13 @@ export default function SchoolDetail() {
                       {/* Graduation Rate Trend Chart */}
                       {graduationData.length >= 2 && (
                         <div>
-                          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                          <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
                             <TrendingUp className="w-4 h-4" />
                             Graduation Rate Trends
                           </h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Compares 4-year, 5-year, and 6-year graduation rates alongside dropout rates across cohorts.
+                          </p>
                           <div className="h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={[...graduationData].reverse().map(g => ({
@@ -1417,15 +1489,19 @@ export default function SchoolDetail() {
                                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
                                 <RechartsTooltip formatter={(value: number) => [`${value}%`]} />
-                                <Legend />
-                                <Line type="monotone" dataKey="4-Year" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
-                                <Line type="monotone" dataKey="5-Year" stroke="#7c3aed" strokeWidth={2} dot={{ r: 3 }} />
-                                <Line type="monotone" dataKey="6-Year" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} />
-                                <Line type="monotone" dataKey="Dropout" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="5 5" />
+                                <Legend content={({ payload }) => <InteractiveLegend payload={payload} hidden={gradLegend.hidden} onClick={gradLegend.handleLegendClick} />} />
+                                <Line type="monotone" dataKey="4-Year" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} hide={gradLegend.isHidden("4-Year")} />
+                                <Line type="monotone" dataKey="5-Year" stroke="#7c3aed" strokeWidth={2} dot={{ r: 3 }} hide={gradLegend.isHidden("5-Year")} />
+                                <Line type="monotone" dataKey="6-Year" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} hide={gradLegend.isHidden("6-Year")} />
+                                <Line type="monotone" dataKey="Dropout" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="5 5" hide={gradLegend.isHidden("Dropout")} />
                               </LineChart>
                             </ResponsiveContainer>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-2 text-center">Source: NYC DOE InfoHub Graduation Results</p>
+                          <ChartSourceLink
+                            text="Source: NYC DOE InfoHub Graduation Results (2015-2023)"
+                            url="https://infohub.nyced.org/reports/academics/graduation-results"
+                            testId="source-graduation"
+                          />
                         </div>
                       )}
 
@@ -1589,10 +1665,13 @@ export default function SchoolDetail() {
                           {/* Regents Trend Chart (multi-year) */}
                           {olderYears.length > 0 && (
                             <div>
-                              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                              <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
                                 <History className="w-4 h-4" />
                                 Regents Pass Rate Trends
                               </h4>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                Multi-year pass rates by exam subject. Toggle individual exams to focus on specific subjects.
+                              </p>
                               <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                   <LineChart data={years.sort((a, b) => a - b).map(year => {
@@ -1605,18 +1684,22 @@ export default function SchoolDetail() {
                                     <XAxis dataKey="year" tick={{ fontSize: 11 }} />
                                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
                                     <RechartsTooltip formatter={(value: number) => [`${value}%`]} />
-                                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                                    <Legend content={({ payload }) => <InteractiveLegend payload={payload} hidden={regentsLegend.hidden} onClick={regentsLegend.handleLegendClick} />} />
                                     {(() => {
                                       const examNames = [...new Set(regentsData.map(r => r.exam_name))];
                                       const colors = ['#2563eb', '#dc2626', '#059669', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#4f46e5', '#65a30d', '#ea580c'];
                                       return examNames.map((name, i) => (
-                                        <Line key={name} type="monotone" dataKey={name} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                                        <Line key={name} type="monotone" dataKey={name} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls hide={regentsLegend.isHidden(name)} />
                                       ));
                                     })()}
                                   </LineChart>
                                 </ResponsiveContainer>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-2 text-center">Source: NYC DOE InfoHub Test Results</p>
+                              <ChartSourceLink
+                                text="Source: NYC DOE InfoHub Regents Exam Results (2018-2024)"
+                                url="https://infohub.nyced.org/reports/academics/test-results"
+                                testId="source-regents"
+                              />
                             </div>
                           )}
                         </div>
@@ -1988,7 +2071,10 @@ export default function SchoolDetail() {
                   {/* Multi-year Trend Chart */}
                   {attendanceTrend.length > 1 && (
                     <div>
-                      <h4 className="font-semibold text-sm mb-3">Multi-Year Trend</h4>
+                      <h4 className="font-semibold text-sm mb-1">Multi-Year Attendance Trend</h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Tracks attendance rate and chronic absenteeism over time. Lower chronic absenteeism is better.
+                      </p>
                       <div className="h-64" data-testid="chart-attendance-trend">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={attendanceTrend} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -2004,7 +2090,7 @@ export default function SchoolDetail() {
                               }}
                               formatter={(value: number) => [`${value}%`]}
                             />
-                            <Legend wrapperStyle={{ fontSize: "12px" }} />
+                            <Legend content={({ payload }) => <InteractiveLegend payload={payload} hidden={attendanceLegend.hidden} onClick={attendanceLegend.handleLegendClick} />} />
                             <Line
                               type="monotone"
                               dataKey="attendance"
@@ -2013,6 +2099,7 @@ export default function SchoolDetail() {
                               dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2 }}
                               name="Attendance Rate"
                               connectNulls
+                              hide={attendanceLegend.isHidden("attendance")}
                             />
                             <Line
                               type="monotone"
@@ -2022,13 +2109,16 @@ export default function SchoolDetail() {
                               dot={{ fill: "hsl(var(--chart-4))", strokeWidth: 2 }}
                               name="Chronic Absenteeism"
                               connectNulls
+                              hide={attendanceLegend.isHidden("chronicAbsent")}
                             />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Source: NYC DOE InfoHub End-of-Year Attendance Data (2018-19 to 2024-25)
-                      </p>
+                      <ChartSourceLink
+                        text="Source: NYC DOE InfoHub End-of-Year Attendance & Chronic Absenteeism Data (2018-2025)"
+                        url="https://infohub.nyced.org/reports/students-and-schools/school-quality/information-and-data-overview"
+                        testId="source-attendance"
+                      />
                     </div>
                   )}
 
@@ -2161,7 +2251,10 @@ export default function SchoolDetail() {
 
                   {disciplineTrend.length > 1 && (
                     <div>
-                      <h4 className="font-semibold text-sm mb-3">Multi-Year Trend</h4>
+                      <h4 className="font-semibold text-sm mb-1">Multi-Year Discipline Trend</h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Total disciplinary actions broken down by type over time. Lower numbers indicate fewer incidents.
+                      </p>
                       <div className="h-64" data-testid="chart-discipline-trend">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={disciplineTrend} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -2176,17 +2269,19 @@ export default function SchoolDetail() {
                                 fontSize: "12px",
                               }}
                             />
-                            <Legend wrapperStyle={{ fontSize: "12px" }} />
-                            <Line type="monotone" dataKey="total" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-4))", strokeWidth: 2 }} name="Total" connectNulls />
-                            <Line type="monotone" dataKey="removals" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }} name="Removals" connectNulls />
-                            <Line type="monotone" dataKey="principal" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2 }} name="Principal" connectNulls />
-                            <Line type="monotone" dataKey="superintendent" stroke="hsl(var(--chart-5))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-5))", strokeWidth: 2 }} name="Superintendent" connectNulls />
+                            <Legend content={({ payload }) => <InteractiveLegend payload={payload} hidden={disciplineLegend.hidden} onClick={disciplineLegend.handleLegendClick} />} />
+                            <Line type="monotone" dataKey="total" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-4))", strokeWidth: 2 }} name="Total" connectNulls hide={disciplineLegend.isHidden("total")} />
+                            <Line type="monotone" dataKey="removals" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2 }} name="Removals" connectNulls hide={disciplineLegend.isHidden("removals")} />
+                            <Line type="monotone" dataKey="principal" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2 }} name="Principal" connectNulls hide={disciplineLegend.isHidden("principal")} />
+                            <Line type="monotone" dataKey="superintendent" stroke="hsl(var(--chart-5))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-5))", strokeWidth: 2 }} name="Superintendent" connectNulls hide={disciplineLegend.isHidden("superintendent")} />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Source: NYC DOE InfoHub LL93 Annual Reports on Student Discipline
-                      </p>
+                      <ChartSourceLink
+                        text="Source: NYC DOE InfoHub LL93 Annual Reports on Student Discipline (2018-2025)"
+                        url="https://infohub.nyced.org/reports/students-and-schools/student-safety-and-discipline"
+                        testId="source-discipline"
+                      />
                     </div>
                   )}
 
