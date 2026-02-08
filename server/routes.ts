@@ -444,6 +444,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get HS admissions programs data
+  app.get("/api/schools/:dbn/admissions-programs", async (req: Request, res: Response) => {
+    try {
+      const dbn = req.params.dbn.toUpperCase();
+      const cacheKey = `hs-admissions-${dbn}`;
+      const cachedData = getCached(cacheKey);
+      
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+      
+      const data = await storage.getHsAdmissionsPrograms(dbn);
+      setCache(cacheKey, data, CACHE_TTL_LONG);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching admissions programs:", error);
+      res.status(500).json({ error: "Failed to fetch admissions programs" });
+    }
+  });
+
   // Get school zone boundary (GeoJSON geometry) for map overlay
   app.get("/api/schools/:dbn/zone", async (req: Request, res: Response) => {
     try {

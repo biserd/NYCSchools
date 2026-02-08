@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, REGENTS_EXAMS } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, type HsAdmissionsProgram, REGENTS_EXAMS } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -141,6 +141,12 @@ export default function SchoolDetail() {
   const { data: disciplineData } = useQuery<SchoolDiscipline[]>({
     queryKey: ["/api/schools", dbn, "discipline"],
     enabled: !!dbn,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: admissionsData } = useQuery<HsAdmissionsProgram[]>({
+    queryKey: ["/api/schools", dbn, "admissions-programs"],
+    enabled: !!dbn && isHS,
     staleTime: 1000 * 60 * 10,
   });
 
@@ -1652,6 +1658,238 @@ export default function SchoolDetail() {
                         <HSMetricCard label="AP Courses Offered" value={schoolWithScore.ap_course_count} suffix=" courses" description="Advanced Placement courses available." testId="ap-courses" isCount />
                       )}
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {admissionsData && admissionsData.length > 0 && (
+                <Card data-testid="card-hs-admissions">
+                  <CardHeader>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <GraduationCap className="w-5 h-5 text-muted-foreground" />
+                      <CardTitle>Admissions & Programs</CardTitle>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Fall 2025 admissions data from the official NYC DOE High School Directory. Shows admission methods, demand metrics, and eligibility for each program.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(() => {
+                      const totalGESeats = admissionsData.reduce((sum, p) => sum + (p.seats_ge ?? 0), 0);
+                      const totalGEApps = admissionsData.reduce((sum, p) => sum + (p.grade9_ge_applicants ?? 0), 0);
+                      const avgAppsPerSeat = totalGESeats > 0 ? Math.round((totalGEApps / totalGESeats) * 10) / 10 : null;
+                      const methods = [...new Set(admissionsData.map(p => p.admission_method).filter(Boolean))];
+
+                      return (
+                        <>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="bg-muted/50 rounded-md p-3 text-center" data-testid="metric-total-programs">
+                              <p className="text-sm text-muted-foreground mb-1">Programs</p>
+                              <p className="text-2xl font-bold">{admissionsData.length}</p>
+                            </div>
+                            <div className="bg-muted/50 rounded-md p-3 text-center" data-testid="metric-total-ge-seats">
+                              <p className="text-sm text-muted-foreground mb-1">Grade 9 Seats</p>
+                              <p className="text-2xl font-bold">{totalGESeats > 0 ? totalGESeats.toLocaleString() : "N/A"}</p>
+                            </div>
+                            <div className="bg-muted/50 rounded-md p-3 text-center" data-testid="metric-total-ge-applicants">
+                              <p className="text-sm text-muted-foreground mb-1">Applicants</p>
+                              <p className="text-2xl font-bold">{totalGEApps > 0 ? totalGEApps.toLocaleString() : "N/A"}</p>
+                            </div>
+                            <div className="bg-muted/50 rounded-md p-3 text-center" data-testid="metric-avg-apps-per-seat">
+                              <p className="text-sm text-muted-foreground mb-1">Apps/Seat</p>
+                              <p className="text-2xl font-bold">{avgAppsPerSeat !== null ? avgAppsPerSeat : "N/A"}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <span className="text-sm text-muted-foreground">Methods:</span>
+                            {methods.map(m => (
+                              <Badge key={m} variant="outline" className="text-xs" data-testid={`badge-method-${m?.replace(/\s+/g, '-').toLowerCase()}`}>
+                                {m}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <div className="space-y-3 mt-4">
+                            {admissionsData.map((program) => {
+                              const hasSpecialized = program.is_specialized && program.specialized_code;
+                              const hasDemand = program.grade9_ge_applicants != null || program.seats_ge != null;
+                              const requirements = [program.requirement_1, program.requirement_2, program.requirement_3, program.requirement_4].filter(Boolean);
+                              const priorities = [program.priority_1, program.priority_2, program.priority_3].filter(Boolean);
+                              const offerRates = [program.offer_rate_1, program.offer_rate_2, program.offer_rate_3].filter(Boolean);
+
+                              return (
+                                <div
+                                  key={program.id}
+                                  className="border rounded-md p-4 space-y-3"
+                                  data-testid={`card-program-${program.program_number}`}
+                                >
+                                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-semibold text-sm leading-tight" data-testid={`text-program-name-${program.program_number}`}>
+                                        {program.program_name}
+                                      </h4>
+                                      {program.interest_area && (
+                                        <p className="text-xs text-muted-foreground mt-0.5">{program.interest_area}</p>
+                                      )}
+                                    </div>
+                                    {program.admission_method && (
+                                      <Badge
+                                        variant={
+                                          program.admission_method === 'Screened' || program.admission_method === 'Screened With Assessment' ? 'default' :
+                                          program.admission_method === 'Audition' ? 'secondary' :
+                                          program.admission_method === 'Test' ? 'destructive' :
+                                          'outline'
+                                        }
+                                        className="text-xs shrink-0"
+                                        data-testid={`badge-admission-method-${program.program_number}`}
+                                      >
+                                        {program.admission_method}
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {program.program_description && (
+                                    <p className="text-sm text-muted-foreground">{program.program_description}</p>
+                                  )}
+
+                                  {hasDemand && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      {program.grade9_ge_applicants != null && (
+                                        <div className="text-center" data-testid={`metric-ge-applicants-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">GE Applicants</p>
+                                          <p className="text-lg font-semibold">{program.grade9_ge_applicants.toLocaleString()}</p>
+                                        </div>
+                                      )}
+                                      {program.seats_ge != null && (
+                                        <div className="text-center" data-testid={`metric-ge-seats-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">GE Seats</p>
+                                          <p className="text-lg font-semibold">{program.seats_ge}</p>
+                                        </div>
+                                      )}
+                                      {program.applicants_per_seat_ge != null && (
+                                        <div className="text-center" data-testid={`metric-apps-seat-ge-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">Apps/Seat (GE)</p>
+                                          <p className="text-lg font-semibold">{program.applicants_per_seat_ge}</p>
+                                        </div>
+                                      )}
+                                      {program.filled_flag_ge != null && (
+                                        <div className="text-center" data-testid={`metric-filled-ge-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">Filled?</p>
+                                          <p className={`text-lg font-semibold ${program.filled_flag_ge ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                                            {program.filled_flag_ge ? 'Yes' : 'No'}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {(program.grade9_swd_applicants != null || program.seats_swd != null) && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-dashed">
+                                      {program.grade9_swd_applicants != null && (
+                                        <div className="text-center" data-testid={`metric-swd-applicants-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">SWD Applicants</p>
+                                          <p className="text-lg font-semibold">{program.grade9_swd_applicants.toLocaleString()}</p>
+                                        </div>
+                                      )}
+                                      {program.seats_swd != null && (
+                                        <div className="text-center" data-testid={`metric-swd-seats-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">SWD Seats</p>
+                                          <p className="text-lg font-semibold">{program.seats_swd}</p>
+                                        </div>
+                                      )}
+                                      {program.applicants_per_seat_swd != null && (
+                                        <div className="text-center" data-testid={`metric-apps-seat-swd-${program.program_number}`}>
+                                          <p className="text-xs text-muted-foreground">Apps/Seat (SWD)</p>
+                                          <p className="text-lg font-semibold">{program.applicants_per_seat_swd}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {hasSpecialized && (
+                                    <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-md p-3 border border-indigo-200 dark:border-indigo-800" data-testid={`specialized-stats-${program.program_number}`}>
+                                      <p className="text-xs font-medium text-indigo-800 dark:text-indigo-200 mb-2">SHSAT / Specialized HS Stats ({program.specialized_code})</p>
+                                      <div className="grid grid-cols-3 gap-2 text-center">
+                                        {program.specialized_applicants != null && (
+                                          <div>
+                                            <p className="text-xs text-indigo-600 dark:text-indigo-300">Applicants</p>
+                                            <p className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">{program.specialized_applicants.toLocaleString()}</p>
+                                          </div>
+                                        )}
+                                        {program.specialized_seats != null && (
+                                          <div>
+                                            <p className="text-xs text-indigo-600 dark:text-indigo-300">Seats</p>
+                                            <p className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">{program.specialized_seats}</p>
+                                          </div>
+                                        )}
+                                        {program.specialized_apps_per_seat != null && (
+                                          <div>
+                                            <p className="text-xs text-indigo-600 dark:text-indigo-300">Apps/Seat</p>
+                                            <p className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">{program.specialized_apps_per_seat}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {priorities.length > 0 && (
+                                    <div data-testid={`priorities-${program.program_number}`}>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Admissions Priorities</p>
+                                      <ol className="list-decimal list-inside space-y-0.5">
+                                        {priorities.map((p, i) => (
+                                          <li key={i} className="text-sm">{p}</li>
+                                        ))}
+                                      </ol>
+                                    </div>
+                                  )}
+
+                                  {offerRates.length > 0 && (
+                                    <div data-testid={`offer-rates-${program.program_number}`}>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Offer Distribution</p>
+                                      <ul className="space-y-0.5">
+                                        {offerRates.map((r, i) => (
+                                          <li key={i} className="text-sm text-muted-foreground">{r}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {requirements.length > 0 && (
+                                    <div data-testid={`requirements-${program.program_number}`}>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Requirements</p>
+                                      <ul className="list-disc list-inside space-y-0.5">
+                                        {requirements.map((r, i) => (
+                                          <li key={i} className="text-sm">{r}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {program.audition_info && (
+                                    <div data-testid={`audition-info-${program.program_number}`}>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Audition Information</p>
+                                      <p className="text-sm">{program.audition_info}</p>
+                                    </div>
+                                  )}
+
+                                  {program.eligibility && (
+                                    <div data-testid={`eligibility-${program.program_number}`}>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Eligibility</p>
+                                      <p className="text-sm">{program.eligibility}</p>
+                                    </div>
+                                  )}
+
+                                  {program.seats_10plus != null && program.seats_10plus > 0 && (
+                                    <p className="text-xs text-muted-foreground">10th grade seats available</p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               )}

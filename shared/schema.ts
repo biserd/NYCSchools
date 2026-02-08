@@ -374,6 +374,53 @@ export const insertSchoolDisciplineSchema = createInsertSchema(schoolDiscipline)
 export type InsertSchoolDiscipline = z.infer<typeof insertSchoolDisciplineSchema>;
 export type SchoolDiscipline = typeof schoolDiscipline.$inferSelect;
 
+export const hsAdmissionsProgram = pgTable("hs_admissions_program", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn", { length: 10 }).notNull(),
+  program_number: integer("program_number").notNull(),
+  program_name: text("program_name"),
+  interest_area: text("interest_area"),
+  program_description: text("program_description"),
+  eligibility: text("eligibility"),
+  admission_method: varchar("admission_method", { length: 100 }),
+  grade9_ge_applicants: integer("grade9_ge_applicants"),
+  grade9_swd_applicants: integer("grade9_swd_applicants"),
+  seats_ge: integer("seats_ge"),
+  seats_swd: integer("seats_swd"),
+  applicants_per_seat_ge: real("applicants_per_seat_ge"),
+  applicants_per_seat_swd: real("applicants_per_seat_swd"),
+  filled_flag_ge: boolean("filled_flag_ge"),
+  filled_flag_swd: boolean("filled_flag_swd"),
+  seats_10plus: integer("seats_10plus"),
+  requirement_1: text("requirement_1"),
+  requirement_2: text("requirement_2"),
+  requirement_3: text("requirement_3"),
+  requirement_4: text("requirement_4"),
+  audition_info: text("audition_info"),
+  priority_1: text("priority_1"),
+  priority_2: text("priority_2"),
+  priority_3: text("priority_3"),
+  offer_rate_1: text("offer_rate_1"),
+  offer_rate_2: text("offer_rate_2"),
+  offer_rate_3: text("offer_rate_3"),
+  specialized_code: varchar("specialized_code", { length: 20 }),
+  specialized_applicants: integer("specialized_applicants"),
+  specialized_seats: integer("specialized_seats"),
+  specialized_apps_per_seat: real("specialized_apps_per_seat"),
+  is_specialized: boolean("is_specialized").default(false),
+  school_name: text("school_name"),
+  overview_paragraph: text("overview_paragraph"),
+  academic_opportunities: text("academic_opportunities"),
+  data_year: varchar("data_year", { length: 10 }).default("2025-26"),
+  data_source: varchar("data_source", { length: 100 }).default("NYC DOE HS Directory"),
+}, (table) => ({
+  dbnIdx: index("hs_admissions_dbn_idx").on(table.dbn),
+}));
+
+export const insertHsAdmissionsProgramSchema = createInsertSchema(hsAdmissionsProgram).omit({ id: true });
+export type InsertHsAdmissionsProgram = z.infer<typeof insertHsAdmissionsProgramSchema>;
+export type HsAdmissionsProgram = typeof hsAdmissionsProgram.$inferSelect;
+
 export interface SchoolWithOverallScore extends School {
   overall_score: number;
 }
