@@ -1590,16 +1590,70 @@ export default function SchoolDetail() {
               </Card>
 
               {/* Regents Exam Performance */}
-              <Card data-testid="card-regents-performance">
+              <Card data-testid="card-regents-performance" className={!isPremium ? "relative overflow-hidden" : ""}>
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" />
-                    <CardTitle>Regents Exam Performance</CardTitle>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-primary" />
+                      <CardTitle>Regents Exam Performance</CardTitle>
+                    </div>
+                    {!isPremium && (
+                      <Badge 
+                        variant="outline"
+                        className="text-xs gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                      >
+                        <Crown className="w-3 h-3" />
+                        Premium
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     School-level pass rates for core Regents exams. Pass = 65+, College Ready = 80+.
                   </p>
                 </CardHeader>
+                {!isPremium ? (
+                  <CardContent className="relative">
+                    <div className="h-64 relative" data-testid="regents-blurred">
+                      <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={[
+                              { year: '2019', Algebra: 72, English: 85, Living: 68 },
+                              { year: '2022', Algebra: 68, English: 80, Living: 65 },
+                              { year: '2023', Algebra: 75, English: 82, Living: 70 },
+                              { year: '2024', Algebra: 78, English: 88, Living: 73 },
+                            ]}
+                            margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                            <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                            <Line type="monotone" dataKey="Algebra" stroke="hsl(var(--chart-1))" strokeWidth={2} />
+                            <Line type="monotone" dataKey="English" stroke="hsl(var(--chart-2))" strokeWidth={2} />
+                            <Line type="monotone" dataKey="Living" stroke="hsl(var(--chart-3))" strokeWidth={2} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
+                        <div className="text-center p-6 max-w-sm">
+                          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
+                            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">Unlock Regents Exam Data</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            View detailed Regents pass rates, college readiness scores, and multi-year trends for each exam subject.
+                          </p>
+                          <Link href="/pricing">
+                            <Button className="gap-2" data-testid="button-upgrade-regents">
+                              <Crown className="w-4 h-4" />
+                              Upgrade to Premium
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                ) : (
                 <CardContent>
                   {regentsData && regentsData.length > 0 ? (
                     (() => {
@@ -1715,6 +1769,7 @@ export default function SchoolDetail() {
                     </div>
                   )}
                 </CardContent>
+                )}
               </Card>
 
               {/* College & Career Readiness */}
@@ -2020,16 +2075,66 @@ export default function SchoolDetail() {
             ].filter(sg => sg.value !== null);
 
             return (
-              <Card data-testid="card-attendance">
+              <Card data-testid="card-attendance" className={!isPremium ? "relative overflow-hidden" : ""}>
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary" />
-                    <CardTitle>Attendance & Chronic Absenteeism</CardTitle>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary" />
+                      <CardTitle>Attendance & Chronic Absenteeism</CardTitle>
+                    </div>
+                    {!isPremium && (
+                      <Badge 
+                        variant="outline"
+                        className="text-xs gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                      >
+                        <Crown className="w-3 h-3" />
+                        Premium
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Official NYC DOE attendance data ({latestYear.year}). Chronic absenteeism = students absent 10%+ of school days.
                   </p>
                 </CardHeader>
+                {!isPremium ? (
+                  <CardContent className="relative">
+                    <div className="h-64 relative" data-testid="attendance-blurred">
+                      <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
+                        <div className="grid grid-cols-3 gap-4 mb-4">
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Attendance Rate</p>
+                            <p className="text-3xl font-bold">92.1%</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Chronically Absent</p>
+                            <p className="text-3xl font-bold">28.4%</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Year-over-Year</p>
+                            <p className="text-3xl font-bold">-2.1%</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
+                        <div className="text-center p-6 max-w-sm">
+                          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
+                            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">Unlock Attendance Data</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            View attendance rates, chronic absenteeism trends, subgroup breakdowns, and year-over-year changes.
+                          </p>
+                          <Link href="/pricing">
+                            <Button className="gap-2" data-testid="button-upgrade-attendance">
+                              <Crown className="w-4 h-4" />
+                              Upgrade to Premium
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                ) : (
                 <CardContent className="space-y-6">
                   {/* Headline Metrics */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2155,6 +2260,7 @@ export default function SchoolDetail() {
                     </div>
                   )}
                 </CardContent>
+                )}
               </Card>
             );
           })()}
@@ -2199,16 +2305,70 @@ export default function SchoolDetail() {
             const maxPopVal = Math.max(...populationBreakdown.map(r => r.value ?? 0), 1);
 
             return (
-              <Card data-testid="card-discipline">
+              <Card data-testid="card-discipline" className={!isPremium ? "relative overflow-hidden" : ""}>
                 <CardHeader>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <AlertCircle className="w-5 h-5 text-muted-foreground" />
-                    <CardTitle>Discipline & Suspensions</CardTitle>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                      <CardTitle>Discipline & Suspensions</CardTitle>
+                    </div>
+                    {!isPremium && (
+                      <Badge 
+                        variant="outline"
+                        className="text-xs gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                      >
+                        <Crown className="w-3 h-3" />
+                        Premium
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Official NYC DOE discipline data ({latestYear.year}). Includes teacher removals, principal suspensions (1-5 days), and superintendent suspensions (6+ days).
                   </p>
                 </CardHeader>
+                {!isPremium ? (
+                  <CardContent className="relative">
+                    <div className="h-64 relative" data-testid="discipline-blurred">
+                      <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
+                        <div className="grid grid-cols-4 gap-4 mb-4">
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Total Actions</p>
+                            <p className="text-3xl font-bold">24</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Removals</p>
+                            <p className="text-3xl font-bold">8</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Principal Susp.</p>
+                            <p className="text-3xl font-bold">12</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-4 text-center">
+                            <p className="text-sm text-muted-foreground mb-1">Supt. Susp.</p>
+                            <p className="text-3xl font-bold">4</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
+                        <div className="text-center p-6 max-w-sm">
+                          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
+                            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">Unlock Discipline Data</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            View suspension counts, multi-year trends, and demographic breakdowns by race, gender, and student population.
+                          </p>
+                          <Link href="/pricing">
+                            <Button className="gap-2" data-testid="button-upgrade-discipline">
+                              <Crown className="w-4 h-4" />
+                              Upgrade to Premium
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                ) : (
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div className="bg-muted/50 rounded-md p-4 text-center" data-testid="metric-total-suspensions">
@@ -2330,6 +2490,7 @@ export default function SchoolDetail() {
                     </div>
                   )}
                 </CardContent>
+                )}
               </Card>
             );
           })()}
