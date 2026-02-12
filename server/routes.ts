@@ -3160,6 +3160,8 @@ When answering:
     const robotsTxt = `User-agent: *
 Allow: /
 
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
+
 Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     
     res.header('Content-Type', 'text/plain');
