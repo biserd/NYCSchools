@@ -151,6 +151,8 @@ export default function SchoolDetail() {
   // Track free school view - visitors get one school with full access
   const { isThisFreeSchool, isLoading: freeViewLoading } = useFreeSchoolView(dbn);
 
+  const { startCheckout, isLoading: checkoutLoading, isPending: checkoutPending } = useCheckout();
+
   const historicalLegend = useChartLegendToggle();
   const gradLegend = useChartLegendToggle();
   const regentsLegend = useChartLegendToggle();
@@ -766,12 +768,10 @@ export default function SchoolDetail() {
                       <p className="text-sm text-muted-foreground mb-4">
                         See how {schoolWithScore.name} compares to District {schoolWithScore.district} across all key metrics
                       </p>
-                      <Link href="/pricing">
-                        <Button data-testid="button-unlock-snapshot">
-                          <Lock className="w-4 h-4 mr-2" />
-                          Unlock for $29
+                        <Button data-testid="button-unlock-snapshot" onClick={startCheckout} disabled={checkoutPending}>
+                          {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                          {checkoutPending ? "Loading..." : "Unlock for $29"}
                         </Button>
-                      </Link>
                     </div>
                   </div>
                 </div>
@@ -878,12 +878,10 @@ export default function SchoolDetail() {
                   <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
                     Understand what drives this school's performance with detailed Academics, Climate, and Progress metrics
                   </p>
-                  <Link href="/pricing">
-                    <Button data-testid="button-unlock-breakdown">
-                      <Lock className="w-4 h-4 mr-2" />
-                      Unlock for $29
+                    <Button data-testid="button-unlock-breakdown" onClick={startCheckout} disabled={checkoutPending}>
+                      {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                      {checkoutPending ? "Loading..." : "Unlock for $29"}
                     </Button>
-                  </Link>
                 </CardContent>
               </Card>
             )
@@ -1353,12 +1351,10 @@ export default function SchoolDetail() {
                         <p className="text-sm text-muted-foreground mb-4">
                           See {historicalTrend.yearsAnalyzed} years of ELA and Math performance data to understand if this school is improving, declining, or stable.
                         </p>
-                        <Link href="/pricing">
-                          <Button className="gap-2" data-testid="button-upgrade-trends">
-                            <Crown className="w-4 h-4" />
-                            Upgrade to Premium
+                          <Button className="gap-2" data-testid="button-upgrade-trends" onClick={startCheckout} disabled={checkoutPending}>
+                            {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                            {checkoutPending ? "Loading..." : "Upgrade to Premium"}
                           </Button>
-                        </Link>
                       </div>
                     </div>
                   </div>
@@ -1558,12 +1554,10 @@ export default function SchoolDetail() {
                               </div>
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <Link href="/pricing">
-                                <Button data-testid="button-unlock-subgroups">
-                                  <Lock className="w-4 h-4 mr-2" />
-                                  Unlock Subgroup Data
+                                <Button data-testid="button-unlock-subgroups" onClick={startCheckout} disabled={checkoutPending}>
+                                  {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                                  {checkoutPending ? "Loading..." : "Unlock Subgroup Data"}
                                 </Button>
-                              </Link>
                             </div>
                           </div>
                         );
@@ -1643,12 +1637,10 @@ export default function SchoolDetail() {
                           <p className="text-sm text-muted-foreground mb-4">
                             View detailed Regents pass rates, college readiness scores, and multi-year trends for each exam subject.
                           </p>
-                          <Link href="/pricing">
-                            <Button className="gap-2" data-testid="button-upgrade-regents">
-                              <Crown className="w-4 h-4" />
-                              Upgrade to Premium
+                            <Button className="gap-2" data-testid="button-upgrade-regents" onClick={startCheckout} disabled={checkoutPending}>
+                              {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                              {checkoutPending ? "Loading..." : "Upgrade to Premium"}
                             </Button>
-                          </Link>
                         </div>
                       </div>
                     </div>
@@ -2124,12 +2116,10 @@ export default function SchoolDetail() {
                           <p className="text-sm text-muted-foreground mb-4">
                             View attendance rates, chronic absenteeism trends, subgroup breakdowns, and year-over-year changes.
                           </p>
-                          <Link href="/pricing">
-                            <Button className="gap-2" data-testid="button-upgrade-attendance">
-                              <Crown className="w-4 h-4" />
-                              Upgrade to Premium
+                            <Button className="gap-2" data-testid="button-upgrade-attendance" onClick={startCheckout} disabled={checkoutPending}>
+                              {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                              {checkoutPending ? "Loading..." : "Upgrade to Premium"}
                             </Button>
-                          </Link>
                         </div>
                       </div>
                     </div>
@@ -2358,12 +2348,10 @@ export default function SchoolDetail() {
                           <p className="text-sm text-muted-foreground mb-4">
                             View suspension counts, multi-year trends, and demographic breakdowns by race, gender, and student population.
                           </p>
-                          <Link href="/pricing">
-                            <Button className="gap-2" data-testid="button-upgrade-discipline">
-                              <Crown className="w-4 h-4" />
-                              Upgrade to Premium
+                            <Button className="gap-2" data-testid="button-upgrade-discipline" onClick={startCheckout} disabled={checkoutPending}>
+                              {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                              {checkoutPending ? "Loading..." : "Upgrade to Premium"}
                             </Button>
-                          </Link>
                         </div>
                       </div>
                     </div>
