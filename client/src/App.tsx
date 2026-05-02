@@ -47,6 +47,7 @@ const MagicLinkCallbackPage = lazy(() => import("@/pages/magic-link-callback"));
 const PrivateSchoolsPage = lazy(() => import("@/pages/private-schools"));
 const PrivateSchoolDetailPage = lazy(() => import("@/pages/private-school-detail"));
 const SafetyMethodologyPage = lazy(() => import("@/pages/safety-methodology"));
+const SafeAndStrongPage = lazy(() => import("@/pages/safe-and-strong"));
 const AdminApiUsagePage = lazy(() => import("@/pages/admin-api-usage"));
 
 // Loading component for lazy routes
@@ -135,6 +136,9 @@ function Router() {
         <Route path="/contact" component={ContactPage} />
         <Route path="/safety-methodology">
           <SafetyMethodologyPage />
+        </Route>
+        <Route path="/safe-and-strong">
+          <SafeAndStrongPage />
         </Route>
         <Route path="/admin/api-usage">
           <AdminApiUsagePage />

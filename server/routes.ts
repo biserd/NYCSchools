@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
@@ -315,6 +315,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Safe & Strong dashboard data: every public/charter school that has BOTH
+  // an overall rating and a 0.5-mile safety index, with the 50/50 combined
+  // score precomputed. Cached for 30 minutes.
+  app.get("/api/safe-and-strong", async (_req: Request, res: Response) => {
+    try {
+      const cacheKey = "safe-and-strong:v1";
+      const cached = getCached(cacheKey);
+      if (cached) return res.json(cached);
+
+      const SAFETY_RADIUS_DEFAULT = 805; // 0.5 miles
+      const safetyRows = await db
+        .select({
+          schoolKey: schoolSafetyIndex.schoolKey,
+          safetyIndex: schoolSafetyIndex.safetyIndex,
+        })
+        .from(schoolSafetyIndex)
+        .where(
+          and(
+            eq(schoolSafetyIndex.schoolType, "public"),
+            eq(schoolSafetyIndex.radiusMeters, SAFETY_RADIUS_DEFAULT),
+          ),
+        );
+      const safetyByDbn = new Map<string, number>();
+      for (const r of safetyRows) safetyByDbn.set(r.schoolKey, r.safetyIndex);
+
+      const allSchools = await storage.getSchools();
+      const slugify = (n: string) =>
+        n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+
+      const rows = allSchools
+        .map((s) => {
+          const safety = safetyByDbn.get(s.dbn);
+          if (safety === undefined) return null;
+          const overall = Math.round(
+            (s.academics_score || 0) * 0.4 +
+              (s.climate_score || 0) * 0.3 +
+              (s.progress_score || 0) * 0.3,
+          );
+          if (!overall) return null;
+          const combined = Math.round((overall + safety) / 2);
+          return {
+            dbn: s.dbn,
+            name: s.name,
+            slug: `${s.dbn.toLowerCase()}-${slugify(s.name)}`,
+            borough: s.dbn.charAt(2),
+            district: s.district,
+            gradeBand: s.grade_band,
+            enrollment: s.enrollment || 0,
+            overallScore: overall,
+            safetyIndex: safety,
+            combinedScore: combined,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      setCache(cacheKey, rows);
+      res.json(rows);
+    } catch (error) {
+      console.error("Error building safe-and-strong dataset:", error);
+      res.status(500).json({ error: "Failed to build dashboard data" });
     }
   });
 
@@ -3217,6 +3280,7 @@ When answering:
         { url: '/recommendations', changefreq: 'weekly', priority: '0.8' },
         { url: '/early-childhood', changefreq: 'weekly', priority: '0.8' },
         { url: '/lottery-simulator', changefreq: 'monthly', priority: '0.7' },
+        { url: '/safe-and-strong', changefreq: 'weekly', priority: '0.9' },
         { url: '/blog', changefreq: 'weekly', priority: '0.7' },
         { url: '/pricing', changefreq: 'monthly', priority: '0.7' },
         { url: '/features', changefreq: 'monthly', priority: '0.6' },

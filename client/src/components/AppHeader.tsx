@@ -16,7 +16,8 @@ import {
   Zap,
   Star,
   ClipboardList,
-  Target
+  Target,
+  Shield
 } from "lucide-react";
 
 export function AppHeader() {
@@ -86,6 +87,13 @@ export function AppHeader() {
                     <span className="hidden sm:inline">Map</span>
                   </Button>
                 </Link>
+                <Link href="/safe-and-strong">
+                  <Button variant="outline" size="sm" data-testid="button-safe-and-strong-nav">
+                    <Shield className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Safe &amp; Strong</span>
+                    <span className="sm:hidden">Safe</span>
+                  </Button>
+                </Link>
                 <Link href="/favorites">
                   <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-favorites-nav">
                     <Heart className="w-4 h-4 sm:mr-2" />
@@ -153,6 +161,12 @@ export function AppHeader() {
                   <Button variant="outline" size="sm" data-testid="button-chances-nav">
                     <Target className="w-4 h-4 mr-2" />
                     <span>Chances</span>
+                  </Button>
+                </Link>
+                <Link href="/safe-and-strong">
+                  <Button variant="outline" size="sm" data-testid="button-safe-and-strong-nav">
+                    <Shield className="w-4 h-4 mr-2" />
+                    <span>Safe &amp; Strong</span>
                   </Button>
                 </Link>
                 <Link href="/pricing">
