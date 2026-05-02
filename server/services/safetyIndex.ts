@@ -25,6 +25,7 @@ import {
   schools,
   privateSchools,
   nyceecCenters,
+  appSettings,
   SAFETY_RADIUS_OPTIONS,
   SAFETY_OFFENSE_WEIGHTS,
   VIOLENT_FELONY_OFFENSES,
