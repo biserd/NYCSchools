@@ -11,10 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { Sparkles, Loader2, GraduationCap, Languages, Award, Baby, TrendingUp, MapPin, School as SchoolIcon, Building2, Home } from "lucide-react";
+import { Sparkles, Loader2, GraduationCap, Languages, Award, Baby, TrendingUp, MapPin, School as SchoolIcon, Building2, Home, Crown, Lock } from "lucide-react";
 import { School, SchoolWithOverallScore, calculateOverallScore } from "@shared/schema";
 import { SchoolCard } from "@/components/SchoolCard";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface UserZones {
   elementary: string | null;
@@ -68,7 +71,11 @@ const BOROUGH_DISTRICTS: Record<string, number[]> = {
 
 export default function RecommendationsPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const { startCheckout, isPending: checkoutPending, priceAmount, isSeasonPass } = useCheckout();
   const [step, setStep] = useState<"questionnaire" | "results">("questionnaire");
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>({
     priority: "balanced",
     gradeLevel: "elementary",
@@ -229,7 +236,24 @@ I focused on schools with strong academics and Dual Language programs in Brookly
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get recommendations");
+        if (response.status === 401) {
+          setIsLoading(false);
+          setShowLoginDialog(true);
+          return;
+        }
+        if (response.status === 403) {
+          setIsLoading(false);
+          setShowUpgradeDialog(true);
+          return;
+        }
+        let errorMsg = "Failed to get recommendations";
+        try {
+          const errBody = await response.json();
+          if (errBody?.message || errBody?.error) {
+            errorMsg = errBody.message || errBody.error;
+          }
+        } catch {}
+        throw new Error(errorMsg);
       }
 
       const reader = response.body?.getReader();
@@ -309,7 +333,11 @@ I focused on schools with strong academics and Dual Language programs in Brookly
       setStep("results");
     } catch (error) {
       console.error("Error generating recommendations:", error);
-      alert("Sorry, there was an error generating recommendations. Please try again.");
+      toast({
+        title: "Couldn't generate recommendations",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -821,6 +849,78 @@ I focused on schools with strong academics and Dual Language programs in Brookly
       </main>
       
       <Footer />
+
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent data-testid="dialog-upgrade-recommendations">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+              <Crown className="w-6 h-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center">Find My Match is a Premium feature</DialogTitle>
+            <DialogDescription className="text-center">
+              Get AI-powered, personalized school recommendations based on your family's needs, your zoned schools, and 1,500+ NYC schools.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              className="w-full gap-2"
+              onClick={startCheckout}
+              disabled={checkoutPending}
+              data-testid="button-upgrade-from-recommendations"
+            >
+              {checkoutPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Crown className="w-4 h-4" />
+              )}
+              {checkoutPending
+                ? "Loading..."
+                : `Unlock for $${priceAmount}${isSeasonPass ? " (Season Pass)" : "/mo"}`}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setShowUpgradeDialog(false)}
+              data-testid="button-cancel-upgrade-recommendations"
+            >
+              Maybe later
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent data-testid="dialog-login-recommendations">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+              <Lock className="w-6 h-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center">Sign in to get recommendations</DialogTitle>
+            <DialogDescription className="text-center">
+              Create a free account or log in to use Find My Match and get personalized school suggestions.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              className="w-full"
+              onClick={() => {
+                window.location.href = "/api/login";
+              }}
+              data-testid="button-login-from-recommendations"
+            >
+              Log in or sign up
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setShowLoginDialog(false)}
+              data-testid="button-cancel-login-recommendations"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
