@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { getSchoolSlug } from "@shared/schema";
 
 // MCP (Model Context Protocol) Server for OpenAI ChatGPT Apps SDK
 // This implements the JSON-RPC 2.0 protocol that ChatGPT uses to communicate with apps
@@ -498,7 +499,7 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     parent_review_count: reviewStats.totalReviews,
     
     // Links
-    website_url: `https://nycschoolsratings.com/schools/${school.dbn}`
+    website_url: `https://nycschoolsratings.com/school/${getSchoolSlug(school)}`
   };
 }
 
