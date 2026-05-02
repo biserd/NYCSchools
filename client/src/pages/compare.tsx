@@ -11,7 +11,7 @@ import {
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
   Globe, Percent, Languages, DollarSign, Lock, CheckCircle, Target, Share2, Check, Copy
 } from "lucide-react";
-import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, School } from "@shared/schema";
+import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, School, type SafetyIndexResponse, DEFAULT_SAFETY_RADIUS_METERS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
@@ -433,6 +433,31 @@ export default function ComparePage() {
     byGrade => Object.values(byGrade).some(m => m !== undefined)
   );
 
+  // Fetch Neighborhood Safety Index for all compared schools (free preview includes
+  // safetyIndex + label; premium response also includes percentile + trend + categories)
+  const safetyQueries = useQueries({
+    queries: validComparedSchools.map(school => ({
+      queryKey: ["/api/safety/public", school.dbn, DEFAULT_SAFETY_RADIUS_METERS],
+      queryFn: async (): Promise<SafetyIndexResponse | null> => {
+        const res = await fetch(
+          `/api/safety/public/${school.dbn}?radius=${DEFAULT_SAFETY_RADIUS_METERS}`,
+          { credentials: "include" },
+        );
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`Safety fetch failed: ${res.status}`);
+        return res.json();
+      },
+      enabled: !!school.dbn,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  const safetyDataMap: Record<string, SafetyIndexResponse | null> = {};
+  validComparedSchools.forEach((school, idx) => {
+    safetyDataMap[school.dbn] = (safetyQueries[idx]?.data as SafetyIndexResponse | null) ?? null;
+  });
+  const hasAnySafetyData = Object.values(safetyDataMap).some(d => d != null);
+
   // Show loading state while checking auth/subscription or loading URL schools
   const isCheckingAccess = authLoading || (!!user && !subscriptionFetched) || urlSchoolsLoading;
   
@@ -643,6 +668,28 @@ export default function ComparePage() {
                         <span className="text-muted-foreground">Progress</span>
                         <span className="font-medium tabular-nums" data-testid={`score-progress-${school.dbn}`}>{school.progress_score}</span>
                       </div>
+                      {(() => {
+                        const safety = safetyDataMap[school.dbn];
+                        if (safety === undefined) return null;
+                        return (
+                          <div className="flex justify-between border-t pt-2">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Shield className="w-3 h-3" />
+                              Safety
+                            </span>
+                            {safety ? (
+                              <span className="font-medium tabular-nums" data-testid={`score-safety-${school.dbn}`}>
+                                {safety.safetyIndex}
+                                <span className="text-xs text-muted-foreground ml-1 font-normal">
+                                  · {safety.label}
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground" data-testid={`score-safety-${school.dbn}`}>N/A</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <Link href={getSchoolUrl(school)}>
                       <Button variant="outline" size="sm" className="w-full mt-4" data-testid={`button-view-details-${school.dbn}`}>
@@ -837,6 +884,180 @@ export default function ComparePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Neighborhood Safety */}
+          {hasAnySafetyData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Neighborhood Safety
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Based on NYPD complaint data within ½ mile of each school over the last 12 months. Higher index = safer.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-48">Metric</TableHead>
+                        {schoolsWithScores.map((school) => (
+                          <TableHead key={school.dbn} className="text-center" data-testid={`th-safety-${school.dbn}`}>
+                            <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Safety Index (0-100)</TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          if (!safety) {
+                            return (
+                              <TableCell key={school.dbn} className="text-center text-muted-foreground" data-testid={`cell-safety-index-${school.dbn}`}>
+                                N/A
+                              </TableCell>
+                            );
+                          }
+                          const toneClass = safety.tone === 'excellent' || safety.tone === 'above_average'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : safety.tone === 'average'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : safety.tone === 'below_average'
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-red-600 dark:text-red-400';
+                          return (
+                            <TableCell key={school.dbn} className="text-center" data-testid={`cell-safety-index-${school.dbn}`}>
+                              <div className="flex flex-col items-center gap-1">
+                                <span className={`text-xl font-bold tabular-nums ${toneClass}`}>{safety.safetyIndex}</span>
+                                <span className="text-xs text-muted-foreground">{safety.label}</span>
+                              </div>
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Total Reports (12 mo)</TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          return (
+                            <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-total-${school.dbn}`}>
+                              {safety ? safety.totalReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Violent Felonies</TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          return (
+                            <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-violent-${school.dbn}`}>
+                              {safety ? safety.violentFelonyReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Felonies</TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          return (
+                            <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-felony-${school.dbn}`}>
+                              {safety ? safety.felonyReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Misdemeanors</TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          return (
+                            <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-misdemeanor-${school.dbn}`}>
+                              {safety ? safety.misdemeanorReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Citywide Percentile</TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          return (
+                            <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-percentile-${school.dbn}`}>
+                              {safety && safety.percentileCitywide != null ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="cursor-help font-medium">{safety.percentileCitywide}</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs max-w-[200px]">
+                                      Safer than {safety.percentileCitywide}% of NYC schools at the same radius.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                            12-Month Trend
+                          </div>
+                        </TableCell>
+                        {schoolsWithScores.map((school) => {
+                          const safety = safetyDataMap[school.dbn];
+                          if (!safety || !safety.trend || safety.trend === 'insufficient_data') {
+                            return (
+                              <TableCell key={school.dbn} className="text-center text-muted-foreground text-sm" data-testid={`cell-safety-trend-${school.dbn}`}>
+                                {safety ? 'Not enough data' : 'N/A'}
+                              </TableCell>
+                            );
+                          }
+                          const trendConfig = safety.trend === 'improving'
+                            ? { icon: TrendingUp, label: 'Improving', className: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300' }
+                            : safety.trend === 'worsening'
+                            ? { icon: TrendingDown, label: 'Worsening', className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300' }
+                            : { icon: Minus, label: 'Stable', className: 'bg-muted text-muted-foreground border-border' };
+                          const TrendIcon = trendConfig.icon;
+                          return (
+                            <TableCell key={school.dbn} className="text-center" data-testid={`cell-safety-trend-${school.dbn}`}>
+                              <div className="flex flex-col items-center gap-1">
+                                <Badge variant="outline" className={`text-xs gap-1 ${trendConfig.className}`}>
+                                  <TrendIcon className="w-3 h-3" />
+                                  {trendConfig.label}
+                                </Badge>
+                                {safety.trendDelta != null && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {safety.trendDelta > 0 ? '+' : ''}{safety.trendDelta}% reports
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Source: NYPD complaint records (Socrata).{" "}
+                  <Link href="/safety-methodology" className="underline hover:text-primary">
+                    Methodology
+                  </Link>
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Programs */}
           <Card>

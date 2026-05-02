@@ -67,6 +67,48 @@ const NYCEEC_TYPE_OPTIONS = [
   { value: "CHARTER", label: "Charter Schools" },
 ];
 
+// Hex colors used inside Leaflet popup HTML (which is plain DOM, not Tailwind)
+const SAFETY_TONE_HEX: Record<string, string> = {
+  excellent: '#16a34a',
+  above_average: '#10b981',
+  average: '#2563eb',
+  below_average: '#d97706',
+  elevated: '#dc2626',
+};
+
+// Lazy-fetch the Neighborhood Safety Index for a school the first time its
+// popup is opened, then inject the score + label into the placeholder div.
+async function injectSafetyIntoPopup(
+  popupEl: HTMLElement | null | undefined,
+  type: 'public' | 'private' | 'nyceec',
+  key: string,
+): Promise<void> {
+  if (!popupEl || !key) return;
+  const target = popupEl.querySelector(
+    `[data-safety-target="${type}-${CSS.escape(key)}"]`,
+  ) as HTMLElement | null;
+  if (!target || target.dataset.safetyLoaded === '1') return;
+  target.dataset.safetyLoaded = '1';
+  try {
+    const res = await fetch(
+      `/api/safety/${type}/${encodeURIComponent(key)}?radius=805`,
+      { credentials: 'include' },
+    );
+    if (!res.ok) {
+      target.innerHTML = `<span style="color: #999; font-size: 11px;">Safety data unavailable</span>`;
+      return;
+    }
+    const data = await res.json();
+    const color = SAFETY_TONE_HEX[data.tone] || '#666';
+    target.innerHTML =
+      `<strong>Neighborhood Safety:</strong> ` +
+      `<span style="color: ${color}; font-weight: 600;">${data.safetyIndex}</span>` +
+      `<span style="color: #666;"> &middot; ${data.label}</span>`;
+  } catch {
+    target.innerHTML = `<span style="color: #999; font-size: 11px;">Safety data unavailable</span>`;
+  }
+}
+
 export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -597,8 +639,11 @@ export default function MapPage() {
                 ${school.overall_score}
               </span>
             </p>
-            <p style="margin: 4px 0 8px 0; font-size: 12px;">
+            <p style="margin: 4px 0; font-size: 12px;">
               ELA: ${school.ela_proficiency}% | Math: ${school.math_proficiency}%
+            </p>
+            <p data-safety-target="public-${school.dbn}" style="margin: 4px 0 8px 0; font-size: 12px; color: #999;">
+              <span style="opacity: 0.7;">Neighborhood Safety: loading…</span>
             </p>
             <a 
               href="/school/${getSchoolSlug(school)}" 
@@ -638,6 +683,9 @@ export default function MapPage() {
               link.removeEventListener('click', handleClick);
             });
           }
+
+          // Lazy-load Neighborhood Safety Index into the popup
+          injectSafetyIntoPopup(popupElement, 'public', school.dbn);
         };
 
         const handlePopupClose = () => {
@@ -710,6 +758,9 @@ export default function MapPage() {
             ${center.district ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">District ${center.district}</p>` : ''}
             ${center.seats ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Pre-K Seats:</strong> ${center.seats}</p>` : ''}
             ${center.phone ? `<p style="margin: 4px 0; font-size: 12px;"><a href="tel:${center.phone}" style="color: #2563eb;">${center.phone}</a></p>` : ''}
+            <p data-safety-target="nyceec-${center.locCode}" style="margin: 4px 0 8px 0; font-size: 12px; color: #999;">
+              <span style="opacity: 0.7;">Neighborhood Safety: loading…</span>
+            </p>
             <a 
               href="${centerUrl}" 
               style="
@@ -729,6 +780,13 @@ export default function MapPage() {
             </a>
           </div>
         `);
+
+        // Lazy-load Neighborhood Safety Index when popup opens
+        const handleNyceecPopupOpen = () => {
+          const popupElement = marker.getPopup()?.getElement();
+          injectSafetyIntoPopup(popupElement, 'nyceec', center.locCode);
+        };
+        marker.on('popupopen', handleNyceecPopupOpen);
 
         marker.addTo(mapInstanceRef.current!);
         markersRef.current.push(marker);
@@ -790,6 +848,9 @@ export default function MapPage() {
             ${school.gradesOffered ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">Grades: ${school.gradesOffered}</p>` : ''}
             ${school.enrollment ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Enrollment:</strong> ${school.enrollment}</p>` : ''}
             ${tuitionRange ? `<p style="margin: 4px 0; font-size: 12px;"><strong>Tuition:</strong> $${tuitionRange.toLocaleString()}</p>` : ''}
+            <p data-safety-target="private-${school.ncesId}" style="margin: 4px 0 8px 0; font-size: 12px; color: #999;">
+              <span style="opacity: 0.7;">Neighborhood Safety: loading…</span>
+            </p>
             <a 
               href="${schoolUrl}" 
               data-private-school-id="${school.ncesId}"
@@ -829,6 +890,9 @@ export default function MapPage() {
               link.removeEventListener('click', handleClick);
             });
           }
+
+          // Lazy-load Neighborhood Safety Index into the popup
+          injectSafetyIntoPopup(popupElement, 'private', school.ncesId);
         };
 
         const handlePopupClose = () => {
