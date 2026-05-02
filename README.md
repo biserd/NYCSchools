@@ -14,6 +14,7 @@ A parent-friendly web dashboard for browsing and comparing NYC public and charte
   - Climate score and school environment details
   - Enrollment, grade span, and student-teacher ratio
 - **Responsive Design**: Works beautifully on desktop, tablet, and mobile devices
+- **Developer API (Premium)**: Public REST API at `/api/v1` so external apps can pull NYC school data programmatically (see below)
 
 ## Running the App
 
@@ -144,6 +145,80 @@ The app follows a clean, parent-friendly design with:
 - **Shadcn UI** - High-quality component library
 - **Wouter** - Lightweight routing
 - **Zod** - Runtime type validation
+
+## Developer API
+
+A public REST API is available to Premium subscribers at `/api/v1`. Full
+documentation and live curl examples live at
+[`/developers/docs`](https://nycschoolsratings.com/developers/docs).
+
+### Authentication
+
+All requests require a Bearer token issued from your account:
+
+1. Subscribe to Premium ($4.99/month).
+2. Go to **Settings → API Access** (`/settings#api-access`).
+3. Click **Generate API Key**. The plaintext key is shown exactly once —
+   copy it immediately. Only a SHA-256 hash is stored server-side.
+4. Pass the key in the `Authorization` header on every request:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://nycschoolsratings.com/api/v1/schools?limit=5"
+```
+
+You can have up to 5 active keys at a time, and any key can be revoked
+instantly from the same settings page.
+
+### Endpoints
+
+| Method | Path                      | Description                                                |
+|--------|---------------------------|------------------------------------------------------------|
+| GET    | `/api/v1/schools`         | List NYC schools with filters + pagination (`district`, `grade_band`, `has_3k`, `has_prek`, `has_gifted`, `limit`, `offset`) |
+| GET    | `/api/v1/schools/:dbn`    | Get a single school by DBN (e.g. `02M545`) — flat object   |
+| GET    | `/api/v1/districts`       | Aggregate stats for all 32 NYC school districts            |
+| GET    | `/api/v1/early-childhood` | NYC Early Education Centers (3-K / Pre-K) with `borough`, `program_type`, `center_type` filters |
+| GET    | `/api/v1/trends/:dbn`     | Multi-year ELA / Math / Science score history for a school |
+
+All field names use `snake_case` (e.g. `overall_score`, `ela_proficiency`,
+`grade_band`). List endpoints return `{ data: [...], pagination: {...} }`;
+detail endpoints (`/schools/:dbn`, `/trends/:dbn`) return a flat object.
+
+### Rate limits
+
+Each API key is rate-limited per server instance:
+
+- **60 requests / minute**
+- **10,000 requests / day**
+
+Every authenticated response includes the standard headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1699574400
+```
+
+Exceeding either bucket returns `429 Too Many Requests` with a
+`Retry-After` header.
+
+### Error format
+
+All errors use a stable JSON envelope:
+
+```json
+{
+  "error": {
+    "code": "INVALID_PARAMETER",
+    "message": "district must be between 1 and 32.",
+    "details": { "parameter": "district", "provided": "99" }
+  }
+}
+```
+
+Common status codes: `400` (validation), `401` (missing/invalid key),
+`403` (Premium subscription required or revoked), `404` (not found),
+`429` (rate limited), `500` (internal).
 
 ## Data Source Notes
 
