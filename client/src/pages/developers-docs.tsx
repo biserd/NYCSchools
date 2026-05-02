@@ -151,7 +151,7 @@ const endpoints: EndpointDoc[] = [
     description: "Retrieve NYC Early Education Centers (3-K and Pre-K). Supports filtering by borough (full name or letter code: M/X/K/Q/R), program_type, and center_type.",
     parameters: [
       { name: "borough", type: "string", required: false, description: "Filter by borough (e.g. 'Brooklyn' or 'K')" },
-      { name: "program_type", type: "string", required: false, description: "Filter by program: '3k', 'prek', or 'both'" },
+      { name: "program_type", type: "string", required: false, description: "Filter by program: '3k', 'prek', or 'both'. Note: every center in the current dataset offers both programs, so this filter is accepted but currently returns the same result set regardless of value. It is reserved for future program-level breakdowns." },
       { name: "center_type", type: "string", required: false, description: "Filter by center type: 'NYCEEC', 'DOE', or 'Charter'" },
       { name: "limit", type: "number", required: false, description: "Number of results (default: 50, max: 200)" },
     ],
