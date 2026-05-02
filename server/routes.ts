@@ -3455,6 +3455,82 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     }
   });
   
+  // Cron job endpoint to refresh the Neighborhood Safety Index.
+  // Pulls the last 24 months of NYPD complaints (5uac-w243 + qgea-i56i) and
+  // recomputes per-school scores. Designed for monthly invocation via a
+  // Replit Scheduled Deployment (`curl -X POST $URL/api/cron/safety-sync \
+  // -H "x-cron-secret: $CRON_SECRET"`) or any external scheduler.
+  // The job is fire-and-forget: returns 202 immediately so HTTP clients
+  // don't time out, and writes the final result to `app_settings`.
+  app.post("/api/cron/safety-sync", async (req: Request, res: Response) => {
+    try {
+      const expectedSecret = process.env.CRON_SECRET;
+      if (!expectedSecret) {
+        console.error('[SAFETY_CRON] CRON_SECRET environment variable is not configured');
+        return res.status(503).json({ error: 'Cron endpoint not configured' });
+      }
+      const cronSecret = req.headers['x-cron-secret'] || req.query.secret;
+      if (cronSecret !== expectedSecret) {
+        console.warn('[SAFETY_CRON] Unauthorized attempt to trigger safety sync', { ip: req.ip });
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const monthsParam = parseInt(String(req.query.months ?? ""), 10);
+      const maxRowsParam = parseInt(String(req.query.maxRows ?? ""), 10);
+      const skipPull = String(req.query.skipPull ?? "").toLowerCase() === "true";
+
+      const opts = {
+        months: Number.isFinite(monthsParam) && monthsParam > 0 ? monthsParam : 24,
+        maxRows: Number.isFinite(maxRowsParam) && maxRowsParam > 0 ? maxRowsParam : undefined,
+        skipPull,
+      };
+
+      console.log('[SAFETY_CRON] starting background safety sync', opts);
+      // Fire-and-forget — full sync can run for several minutes
+      void runSafetySync(opts)
+        .then((result) => {
+          console.log('[SAFETY_CRON] sync finished', {
+            success: result.success,
+            durationMs: result.durationMs,
+            inserted: result.inserted,
+            schoolCount: result.schoolCount,
+            rowsWritten: result.rowsWritten,
+            error: result.error,
+          });
+        })
+        .catch((err) => {
+          console.error('[SAFETY_CRON] sync threw uncaught error:', err);
+        });
+
+      res.status(202).json({
+        accepted: true,
+        message: 'Safety sync started in the background. Poll /api/admin/safety-sync/status for results.',
+        opts,
+        startedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('[SAFETY_CRON] Error:', error);
+      res.status(500).json({ error: 'Failed to start safety sync', message: error.message });
+    }
+  });
+
+  // Admin endpoint to inspect the last safety-sync run (and current data freshness).
+  app.get("/api/admin/safety-sync/status", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userEmail = req.user?.email;
+      const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) ||
+        ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
+      if (!userEmail || !adminEmails.includes(userEmail)) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const status = await getSafetySyncStatus();
+      res.json(status);
+    } catch (error: any) {
+      console.error('[SAFETY_CRON] status error:', error);
+      res.status(500).json({ error: 'Failed to read safety-sync status', message: error.message });
+    }
+  });
+
   // Cron job endpoint to trigger drip campaign processing
   // This can be called by an external cron service (e.g., Uptime Robot, cron-job.org)
   // Requires CRON_SECRET environment variable to be set
