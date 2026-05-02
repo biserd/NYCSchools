@@ -18,6 +18,8 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
 import { neighborhoodComparisons, getComparisonSlugForNeighborhood } from "@shared/neighborhoodComparisons";
+import { getSafetyIndex } from "./services/safetyIndex";
+import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -321,6 +323,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching school:", error);
       res.status(500).json({ error: "Failed to fetch school" });
+    }
+  });
+
+  // Neighborhood Safety Index — works for public schools, private schools, and NYCEEC
+  // centers. Free tier returns the score + label only at the default radius;
+  // premium users can pick a radius and see the full breakdown.
+  app.get("/api/safety/:type/:schoolKey", async (req: any, res: Response) => {
+    try {
+      const type = req.params.type as "public" | "private" | "nyceec";
+      if (!["public", "private", "nyceec"].includes(type)) {
+        return res.status(400).json({ error: "Invalid school type" });
+      }
+      const schoolKey = String(req.params.schoolKey).toUpperCase();
+
+      const userId = req.user?.id;
+      const isPremium = userId ? await isPremiumUser(userId) : false;
+
+      const validRadii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
+      const requestedRadius = parseInt(String(req.query.radius ?? ""), 10);
+      let radiusMeters = DEFAULT_SAFETY_RADIUS_METERS;
+      if (Number.isFinite(requestedRadius) && validRadii.includes(requestedRadius)) {
+        if (isPremium) {
+          radiusMeters = requestedRadius;
+        }
+      }
+
+      const cacheKey = `safety-${type}-${schoolKey}-${radiusMeters}`;
+      const cached = getCached<any>(cacheKey);
+      let payload = cached;
+      if (!payload) {
+        const data = await getSafetyIndex(type, schoolKey, radiusMeters);
+        if (!data) {
+          return res
+            .status(404)
+            .json({ error: "Safety index not yet computed for this school" });
+        }
+        payload = data;
+        setCache(cacheKey, payload, CACHE_TTL_LONG);
+      }
+
+      if (isPremium) {
+        return res.json({ ...payload, isPremium: true });
+      }
+
+      // Free tier: return preview fields only
+      return res.json({
+        schoolType: payload.schoolType,
+        schoolKey: payload.schoolKey,
+        radiusMeters: payload.radiusMeters,
+        radiusMiles: payload.radiusMiles,
+        periodStart: payload.periodStart,
+        periodEnd: payload.periodEnd,
+        totalReports: payload.totalReports,
+        safetyIndex: payload.safetyIndex,
+        label: payload.label,
+        tone: payload.tone,
+        availableRadii: payload.availableRadii,
+        lastCalculatedAt: payload.lastCalculatedAt,
+        isPremium: false,
+      });
+    } catch (error) {
+      console.error("Error fetching safety index:", error);
+      res.status(500).json({ error: "Failed to fetch safety index" });
     }
   });
 

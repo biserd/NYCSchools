@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, serial, timestamp, index, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, serial, timestamp, index, uniqueIndex, jsonb, boolean, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1643,4 +1643,156 @@ export function getProgramEmphasisLabel(emphasis: string): string {
     'vocational': 'Vocational/Technical',
   };
   return labels[emphasis] || emphasis;
+}
+
+// ============================================================================
+// Neighborhood Safety Index (NYPD complaint data)
+// ============================================================================
+
+// Cached NYPD complaint records used to compute the Safety Index for every
+// school. We pull the last ~24 months from Socrata (datasets 5uac-w243 + qgea-i56i)
+// and compute distances to schools locally instead of issuing 16k+ within_circle
+// queries per sync run.
+export const nypdComplaints = pgTable("nypd_complaints", {
+  cmplntNum: varchar("cmplnt_num").primaryKey(),
+  complaintDate: timestamp("complaint_date").notNull(),
+  lawCatCd: varchar("law_cat_cd", { length: 20 }), // FELONY | MISDEMEANOR | VIOLATION
+  ofnsDesc: varchar("ofns_desc"),                  // e.g. "GRAND LARCENY"
+  pdDesc: varchar("pd_desc"),                      // narrower NYPD code
+  borough: varchar("borough", { length: 30 }),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+}, (t) => [
+  index("nypd_lat_idx").on(t.latitude),
+  index("nypd_lng_idx").on(t.longitude),
+  index("nypd_date_idx").on(t.complaintDate),
+]);
+
+export type NypdComplaint = typeof nypdComplaints.$inferSelect;
+export type InsertNypdComplaint = typeof nypdComplaints.$inferInsert;
+
+// Per-school, per-radius safety snapshot. School identity is encoded as
+// (school_type, school_key) so the same table covers public, private, and
+// NYCEEC sources. One row per (school, radius); upserted on each sync.
+export const schoolSafetyIndex = pgTable("school_safety_index", {
+  id: serial("id").primaryKey(),
+  schoolType: varchar("school_type", { length: 20 }).notNull(), // 'public' | 'private' | 'nyceec'
+  schoolKey: varchar("school_key").notNull(),                   // dbn | nces_id | loc_code
+  radiusMeters: integer("radius_meters").notNull(),
+
+  // Reporting window
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+
+  // Raw counts
+  totalReports: integer("total_reports").notNull().default(0),
+  felonyReports: integer("felony_reports").notNull().default(0),
+  violentFelonyReports: integer("violent_felony_reports").notNull().default(0),
+  misdemeanorReports: integer("misdemeanor_reports").notNull().default(0),
+  violationReports: integer("violation_reports").notNull().default(0),
+
+  // Top reported offense categories within the radius
+  topCategories: jsonb("top_categories").$type<Array<{ category: string; count: number }>>().notNull().default([]),
+
+  // Severity-weighted incident rate, per square kilometer
+  weightedRiskScore: real("weighted_risk_score").notNull().default(0),
+
+  // Parent-facing 0-100 score (higher = safer); derived from citywide percentile
+  safetyIndex: integer("safety_index").notNull().default(50),
+  percentileCitywide: integer("percentile_citywide"),
+
+  // Comparison to the prior 12 months
+  trend: varchar("trend", { length: 20 }), // 'improving' | 'stable' | 'worsening' | 'insufficient_data'
+  trendDelta: real("trend_delta"),         // signed % change vs prior period
+  priorPeriodTotal: integer("prior_period_total"),
+
+  lastCalculatedAt: timestamp("last_calculated_at").notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("safety_school_radius_unique").on(t.schoolType, t.schoolKey, t.radiusMeters),
+  index("safety_radius_idx").on(t.radiusMeters),
+]);
+
+export type SchoolSafetyIndex = typeof schoolSafetyIndex.$inferSelect;
+export type InsertSchoolSafetyIndex = typeof schoolSafetyIndex.$inferInsert;
+
+// Discrete radius buckets in METERS. Keep this list in sync with the
+// frontend selector and the sync job.
+export const SAFETY_RADIUS_METERS = {
+  '0.25mi': 402,
+  '0.5mi': 805,
+  '1mi': 1609,
+  '5mi': 8047,
+} as const;
+
+export const SAFETY_RADIUS_OPTIONS = [
+  { miles: 0.25, meters: 402, label: '¼ mile' },
+  { miles: 0.5, meters: 805, label: '½ mile' },
+  { miles: 1, meters: 1609, label: '1 mile' },
+  { miles: 5, meters: 8047, label: '5 miles' },
+] as const;
+
+export const DEFAULT_SAFETY_RADIUS_METERS = 805; // 0.5 mile
+
+// Severity weights used to compute the weighted_risk_score. Tuned to reflect
+// parent perception of incident severity (felony >> misdemeanor >> violation).
+export const SAFETY_OFFENSE_WEIGHTS = {
+  violentFelony: 8,
+  felony: 4,
+  misdemeanor: 2,
+  violation: 1,
+} as const;
+
+// Offense descriptions classified as "violent" felonies (used to flag the
+// violent_felony_reports subset). Keys are uppercase NYPD ofns_desc values.
+export const VIOLENT_FELONY_OFFENSES = new Set<string>([
+  'MURDER & NON-NEGL. MANSLAUGHTER',
+  'MURDER & NON-NEGL. MANSLAUGHTE',
+  'HOMICIDE-NEGLIGENT,UNCLASSIFIED',
+  'HOMICIDE-NEGLIGENT,UNCLASSIFIE',
+  'RAPE',
+  'SEX CRIMES',
+  'FELONY ASSAULT',
+  'ROBBERY',
+  'KIDNAPPING & RELATED OFFENSES',
+  'KIDNAPPING',
+  'KIDNAPPING AND RELATED OFFENSES',
+  'ARSON',
+]);
+
+// Maps a 0-100 safety index to a parent-friendly label.
+export function getSafetyLabel(index: number): {
+  label: string;
+  tone: 'excellent' | 'above_average' | 'average' | 'below_average' | 'elevated';
+} {
+  if (index >= 80) return { label: 'Excellent', tone: 'excellent' };
+  if (index >= 60) return { label: 'Above Average', tone: 'above_average' };
+  if (index >= 40) return { label: 'Average', tone: 'average' };
+  if (index >= 20) return { label: 'Below Average', tone: 'below_average' };
+  return { label: 'Elevated Activity', tone: 'elevated' };
+}
+
+// API response shape served by GET /api/schools/:schoolKey/safety
+export interface SafetyIndexResponse {
+  schoolType: 'public' | 'private' | 'nyceec';
+  schoolKey: string;
+  radiusMeters: number;
+  radiusMiles: number;
+  periodStart: string;
+  periodEnd: string;
+  totalReports: number;
+  felonyReports: number;
+  violentFelonyReports: number;
+  misdemeanorReports: number;
+  violationReports: number;
+  topCategories: Array<{ category: string; count: number }>;
+  weightedRiskScore: number;
+  safetyIndex: number;
+  label: string;
+  tone: 'excellent' | 'above_average' | 'average' | 'below_average' | 'elevated';
+  percentileCitywide: number | null;
+  trend: 'improving' | 'stable' | 'worsening' | 'insufficient_data' | null;
+  trendDelta: number | null;
+  priorPeriodTotal: number | null;
+  lastCalculatedAt: string;
+  availableRadii: number[];
 }
