@@ -8,6 +8,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 
 import viteConfig from "../vite.config";
 import runApp from "./app";
+import { renderSeoHtml } from "./seoRenderer";
 
 export async function setupVite(app: Express, server: Server) {
   const viteLogger = createLogger();
@@ -50,7 +51,14 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // Server-side SEO enrichment for known detail-page URLs (school,
+      // private-school, early-childhood, blog, compare). Returns null for
+      // any other URL — in that case we serve the SPA shell unchanged.
+      const enriched = await renderSeoHtml(url, page);
+      res
+        .status(200)
+        .set({ "Content-Type": "text/html" })
+        .end(enriched ?? page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);

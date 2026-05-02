@@ -3219,16 +3219,10 @@ When answering:
         { url: '/terms', changefreq: 'monthly', priority: '0.3' },
       ];
       
-      // Blog posts
-      const blogPosts = [
-        { slug: 'best-nyc-kindergartens-2026', lastmod: '2026-01-07' },
-        { slug: 'best-nyc-elementary-schools-2026', lastmod: '2026-01-06' },
-        { slug: 'best-nyc-middle-schools-2026', lastmod: '2026-01-05' },
-        { slug: 'best-nyc-charter-schools-2026', lastmod: '2026-01-04' },
-        { slug: 'nyc-prek-3k-kindergarten-admissions-demand-2025', lastmod: '2024-12-29' },
-        { slug: 'nyc-schools-2025-covid-recovery', lastmod: '2024-12-09' },
-        { slug: '2023-24-doe-data-analysis', lastmod: '2024-11-26' },
-      ];
+      // Blog posts — single source of truth in shared/blog-data.ts so the
+      // sitemap and the actual blog pages can never drift apart.
+      const { blogPosts: blogData } = await import("@shared/blog-data");
+      const blogPosts = blogData.map((p) => ({ slug: p.slug, lastmod: p.publishedAt }));
       
       // Generate XML
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -3296,6 +3290,46 @@ When answering:
         xml += `    <priority>0.8</priority>\n`;
         xml += '  </url>\n';
       });
+
+      // Programmatic per-district comparison URLs: for each district, pick
+      // the top 3 schools by overall score and emit all 3 pairwise compare
+      // URLs (3 per district). These are high-signal "best schools in
+      // district X" comparisons that crawlers can follow into rich detail
+      // pages. Cap at 1000 entries to keep the sitemap reasonable.
+      const byDistrict = new Map<number, { dbn: string; name: string; score: number }[]>();
+      for (const s of schools) {
+        const score = Math.round(
+          ((s.academics_score || 0) * 0.4 +
+            (s.climate_score || 0) * 0.3 +
+            (s.progress_score || 0) * 0.3),
+        );
+        if (!byDistrict.has(s.district)) byDistrict.set(s.district, []);
+        byDistrict.get(s.district)!.push({ dbn: s.dbn, name: s.name, score });
+      }
+      let compareCount = 0;
+      const COMPARE_CAP = 1000;
+      const slugify = (n: string) =>
+        n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      for (const [, listRaw] of Array.from(byDistrict.entries()).sort((a, b) => a[0] - b[0])) {
+        const list = listRaw.sort((a, b) => b.score - a.score).slice(0, 3);
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            if (compareCount >= COMPARE_CAP) break;
+            const a = list[i];
+            const b = list[j];
+            const compareSlug = `${a.dbn}-${slugify(a.name)}-vs-${b.dbn}-${slugify(b.name)}`;
+            xml += '  <url>\n';
+            xml += `    <loc>https://nycschoolsratings.com/compare/${compareSlug}</loc>\n`;
+            xml += `    <lastmod>${today}</lastmod>\n`;
+            xml += `    <changefreq>monthly</changefreq>\n`;
+            xml += `    <priority>0.6</priority>\n`;
+            xml += '  </url>\n';
+            compareCount++;
+          }
+          if (compareCount >= COMPARE_CAP) break;
+        }
+        if (compareCount >= COMPARE_CAP) break;
+      }
       
       // Add private schools browse page
       xml += '  <url>\n';

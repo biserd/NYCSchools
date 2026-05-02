@@ -4,6 +4,7 @@ import { type Server } from "node:http";
 
 import express, { type Express } from "express";
 import runApp from "./app";
+import { renderSeoHtml } from "./seoRenderer";
 
 export async function serveStatic(app: Express, _server: Server) {
   const distPath = path.resolve(import.meta.dirname, "public");
@@ -36,9 +37,26 @@ export async function serveStatic(app: Express, _server: Server) {
     }
   }));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // fall through to index.html if the file doesn't exist. We read the
+  // template once at startup (it's only re-deployed when the build runs)
+  // and run the SEO enricher per-request so social/Bing/AI crawlers see
+  // page-specific titles, meta, JSON-LD, and noscript content.
+  const indexHtmlPath = path.resolve(distPath, "index.html");
+  const indexHtmlTemplate = fs.readFileSync(indexHtmlPath, "utf-8");
+  app.use("*", async (req, res) => {
+    try {
+      const enriched = await renderSeoHtml(req.originalUrl, indexHtmlTemplate);
+      res
+        .status(200)
+        .set({
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=0, must-revalidate",
+        })
+        .end(enriched ?? indexHtmlTemplate);
+    } catch (err) {
+      console.error("[INDEX_HTML]", err);
+      res.sendFile(indexHtmlPath);
+    }
   });
 }
 

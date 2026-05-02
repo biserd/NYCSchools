@@ -6,7 +6,7 @@ import { StructuredData } from "@/components/StructuredData";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { getBlogPost } from "@/lib/blog-data";
+import { getBlogPost } from "@shared/blog-data";
 import { Calendar, Clock, ArrowLeft, Share2, TrendingUp, AlertTriangle, CheckCircle, Home, Lightbulb, ChevronRight } from "lucide-react";
 import {
   DistrictPerformanceChart,

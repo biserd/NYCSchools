@@ -6,7 +6,7 @@ import { StructuredData } from "@/components/StructuredData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { blogPosts } from "@/lib/blog-data";
+import { blogPosts } from "@shared/blog-data";
 import { Calendar, Clock, ArrowRight, BarChart3, Home, ChevronRight } from "lucide-react";
 
 function formatDate(dateStr: string): string {
