@@ -1,9 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, ExternalLink, TrendingUp } from "lucide-react";
+import { Building2, ExternalLink, TrendingUp, Lock, Crown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+
+interface SubscriptionStatus {
+  isSubscribed: boolean;
+}
 
 interface RealtorProperty {
   id: string;
@@ -54,8 +60,19 @@ function titleCase(s: string): string {
     .join(" ");
 }
 
+const FREE_PREVIEW_COUNT = 2;
+
 export function NearbyPropertiesPanel({ schoolAddress, schoolName }: Props) {
   const zip = extractZip(schoolAddress);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  const { data: subData } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription-status"],
+    enabled: !authLoading && isAuthenticated,
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+  const isPremium = subData?.isSubscribed ?? false;
 
   const { data, isLoading, isError } = useQuery<NearbyResponse>({
     queryKey: ["/api/realtors/nearby", zip],
@@ -66,6 +83,11 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName }: Props) {
   if (!zip) return null;
   if (isError) return null;
   if (!isLoading && (!data || data.properties.length === 0)) return null;
+
+  const allProps = data?.properties ?? [];
+  const visibleProps = isPremium ? allProps : allProps.slice(0, FREE_PREVIEW_COUNT);
+  const teaserProps = isPremium ? [] : allProps.slice(FREE_PREVIEW_COUNT);
+  const hiddenCount = teaserProps.length;
 
   const deepLink =
     data?.deepLink ??
@@ -96,59 +118,103 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName }: Props) {
             ))}
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {data!.properties.map((p, idx) => {
-              const addr = titleCase(p.address);
-              const isHighOpp = (p.opportunityScore ?? 0) >= 75;
-              return (
-                <a
-                  key={p.id}
-                  href={`https://realtorsdashboard.com/property/${p.id}?utm_source=nycschoolsratings&utm_medium=school_page&utm_campaign=nearby_properties`}
-                  target="_blank"
-                  rel="noopener"
-                  className="block rounded-md border p-3 hover-elevate"
-                  data-testid={`link-property-${idx}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate" data-testid={`text-property-address-${idx}`}>
-                        {addr}
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {visibleProps.map((p, idx) => {
+                const addr = titleCase(p.address);
+                const isHighOpp = (p.opportunityScore ?? 0) >= 75;
+                return (
+                  <a
+                    key={p.id}
+                    href={`https://realtorsdashboard.com/property/${p.id}?utm_source=nycschoolsratings&utm_medium=school_page&utm_campaign=nearby_properties`}
+                    target="_blank"
+                    rel="noopener"
+                    className="block rounded-md border p-3 hover-elevate"
+                    data-testid={`link-property-${idx}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate" data-testid={`text-property-address-${idx}`}>
+                          {addr}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {p.propertyType ?? "Property"}
+                          {p.sqft ? ` · ${p.sqft.toLocaleString()} sqft` : ""}
+                          {p.yearBuilt ? ` · Built ${p.yearBuilt}` : ""}
+                        </div>
                       </div>
+                      {isHighOpp && (
+                        <Badge variant="secondary" className="shrink-0 gap-1">
+                          <TrendingUp className="w-3 h-3" />
+                          {p.opportunityScore}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between gap-2 flex-wrap">
+                      <div>
+                        <div
+                          className="font-semibold tabular-nums"
+                          data-testid={`text-property-value-${idx}`}
+                        >
+                          {formatMoney(p.estimatedValue)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Est. value</div>
+                      </div>
+                      {p.pricePerSqft != null && (
+                        <div className="text-right">
+                          <div className="text-sm font-medium tabular-nums">
+                            ${p.pricePerSqft}/sqft
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+
+            {hiddenCount > 0 && (
+              <div className="relative" data-testid="block-properties-upgrade">
+                <div
+                  className="grid gap-3 sm:grid-cols-2 pointer-events-none select-none"
+                  aria-hidden="true"
+                  style={{ filter: "blur(6px)", opacity: 0.55 }}
+                >
+                  {teaserProps.map((p) => (
+                    <div key={p.id} className="rounded-md border p-3">
+                      <div className="font-medium truncate">{titleCase(p.address)}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {p.propertyType ?? "Property"}
                         {p.sqft ? ` · ${p.sqft.toLocaleString()} sqft` : ""}
-                        {p.yearBuilt ? ` · Built ${p.yearBuilt}` : ""}
                       </div>
-                    </div>
-                    {isHighOpp && (
-                      <Badge variant="secondary" className="shrink-0 gap-1">
-                        <TrendingUp className="w-3 h-3" />
-                        {p.opportunityScore}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-baseline justify-between gap-2 flex-wrap">
-                    <div>
-                      <div
-                        className="font-semibold tabular-nums"
-                        data-testid={`text-property-value-${idx}`}
-                      >
+                      <div className="mt-2 font-semibold tabular-nums">
                         {formatMoney(p.estimatedValue)}
                       </div>
-                      <div className="text-xs text-muted-foreground">Est. value</div>
                     </div>
-                    {p.pricePerSqft != null && (
-                      <div className="text-right">
-                        <div className="text-sm font-medium tabular-nums">
-                          ${p.pricePerSqft}/sqft
-                        </div>
-                      </div>
-                    )}
+                  ))}
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center p-2">
+                  <div className="rounded-md border border-dashed border-primary/30 bg-background/95 backdrop-blur-sm p-3 max-w-sm w-full text-center space-y-2 shadow-sm">
+                    <div className="flex items-center justify-center gap-2 text-sm font-medium">
+                      <Lock className="w-4 h-4 text-primary" />
+                      {hiddenCount} more {hiddenCount === 1 ? "property" : "properties"} nearby
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isAuthenticated
+                        ? "Unlock all nearby listings, opportunity scores, and market trends with Premium."
+                        : "Sign in or upgrade to Premium to see all nearby listings and market data."}
+                    </p>
+                    <Link href="/pricing">
+                      <Button size="sm" className="w-full" data-testid="button-properties-upgrade">
+                        <Crown className="w-3.5 h-3.5 mr-1.5" />
+                        See Premium Plans
+                      </Button>
+                    </Link>
                   </div>
-                </a>
-              );
-            })}
-          </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
         <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t">
           <p className="text-xs text-muted-foreground">
