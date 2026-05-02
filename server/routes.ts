@@ -3795,10 +3795,16 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // to api_request_log via apiObservability.ts. These endpoints expose that
   // data to the admin UI at /admin/api-usage and run the abuse-detection job.
 
-  // Shared admin guard for the API observability endpoints. Mirrors the
-  // pattern used by /api/admin/safety-sync/status: ADMIN_EMAILS env var with
-  // a sane fallback for the two known admin accounts.
-  function isAdminEmail(email: string | undefined): boolean {
+  // Shared admin guard for the API observability endpoints. The custom auth
+  // middleware (server/auth.ts) only populates req.session.userId — it does
+  // NOT set req.user — so we must look the user up by their session id and
+  // then check the email against ADMIN_EMAILS (with a sane fallback for the
+  // two known admin accounts).
+  async function isRequestFromAdmin(req: any): Promise<boolean> {
+    const userId = req.session?.userId as string | undefined;
+    if (!userId) return false;
+    const user = await storage.getUser(userId);
+    const email = user?.email;
     if (!email) return false;
     const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim()) ||
       ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
@@ -3847,7 +3853,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // recent 429 hits. The admin UI fetches this once and renders the table.
   app.get("/api/admin/api-usage/overview", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!isAdminEmail(req.user?.email)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Admin access required' });
       }
       // Flush so the dashboard reflects the very latest requests, not just
@@ -3898,7 +3904,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // GET /api/admin/api-usage/key/:id — drill-down for one key.
   app.get("/api/admin/api-usage/key/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!isAdminEmail(req.user?.email)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Admin access required' });
       }
       const id = parseInt(req.params.id, 10);
@@ -3925,7 +3931,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // ownership; admins can revoke any key by id.
   app.post("/api/admin/api-usage/key/:id/revoke", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!isAdminEmail(req.user?.email)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Admin access required' });
       }
       const id = parseInt(req.params.id, 10);
@@ -3936,7 +3942,8 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       if (!revoked) {
         return res.status(404).json({ error: 'API key not found' });
       }
-      console.log(`[ADMIN_API_USAGE] Admin ${req.user?.email} revoked key ${id}`);
+      const adminUser = await storage.getUser(req.session.userId as string);
+      console.log(`[ADMIN_API_USAGE] Admin ${adminUser?.email ?? req.session.userId} revoked key ${id}`);
       res.json({ success: true, key: { id: revoked.id, revokedAt: revoked.revokedAt } });
     } catch (error: any) {
       console.error('[ADMIN_API_USAGE] revoke error:', error);
