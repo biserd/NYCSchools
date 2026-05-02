@@ -659,6 +659,7 @@ export default function NyceecDetail() {
           <NearbyPropertiesPanel
             schoolAddress={center.address}
             schoolName={center.name}
+            zipCode={center.zipCode}
           />
 
           <div className="flex flex-wrap gap-3 pt-4">

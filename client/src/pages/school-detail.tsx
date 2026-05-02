@@ -2708,6 +2708,7 @@ export default function SchoolDetail() {
           <NearbyPropertiesPanel
             schoolAddress={schoolWithScore.address}
             schoolName={schoolWithScore.name}
+            zipCode={schoolWithScore.zip_code}
           />
 
           {/* Other Schools in District Section */}

@@ -776,6 +776,7 @@ export default function PrivateSchoolDetail() {
           <NearbyPropertiesPanel
             schoolAddress={school.address}
             schoolName={school.name}
+            zipCode={school.zipCode}
           />
         </div>
       </main>

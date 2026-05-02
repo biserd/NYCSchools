@@ -37,11 +37,18 @@ interface NearbyResponse {
 interface Props {
   schoolAddress: string | null | undefined;
   schoolName: string;
+  zipCode?: string | null;
 }
 
 function extractZip(address: string | null | undefined): string | null {
   if (!address) return null;
   const m = address.match(/\b(\d{5})(?:-\d{4})?\b/);
+  return m ? m[1] : null;
+}
+
+function normalizeZip(z: string | null | undefined): string | null {
+  if (!z) return null;
+  const m = String(z).trim().match(/^(\d{5})/);
   return m ? m[1] : null;
 }
 
@@ -62,8 +69,8 @@ function titleCase(s: string): string {
 
 const FREE_PREVIEW_COUNT = 2;
 
-export function NearbyPropertiesPanel({ schoolAddress, schoolName }: Props) {
-  const zip = extractZip(schoolAddress);
+export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Props) {
+  const zip = normalizeZip(zipCode) ?? extractZip(schoolAddress);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: subData } = useQuery<SubscriptionStatus>({
