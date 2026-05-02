@@ -946,6 +946,66 @@ export async function sendNewsletterJanuary2025(userEmail: string, firstName?: s
   }
 }
 
+// Admin alert when the API abuse-detection cron flags a suspicious key.
+// Plain HTML so it threads consistently in the admin's inbox; subject is
+// distinct per alert type so they're easy to filter.
+export async function sendApiAbuseAlert(params: {
+  keyId: number;
+  keyPrefix: string;
+  keyName: string;
+  ownerEmail: string | null;
+  alertType: 'rate_limit_storm' | 'distinct_ip_spike';
+  summary: string;
+  detail: Record<string, unknown>;
+}): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getResendClient();
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim()) ||
+      [ADMIN_EMAIL, 'biserd@gmail.com'];
+    const subjectByType: Record<string, string> = {
+      rate_limit_storm: '[API Abuse] Rate limit storm detected',
+      distinct_ip_spike: '[API Abuse] Distinct-IP spike (possible leaked key)',
+    };
+    const subject = `${subjectByType[params.alertType] || '[API Abuse] Alert'} — key #${params.keyId}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #b91c1c; margin: 0 0 16px 0;">API abuse signal</h2>
+        <p style="margin: 0 0 12px 0;">${params.summary}</p>
+        <table style="border-collapse: collapse; margin: 16px 0; font-size: 14px;">
+          <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Key</td>
+              <td style="padding: 4px 0;"><code>${params.keyPrefix}…</code> (id ${params.keyId}) — ${params.keyName}</td></tr>
+          <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Owner</td>
+              <td style="padding: 4px 0;">${params.ownerEmail || '(unknown)'}</td></tr>
+          <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Type</td>
+              <td style="padding: 4px 0;"><code>${params.alertType}</code></td></tr>
+          <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Detail</td>
+              <td style="padding: 4px 0;"><code>${JSON.stringify(params.detail)}</code></td></tr>
+          <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Time</td>
+              <td style="padding: 4px 0;">${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</td></tr>
+        </table>
+        <p style="margin: 16px 0 0 0;">
+          <a href="https://nycschoolsratings.com/admin/api-usage"
+             style="color: #2563eb; text-decoration: none;">Open admin dashboard →</a>
+        </p>
+        <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">
+          You'll receive at most one email per key per alert type per day.
+        </p>
+      </div>
+    `;
+    await client.emails.send({
+      from: fromEmail,
+      to: adminEmails,
+      subject,
+      html,
+    });
+    logEmail('INFO', 'API abuse alert sent', { to: adminEmails, keyId: params.keyId, type: params.alertType });
+    return true;
+  } catch (error: any) {
+    logEmail('ERROR', 'Failed to send API abuse alert', { error: error.message, keyId: params.keyId });
+    return false;
+  }
+}
+
 export const emailService = {
   sendAdminNewCustomerNotification,
   sendWelcomeEmail,
@@ -961,4 +1021,6 @@ export const emailService = {
   sendDripUpgradeNudge,
   // Newsletter emails
   sendNewsletterJanuary2025,
+  // Admin alerts
+  sendApiAbuseAlert,
 };

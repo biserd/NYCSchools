@@ -832,6 +832,61 @@ export const apiKeys = pgTable("api_keys", {
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertApiKey = typeof apiKeys.$inferInsert;
 
+// Persistent rate-limit state per API key. One row per key, holding the
+// current minute and day window counters. The previous in-memory implementation
+// reset on every server restart; this table makes the daily 10K cap resilient
+// to deploys/crashes/HMR. Updated atomically via a single UPSERT in the auth
+// middleware (see server/apiKeyAuth.ts).
+export const apiKeyRateState = pgTable("api_key_rate_state", {
+  keyId: integer("key_id").primaryKey().references(() => apiKeys.id, { onDelete: "cascade" }),
+  minuteWindowStart: timestamp("minute_window_start").notNull(),
+  minuteCount: integer("minute_count").notNull().default(0),
+  dayWindowStart: timestamp("day_window_start").notNull(),
+  dayCount: integer("day_count").notNull().default(0),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type ApiKeyRateState = typeof apiKeyRateState.$inferSelect;
+export type InsertApiKeyRateState = typeof apiKeyRateState.$inferInsert;
+
+// Audit log: one row per /api/v1/* request. Powers the admin dashboard and
+// abuse-detection job. Pruned after 30 days by a scheduled job. `keyId` is
+// nullable so we can also record unauthenticated 401s (used by the per-IP
+// throttle and useful for spotting brute-force scans).
+export const apiRequestLog = pgTable("api_request_log", {
+  id: serial("id").primaryKey(),
+  keyId: integer("key_id").references(() => apiKeys.id, { onDelete: "set null" }),
+  path: varchar("path").notNull(),
+  status: integer("status").notNull(),
+  ip: varchar("ip"),
+  responseTimeMs: integer("response_time_ms"),
+  ts: timestamp("ts").notNull().defaultNow(),
+}, (table) => ({
+  keyTsIdx: index("api_request_log_key_ts_idx").on(table.keyId, table.ts),
+  tsIdx: index("api_request_log_ts_idx").on(table.ts),
+  statusTsIdx: index("api_request_log_status_ts_idx").on(table.status, table.ts),
+}));
+
+export type ApiRequestLog = typeof apiRequestLog.$inferSelect;
+export type InsertApiRequestLog = typeof apiRequestLog.$inferInsert;
+
+// De-duplication for the abuse-detection job. One row per (key, alert type,
+// day) means the admin gets at most one email per condition per key per day,
+// no matter how often the cron runs.
+export const apiAbuseAlerts = pgTable("api_abuse_alerts", {
+  id: serial("id").primaryKey(),
+  keyId: integer("key_id").notNull().references(() => apiKeys.id, { onDelete: "cascade" }),
+  alertType: varchar("alert_type").notNull(), // 'rate_limit_storm' | 'distinct_ip_spike'
+  alertDay: date("alert_day").notNull(),
+  detail: jsonb("detail"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  uniq: uniqueIndex("api_abuse_alerts_unique_per_day").on(table.keyId, table.alertType, table.alertDay),
+}));
+
+export type ApiAbuseAlert = typeof apiAbuseAlerts.$inferSelect;
+export type InsertApiAbuseAlert = typeof apiAbuseAlerts.$inferInsert;
+
 // Magic Link Tokens for passwordless authentication
 export const magicLinkTokens = pgTable("magic_link_tokens", {
   id: serial("id").primaryKey(),

@@ -21,6 +21,8 @@ import { stripeService } from "./stripeService";
 import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
 import { neighborhoodComparisons, getComparisonSlugForNeighborhood } from "@shared/neighborhoodComparisons";
 import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/safetyIndex";
+import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
+import { flushApiLogsNow } from "./apiObservability";
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 
 // Premium subscription limits
@@ -3783,6 +3785,162 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       }
       console.error('Error sending newsletter:', error);
       res.status(500).json({ error: 'Failed to send newsletter' });
+    }
+  });
+
+  // ===========================================================================
+  // Developer API observability: admin dashboard + cron jobs
+  // ===========================================================================
+  // The Developer API (Bearer-key gated /api/v1/*) writes one row per request
+  // to api_request_log via apiObservability.ts. These endpoints expose that
+  // data to the admin UI at /admin/api-usage and run the abuse-detection job.
+
+  // Shared admin guard for the API observability endpoints. Mirrors the
+  // pattern used by /api/admin/safety-sync/status: ADMIN_EMAILS env var with
+  // a sane fallback for the two known admin accounts.
+  function isAdminEmail(email: string | undefined): boolean {
+    if (!email) return false;
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim()) ||
+      ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
+    return adminEmails.includes(email);
+  }
+
+  // Cron endpoint that performs the daily prune AND the abuse-detection sweep.
+  // Trigger every 15 minutes from a Replit Scheduled Deployment with:
+  //   curl -X POST $URL/api/cron/api-observability \
+  //        -H "x-cron-secret: $CRON_SECRET"
+  // Both jobs are idempotent: prune deletes only old rows, abuse detection
+  // de-dupes via api_abuse_alerts so re-running within the day won't re-email.
+  app.post("/api/cron/api-observability", async (req: Request, res: Response) => {
+    try {
+      const expectedSecret = process.env.CRON_SECRET;
+      if (!expectedSecret) {
+        console.error('[API_CRON] CRON_SECRET not configured');
+        return res.status(503).json({ error: 'Cron endpoint not configured' });
+      }
+      const cronSecret = req.headers['x-cron-secret'] || req.query.secret;
+      if (cronSecret !== expectedSecret) {
+        console.warn('[API_CRON] Unauthorized cron attempt', { ip: req.ip });
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Flush any pending log rows before pruning so a row written 30 days
+      // and 1 second ago doesn't escape.
+      await flushApiLogsNow();
+      const pruneResult = await pruneApiObservabilityData();
+      const detectResult = await runAbuseDetection();
+
+      res.json({
+        success: true,
+        prune: pruneResult,
+        detect: detectResult,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('[API_CRON] Error:', error);
+      res.status(500).json({ error: 'API observability cron failed', message: error.message });
+    }
+  });
+
+  // GET /api/admin/api-usage/overview — top-level dashboard data.
+  // Returns every active key with 24h + 7d totals, top-volume keys, and
+  // recent 429 hits. The admin UI fetches this once and renders the table.
+  app.get("/api/admin/api-usage/overview", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      if (!isAdminEmail(req.user?.email)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      // Flush so the dashboard reflects the very latest requests, not just
+      // what's already been persisted by the periodic flusher.
+      await flushApiLogsNow();
+
+      const now = Date.now();
+      const last24h = new Date(now - 24 * 60 * 60_000);
+      const last7d = new Date(now - 7 * 24 * 60 * 60_000);
+
+      const allKeys = await storage.listAllApiKeysWithUsers();
+      const summaries = await Promise.all(
+        allKeys.map(async (k) => {
+          const [u24, u7d] = await Promise.all([
+            storage.getApiKeyUsageSummary(k.id, last24h),
+            storage.getApiKeyUsageSummary(k.id, last7d),
+          ]);
+          return {
+            id: k.id,
+            userId: k.userId,
+            ownerEmail: k.ownerEmail,
+            name: k.name,
+            keyPrefix: k.keyPrefix,
+            createdAt: k.createdAt,
+            lastUsedAt: k.lastUsedAt,
+            revokedAt: k.revokedAt,
+            usage24h: u24,
+            usage7d: u7d,
+          };
+        }),
+      );
+
+      const top24h = await storage.listTopApiKeysByVolume(last24h, 10);
+      const recent429s = await storage.listRecentRateLimitHits(20);
+
+      res.json({
+        now: new Date().toISOString(),
+        keys: summaries,
+        top24h,
+        recent429s,
+      });
+    } catch (error: any) {
+      console.error('[ADMIN_API_USAGE] overview error:', error);
+      res.status(500).json({ error: 'Failed to load API usage overview', message: error.message });
+    }
+  });
+
+  // GET /api/admin/api-usage/key/:id — drill-down for one key.
+  app.get("/api/admin/api-usage/key/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      if (!isAdminEmail(req.user?.email)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ error: 'Invalid key id' });
+      }
+      await flushApiLogsNow();
+
+      const last24h = new Date(Date.now() - 24 * 60 * 60_000);
+      const [recentRequests, ips, byPath] = await Promise.all([
+        storage.listRecentRequestsForKey(id, 100),
+        storage.listRecentIpsForKey(id, last24h),
+        storage.countRequestsByPathForKey(id, last24h),
+      ]);
+      res.json({ keyId: id, recentRequests, ips, byPath });
+    } catch (error: any) {
+      console.error('[ADMIN_API_USAGE] key detail error:', error);
+      res.status(500).json({ error: 'Failed to load key detail', message: error.message });
+    }
+  });
+
+  // POST /api/admin/api-usage/key/:id/revoke — admin override.
+  // Distinct from the user-facing DELETE /api/api-keys/:id which requires
+  // ownership; admins can revoke any key by id.
+  app.post("/api/admin/api-usage/key/:id/revoke", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      if (!isAdminEmail(req.user?.email)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ error: 'Invalid key id' });
+      }
+      const revoked = await storage.adminRevokeApiKey(id);
+      if (!revoked) {
+        return res.status(404).json({ error: 'API key not found' });
+      }
+      console.log(`[ADMIN_API_USAGE] Admin ${req.user?.email} revoked key ${id}`);
+      res.json({ success: true, key: { id: revoked.id, revokedAt: revoked.revokedAt } });
+    } catch (error: any) {
+      console.error('[ADMIN_API_USAGE] revoke error:', error);
+      res.status(500).json({ error: 'Failed to revoke key', message: error.message });
     }
   });
 

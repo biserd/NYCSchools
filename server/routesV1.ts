@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { storage } from "./storage";
 import { requireApiKey, apiError } from "./apiKeyAuth";
+import { apiRequestLoggerMiddleware } from "./apiObservability";
 import { getCached, setCache, CACHE_TTL_LONG } from "./cache";
 
 // Public Developer API (v1). All routes require a valid Bearer API key issued
@@ -125,6 +126,11 @@ function gradeBandMatches(filter: string | undefined, schoolBand: string): boole
 
 const router = Router();
 
+// Request logger runs FIRST so its res.on('finish') hook captures every
+// response — including 401s/429s emitted by requireApiKey below. The logger
+// records keyId=null for unauthenticated rejections, which the abuse
+// detector and admin dashboard use to track brute-force scanning.
+router.use(apiRequestLoggerMiddleware);
 router.use(requireApiKey);
 
 // GET /api/v1/schools — list with filters + pagination

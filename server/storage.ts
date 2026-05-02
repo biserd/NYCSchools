@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey } from "@shared/schema";
-import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray } from "drizzle-orm";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert } from "@shared/schema";
+import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray, lt } from "drizzle-orm";
 
 export interface IStorage {
   // User operations for standalone auth
@@ -142,6 +142,24 @@ export interface IStorage {
   findApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
   touchApiKeyLastUsed(id: number): Promise<void>;
   revokeApiKey(id: number, userId: string): Promise<ApiKey | undefined>;
+
+  // API observability (rate limit + audit log + abuse alerts)
+  incrementApiRateState(keyId: number, now: Date): Promise<ApiKeyRateState>;
+  insertApiRequestLogs(rows: InsertApiRequestLog[]): Promise<void>;
+  pruneApiRequestLogs(olderThan: Date): Promise<number>;
+  countRecentRateLimitHits(keyId: number, sinceTs: Date): Promise<number>;
+  countDistinctIpsForKey(keyId: number, sinceTs: Date): Promise<number>;
+  recordAbuseAlert(data: InsertApiAbuseAlert): Promise<boolean>;
+  pruneAbuseAlerts(olderThan: Date): Promise<number>;
+  // Admin observability queries
+  listAllApiKeysWithUsers(): Promise<Array<ApiKey & { ownerEmail: string | null }>>;
+  getApiKeyUsageSummary(keyId: number, sinceTs: Date): Promise<{ total: number; errors429: number; distinctIps: number }>;
+  listTopApiKeysByVolume(sinceTs: Date, limit: number): Promise<Array<{ keyId: number; total: number }>>;
+  listRecentRateLimitHits(limit: number): Promise<Array<{ keyId: number | null; path: string; ts: Date; ip: string | null }>>;
+  listRecentRequestsForKey(keyId: number, limit: number): Promise<Array<{ path: string; status: number; ts: Date; ip: string | null; responseTimeMs: number | null }>>;
+  listRecentIpsForKey(keyId: number, sinceTs: Date): Promise<Array<{ ip: string; count: number; lastSeen: Date }>>;
+  countRequestsByPathForKey(keyId: number, sinceTs: Date): Promise<Array<{ path: string; count: number }>>;
+  adminRevokeApiKey(id: number): Promise<ApiKey | undefined>;
 }
 
 export interface NyceecFilters {
@@ -1672,6 +1690,247 @@ export class DbStorage implements IStorage {
       .update(apiKeys)
       .set({ revokedAt: new Date() })
       .where(and(eq(apiKeys.id, id), eq(apiKeys.userId, userId)))
+      .returning();
+    return key;
+  }
+
+  // ===== API observability =====
+
+  // Atomically increment per-key rate counters. The single SQL statement rolls
+  // the minute / day windows when they expire and increments otherwise. The
+  // returned row reflects the post-update state used by the auth middleware
+  // to decide whether to allow the request.
+  async incrementApiRateState(keyId: number, now: Date): Promise<ApiKeyRateState> {
+    const minuteAgo = new Date(now.getTime() - 60_000);
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    // Use INSERT .. ON CONFLICT DO UPDATE so first-touch and subsequent-touch
+    // both go through one round-trip. The window-roll logic lives in the SQL
+    // CASE expressions to avoid read-then-write races between concurrent
+    // requests for the same key.
+    const result = await db.execute(sql`
+      INSERT INTO api_key_rate_state (key_id, minute_window_start, minute_count, day_window_start, day_count, updated_at)
+      VALUES (${keyId}, ${now.toISOString()}, 1, ${now.toISOString()}, 1, ${now.toISOString()})
+      ON CONFLICT (key_id) DO UPDATE SET
+        minute_window_start = CASE
+          WHEN api_key_rate_state.minute_window_start < ${minuteAgo.toISOString()}
+          THEN ${now.toISOString()}::timestamp
+          ELSE api_key_rate_state.minute_window_start
+        END,
+        minute_count = CASE
+          WHEN api_key_rate_state.minute_window_start < ${minuteAgo.toISOString()}
+          THEN 1
+          ELSE api_key_rate_state.minute_count + 1
+        END,
+        day_window_start = CASE
+          WHEN api_key_rate_state.day_window_start < ${dayAgo.toISOString()}
+          THEN ${now.toISOString()}::timestamp
+          ELSE api_key_rate_state.day_window_start
+        END,
+        day_count = CASE
+          WHEN api_key_rate_state.day_window_start < ${dayAgo.toISOString()}
+          THEN 1
+          ELSE api_key_rate_state.day_count + 1
+        END,
+        updated_at = ${now.toISOString()}
+      RETURNING key_id, minute_window_start, minute_count, day_window_start, day_count, updated_at
+    `);
+    const row: any = (result as any).rows?.[0] ?? (result as any)[0];
+    return {
+      keyId: row.key_id,
+      minuteWindowStart: new Date(row.minute_window_start),
+      minuteCount: Number(row.minute_count),
+      dayWindowStart: new Date(row.day_window_start),
+      dayCount: Number(row.day_count),
+      updatedAt: new Date(row.updated_at),
+    };
+  }
+
+  async insertApiRequestLogs(rows: InsertApiRequestLog[]): Promise<void> {
+    if (!rows.length) return;
+    await db.insert(apiRequestLog).values(rows);
+  }
+
+  async pruneApiRequestLogs(olderThan: Date): Promise<number> {
+    const result = await db
+      .delete(apiRequestLog)
+      .where(lt(apiRequestLog.ts, olderThan))
+      .returning({ id: apiRequestLog.id });
+    return result.length;
+  }
+
+  async countRecentRateLimitHits(keyId: number, sinceTs: Date): Promise<number> {
+    const [row] = await db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(apiRequestLog)
+      .where(and(
+        eq(apiRequestLog.keyId, keyId),
+        eq(apiRequestLog.status, 429),
+        gte(apiRequestLog.ts, sinceTs),
+      ));
+    return Number(row?.c ?? 0);
+  }
+
+  async countDistinctIpsForKey(keyId: number, sinceTs: Date): Promise<number> {
+    const [row] = await db
+      .select({ c: sql<number>`count(distinct ${apiRequestLog.ip})::int` })
+      .from(apiRequestLog)
+      .where(and(
+        eq(apiRequestLog.keyId, keyId),
+        gte(apiRequestLog.ts, sinceTs),
+        isNotNull(apiRequestLog.ip),
+      ));
+    return Number(row?.c ?? 0);
+  }
+
+  // Returns true when a new alert was inserted, false if one already existed
+  // for that (key, alertType, day) — i.e. the email has already been sent today.
+  async recordAbuseAlert(data: InsertApiAbuseAlert): Promise<boolean> {
+    const inserted = await db
+      .insert(apiAbuseAlerts)
+      .values(data)
+      .onConflictDoNothing({ target: [apiAbuseAlerts.keyId, apiAbuseAlerts.alertType, apiAbuseAlerts.alertDay] })
+      .returning({ id: apiAbuseAlerts.id });
+    return inserted.length > 0;
+  }
+
+  async pruneAbuseAlerts(olderThan: Date): Promise<number> {
+    const result = await db
+      .delete(apiAbuseAlerts)
+      .where(lt(apiAbuseAlerts.createdAt, olderThan))
+      .returning({ id: apiAbuseAlerts.id });
+    return result.length;
+  }
+
+  async listAllApiKeysWithUsers(): Promise<Array<ApiKey & { ownerEmail: string | null }>> {
+    const rows = await db
+      .select({
+        id: apiKeys.id,
+        userId: apiKeys.userId,
+        name: apiKeys.name,
+        keyPrefix: apiKeys.keyPrefix,
+        keyHash: apiKeys.keyHash,
+        createdAt: apiKeys.createdAt,
+        lastUsedAt: apiKeys.lastUsedAt,
+        revokedAt: apiKeys.revokedAt,
+        ownerEmail: users.email,
+      })
+      .from(apiKeys)
+      .leftJoin(users, eq(apiKeys.userId, users.id))
+      .orderBy(desc(apiKeys.createdAt));
+    return rows as any;
+  }
+
+  async getApiKeyUsageSummary(keyId: number, sinceTs: Date): Promise<{ total: number; errors429: number; distinctIps: number }> {
+    const [row] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        errors429: sql<number>`sum(case when ${apiRequestLog.status} = 429 then 1 else 0 end)::int`,
+        distinctIps: sql<number>`count(distinct ${apiRequestLog.ip})::int`,
+      })
+      .from(apiRequestLog)
+      .where(and(
+        eq(apiRequestLog.keyId, keyId),
+        gte(apiRequestLog.ts, sinceTs),
+      ));
+    return {
+      total: Number(row?.total ?? 0),
+      errors429: Number(row?.errors429 ?? 0),
+      distinctIps: Number(row?.distinctIps ?? 0),
+    };
+  }
+
+  async listTopApiKeysByVolume(sinceTs: Date, limit: number): Promise<Array<{ keyId: number; total: number }>> {
+    const rows = await db
+      .select({
+        keyId: apiRequestLog.keyId,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(apiRequestLog)
+      .where(and(
+        gte(apiRequestLog.ts, sinceTs),
+        isNotNull(apiRequestLog.keyId),
+      ))
+      .groupBy(apiRequestLog.keyId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(limit);
+    return rows
+      .filter((r) => r.keyId !== null)
+      .map((r) => ({ keyId: r.keyId as number, total: Number(r.total) }));
+  }
+
+  async listRecentRateLimitHits(limit: number): Promise<Array<{ keyId: number | null; path: string; ts: Date; ip: string | null }>> {
+    const rows = await db
+      .select({
+        keyId: apiRequestLog.keyId,
+        path: apiRequestLog.path,
+        ts: apiRequestLog.ts,
+        ip: apiRequestLog.ip,
+      })
+      .from(apiRequestLog)
+      .where(eq(apiRequestLog.status, 429))
+      .orderBy(desc(apiRequestLog.ts))
+      .limit(limit);
+    return rows;
+  }
+
+  async listRecentRequestsForKey(keyId: number, limit: number): Promise<Array<{ path: string; status: number; ts: Date; ip: string | null; responseTimeMs: number | null }>> {
+    const rows = await db
+      .select({
+        path: apiRequestLog.path,
+        status: apiRequestLog.status,
+        ts: apiRequestLog.ts,
+        ip: apiRequestLog.ip,
+        responseTimeMs: apiRequestLog.responseTimeMs,
+      })
+      .from(apiRequestLog)
+      .where(eq(apiRequestLog.keyId, keyId))
+      .orderBy(desc(apiRequestLog.ts))
+      .limit(limit);
+    return rows;
+  }
+
+  async listRecentIpsForKey(keyId: number, sinceTs: Date): Promise<Array<{ ip: string; count: number; lastSeen: Date }>> {
+    const rows = await db
+      .select({
+        ip: apiRequestLog.ip,
+        count: sql<number>`count(*)::int`,
+        lastSeen: sql<Date>`max(${apiRequestLog.ts})`,
+      })
+      .from(apiRequestLog)
+      .where(and(
+        eq(apiRequestLog.keyId, keyId),
+        gte(apiRequestLog.ts, sinceTs),
+        isNotNull(apiRequestLog.ip),
+      ))
+      .groupBy(apiRequestLog.ip)
+      .orderBy(desc(sql`count(*)`))
+      .limit(50);
+    return rows
+      .filter((r) => r.ip !== null)
+      .map((r) => ({ ip: r.ip as string, count: Number(r.count), lastSeen: r.lastSeen as Date }));
+  }
+
+  async countRequestsByPathForKey(keyId: number, sinceTs: Date): Promise<Array<{ path: string; count: number }>> {
+    const rows = await db
+      .select({
+        path: apiRequestLog.path,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(apiRequestLog)
+      .where(and(
+        eq(apiRequestLog.keyId, keyId),
+        gte(apiRequestLog.ts, sinceTs),
+      ))
+      .groupBy(apiRequestLog.path)
+      .orderBy(desc(sql`count(*)`));
+    return rows.map((r) => ({ path: r.path, count: Number(r.count) }));
+  }
+
+  async adminRevokeApiKey(id: number): Promise<ApiKey | undefined> {
+    const [key] = await db
+      .update(apiKeys)
+      .set({ revokedAt: new Date() })
+      .where(eq(apiKeys.id, id))
       .returning();
     return key;
   }

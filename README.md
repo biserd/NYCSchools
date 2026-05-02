@@ -202,7 +202,8 @@ detail endpoints (`/schools/:dbn`, `/trends/:dbn`) return a flat object.
 
 ### Rate limits
 
-Each API key is rate-limited per server instance:
+Each API key is rate-limited globally (the counters are persisted in
+Postgres so they survive deploys and span multiple server instances):
 
 - **60 requests / minute**
 - **10,000 requests / day**
@@ -217,6 +218,18 @@ X-RateLimit-Reset: 1699574400
 
 Exceeding either bucket returns `429 Too Many Requests` with a
 `Retry-After` header.
+
+Unauthenticated requests (missing or invalid Bearer token) are also
+throttled per IP at 30 / minute to discourage key-guessing.
+
+### Abuse monitoring
+
+Every Developer API request is logged for security review. We email the
+account owner and revoke the key when we detect signals like a sudden
+spike in 429s or use from many distinct IPs at once (which usually means
+the key has been pasted into client-side code and leaked). If you think
+your key was leaked, revoke it from Settings → API Access and issue a
+new one — there's no penalty.
 
 ### Error format
 
