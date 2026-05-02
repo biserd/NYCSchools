@@ -99,97 +99,12 @@ async function getUserLimits(userId: string | undefined): Promise<typeof FREE_TI
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Wire the apiKey middleware's premium check (avoids circular import)
+  // Wire the apiKey middleware's premium check (avoids circular import).
+  // The Developer API at /api/v1 doesn't use Express sessions — it
+  // authenticates per-request via Bearer token — so it's safe to mount here,
+  // before setupAuth installs session middleware.
   setIsPremiumChecker(isPremiumUser);
-
-  // Mount the public Developer API (Premium) at /api/v1
   app.use("/api/v1", apiV1Router);
-
-  // ===== API Key Management (session-authenticated; for the Settings UI) =====
-
-  // List the current user's API keys (no plaintext is ever returned).
-  app.get("/api/api-keys", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.session.userId as string;
-      const keys = await storage.listApiKeysForUser(userId);
-      res.json(
-        keys.map((k) => ({
-          id: k.id,
-          name: k.name,
-          keyPrefix: k.keyPrefix,
-          createdAt: k.createdAt,
-          lastUsedAt: k.lastUsedAt,
-          revokedAt: k.revokedAt,
-        })),
-      );
-    } catch (err) {
-      console.error("Error listing API keys:", err);
-      res.status(500).json({ message: "Failed to list API keys" });
-    }
-  });
-
-  // Issue a new API key. Premium-gated. Returns the plaintext exactly once.
-  app.post("/api/api-keys", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.session.userId as string;
-      const isPremium = await isPremiumUser(userId);
-      if (!isPremium) {
-        return res.status(403).json({ message: "API access requires a Premium subscription." });
-      }
-
-      const name = String((req.body?.name ?? "").toString()).trim();
-      if (!name || name.length > 80) {
-        return res.status(400).json({ message: "Key name is required (max 80 characters)." });
-      }
-
-      // Cap the number of active keys per user to keep things sane.
-      const existing = await storage.listApiKeysForUser(userId);
-      const activeCount = existing.filter((k) => !k.revokedAt).length;
-      if (activeCount >= 5) {
-        return res.status(400).json({
-          message: "You can have at most 5 active API keys. Please revoke an unused key first.",
-        });
-      }
-
-      const issued = generateApiKey();
-      const created = await storage.createApiKey({
-        userId,
-        name,
-        keyPrefix: issued.prefix,
-        keyHash: issued.hash,
-      });
-
-      res.status(201).json({
-        id: created.id,
-        name: created.name,
-        keyPrefix: created.keyPrefix,
-        createdAt: created.createdAt,
-        plaintextKey: issued.plaintext, // shown to the user exactly once
-      });
-    } catch (err) {
-      console.error("Error creating API key:", err);
-      res.status(500).json({ message: "Failed to create API key" });
-    }
-  });
-
-  // Revoke an API key.
-  app.delete("/api/api-keys/:id", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.session.userId as string;
-      const id = parseInt(req.params.id, 10);
-      if (!Number.isFinite(id)) {
-        return res.status(400).json({ message: "Invalid key id" });
-      }
-      const revoked = await storage.revokeApiKey(id, userId);
-      if (!revoked) {
-        return res.status(404).json({ message: "API key not found" });
-      }
-      res.json({ id: revoked.id, revokedAt: revoked.revokedAt });
-    } catch (err) {
-      console.error("Error revoking API key:", err);
-      res.status(500).json({ message: "Failed to revoke API key" });
-    }
-  });
 
   // Add compression middleware
   app.use(compression());
@@ -261,6 +176,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // OAuth 2.1 endpoints for ChatGPT
   setupOAuth(app);
+
+  // ===== API Key Management (session-authenticated; for the Settings UI) =====
+  // Must be registered AFTER setupAuth so req.session is populated.
+
+  // List the current user's API keys (no plaintext is ever returned).
+  app.get("/api/api-keys", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId as string;
+      const keys = await storage.listApiKeysForUser(userId);
+      res.json(
+        keys.map((k) => ({
+          id: k.id,
+          name: k.name,
+          keyPrefix: k.keyPrefix,
+          createdAt: k.createdAt,
+          lastUsedAt: k.lastUsedAt,
+          revokedAt: k.revokedAt,
+        })),
+      );
+    } catch (err) {
+      console.error("Error listing API keys:", err);
+      res.status(500).json({ message: "Failed to list API keys" });
+    }
+  });
+
+  // Issue a new API key. Premium-gated. Returns the plaintext exactly once.
+  // The `name` label is optional — if omitted/blank we assign a sensible default
+  // so users can quickly mint a key with one click.
+  app.post("/api/api-keys", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId as string;
+      const isPremium = await isPremiumUser(userId);
+      if (!isPremium) {
+        return res.status(403).json({ message: "API access requires a Premium subscription." });
+      }
+
+      const rawName = String((req.body?.name ?? "")).trim();
+      if (rawName.length > 80) {
+        return res.status(400).json({ message: "Key name must be 80 characters or fewer." });
+      }
+
+      // Cap the number of active keys per user to keep things sane.
+      const existing = await storage.listApiKeysForUser(userId);
+      const activeCount = existing.filter((k) => !k.revokedAt).length;
+      if (activeCount >= 5) {
+        return res.status(400).json({
+          message: "You can have at most 5 active API keys. Please revoke an unused key first.",
+        });
+      }
+
+      // Default label when the user doesn't bother naming the key.
+      const name = rawName || `API key ${activeCount + 1}`;
+
+      const issued = generateApiKey();
+      const created = await storage.createApiKey({
+        userId,
+        name,
+        keyPrefix: issued.prefix,
+        keyHash: issued.hash,
+      });
+
+      res.status(201).json({
+        id: created.id,
+        name: created.name,
+        keyPrefix: created.keyPrefix,
+        createdAt: created.createdAt,
+        plaintextKey: issued.plaintext, // shown to the user exactly once
+      });
+    } catch (err) {
+      console.error("Error creating API key:", err);
+      res.status(500).json({ message: "Failed to create API key" });
+    }
+  });
+
+  // Revoke an API key.
+  app.delete("/api/api-keys/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.session.userId as string;
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid key id" });
+      }
+      const revoked = await storage.revokeApiKey(id, userId);
+      if (!revoked) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      res.json({ id: revoked.id, revokedAt: revoked.revokedAt });
+    } catch (err) {
+      console.error("Error revoking API key:", err);
+      res.status(500).json({ message: "Failed to revoke API key" });
+    }
+  });
 
   // Redirect /search to homepage (email campaign link fix)
   app.get("/search", (req: Request, res: Response) => {

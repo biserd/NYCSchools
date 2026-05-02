@@ -205,7 +205,9 @@ export function ApiAccessCard({ isPremium }: Props) {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2 py-2">
-                  <Label htmlFor="api-key-name">Key name</Label>
+                  <Label htmlFor="api-key-name">
+                    Key name <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
                   <Input
                     id="api-key-name"
                     placeholder="e.g. Production server, Local dev, Notebook"
@@ -214,6 +216,9 @@ export function ApiAccessCard({ isPremium }: Props) {
                     maxLength={80}
                     data-testid="input-api-key-name"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to use a default label like "API key 1".
+                  </p>
                 </div>
                 <DialogFooter>
                   <Button
@@ -225,7 +230,7 @@ export function ApiAccessCard({ isPremium }: Props) {
                   </Button>
                   <Button
                     onClick={() => createMutation.mutate(keyName.trim())}
-                    disabled={!keyName.trim() || createMutation.isPending}
+                    disabled={createMutation.isPending}
                     data-testid="button-confirm-create-key"
                   >
                     {createMutation.isPending ? (

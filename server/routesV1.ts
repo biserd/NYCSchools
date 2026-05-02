@@ -66,6 +66,13 @@ const schoolsQuerySchema = z.object({
 
 const earlyChildhoodQuerySchema = z.object({
   borough: z.string().optional(),
+  // `program_type` is the publicly documented filter (3k, prek, both). Our
+  // current dataset doesn't distinguish individual program offerings per
+  // center — every NYCEEC/DOE/Charter site in the table provides early
+  // childhood services — so the parameter is accepted and reserved for when
+  // we ingest program-level breakdowns. `center_type` is an additional, more
+  // discriminating filter we expose today.
+  program_type: z.enum(["3k", "prek", "both"]).optional(),
   center_type: z.enum(["NYCEEC", "DOE", "Charter"]).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
@@ -241,6 +248,11 @@ router.get("/early-childhood", async (req: Request, res: Response) => {
     if (q.center_type) filters.centerType = q.center_type;
     const centers = await storage.getNyceecCenters(filters);
 
+    // Every center in this dataset offers both 3-K and Pre-K programs, so
+    // `program_type` currently matches every record. We still surface
+    // `programs` on each row so callers can render program offerings.
+    const programsForCenter = ["3-K", "Pre-K"];
+
     const total = centers.length;
     const page = centers.slice(q.offset, q.offset + q.limit).map((c: any) => ({
       loc_code: c.locCode,
@@ -251,6 +263,7 @@ router.get("/early-childhood", async (req: Request, res: Response) => {
       district: c.district ?? null,
       address: c.address,
       zip_code: c.zipCode ?? null,
+      programs: programsForCenter,
       seats: c.seats ?? null,
       day_length: c.dayLength ?? null,
       extended_day: Boolean(c.extendedDay),
