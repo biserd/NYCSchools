@@ -62,7 +62,7 @@ const GRADE_BAND_OPTIONS = [
 const EARLY_CHILDHOOD_OPTIONS = ["All", "Pre-K", "3-K"];
 
 const DUAL_LANGUAGE_OPTIONS = [
-  { value: "All", label: "All Schools" },
+  { value: "All", label: "Any Dual Language" },
   { value: "DualLanguage", label: "Has Dual Language" },
   { value: "Spanish", label: "Spanish Dual Language" },
   { value: "Chinese", label: "Chinese Dual Language" },
@@ -71,7 +71,7 @@ const DUAL_LANGUAGE_OPTIONS = [
 ];
 
 const PTA_FILTER_OPTIONS = [
-  { value: "All", label: "All Schools" },
+  { value: "All", label: "Any PTA Funding" },
   { value: "HasPTA", label: "Has PTA Data" },
   { value: "100k+", label: "$100K+ Raised" },
   { value: "500k+", label: "$500K+ Raised" },
@@ -79,7 +79,7 @@ const PTA_FILTER_OPTIONS = [
 ];
 
 const IEP_FILTER_OPTIONS = [
-  { value: "All", label: "All Schools" },
+  { value: "All", label: "Any IEP Level" },
   { value: "HasIEP", label: "Has IEP Data" },
   { value: "Low", label: "Low IEP (<15%)" },
   { value: "Medium", label: "Medium IEP (15-25%)" },
@@ -182,7 +182,7 @@ export function FilterBar({
             <SelectValue placeholder="G&T" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem data-testid="option-gt-all" value="All">All Schools</SelectItem>
+            <SelectItem data-testid="option-gt-all" value="All">Any G&amp;T Status</SelectItem>
             <SelectItem data-testid="option-gt-any" value="G&T">Has G&T</SelectItem>
             <SelectItem data-testid="option-gt-citywide" value="Citywide">Citywide G&T</SelectItem>
             <SelectItem data-testid="option-gt-district" value="District">District G&T</SelectItem>
@@ -267,7 +267,7 @@ export function FilterBar({
             <SelectValue placeholder="My Zoned Schools" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem data-testid="option-zoned-all" value="all">All Schools</SelectItem>
+            <SelectItem data-testid="option-zoned-all" value="all">All NYC Schools</SelectItem>
             <SelectItem data-testid="option-zoned-elementary" value="elementary">
               <span className="flex items-center gap-2">
                 <Home className="h-3 w-3 text-primary" />
