@@ -143,6 +143,18 @@ export function AppHeader() {
                     <span className="sm:hidden">Match</span>
                   </Button>
                 </Link>
+                <Link href="/lottery-simulator">
+                  <Button variant="outline" size="sm" data-testid="button-lottery-nav">
+                    <Shuffle className="w-4 h-4 mr-2" />
+                    <span>Lottery</span>
+                  </Button>
+                </Link>
+                <Link href="/chances-calculator">
+                  <Button variant="outline" size="sm" data-testid="button-chances-nav">
+                    <Target className="w-4 h-4 mr-2" />
+                    <span>Chances</span>
+                  </Button>
+                </Link>
                 <Link href="/pricing">
                   <Button variant="outline" size="sm" data-testid="button-pricing-nav">
                     <Zap className="w-4 h-4 mr-2" />
