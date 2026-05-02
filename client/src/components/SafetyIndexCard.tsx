@@ -217,19 +217,20 @@ export function SafetyIndexCard({
             Neighborhood Safety
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover-elevate rounded-md p-0.5"
-                  data-testid="button-safety-info"
+                <Link
+                  href="/safety-methodology"
+                  className="text-muted-foreground hover-elevate rounded-md p-0.5 inline-flex"
+                  aria-label="Learn how the Neighborhood Safety score is calculated"
+                  data-testid="link-safety-info"
                 >
                   <Info className="w-4 h-4" />
-                </button>
+                </Link>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p className="text-sm">
                   0–100 score based on NYPD complaint data within the selected
                   radius over the last 12 months. Higher = safer relative to
-                  other NYC schools.
+                  other NYC schools. Click for full methodology.
                 </p>
               </TooltipContent>
             </Tooltip>
