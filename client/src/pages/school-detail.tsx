@@ -452,7 +452,7 @@ export default function SchoolDetail() {
             </div>
 
             {/* School Information Card */}
-            <Card data-testid="card-school-info">
+            <Card className="self-start" data-testid="card-school-info">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-lg">School Information</CardTitle>
