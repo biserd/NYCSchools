@@ -9,6 +9,7 @@ import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
 import apiV1Router from "./routesV1";
+import { sameOriginGuard } from "./sameOriginGuard";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
 import OpenAI from "openai";
 import compression from "compression";
@@ -107,6 +108,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // before setupAuth installs session middleware.
   setIsPremiumChecker(isPremiumUser);
   app.use("/api/v1", apiV1Router);
+
+  // Same-origin guard for the rest of `/api/*`. Blocks external scrapers
+  // from hitting the internal endpoints (`/api/schools`, `/api/private-schools`,
+  // `/api/nyceec-centers`, `/api/schools-trends`, etc.) that the website
+  // itself uses to render its UI. The Developer API at `/api/v1/*` (above)
+  // is the only sanctioned programmatic entry point. See sameOriginGuard.ts
+  // for the full exclusion list and rationale.
+  app.use(sameOriginGuard);
 
   // Shared admin guard. The custom auth middleware (server/auth.ts) only
   // populates req.session.userId — it does NOT set req.user — so we must
