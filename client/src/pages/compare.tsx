@@ -956,7 +956,7 @@ export default function ComparePage() {
                           const safety = safetyDataMap[school.dbn];
                           return (
                             <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-violent-${school.dbn}`}>
-                              {safety ? safety.violentFelonyReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                              {safety && safety.violentFelonyReports != null ? safety.violentFelonyReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
                             </TableCell>
                           );
                         })}
@@ -967,7 +967,7 @@ export default function ComparePage() {
                           const safety = safetyDataMap[school.dbn];
                           return (
                             <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-felony-${school.dbn}`}>
-                              {safety ? safety.felonyReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                              {safety && safety.felonyReports != null ? safety.felonyReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
                             </TableCell>
                           );
                         })}
@@ -978,7 +978,7 @@ export default function ComparePage() {
                           const safety = safetyDataMap[school.dbn];
                           return (
                             <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-safety-misdemeanor-${school.dbn}`}>
-                              {safety ? safety.misdemeanorReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
+                              {safety && safety.misdemeanorReports != null ? safety.misdemeanorReports.toLocaleString() : <span className="text-muted-foreground">N/A</span>}
                             </TableCell>
                           );
                         })}

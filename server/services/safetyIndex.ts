@@ -522,7 +522,10 @@ export async function recomputeSafetyIndex(): Promise<{
       const priorTotal = row.prior.total;
       const delta = priorTotal > 0 ? ((row.current.total - priorTotal) / priorTotal) * 100 : null;
       let trend: string;
-      if (priorTotal < 10 && row.current.total < 10) {
+      // insufficient_data fires if EITHER window is below the 10-incident
+      // threshold — e.g. prior=5/current=40 should not be labeled
+      // "worsening" because the prior baseline is too small to be reliable.
+      if (priorTotal < 10 || row.current.total < 10) {
         trend = "insufficient_data";
       } else if (delta == null) {
         trend = "insufficient_data";
