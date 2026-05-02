@@ -492,11 +492,11 @@ export default function DevelopersDocsPage() {
                             <span>Requests per day:</span>
                             <span className="font-medium text-foreground">10,000</span>
                           </li>
-                          <li className="flex justify-between">
-                            <span>Requests per month:</span>
-                            <span className="font-medium text-foreground">300,000</span>
-                          </li>
                         </ul>
+                        <p className="text-xs text-muted-foreground mt-3">
+                          Counters are persisted in our database, so they
+                          survive deploys and are shared across instances.
+                        </p>
                       </div>
                       <div className="p-4 rounded-lg border bg-muted/30">
                         <h3 className="font-semibold mb-2">Rate Limit Headers</h3>
@@ -514,8 +514,39 @@ X-RateLimit-Reset: 1699574400`}
                     <div className="p-4 rounded-lg bg-muted/30 border">
                       <h3 className="font-semibold mb-2">Exceeding Rate Limits</h3>
                       <p className="text-sm text-muted-foreground">
-                        If you exceed the rate limit, you'll receive a <code className="bg-muted px-1 rounded">429 Too Many Requests</code> response. 
+                        If you exceed the rate limit, you'll receive a <code className="bg-muted px-1 rounded">429 Too Many Requests</code> response
+                        with a <code className="bg-muted px-1 rounded">Retry-After</code> header.
                         Wait until the reset time indicated in the headers before making more requests.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-lg bg-muted/30 border">
+                      <h3 className="font-semibold mb-2">Unauthenticated Throttle</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Requests without a valid Bearer token are also limited
+                        to <span className="font-medium text-foreground">30 per minute, per IP</span>,
+                        to discourage key-guessing. If you hit this while
+                        debugging, double-check your <code className="bg-muted px-1 rounded">Authorization</code> header.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-lg border-2 border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20">
+                      <h3 className="font-semibold mb-2">Abuse monitoring &amp; leaked keys</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Every API request is logged for security review. We
+                        watch for two signals and may revoke a key automatically
+                        (and email the owner) if either fires:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                        <li><span className="font-medium text-foreground">Rate-limit storms</span> — 50+ rate-limit hits on one key in an hour.</li>
+                        <li><span className="font-medium text-foreground">Distinct-IP spikes</span> — 10+ different client IPs hitting one key in 24 hours, which usually means the key has leaked.</li>
+                      </ul>
+                      <p className="text-sm text-muted-foreground mt-3">
+                        <span className="font-medium text-foreground">Never embed your API key in client-side code.</span>
+                        {' '}Browser bundles and mobile apps can be inspected — proxy
+                        through your own backend instead. If you think a key
+                        leaked, revoke it from <span className="font-medium">Settings → API Access</span> and
+                        issue a new one. There's no penalty.
                       </p>
                     </div>
                   </CardContent>
