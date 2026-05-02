@@ -1,150 +1,166 @@
 # NYC School Ratings
 
-A parent-friendly web dashboard for browsing and comparing NYC public and charter elementary schools with comprehensive ratings and detailed metrics.
+A parent-friendly web dashboard for browsing, comparing, and researching NYC's
+public, charter, and private schools — backed by real data from the NYC DOE,
+NYC Open Data, NYSED, and the NCES.
 
-## Features
+Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
 
-- **Smart Filtering**: Search by school name, filter by district (1-32), and select grade bands (K-5, K-8)
-- **Dynamic Sorting**: Sort schools by overall score, academics, climate, progress, or name
-- **Overall Score Calculation**: Weighted scoring system (40% academics + 30% climate + 30% progress)
-- **Detailed School View**: Click any school to see comprehensive metrics including:
-  - Overall score with rating label (Outstanding/Strong/Average/Below Average)
-  - Visual bar charts for academics, climate, and progress scores
-  - ELA and Math proficiency percentages
-  - Climate score and school environment details
-  - Enrollment, grade span, and student-teacher ratio
-- **Responsive Design**: Works beautifully on desktop, tablet, and mobile devices
-- **Developer API (Premium)**: Public REST API at `/api/v1` so external apps can pull NYC school data programmatically (see below)
+## What's inside
 
-## Running the App
+- **1,500+ public elementary schools** with academic, climate, progress, and
+  survey scores. Overall score is a weighted blend:
+  `Test Proficiency × 40% + Climate × 30% + Progress × 30%`.
+- **600+ private schools** (NCES PSS data) with filtering by borough,
+  religious affiliation, and coed status.
+- **All NYC public high schools** with graduation rates, Regents results,
+  multi-year trends, and subgroup analysis (NYC DOE InfoHub).
+- **HS admissions & programs** — Fall 2025 directory data for 452 high
+  schools and 943 programs (admission methods, demand, eligibility, offer
+  rates, SHSAT stats).
+- **NYCEEC Early Childhood Centers** for 3-K and Pre-K.
+- **K / 3-K / Pre-K admissions & demand** metrics from NYC DOE LL72 reports.
+- **Attendance & chronic absenteeism** (2018-19 → 2024-25) with subgroup
+  breakdowns.
+- **Discipline & suspensions** (2018-19 → 2024-25, LL93) by type, race,
+  gender, SWD, ELL, and STH.
+- **Neighborhood Safety Index** — a 0-100 score on every public, private, and
+  NYCEEC school detail page, computed from NYPD complaint data within a
+  configurable radius (0.25 / 0.5 / 1 / 5 miles), severity-weighted, and
+  ranked as a citywide percentile. Free tier shows the score; Premium
+  unlocks radius selector, top categories, trend, and percentile.
+- **Interactive map** with school zone detection (turf.js + NYC DOE
+  boundary polygons).
+- **Side-by-side comparison** with shareable, SEO-friendly URLs
+  (e.g. `/compare/PS006-M-vs-PS290-M`).
+- **District comparison** dashboard.
+- **AI chat assistant** powered by OpenAI's `gpt-4o-mini` (Premium).
+- **Smart Recommendations ("Find My Match")** — a short questionnaire that
+  produces personalized school suggestions.
+- **Application Tracker** to manage applications across schools (Premium).
+- **3-K / Pre-K Lottery Simulator**.
+- **Special Education (IEP) support** information.
+- **Commute Time Calculator** (auth-gated; uses Google Distance Matrix).
+- **Parent reviews & ratings** on every school.
+- **Data-driven blog** with analytical articles and Recharts visualizations.
+- **Favorites** that sync across devices for logged-in users.
+- **Developer API (Premium)** — public REST API at `/api/v1` (see below).
+
+## Stack
+
+- **Frontend:** React 18 + TypeScript, Vite, Tailwind CSS, Shadcn UI,
+  Wouter, TanStack Query, Recharts, Leaflet, turf.js
+- **Backend:** Node.js + Express + TypeScript, Drizzle ORM, PostgreSQL,
+  in-memory caching layer with webhook-based invalidation, Gzip compression
+- **Auth:** Email + password with secure session cookies; password reset
+  via signed email tokens; magic-link sign-in
+- **Payments:** Stripe (Checkout + Customer Portal + webhooks) for the
+  Freemium / Premium subscription model
+- **AI:** OpenAI `gpt-4o-mini` for chat assistant and recommendations
+- **Email:** Resend (welcome emails, password reset, drip campaign)
+- **Maps & geo:** Google Maps Geocoding API, Google Distance Matrix API,
+  Leaflet for rendering, NYC Open Data point locations and zone polygons
+- **Data:** NYC DOE InfoHub, NYC Open Data, NYSED State Report Card,
+  NCES Private School Universe Survey, NYC School Survey CSVs
+
+## Running locally
 
 ```bash
 npm install
-npm run dev
+npm run dev          # Express + Vite, served on a single port
+npm run db:push      # Push Drizzle schema changes to the configured Postgres
 ```
 
-The app will be available at the URL shown in your Replit webview.
+The dev server URL is shown in your Replit webview. Both the API and the
+SPA are served from the same origin — no proxy configuration needed.
 
-## Data Structure
+### Environment variables
 
-### Sample Data Location
+The app reads the following from environment / Replit Secrets. The ones
+marked **required** are needed for the app to boot; the rest enable
+specific features.
 
-The school data is stored in `public/schools.json`. Each school entry contains:
+| Variable                              | Purpose                                       |
+|---------------------------------------|-----------------------------------------------|
+| `DATABASE_URL` *(required)*           | PostgreSQL connection string                  |
+| `SESSION_SECRET` *(required)*         | Express session signing secret                |
+| `STRIPE_LIVE_SECRET_KEY` / `STRIPE_TEST_SECRET_KEY`           | Stripe server keys (Premium subscriptions)    |
+| `STRIPE_LIVE_PUBLISHABLE_KEY` / `STRIPE_TEST_PUBLISHABLE_KEY` | Stripe publishable keys (frontend Checkout)   |
+| `OPENAI_API_KEY`                      | AI chat assistant + Smart Recommendations     |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`| Transactional email (auth + drip campaign)    |
+| `GOOGLE_MAPS_API_KEY`                 | Geocoding + Distance Matrix (commute calc)    |
+| `SOCRATA_APP_TOKEN`                   | NYC Open Data / NYPD complaint dataset access |
+| `CRON_SECRET`                         | Protects `POST /api/cron/*` endpoints         |
 
-```json
-{
-  "dbn": "02M123",
-  "name": "PS 123 Example Elementary",
-  "district": 2,
-  "address": "123 Example St, New York, NY 10028",
-  "grade_band": "K-5",
-  "academics_score": 78,
-  "climate_score": 85,
-  "progress_score": 72,
-  "ela_proficiency": 65,
-  "math_proficiency": 70,
-  "enrollment": 550,
-  "student_teacher_ratio": 15.2
-}
-```
-
-### Editing School Data
-
-To modify the sample data:
-1. Open `public/schools.json`
-2. Add, edit, or remove school entries following the structure above
-3. All scores should be between 0-100
-4. The overall score is automatically calculated on the frontend
-
-## Future: Real NYC Data Integration
-
-To connect to real NYC DOE and NYSED data APIs:
-
-### Option 1: NYC Open Data Portal
-- **API**: [NYC Open Data - School Quality Reports](https://data.cityofnewyork.us/Education/2018-2019-School-Quality-Reports-Elementary-School/4wbp-irbx)
-- **Integration Point**: `client/src/pages/home.tsx` - Replace the `useEffect` that loads `/schools.json` with an API call to NYC Open Data
-- **Authentication**: Most NYC Open Data endpoints are public, but you may need an API key for higher rate limits
-
-### Option 2: NYSED Data
-- **API**: [NYSED Data Site](https://data.nysed.gov/)
-- **Integration Point**: Same as above, modify the data loading logic
-- **Data Mapping**: Map NYSED fields to the schema in `shared/schema.ts`
-
-### Integration Steps
-
-1. **Update the data loading logic** in `client/src/pages/home.tsx`:
-```typescript
-useEffect(() => {
-  async function loadSchools() {
-    try {
-      // Replace this with your API endpoint
-      const response = await fetch('https://data.cityofnewyork.us/resource/xxxx-xxxx.json');
-      const data = await response.json();
-      
-      // Map API response to our schema
-      const mappedSchools = data.map(apiSchool => ({
-        dbn: apiSchool.dbn,
-        name: apiSchool.school_name,
-        district: parseInt(apiSchool.district),
-        // ... map other fields
-      }));
-      
-      setSchools(mappedSchools);
-    } catch (error) {
-      console.error("Failed to load schools:", error);
-    }
-  }
-  loadSchools();
-}, []);
-```
-
-2. **Add environment variables** for API keys if needed:
-- Create `.env` file with `VITE_NYC_OPEN_DATA_API_KEY=your_key_here`
-- Access in code: `import.meta.env.VITE_NYC_OPEN_DATA_API_KEY`
-
-3. **Update the schema** in `shared/schema.ts` if the API provides additional fields you want to display
-
-## Architecture
-
-- **Frontend**: React + TypeScript with Vite
-- **UI Components**: Shadcn UI + Tailwind CSS
-- **State Management**: React useState and useMemo for filtering/sorting
-- **Data**: Static JSON (ready for API integration)
-- **Routing**: Wouter for lightweight client-side routing
-
-## Component Structure
+## Project layout
 
 ```
 client/src/
-├── components/
-│   ├── FilterBar.tsx          # Search, district, grade, and sort controls
-│   ├── SchoolCard.tsx         # Individual school card display
-│   ├── SchoolList.tsx         # Grid of school cards with empty state
-│   └── SchoolDetailPanel.tsx  # Side drawer with detailed metrics
-├── pages/
-│   └── home.tsx               # Main dashboard page
-└── App.tsx                    # App root with routing
+├── components/        # Shared UI (AppHeader, FilterBar, ApiAccessCard, …)
+│   └── ui/            # Shadcn primitives
+├── pages/             # One file per route — registered in App.tsx
+├── hooks/             # useAuth, useCheckout, useToast, …
+└── lib/               # queryClient, helpers
+
+server/
+├── index-dev.ts       # Dev entrypoint (Vite middleware)
+├── index-prod.ts      # Production entrypoint (static SPA)
+├── routes.ts          # Main API routes + auth, Stripe webhooks, etc.
+├── routesV1.ts        # Public Developer API (/api/v1)
+├── apiKeyAuth.ts      # API key generation, hashing, Bearer middleware,
+│                      # rate limiter, Premium recheck
+├── auth.ts            # Sessions, password hashing, magic links
+├── storage.ts         # Drizzle queries (the only place SQL lives)
+├── cache.ts           # In-memory cache with TTLs + invalidation
+├── services/          # safetyIndex, geocoding, schoolZones, …
+└── scripts/           # One-off data import / sync scripts
+
+shared/
+└── schema.ts          # Drizzle tables, Zod insert schemas, shared types
+
+scripts/               # CLI data importers (NYSED, HS data, NYCEEC, …)
+public/                # Static assets, sitemap.xml, robots.txt
 ```
 
-## Design System
+Key conventions:
 
-The app follows a clean, parent-friendly design with:
-- Large, readable fonts (Inter typeface)
-- Color-coded score indicators (green ≥80, yellow ≥60, red <60)
-- Ample white space and clear visual hierarchy
-- Consistent spacing and border radius
-- Subtle hover effects and transitions
-- Responsive grid layouts
+- **Schema first.** All data models live in `shared/schema.ts` (Drizzle +
+  `drizzle-zod` insert schemas). Frontend and backend both import from
+  there for type safety.
+- **No raw SQL migrations.** Schema changes are applied with
+  `npm run db:push`. If a push warns about data loss, use
+  `npm run db:push --force`.
+- **No SQL outside `server/storage.ts`.** Routes are thin and call into
+  the storage layer.
+- **Caching by default.** Hot endpoints go through `server/cache.ts`
+  (centralized TTLs, mutation protection via `structuredClone`,
+  webhook-based invalidation).
 
-## Tech Stack
+## Subscription tiers
 
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **Tailwind CSS** - Utility-first styling
-- **Shadcn UI** - High-quality component library
-- **Wouter** - Lightweight routing
-- **Zod** - Runtime type validation
+The app uses a Freemium model powered by Stripe.
+
+- **Free:** browse all schools, see overall scores, save favorites, use the
+  smart recommendations questionnaire, see the Neighborhood Safety score at
+  the default radius, view one premium school detail page in full
+  ("One Free School View").
+- **Premium ($4.99/month):** AI chat assistant, side-by-side & district
+  comparison, application tracker, full safety drill-down (radius selector,
+  trend, percentile, top categories), commute time calculator, and the
+  **Developer API** (see below).
+
+Stripe state is kept in sync with the local DB via webhooks, so there is no
+"stale subscription" drift between Stripe and the app.
+
+## SEO
+
+Every page sets a unique title, meta description, canonical URL, Open
+Graph + Twitter Card tags, and JSON-LD Structured Data where applicable.
+A static `sitemap.xml` plus pre-generated comparison and school pages keep
+the site fully indexable. Performance is optimized with code-splitting,
+lazy loading for heavy pages, an eager-imported home page so the LCP text
+is in the initial chunk, deferred analytics, a trimmed Inter webfont, and
+aggressive static asset caching.
 
 ## Developer API
 
@@ -220,13 +236,31 @@ Common status codes: `400` (validation), `401` (missing/invalid key),
 `403` (Premium subscription required or revoked), `404` (not found),
 `429` (rate limited), `500` (internal).
 
-## Data Source Notes
+## Data sources & methodology
 
-The sample data in `public/schools.json` contains 25 realistic NYC school entries with:
-- Varied performance scores across all metrics
-- Real NYC districts (1-32)
-- Authentic school names and addresses (sample data, not real addresses)
-- Typical grade bands (K-5, K-8)
-- Realistic enrollment numbers and student-teacher ratios
+- **Academic / climate / progress scores:** NYC DOE School Quality Reports
+- **Test proficiency (ELA / Math / Science):** NYSED State Report Card
+- **3-K / Pre-K / K admissions & demand:** NYC DOE InfoHub LL72 reports
+- **Private schools:** NCES Private School Universe Survey (PSS), 2023-24
+- **High school graduation & Regents:** NYC DOE InfoHub
+- **Attendance & absenteeism:** NYC DOE InfoHub (2018-19 → 2024-25)
+- **Discipline & suspensions:** NYC DOE InfoHub LL93 reports
+- **HS admissions & programs:** NYC DOE Fall 2025 HS Directory
+- **NYCEEC early childhood centers:** NYC Open Data
+- **School zones & locations:** NYC Open Data + turf.js point-in-polygon
+- **Neighborhood Safety Index:** NYPD complaint datasets `5uac-w243` (YTD)
+  and `qgea-i56i` (historic) on Socrata, severity-weighted over a rolling
+  12-month window. Methodology is published at
+  [`/safety-methodology`](https://nycschoolsratings.com/safety-methodology).
 
-For production use, replace with live data from NYC DOE or NYSED APIs as described above.
+## Deployment
+
+The app is deployed on Replit. Production uses `server/index-prod.ts`
+which serves the built SPA from `dist/` and the Express API from the same
+origin. Stripe webhooks, the safety-index monthly cron, and the drip
+email scheduler all run on the same instance.
+
+## License
+
+All rights reserved. Data is sourced from the publicly available datasets
+linked above.
