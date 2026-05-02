@@ -893,22 +893,40 @@ I focused on schools with strong academics and Dual Language programs in Brookly
         <DialogContent data-testid="dialog-login-recommendations">
           <DialogHeader>
             <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-              <Lock className="w-6 h-6 text-primary" />
+              <Crown className="w-6 h-6 text-primary" />
             </div>
-            <DialogTitle className="text-center">Sign in to get recommendations</DialogTitle>
+            <DialogTitle className="text-center">Find My Match is a Premium feature</DialogTitle>
             <DialogDescription className="text-center">
-              Create a free account or log in to use Find My Match and get personalized school suggestions.
+              Personalized school recommendations are included with a Premium subscription ($
+              {priceAmount}
+              {isSeasonPass ? " Season Pass" : "/mo"}). You can upgrade now — no account needed to start checkout — or log in if you already have one.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-col gap-2">
             <Button
+              className="w-full gap-2"
+              onClick={startCheckout}
+              disabled={checkoutPending}
+              data-testid="button-upgrade-from-login-dialog"
+            >
+              {checkoutPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Crown className="w-4 h-4" />
+              )}
+              {checkoutPending
+                ? "Loading..."
+                : `Upgrade for $${priceAmount}${isSeasonPass ? " (Season Pass)" : "/mo"}`}
+            </Button>
+            <Button
+              variant="outline"
               className="w-full"
               onClick={() => {
                 window.location.href = "/api/login";
               }}
               data-testid="button-login-from-recommendations"
             >
-              Log in or sign up
+              I already have an account — log in
             </Button>
             <Button
               variant="ghost"
