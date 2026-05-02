@@ -769,7 +769,7 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: varchar("subscription_status").default("free"),
-  subscriptionPlan: varchar("subscription_plan").default("free"), // 'free', 'season_pass', 'developer'
+  subscriptionPlan: varchar("subscription_plan").default("free"), // 'free', 'season_pass', 'premium'
   subscriptionExpiresAt: timestamp("subscription_expires_at"), // For Season Pass expiration
   freeViewSchoolDbn: varchar("free_view_school_dbn"), // DBN of the one school they can view for free
   // Drip campaign tracking
@@ -809,6 +809,28 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 }));
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+// API Keys for the Developer API (Premium feature)
+// We store only a SHA-256 hash of the full key; the plaintext is shown to the
+// user exactly once at creation time. `keyPrefix` is the first 12 chars of the
+// plaintext key (e.g., "nycr_live_aB") and is safe to display in the UI so the
+// user can identify which key is which.
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  keyPrefix: varchar("key_prefix").notNull(),
+  keyHash: varchar("key_hash").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  userIdx: index("api_keys_user_idx").on(table.userId),
+  hashIdx: index("api_keys_hash_idx").on(table.keyHash),
+}));
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
 
 // Magic Link Tokens for passwordless authentication
 export const magicLinkTokens = pgTable("magic_link_tokens", {

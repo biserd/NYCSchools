@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -135,6 +135,13 @@ export interface IStorage {
   
   // HS Admissions operations
   getHsAdmissionsPrograms(dbn: string): Promise<HsAdmissionsProgram[]>;
+
+  // API Keys (Developer API - Premium feature)
+  createApiKey(data: InsertApiKey): Promise<ApiKey>;
+  listApiKeysForUser(userId: string): Promise<ApiKey[]>;
+  findApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
+  touchApiKeyLastUsed(id: number): Promise<void>;
+  revokeApiKey(id: number, userId: string): Promise<ApiKey | undefined>;
 }
 
 export interface NyceecFilters {
@@ -1628,6 +1635,45 @@ export class DbStorage implements IStorage {
       .from(hsAdmissionsProgram)
       .where(eq(hsAdmissionsProgram.dbn, dbn))
       .orderBy(hsAdmissionsProgram.program_number);
+  }
+
+  // API Keys (Developer API - Premium feature)
+  async createApiKey(data: InsertApiKey): Promise<ApiKey> {
+    const [key] = await db.insert(apiKeys).values(data).returning();
+    return key;
+  }
+
+  async listApiKeysForUser(userId: string): Promise<ApiKey[]> {
+    return db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.userId, userId))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async findApiKeyByHash(keyHash: string): Promise<ApiKey | undefined> {
+    const [key] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.keyHash, keyHash))
+      .limit(1);
+    return key;
+  }
+
+  async touchApiKeyLastUsed(id: number): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.id, id));
+  }
+
+  async revokeApiKey(id: number, userId: string): Promise<ApiKey | undefined> {
+    const [key] = await db
+      .update(apiKeys)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(apiKeys.id, id), eq(apiKeys.userId, userId)))
+      .returning();
+    return key;
   }
 }
 

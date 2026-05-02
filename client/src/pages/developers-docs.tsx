@@ -69,7 +69,7 @@ const endpoints: EndpointDoc[] = [
     "offset": 0
   }
 }`,
-    example: `curl -X GET "https://api.nycschoolsratings.com/api/v1/schools?district=02&limit=10" \\
+    example: `curl -X GET "https://nycschoolsratings.com/api/v1/schools?district=2&limit=10" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
   },
   {
@@ -98,7 +98,7 @@ const endpoints: EndpointDoc[] = [
   "programs": {...},
   "surveyResults": {...}
 }`,
-    example: `curl -X GET "https://api.nycschoolsratings.com/api/v1/schools/02M545" \\
+    example: `curl -X GET "https://nycschoolsratings.com/api/v1/schools/02M545" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
   },
   {
@@ -118,17 +118,17 @@ const endpoints: EndpointDoc[] = [
     }
   ]
 }`,
-    example: `curl -X GET "https://api.nycschoolsratings.com/api/v1/districts" \\
+    example: `curl -X GET "https://nycschoolsratings.com/api/v1/districts" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
   },
   {
     method: "GET",
     path: "/api/v1/early-childhood",
-    description: "Retrieve NYCEEC (NYC Early Education Centers) data for 3-K and Pre-K programs.",
+    description: "Retrieve NYC Early Education Centers (3-K and Pre-K). Filter by borough (full name or letter code: M/X/K/Q/R) and center_type (NYCEEC, DOE, Charter).",
     parameters: [
-      { name: "borough", type: "string", required: false, description: "Filter by borough" },
-      { name: "program_type", type: "string", required: false, description: "Filter by program: '3k', 'prek', 'both'" },
-      { name: "limit", type: "number", required: false, description: "Number of results (default: 50)" },
+      { name: "borough", type: "string", required: false, description: "Filter by borough (e.g. 'Brooklyn' or 'K')" },
+      { name: "center_type", type: "string", required: false, description: "Filter by center type: 'NYCEEC', 'DOE', or 'Charter'" },
+      { name: "limit", type: "number", required: false, description: "Number of results (default: 50, max: 200)" },
     ],
     response: `{
   "data": [
@@ -140,11 +140,13 @@ const endpoints: EndpointDoc[] = [
       "programs": ["3-K", "Pre-K"],
       "seats": 60,
       "latitude": 40.7128,
-      "longitude": -73.9352
+      "longitude": -73.9352,
+      "phone": "718-555-0123",
+      "website": null
     }
   ]
 }`,
-    example: `curl -X GET "https://api.nycschoolsratings.com/api/v1/early-childhood?borough=Brooklyn" \\
+    example: `curl -X GET "https://nycschoolsratings.com/api/v1/early-childhood?borough=Brooklyn" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
   },
   {
@@ -164,7 +166,7 @@ const endpoints: EndpointDoc[] = [
     { "year": "2023", "elaPercent": 72, "mathPercent": 68 }
   ]
 }`,
-    example: `curl -X GET "https://api.nycschoolsratings.com/api/v1/trends/02M545" \\
+    example: `curl -X GET "https://nycschoolsratings.com/api/v1/trends/02M545" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
   },
 ];
@@ -317,7 +319,7 @@ export default function DevelopersDocsPage() {
                         Include your API key in the Authorization header of every request:
                       </p>
                       <CodeBlock
-                        code={`curl -X GET "https://api.nycschoolsratings.com/api/v1/schools" \\
+                        code={`curl -X GET "https://nycschoolsratings.com/api/v1/schools" \\
   -H "Authorization: Bearer YOUR_API_KEY"`}
                       />
                     </div>

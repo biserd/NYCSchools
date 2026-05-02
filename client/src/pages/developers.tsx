@@ -13,16 +13,16 @@ import {
   Database,
   Zap,
   Shield,
-  BookOpen,
   ArrowRight,
   Check,
   Star,
   Lock,
   Loader2,
+  Settings as SettingsIcon,
 } from "lucide-react";
 
 export default function DevelopersPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { startCheckout, isLoading: checkoutLoading, isPremium } = useCheckout();
 
   const { data: subscription } = useQuery<{
@@ -39,22 +39,22 @@ export default function DevelopersPage() {
     {
       icon: Database,
       title: "Comprehensive School Data",
-      description: "Access data for 2,100+ NYC public, charter, and private schools including academic scores, demographics, tuition, and program information.",
+      description: "Access data for 1,500+ NYC public and charter schools including academic scores, demographics, and program information — sourced from NYC DOE InfoHub and NYSED.",
     },
     {
       icon: Zap,
-      title: "Real-time Updates",
-      description: "Our API is updated regularly with the latest NYC DOE data releases, ensuring your applications have current information.",
+      title: "Refreshed Each School Year",
+      description: "Endpoints reflect the latest NYC DOE and NYSED releases as we ingest them, so your application stays current with the public datasets we publish on the site.",
     },
     {
       icon: Shield,
-      title: "Secure & Reliable",
-      description: "Industry-standard authentication with API keys, rate limiting, and 99.9% uptime SLA for Premium users.",
+      title: "Bearer-token Authentication",
+      description: "Industry-standard API keys with SHA-256 storage, per-key rate limiting, and one-click revocation from your Settings page.",
     },
     {
       icon: Code,
-      title: "Developer-Friendly",
-      description: "RESTful JSON endpoints with comprehensive documentation, code examples, and SDKs for popular languages.",
+      title: "Plain JSON, No SDK Required",
+      description: "RESTful JSON endpoints documented with curl examples. Works with any HTTP client in any language — no proprietary SDK needed.",
     },
   ];
 
@@ -97,16 +97,32 @@ export default function DevelopersPage() {
                   Build with NYC School Data
                 </h1>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Access comprehensive data for 2,100+ NYC public, charter, and private schools through our RESTful API.
-                  Power your applications with academic metrics, demographics, tuition, program information, and more.
+                  Access data for 1,500+ NYC public and charter schools through our RESTful API.
+                  Power your applications with academic metrics, demographics, program information, and historical trends.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/contact">
-                    <Button size="lg" data-testid="button-contact-api">
-                      <ArrowRight className="w-5 h-5 mr-2" />
-                      Talk to us for API Access
+                  {hasApiAccess ? (
+                    <Link href="/settings#api-access">
+                      <Button size="lg" data-testid="button-manage-api-keys">
+                        <SettingsIcon className="w-5 h-5 mr-2" />
+                        Manage API Keys
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      size="lg"
+                      onClick={startCheckout}
+                      disabled={checkoutLoading}
+                      data-testid="button-unlock-api-access"
+                    >
+                      {checkoutLoading ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <Star className="w-5 h-5 mr-2" />
+                      )}
+                      Unlock API Access
                     </Button>
-                  </Link>
+                  )}
                   <Link href="/developers/docs">
                     <Button variant="outline" size="lg" data-testid="button-explore-docs">
                       Explore Documentation
@@ -205,29 +221,46 @@ export default function DevelopersPage() {
                     Ready to Get Started?
                   </CardTitle>
                   <CardDescription className="text-lg">
-                    Contact us for enterprise-grade API access tailored to your needs.
+                    Subscribe to Premium to generate an API key and start building today.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid sm:grid-cols-3 gap-6 mb-8">
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">2,100+</div>
+                      <div className="text-3xl font-bold text-primary">1,500+</div>
                       <div className="text-sm text-muted-foreground">NYC Schools</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">Custom</div>
-                      <div className="text-sm text-muted-foreground">Rate Limits</div>
+                      <div className="text-3xl font-bold text-primary">60/min</div>
+                      <div className="text-sm text-muted-foreground">Rate Limit</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">99.9%</div>
-                      <div className="text-sm text-muted-foreground">Uptime SLA</div>
+                      <div className="text-3xl font-bold text-primary">10K/day</div>
+                      <div className="text-sm text-muted-foreground">Daily Cap</div>
                     </div>
                   </div>
-                  <Link href="/contact">
-                    <Button size="lg" data-testid="button-contact-footer">
-                      Contact Sales
+                  {hasApiAccess ? (
+                    <Link href="/settings#api-access">
+                      <Button size="lg" data-testid="button-manage-keys-footer">
+                        <SettingsIcon className="w-5 h-5 mr-2" />
+                        Manage API Keys
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      size="lg"
+                      onClick={startCheckout}
+                      disabled={checkoutLoading}
+                      data-testid="button-unlock-footer"
+                    >
+                      {checkoutLoading ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <Star className="w-5 h-5 mr-2" />
+                      )}
+                      Unlock API Access
                     </Button>
-                  </Link>
+                  )}
                 </CardContent>
               </Card>
             </div>

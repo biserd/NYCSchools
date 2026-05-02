@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MapPin, Save, Settings as SettingsIcon, LogIn, CreditCard, Crown, Loader2, ExternalLink, MessageCircle, Calendar, Lock, Sparkles } from "lucide-react";
 import { UserProfile, AiChatSession, AiChatSessionWithMessages } from "@shared/schema";
+import { ApiAccessCard } from "@/components/ApiAccessCard";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 
@@ -531,6 +532,9 @@ export default function Settings() {
             )}
           </CardContent>
         </Card>
+
+        {/* API Access Section (Developer API - Premium) */}
+        <ApiAccessCard isPremium={isPremium} />
 
         {/* AI Chat History Section */}
         <Card className="mt-6">

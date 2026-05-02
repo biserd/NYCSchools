@@ -378,7 +378,7 @@ export default function ComparePage() {
   });
   
   const isPremium = subscription?.status === "active" && 
-    (subscription?.plan === "season_pass" || subscription?.plan === "premium" || subscription?.plan === "developer");
+    (subscription?.plan === "season_pass" || subscription?.plan === "premium");
   
   // Copy shareable link to clipboard
   const copyShareableLink = () => {
