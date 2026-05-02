@@ -54,13 +54,26 @@ const endpoints: EndpointDoc[] = [
       "dbn": "02M545",
       "name": "P.S. 545",
       "address": "123 Main St, New York, NY",
-      "district": "02",
-      "grades": "PK-5",
-      "overallScore": 85,
-      "testProficiency": 78,
-      "climateScore": 92,
-      "progressScore": 85,
-      ...
+      "district": 2,
+      "borough": "Manhattan",
+      "grade_band": "Elementary",
+      "overall_score": 85,
+      "academics_score": 78,
+      "climate_score": 92,
+      "progress_score": 85,
+      "ela_proficiency": 72,
+      "math_proficiency": 68,
+      "science_proficiency": 70,
+      "enrollment": 450,
+      "student_teacher_ratio": 12,
+      "economic_need_index": 0.65,
+      "has_3k": true,
+      "has_prek": true,
+      "has_gifted_talented": false,
+      "latitude": 40.7128,
+      "longitude": -73.9352,
+      "phone": "212-555-0100",
+      "website": "https://example.org"
     }
   ],
   "pagination": {
@@ -75,7 +88,7 @@ const endpoints: EndpointDoc[] = [
   {
     method: "GET",
     path: "/api/v1/schools/:dbn",
-    description: "Get detailed information for a specific school by its DBN (District Borough Number).",
+    description: "Get detailed information for a specific school by its DBN (District Borough Number). Returns a flat object (no `data` wrapper).",
     parameters: [
       { name: "dbn", type: "string", required: true, description: "The school's unique DBN identifier (e.g., '02M545')" },
     ],
@@ -83,20 +96,26 @@ const endpoints: EndpointDoc[] = [
   "dbn": "02M545",
   "name": "P.S. 545",
   "address": "123 Main St, New York, NY",
-  "district": "02",
+  "district": 2,
   "borough": "Manhattan",
-  "grades": "PK-5",
+  "grade_band": "Elementary",
+  "overall_score": 85,
+  "academics_score": 78,
+  "climate_score": 92,
+  "progress_score": 85,
+  "ela_proficiency": 72,
+  "math_proficiency": 68,
+  "science_proficiency": 70,
   "enrollment": 450,
-  "overallScore": 85,
-  "testProficiency": 78,
-  "climateScore": 92,
-  "progressScore": 85,
-  "elaPercent": 72,
-  "mathPercent": 68,
-  "studentTeacherRatio": "12:1",
-  "demographics": {...},
-  "programs": {...},
-  "surveyResults": {...}
+  "student_teacher_ratio": 12,
+  "economic_need_index": 0.65,
+  "has_3k": true,
+  "has_prek": true,
+  "has_gifted_talented": false,
+  "latitude": 40.7128,
+  "longitude": -73.9352,
+  "phone": "212-555-0100",
+  "website": "https://example.org"
 }`,
     example: `curl -X GET "https://nycschoolsratings.com/api/v1/schools/02M545" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
@@ -109,12 +128,17 @@ const endpoints: EndpointDoc[] = [
     response: `{
   "data": [
     {
-      "id": "02",
-      "name": "District 2",
-      "borough": "Manhattan",
-      "schoolCount": 45,
-      "avgOverallScore": 82,
-      "avgTestProficiency": 75
+      "district": 2,
+      "school_count": 45,
+      "overall_score": 82,
+      "academics_score": 75,
+      "climate_score": 88,
+      "progress_score": 80,
+      "ela_proficiency": 72,
+      "math_proficiency": 68,
+      "enrollment": 18250,
+      "student_teacher_ratio": 13,
+      "economic_need_index": 0.42
     }
   ]
 }`,
@@ -134,18 +158,30 @@ const endpoints: EndpointDoc[] = [
     response: `{
   "data": [
     {
-      "locCode": "XAPN",
+      "loc_code": "XAPN",
       "name": "ABC Learning Center",
+      "center_type": "NYCEEC",
+      "borough": "K",
+      "borough_name": "Brooklyn",
+      "district": 17,
       "address": "456 Oak Ave, Brooklyn, NY",
-      "borough": "Brooklyn",
+      "zip_code": "11213",
       "programs": ["3-K", "Pre-K"],
       "seats": 60,
+      "day_length": "Full Day",
+      "extended_day": true,
+      "meals_provided": true,
       "latitude": 40.7128,
       "longitude": -73.9352,
       "phone": "718-555-0123",
       "website": null
     }
-  ]
+  ],
+  "pagination": {
+    "total": 1885,
+    "limit": 50,
+    "offset": 0
+  }
 }`,
     example: `curl -X GET "https://nycschoolsratings.com/api/v1/early-childhood?borough=Brooklyn" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
@@ -153,18 +189,19 @@ const endpoints: EndpointDoc[] = [
   {
     method: "GET",
     path: "/api/v1/trends/:dbn",
-    description: "Get historical performance trends for a specific school (3-5 year data).",
+    description: "Get historical performance trends for a specific school (3-5 year data). Returns a flat object (no `data` wrapper).",
     parameters: [
       { name: "dbn", type: "string", required: true, description: "The school's DBN identifier" },
     ],
     response: `{
   "dbn": "02M545",
   "direction": "improving",
-  "changePercent": 8.5,
-  "yearlyData": [
-    { "year": "2021", "elaPercent": 65, "mathPercent": 62 },
-    { "year": "2022", "elaPercent": 68, "mathPercent": 65 },
-    { "year": "2023", "elaPercent": 72, "mathPercent": 68 }
+  "change_percent": 8.5,
+  "years_analyzed": 3,
+  "yearly_data": [
+    { "year": 2021, "ela_proficiency": 65, "math_proficiency": 62, "science_proficiency": null },
+    { "year": 2022, "ela_proficiency": 68, "math_proficiency": 65, "science_proficiency": null },
+    { "year": 2023, "ela_proficiency": 72, "math_proficiency": 68, "science_proficiency": 70 }
   ]
 }`,
     example: `curl -X GET "https://nycschoolsratings.com/api/v1/trends/02M545" \\
@@ -245,7 +282,29 @@ export default function DevelopersDocsPage() {
               </p>
             </div>
 
-            {!hasApiAccess && (
+            {hasApiAccess ? (
+              <Card className="mb-8 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
+                <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+                  <div className="flex items-center gap-3">
+                    <Key className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <p className="font-medium text-emerald-800 dark:text-emerald-200">
+                        API Access Enabled
+                      </p>
+                      <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                        Generate, view, and revoke your API keys from your account settings.
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/settings#api-access">
+                    <Button data-testid="button-manage-api-keys">
+                      <Key className="w-4 h-4 mr-2" />
+                      Manage Keys
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ) : (
               <Card className="mb-8 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
                 <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
                   <div className="flex items-center gap-3">

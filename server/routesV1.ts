@@ -145,11 +145,23 @@ router.get("/schools", async (req: Request, res: Response) => {
     }
 
     let filtered = allSchools;
-    if (q.district) {
-      const d = parseInt(q.district, 10);
-      if (Number.isFinite(d)) {
-        filtered = filtered.filter((s) => s.district === d);
+    if (q.district !== undefined) {
+      // Accept "2" or "02" but reject anything non-numeric so silent typos
+      // don't get an unfiltered response.
+      if (!/^\d{1,2}$/.test(q.district)) {
+        return apiError(res, 400, "INVALID_PARAMETER", "district must be a numeric district id between 1 and 32.", {
+          parameter: "district",
+          provided: q.district,
+        });
       }
+      const d = parseInt(q.district, 10);
+      if (d < 1 || d > 32) {
+        return apiError(res, 400, "INVALID_PARAMETER", "district must be between 1 and 32.", {
+          parameter: "district",
+          provided: q.district,
+        });
+      }
+      filtered = filtered.filter((s) => s.district === d);
     }
     if (q.grade_band) {
       filtered = filtered.filter((s) => gradeBandMatches(q.grade_band, s.grade_band));
@@ -185,7 +197,8 @@ router.get("/schools/:dbn", async (req: Request, res: Response) => {
     if (!school) {
       return apiError(res, 404, "NOT_FOUND", `No school found with DBN ${dbn}.`);
     }
-    res.json({ data: serializeSchool(school) });
+    // Detail endpoint returns a flat object (no `data` wrapper) — matches docs.
+    res.json(serializeSchool(school));
   } catch (err) {
     console.error("v1 /schools/:dbn error:", err);
     apiError(res, 500, "INTERNAL_ERROR", "Failed to fetch school.");
@@ -295,19 +308,18 @@ router.get("/trends/:dbn", async (req: Request, res: Response) => {
     if (!trend || !trend.historicalData || trend.historicalData.length === 0) {
       return apiError(res, 404, "NOT_FOUND", `No historical scores available for ${dbn}.`);
     }
+    // Trends endpoint returns a flat object (no `data` wrapper) — matches docs.
     res.json({
-      data: {
-        dbn,
-        direction: trend.direction,
-        change_percent: trend.changePercent,
-        years_analyzed: trend.yearsAnalyzed,
-        yearly_data: trend.historicalData.map((s) => ({
-          year: s.year,
-          ela_proficiency: s.ela_proficiency ?? null,
-          math_proficiency: s.math_proficiency ?? null,
-          science_proficiency: s.science_proficiency ?? null,
-        })),
-      },
+      dbn,
+      direction: trend.direction,
+      change_percent: trend.changePercent,
+      years_analyzed: trend.yearsAnalyzed,
+      yearly_data: trend.historicalData.map((s) => ({
+        year: s.year,
+        ela_proficiency: s.ela_proficiency ?? null,
+        math_proficiency: s.math_proficiency ?? null,
+        science_proficiency: s.science_proficiency ?? null,
+      })),
     });
   } catch (err) {
     console.error("v1 /trends/:dbn error:", err);
