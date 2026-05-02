@@ -331,40 +331,170 @@ interface PerSchoolRow {
   weightedRiskScore: number;
 }
 
+// Resumable run state — persisted in app_settings so a restart-killed run
+// can be picked up by the next cron call exactly where it left off.
+const SAFETY_RUN_STATE_KEY = "safety_recompute_run_state";
+
+interface RecomputeRunState {
+  runStartedAt: string;          // ISO — marker for "rows persisted in this run"
+  periodStart: string;           // ISO
+  periodEnd: string;             // ISO
+  priorStart: string;            // ISO
+  totalSchools: number;
+  finalizedAt?: string;          // ISO — set once percentile pass finishes
+}
+
+async function readRunState(): Promise<RecomputeRunState | null> {
+  const rows = await db
+    .select()
+    .from(appSettings)
+    .where(eq(appSettings.key, SAFETY_RUN_STATE_KEY))
+    .limit(1);
+  if (!rows.length) return null;
+  try {
+    return JSON.parse(rows[0].value) as RecomputeRunState;
+  } catch {
+    return null;
+  }
+}
+
+async function writeRunState(state: RecomputeRunState): Promise<void> {
+  const value = JSON.stringify(state);
+  await db
+    .insert(appSettings)
+    .values({
+      key: SAFETY_RUN_STATE_KEY,
+      value,
+      description: "In-progress state for resumable safety-index recompute",
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: appSettings.key,
+      set: { value, updatedAt: new Date() },
+    });
+}
+
+/**
+ * Compute the citywide safety_index + percentile_citywide via a single SQL
+ * UPDATE that ranks every school per radius. Called at the end of a run
+ * once all schools have per-row weighted_risk_score persisted.
+ */
+async function finalizeSafetyPercentiles(runStartedAt: Date): Promise<number> {
+  const result = await db.execute<{ updated: string }>(sql`
+    WITH ranked AS (
+      SELECT id,
+             percent_rank() OVER (
+               PARTITION BY radius_meters
+               ORDER BY weighted_risk_score
+             ) AS rp
+      FROM school_safety_index
+      WHERE last_calculated_at >= ${runStartedAt}
+    )
+    UPDATE school_safety_index s
+    SET safety_index = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int)),
+        percentile_citywide = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int))
+    FROM ranked
+    WHERE s.id = ranked.id
+    RETURNING (1)::text AS updated
+  `);
+  // Drizzle's neon driver returns either `.rows` or array-shape — handle both.
+  const rows = (result as any).rows ?? (result as any);
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
 export async function recomputeSafetyIndex(): Promise<{
   rowsWritten: number;
   schoolCount: number;
+  resumed: boolean;
+  finalized: boolean;
+  remainingSchools: number;
 }> {
+  // ---- Determine current run window (resume or start fresh) ---------------
+  const existing = await readRunState();
+  const isResume = !!(existing && !existing.finalizedAt);
   const now = new Date();
-  const periodEnd = now;
-  const periodStart = new Date(now);
-  periodStart.setMonth(periodStart.getMonth() - 12);
-  const priorStart = new Date(now);
-  priorStart.setMonth(priorStart.getMonth() - 24);
-  const priorEnd = periodStart;
+
+  const runStartedAt = isResume ? new Date(existing!.runStartedAt) : now;
+  const periodEnd = isResume ? new Date(existing!.periodEnd) : now;
+  const periodStart = isResume
+    ? new Date(existing!.periodStart)
+    : (() => {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - 12);
+        return d;
+      })();
+  const priorStart = isResume
+    ? new Date(existing!.priorStart)
+    : (() => {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - 24);
+        return d;
+      })();
 
   console.log(
-    `[safety-recompute] window: current ${periodStart.toISOString()}→${periodEnd.toISOString()}, prior ${priorStart.toISOString()}→${priorEnd.toISOString()}`,
+    `[safety-recompute] ${isResume ? "RESUMING" : "starting"} run @ ${runStartedAt.toISOString()} window current ${periodStart.toISOString()}→${periodEnd.toISOString()}`,
   );
 
-  const points = await loadAllSchoolPoints();
-  console.log(`[safety-recompute] schools with coords: ${points.length}`);
+  // ---- Determine which schools are still pending --------------------------
+  const allPoints = await loadAllSchoolPoints();
+  console.log(`[safety-recompute] schools with coords: ${allPoints.length}`);
 
-  // Single load of last 24mo of complaints
+  // Schools whose row was already persisted in *this* run can be skipped.
+  // We pick any one row per school (radius doesn't matter — they're all
+  // written together inside one batch upsert below).
+  const doneRows = await db.execute<{
+    school_type: string;
+    school_key: string;
+  }>(sql`
+    SELECT DISTINCT school_type, school_key
+    FROM school_safety_index
+    WHERE last_calculated_at >= ${runStartedAt}
+  `);
+  const doneRowsArr = (doneRows as any).rows ?? (doneRows as any);
+  const doneSet = new Set<string>();
+  for (const r of doneRowsArr as Array<{ school_type: string; school_key: string }>) {
+    doneSet.add(`${r.school_type}|${r.school_key}`);
+  }
+  const points = allPoints.filter((p) => !doneSet.has(`${p.type}|${p.key}`));
+  console.log(
+    `[safety-recompute] ${doneSet.size} schools already done in this run; ${points.length} remaining`,
+  );
+
+  // Persist run state so subsequent calls resume correctly.
+  const stateToWrite: RecomputeRunState = {
+    runStartedAt: runStartedAt.toISOString(),
+    periodStart: periodStart.toISOString(),
+    periodEnd: periodEnd.toISOString(),
+    priorStart: priorStart.toISOString(),
+    totalSchools: allPoints.length,
+  };
+  await writeRunState(stateToWrite);
+
+  // ---- If nothing left to compute, just (re)finalize percentiles ----------
+  if (points.length === 0) {
+    console.log(`[safety-recompute] all schools done; running final percentile pass`);
+    const updated = await finalizeSafetyPercentiles(runStartedAt);
+    await writeRunState({ ...stateToWrite, finalizedAt: new Date().toISOString() });
+    console.log(`[safety-recompute] finalized ${updated} rows`);
+    return {
+      rowsWritten: 0,
+      schoolCount: allPoints.length,
+      resumed: isResume,
+      finalized: true,
+      remainingSchools: 0,
+    };
+  }
+
+  // ---- Load complaints into memory + sort by lat once ---------------------
   const allComplaints = await loadComplaintsInMemory(priorStart);
   console.log(`[safety-recompute] complaints loaded: ${allComplaints.length}`);
 
   const radii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
   const maxRadius = Math.max(...radii);
 
-  // Sort complaints by latitude once so per-school bbox lookup can use
-  // binary search on the lat axis (the recompute is otherwise O(N×M) on
-  // ~3,981 schools × ~1.08M complaints = 4B comparisons, which exceeds
-  // any reasonable cron budget).
   const sortedByLat = allComplaints.slice().sort((a, b) => a.lat - b.lat);
   const lats = new Float64Array(sortedByLat.length);
   for (let i = 0; i < sortedByLat.length; i++) lats[i] = sortedByLat[i].lat;
-  // Lower-bound binary search: first index with lats[i] >= target
   const lowerBound = (target: number): number => {
     let lo = 0;
     let hi = lats.length;
@@ -377,113 +507,18 @@ export async function recomputeSafetyIndex(): Promise<{
   };
   console.log(`[safety-recompute] complaints sorted by lat`);
 
-  const allRows: PerSchoolRow[] = [];
+  // ---- Per-batch processing + persistence ---------------------------------
+  // Persist every BATCH schools (= BATCH * radii.length rows) so a restart
+  // mid-run only loses ~BATCH schools of work.
+  const BATCH = 100;
   let processed = 0;
+  let writtenTotal = 0;
+  let pendingRows: PerSchoolRow[] = [];
 
-  for (const school of points) {
-    const latDelta = maxRadius / METERS_PER_DEG_LAT;
-    const lngDelta = maxRadius / metersPerDegLng(school.lat);
-    const minLat = school.lat - latDelta;
-    const maxLat = school.lat + latDelta;
-    const minLng = school.lng - lngDelta;
-    const maxLng = school.lng + lngDelta;
-
-    // Bbox via binary search on sorted-by-lat array, then linear scan for lng
-    const startIdx = lowerBound(minLat);
-    const endIdx = lowerBound(maxLat);
-    const nearby: ComplaintLite[] = [];
-    for (let i = startIdx; i < endIdx; i++) {
-      const c = sortedByLat[i];
-      if (c.lng >= minLng && c.lng <= maxLng) {
-        nearby.push(c);
-      }
-    }
-    processed++;
-    if (processed % 500 === 0) {
-      console.log(
-        `[safety-recompute] processed ${processed}/${points.length} schools`,
-      );
-    }
-    // Yield to the event loop every 50 schools so the dev server stays
-    // responsive (otherwise vite/HMR sees an unresponsive process and
-    // restarts the workflow, killing the recompute mid-run).
-    if (processed % 50 === 0) {
-      await new Promise<void>((resolve) => setImmediate(resolve));
-    }
-    if (nearby.length === 0) {
-      // Still emit zero-rows so the school has data
-      for (const radiusMeters of radii) {
-        allRows.push({
-          schoolType: school.type,
-          schoolKey: school.key,
-          radiusMeters,
-          current: emptyAgg(),
-          prior: emptyAgg(),
-          weightedRiskScore: 0,
-        });
-      }
-      continue;
-    }
-
-    // Per-radius aggregates (current + prior)
-    const aggs = new Map<number, { current: RadiusAggregate; prior: RadiusAggregate }>();
-    for (const r of radii) aggs.set(r, { current: emptyAgg(), prior: emptyAgg() });
-
-    for (const c of nearby) {
-      const d = haversineMeters(school.lat, school.lng, c.lat, c.lng);
-      const isCurrent = c.date >= periodStart && c.date <= periodEnd;
-      const isPrior = c.date >= priorStart && c.date < periodStart;
-      if (!isCurrent && !isPrior) continue;
-      for (const r of radii) {
-        if (d <= r) {
-          const slot = aggs.get(r)!;
-          if (isCurrent) bumpAgg(slot.current, c);
-          else bumpAgg(slot.prior, c);
-        }
-      }
-    }
-
-    for (const r of radii) {
-      const slot = aggs.get(r)!;
-      const areaSqKm = Math.PI * (r / 1000) ** 2;
-      allRows.push({
-        schoolType: school.type,
-        schoolKey: school.key,
-        radiusMeters: r,
-        current: slot.current,
-        prior: slot.prior,
-        weightedRiskScore: weightedScore(slot.current, areaSqKm),
-      });
-    }
-  }
-
-  // Compute citywide percentiles per radius (lower risk = higher safety_index)
-  const byRadius = new Map<number, PerSchoolRow[]>();
-  for (const row of allRows) {
-    const arr = byRadius.get(row.radiusMeters) ?? [];
-    arr.push(row);
-    byRadius.set(row.radiusMeters, arr);
-  }
-
-  const indexByRow = new Map<PerSchoolRow, { safetyIndex: number; percentile: number }>();
-  byRadius.forEach((rows) => {
-    const sorted = [...rows].sort((a, b) => a.weightedRiskScore - b.weightedRiskScore);
-    const n = sorted.length;
-    sorted.forEach((row, i) => {
-      // Percentile of *risk* — lower is better. Convert to safety index.
-      const riskPercentile = n > 1 ? Math.round((i / (n - 1)) * 100) : 50;
-      const safetyIndex = 100 - riskPercentile;
-      indexByRow.set(row, { safetyIndex, percentile: 100 - riskPercentile });
-    });
-  });
-
-  // Bulk upsert in chunks
-  const CHUNK = 1000;
-  let written = 0;
-  for (let i = 0; i < allRows.length; i += CHUNK) {
-    const slice = allRows.slice(i, i + CHUNK);
-    const values = slice.map((row) => {
-      const { safetyIndex, percentile } = indexByRow.get(row)!;
+  const flushBatch = async () => {
+    if (pendingRows.length === 0) return;
+    const stamp = new Date(); // each batch's lastCalculatedAt > runStartedAt
+    const values = pendingRows.map((row) => {
       const priorTotal = row.prior.total;
       const delta = priorTotal > 0 ? ((row.current.total - priorTotal) / priorTotal) * 100 : null;
       let trend: string;
@@ -498,7 +533,6 @@ export async function recomputeSafetyIndex(): Promise<{
       } else {
         trend = "stable";
       }
-
       return {
         schoolType: row.schoolType,
         schoolKey: row.schoolKey,
@@ -512,12 +546,14 @@ export async function recomputeSafetyIndex(): Promise<{
         violationReports: row.current.violation,
         topCategories: topCategories(row.current.byCategory),
         weightedRiskScore: row.weightedRiskScore,
-        safetyIndex,
-        percentileCitywide: percentile,
+        // safety_index/percentile_citywide are placeholders here; the final
+        // SQL pass after the last batch overwrites them with citywide ranks.
+        safetyIndex: 50,
+        percentileCitywide: 50,
         trend,
         trendDelta: delta,
         priorPeriodTotal: priorTotal,
-        lastCalculatedAt: new Date(),
+        lastCalculatedAt: stamp,
       };
     });
 
@@ -548,11 +584,122 @@ export async function recomputeSafetyIndex(): Promise<{
           lastCalculatedAt: sql`excluded.last_calculated_at`,
         },
       });
-    written += values.length;
+    writtenTotal += values.length;
+    pendingRows = [];
+  };
+
+  for (const school of points) {
+    const latDelta = maxRadius / METERS_PER_DEG_LAT;
+    const lngDelta = maxRadius / metersPerDegLng(school.lat);
+    const minLat = school.lat - latDelta;
+    const maxLat = school.lat + latDelta;
+    const minLng = school.lng - lngDelta;
+    const maxLng = school.lng + lngDelta;
+
+    const startIdx = lowerBound(minLat);
+    const endIdx = lowerBound(maxLat);
+    const nearby: ComplaintLite[] = [];
+    for (let i = startIdx; i < endIdx; i++) {
+      const c = sortedByLat[i];
+      if (c.lng >= minLng && c.lng <= maxLng) {
+        nearby.push(c);
+      }
+    }
+
+    if (nearby.length === 0) {
+      for (const radiusMeters of radii) {
+        pendingRows.push({
+          schoolType: school.type,
+          schoolKey: school.key,
+          radiusMeters,
+          current: emptyAgg(),
+          prior: emptyAgg(),
+          weightedRiskScore: 0,
+        });
+      }
+    } else {
+      const aggs = new Map<number, { current: RadiusAggregate; prior: RadiusAggregate }>();
+      for (const r of radii) aggs.set(r, { current: emptyAgg(), prior: emptyAgg() });
+      for (const c of nearby) {
+        const d = haversineMeters(school.lat, school.lng, c.lat, c.lng);
+        const isCurrent = c.date >= periodStart && c.date <= periodEnd;
+        const isPrior = c.date >= priorStart && c.date < periodStart;
+        if (!isCurrent && !isPrior) continue;
+        for (const r of radii) {
+          if (d <= r) {
+            const slot = aggs.get(r)!;
+            if (isCurrent) bumpAgg(slot.current, c);
+            else bumpAgg(slot.prior, c);
+          }
+        }
+      }
+      for (const r of radii) {
+        const slot = aggs.get(r)!;
+        const areaSqKm = Math.PI * (r / 1000) ** 2;
+        pendingRows.push({
+          schoolType: school.type,
+          schoolKey: school.key,
+          radiusMeters: r,
+          current: slot.current,
+          prior: slot.prior,
+          weightedRiskScore: weightedScore(slot.current, areaSqKm),
+        });
+      }
+    }
+
+    processed++;
+
+    // Flush + yield every BATCH schools so progress is durable and the
+    // dev server stays responsive.
+    if (processed % BATCH === 0) {
+      await flushBatch();
+      console.log(
+        `[safety-recompute] processed ${processed}/${points.length} schools (total ${doneSet.size + processed}/${allPoints.length}); written so far ${writtenTotal}`,
+      );
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    } else if (processed % 25 === 0) {
+      // Yield more frequently than we flush to keep the loop responsive.
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
   }
 
-  console.log(`[safety-recompute] wrote ${written} rows for ${points.length} schools`);
-  return { rowsWritten: written, schoolCount: points.length };
+  await flushBatch();
+  console.log(
+    `[safety-recompute] processed all ${processed}/${points.length} remaining schools; total written this call ${writtenTotal}`,
+  );
+
+  // ---- If every school is now done, finalize percentiles ------------------
+  const remaining = await db.execute<{ remaining: string }>(sql`
+    SELECT (${allPoints.length}::int - COUNT(DISTINCT (school_type || '|' || school_key)))::text AS remaining
+    FROM school_safety_index
+    WHERE last_calculated_at >= ${runStartedAt}
+  `);
+  const remRows = (remaining as any).rows ?? (remaining as any);
+  const remainingSchools = Number(remRows[0]?.remaining ?? 0);
+
+  let finalized = false;
+  if (remainingSchools <= 0) {
+    console.log(`[safety-recompute] all schools done; running final percentile pass`);
+    const updated = await finalizeSafetyPercentiles(runStartedAt);
+    await writeRunState({
+      ...stateToWrite,
+      finalizedAt: new Date().toISOString(),
+    });
+    finalized = true;
+    console.log(`[safety-recompute] finalized ${updated} rows`);
+  } else {
+    console.log(
+      `[safety-recompute] ${remainingSchools} schools still pending; trigger cron again to resume`,
+    );
+  }
+
+  return {
+    rowsWritten: writtenTotal,
+    schoolCount: allPoints.length,
+    resumed: isResume,
+    finalized,
+    remainingSchools,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -703,6 +850,9 @@ export interface SafetySyncRunResult {
   rowsWritten: number | null;
   cutoffISO: string | null;
   error: string | null;
+  resumed: boolean;
+  finalized: boolean;
+  remainingSchools: number | null;
 }
 
 /**
@@ -721,6 +871,9 @@ export async function runSafetySync(opts: SyncOptions & { skipPull?: boolean } =
     rowsWritten: null,
     cutoffISO: null,
     error: null,
+    resumed: false,
+    finalized: false,
+    remainingSchools: null,
   };
 
   try {
@@ -737,6 +890,9 @@ export async function runSafetySync(opts: SyncOptions & { skipPull?: boolean } =
     const recompute = await recomputeSafetyIndex();
     result.schoolCount = recompute.schoolCount;
     result.rowsWritten = recompute.rowsWritten;
+    result.resumed = recompute.resumed;
+    result.finalized = recompute.finalized;
+    result.remainingSchools = recompute.remainingSchools;
     result.success = true;
   } catch (err: any) {
     result.error = err?.message ?? String(err);
