@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -320,6 +321,12 @@ export default function NyceecDetail() {
               )}
             </CardContent>
           </Card>
+
+          <SafetyIndexCard
+            schoolType="nyceec"
+            schoolKey={center.locCode}
+            schoolName={center.name}
+          />
 
           <Card data-testid="card-program">
             <CardHeader>

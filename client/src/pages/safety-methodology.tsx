@@ -13,7 +13,7 @@ export default function SafetyMethodologyPage() {
       <SEOHead
         title="Neighborhood Safety Index Methodology | NYC School Ratings"
         description="Learn exactly how we calculate the 0-100 Neighborhood Safety Index for every NYC school using NYPD complaint data, severity weights, and citywide percentiles."
-        path="/safety-methodology"
+        canonicalPath="/safety-methodology"
       />
       <AppHeader />
 

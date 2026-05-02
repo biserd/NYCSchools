@@ -340,13 +340,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user?.id;
       const isPremium = userId ? await isPremiumUser(userId) : false;
 
-      const validRadii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
+      const validRadii: number[] = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
       const requestedRadius = parseInt(String(req.query.radius ?? ""), 10);
-      let radiusMeters = DEFAULT_SAFETY_RADIUS_METERS;
-      if (Number.isFinite(requestedRadius) && validRadii.includes(requestedRadius)) {
-        if (isPremium) {
-          radiusMeters = requestedRadius;
-        }
+      let radiusMeters: number = DEFAULT_SAFETY_RADIUS_METERS;
+      if (
+        Number.isFinite(requestedRadius) &&
+        validRadii.includes(requestedRadius) &&
+        isPremium
+      ) {
+        radiusMeters = requestedRadius;
       }
 
       const cacheKey = `safety-${type}-${schoolKey}-${radiusMeters}`;

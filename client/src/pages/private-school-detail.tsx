@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Footer } from "@/components/Footer";
+import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
@@ -604,6 +605,12 @@ export default function PrivateSchoolDetail() {
           </div>
 
           <div className="space-y-6">
+            <SafetyIndexCard
+              schoolType="private"
+              schoolKey={school.ncesId}
+              schoolName={school.name}
+            />
+
             <Card data-testid="card-contact">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">

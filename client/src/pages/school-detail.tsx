@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Footer } from "@/components/Footer";
+import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
@@ -441,6 +442,13 @@ export default function SchoolDetail() {
               >
                 <CommuteTime schoolDbn={schoolWithScore.dbn} />
               </SchoolZoneMap>
+              <div className="mt-4">
+                <SafetyIndexCard
+                  schoolType="public"
+                  schoolKey={schoolWithScore.dbn}
+                  schoolName={schoolWithScore.name}
+                />
+              </div>
             </div>
 
             {/* School Information Card */}
