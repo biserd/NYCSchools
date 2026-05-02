@@ -40,6 +40,11 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-3">Tools</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
+                <Link href="/safe-and-strong" className="hover:text-foreground transition-colors" data-testid="footer-link-safe-and-strong">
+                  Safe &amp; Strong Schools
+                </Link>
+              </li>
+              <li>
                 <Link href="/recommendations" className="hover:text-foreground transition-colors" data-testid="footer-link-recommendations">
                   Find My Match
                 </Link>
