@@ -93,13 +93,13 @@ export async function getPropertiesForZip(zip: string, limit = 6): Promise<Realt
   return properties;
 }
 
-// GET /api/realtors/nearby?zip=10025  →  { zip, properties, deepLink }
+// GET /api/realtors/nearby/:zip  (also accepts ?zip= for back-compat)
 // Mounted in server/routes.ts after sameOriginGuard, so only first-party
 // browsers can hit it. Returns an empty array on any upstream failure so the
 // frontend can render a graceful empty state.
 export async function nearbyPropertiesHandler(req: Request, res: Response) {
   try {
-    const zip = String(req.query.zip || "").trim();
+    const zip = String(req.params.zip || req.query.zip || "").trim();
     if (!/^\d{5}$/.test(zip)) {
       return res.status(400).json({ error: "Invalid zip" });
     }

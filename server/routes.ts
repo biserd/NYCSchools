@@ -322,6 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Nearby properties from sister site Realtors Dashboard. Server-side
   // proxy so we never expose REALTORS_DASHBOARD_API_KEY to the browser; the
   // handler caches per ZIP for 12h. See server/realtorsApi.ts.
+  app.get("/api/realtors/nearby/:zip", nearbyPropertiesHandler);
   app.get("/api/realtors/nearby", nearbyPropertiesHandler);
 
   // Safe & Strong dashboard data: every public/charter school that has BOTH
