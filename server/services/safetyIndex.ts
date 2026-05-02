@@ -573,3 +573,155 @@ export async function getSafetyIndex(
     availableRadii: SAFETY_RADIUS_OPTIONS.map((r) => r.meters),
   };
 }
+
+// ---------------------------------------------------------------------------
+// 5. Monthly sync runner + status (used by cron endpoint and CLI script)
+// ---------------------------------------------------------------------------
+
+const SAFETY_SYNC_STATUS_KEY = "safety_sync_status";
+
+export interface SafetySyncStatus {
+  lastRunAt: string | null;
+  lastDurationMs: number | null;
+  lastInserted: number | null;
+  lastSchoolCount: number | null;
+  lastRowsWritten: number | null;
+  lastError: string | null;
+  totalComplaintRows: number;
+  totalSafetyRows: number;
+  oldestComplaintDate: string | null;
+  newestComplaintDate: string | null;
+}
+
+interface RecordedSafetyStatus {
+  lastRunAt: string;
+  lastDurationMs: number;
+  lastInserted: number | null;
+  lastSchoolCount: number | null;
+  lastRowsWritten: number | null;
+  lastError: string | null;
+}
+
+async function readSavedSafetyStatus(): Promise<RecordedSafetyStatus | null> {
+  const rows = await db
+    .select()
+    .from(appSettings)
+    .where(eq(appSettings.key, SAFETY_SYNC_STATUS_KEY))
+    .limit(1);
+  if (!rows.length) return null;
+  try {
+    return JSON.parse(rows[0].value) as RecordedSafetyStatus;
+  } catch {
+    return null;
+  }
+}
+
+async function writeSavedSafetyStatus(status: RecordedSafetyStatus): Promise<void> {
+  const value = JSON.stringify(status);
+  await db
+    .insert(appSettings)
+    .values({
+      key: SAFETY_SYNC_STATUS_KEY,
+      value,
+      description: "Last-run state for the monthly Neighborhood Safety Index sync",
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: appSettings.key,
+      set: { value, updatedAt: new Date() },
+    });
+}
+
+export async function getSafetySyncStatus(): Promise<SafetySyncStatus> {
+  const saved = await readSavedSafetyStatus();
+  const counts = await db.execute<{
+    complaint_count: string;
+    safety_count: string;
+    oldest: Date | null;
+    newest: Date | null;
+  }>(sql`
+    SELECT
+      (SELECT COUNT(*) FROM nypd_complaints) AS complaint_count,
+      (SELECT COUNT(*) FROM school_safety_index) AS safety_count,
+      (SELECT MIN(complaint_date) FROM nypd_complaints) AS oldest,
+      (SELECT MAX(complaint_date) FROM nypd_complaints) AS newest
+  `);
+  const row = (counts as any).rows?.[0] ?? (counts as any)[0] ?? {};
+  return {
+    lastRunAt: saved?.lastRunAt ?? null,
+    lastDurationMs: saved?.lastDurationMs ?? null,
+    lastInserted: saved?.lastInserted ?? null,
+    lastSchoolCount: saved?.lastSchoolCount ?? null,
+    lastRowsWritten: saved?.lastRowsWritten ?? null,
+    lastError: saved?.lastError ?? null,
+    totalComplaintRows: Number(row.complaint_count ?? 0),
+    totalSafetyRows: Number(row.safety_count ?? 0),
+    oldestComplaintDate: row.oldest ? new Date(row.oldest).toISOString() : null,
+    newestComplaintDate: row.newest ? new Date(row.newest).toISOString() : null,
+  };
+}
+
+export interface SafetySyncRunResult {
+  success: boolean;
+  durationMs: number;
+  inserted: number | null;
+  schoolCount: number | null;
+  rowsWritten: number | null;
+  cutoffISO: string | null;
+  error: string | null;
+}
+
+/**
+ * Runs the full monthly pipeline: pull recent NYPD complaints, then
+ * recompute every school's safety index. Designed to be called from a
+ * scheduler (cron endpoint or Replit Scheduled Deployment). Idempotent —
+ * the underlying pull uses upserts so re-running is safe.
+ */
+export async function runSafetySync(opts: SyncOptions & { skipPull?: boolean } = {}): Promise<SafetySyncRunResult> {
+  const startedAt = Date.now();
+  const result: SafetySyncRunResult = {
+    success: false,
+    durationMs: 0,
+    inserted: null,
+    schoolCount: null,
+    rowsWritten: null,
+    cutoffISO: null,
+    error: null,
+  };
+
+  try {
+    if (!opts.skipPull) {
+      console.log(`[safety-sync] starting pull (months=${opts.months ?? 24}${opts.maxRows ? `, maxRows=${opts.maxRows}` : ""})`);
+      const pull = await syncNypdComplaints({ months: opts.months, maxRows: opts.maxRows });
+      result.inserted = pull.inserted;
+      result.cutoffISO = pull.cutoffISO;
+    } else {
+      console.log("[safety-sync] skipPull set; only recomputing");
+    }
+
+    console.log("[safety-sync] recomputing per-school safety index");
+    const recompute = await recomputeSafetyIndex();
+    result.schoolCount = recompute.schoolCount;
+    result.rowsWritten = recompute.rowsWritten;
+    result.success = true;
+  } catch (err: any) {
+    result.error = err?.message ?? String(err);
+    console.error("[safety-sync] FAILED:", err);
+  } finally {
+    result.durationMs = Date.now() - startedAt;
+    try {
+      await writeSavedSafetyStatus({
+        lastRunAt: new Date().toISOString(),
+        lastDurationMs: result.durationMs,
+        lastInserted: result.inserted,
+        lastSchoolCount: result.schoolCount,
+        lastRowsWritten: result.rowsWritten,
+        lastError: result.error,
+      });
+    } catch (statusErr) {
+      console.error("[safety-sync] failed to record status:", statusErr);
+    }
+  }
+
+  return result;
+}

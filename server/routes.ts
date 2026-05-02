@@ -18,7 +18,7 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
 import { neighborhoodComparisons, getComparisonSlugForNeighborhood } from "@shared/neighborhoodComparisons";
-import { getSafetyIndex } from "./services/safetyIndex";
+import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/safetyIndex";
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 
 // Premium subscription limits
