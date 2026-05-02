@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap } from "lucide-react";
+import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target } from "lucide-react";
 import { Link } from "wouter";
 
 interface UserZones {
@@ -647,6 +647,18 @@ export default function Home() {
                   Map View
                 </Link>
               </Button>
+              <Button variant="outline" size="sm" asChild data-testid="button-lottery-nav">
+                <Link href="/lottery-simulator">
+                  <Shuffle className="w-4 h-4 mr-2" />
+                  Lottery
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild data-testid="button-chances-nav">
+                <Link href="/chances-calculator">
+                  <Target className="w-4 h-4 mr-2" />
+                  Chances
+                </Link>
+              </Button>
               {isAuthenticated && user && (
                 <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
                   <Link href="/settings">
@@ -739,6 +751,12 @@ export default function Home() {
                     <Link href="/lottery-simulator" data-testid="menu-item-lottery">
                       <Shuffle className="w-4 h-4 mr-2" />
                       Lottery Simulator
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/chances-calculator" data-testid="menu-item-chances">
+                      <Target className="w-4 h-4 mr-2" />
+                      Chances Calculator
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
