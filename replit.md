@@ -28,7 +28,7 @@ The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data
 **Drip Email Campaign**: An automated, re-engagement email sequence for free users over 14 days, controlled by `app_settings` and user flags.
 **Server-Side Caching**: Centralized in-memory caching with configurable TTLs, mutation protection via `structuredClone`, automatic cleanup, and webhook-based invalidation.
 **Shareable Comparison URLs**: SEO-optimized comparison pages with friendly slugs (e.g., `/compare/PS006-M-vs-PS290-M`), dynamic SEO, and instant URL updates. Includes pre-generated URLs for sitemap indexing and a natural language comparison summary.
-**Core Web Vitals Optimizations**: Includes lazy loading for heavy pages, `React.memo` for component optimization, deferred analytics scripts, font optimization, and aggressive static asset caching.
+**Core Web Vitals Optimizations**: Includes lazy loading for heavy pages (Home is intentionally eager-imported so its LCP element paints in the initial JS chunk), `React.memo` for component optimization, fully deferred analytics scripts (both loader and inline init), Inter font trimmed to weights 400/500/600/700 with `display=swap`, and aggressive static asset caching. The Home page renders its header, FilterBar, AI banner, and School Guides immediately and only skeletonizes the school list area while `/api/schools` is fetching, so the LCP text candidate is in the DOM on first paint.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.

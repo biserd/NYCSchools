@@ -9,6 +9,7 @@ import { ComparisonProvider } from "@/contexts/ComparisonContext";
 import { CompareBar } from "@/components/CompareBar";
 import { ChatBot } from "@/components/ChatBot";
 import { Skeleton } from "@/components/ui/skeleton";
+import Home from "@/pages/home";
 import SettingsPage from "@/pages/settings";
 import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
@@ -24,8 +25,8 @@ import DevelopersPage from "@/pages/developers";
 import ContactPage from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 
-// Lazy load heavy route components to improve LCP and reduce initial bundle size
-const Home = lazy(() => import("@/pages/home"));
+// Lazy load secondary route components to reduce initial bundle size.
+// Home is intentionally NOT lazy: it's the landing page and must paint LCP fast.
 const FavoritesPage = lazy(() => import("@/pages/favorites"));
 const SchoolDetail = lazy(() => import("@/pages/school-detail"));
 const ComparePage = lazy(() => import("@/pages/compare"));

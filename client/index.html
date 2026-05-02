@@ -23,22 +23,24 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
-    
-    <!-- Preconnect for fonts (improves LCP) -->
+
+    <!-- Preconnect to font CDN (improves LCP for text-based hero) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <!-- Google Fonts with display=swap for faster text rendering -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+
+    <!-- Trim font weights to only those actually used (400/500/600/700) and
+         load synchronously with display=swap so the LCP text paints in fallback
+         font immediately, then upgrades when Inter arrives. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Google Analytics 4 - Deferred to not block rendering -->
+
+    <!-- Google Analytics 4 - Fully deferred so neither the loader nor the
+         init code blocks parsing or competes with the LCP paint. -->
     <script defer src="https://www.googletagmanager.com/gtag/js?id=G-CFQMFS3K1N"></script>
-    <script>
+    <script defer>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());

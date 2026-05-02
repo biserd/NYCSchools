@@ -562,36 +562,6 @@ export default function Home() {
     setDetailOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background" data-testid="loading-state">
-        <div className="sticky top-0 z-50 bg-background border-b" data-testid="skeleton-filter-bar">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <Skeleton className="h-12 flex-1" data-testid="skeleton-search" />
-                <Skeleton className="h-12 w-full md:w-48" data-testid="skeleton-district" />
-                <Skeleton className="h-12 w-full md:w-48" data-testid="skeleton-grade" />
-              </div>
-              <div className="flex gap-2">
-                <Skeleton className="h-8 w-32" data-testid="skeleton-sort-1" />
-                <Skeleton className="h-8 w-24" data-testid="skeleton-sort-2" />
-                <Skeleton className="h-8 w-24" data-testid="skeleton-sort-3" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="skeleton-schools">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-64" data-testid={`skeleton-card-${i}`} />
-            ))}
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -914,12 +884,20 @@ export default function Home() {
         
         <div className="mb-4">
           <p className="text-sm text-muted-foreground" data-testid="text-results-count">
-            Showing {filteredAndSortedSchools.length} {filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}
+            {isLoading
+              ? 'Loading schools…'
+              : `Showing ${filteredAndSortedSchools.length} ${filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}`}
           </p>
         </div>
-        <SchoolList
-          schools={filteredAndSortedSchools}
-        />
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="skeleton-schools">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-64" data-testid={`skeleton-card-${i}`} />
+            ))}
+          </div>
+        ) : (
+          <SchoolList schools={filteredAndSortedSchools} />
+        )}
       </main>
 
       <SchoolDetailPanel
