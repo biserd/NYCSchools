@@ -72,7 +72,26 @@ export async function* streamSocrata<T = NypdComplaintRow>(
     let attempt = 0;
     let rows: T[] | null = null;
     while (attempt < 4) {
-      const res = await fetch(url.toString(), { headers });
+      // Socrata occasionally holds the connection open without responding,
+      // particularly at deep offsets on the historic dataset. Without an
+      // explicit AbortController, fetch() will hang forever and stall the
+      // entire sync. Use a 90s per-page timeout so we can retry.
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 90_000);
+      let res: Response;
+      try {
+        res = await fetch(url.toString(), { headers, signal: ctl.signal });
+      } catch (err: any) {
+        clearTimeout(timer);
+        const wait = 1000 * Math.pow(2, attempt);
+        console.warn(
+          `[socrata] fetch error for ${q.dataset} offset=${offset} (${err?.message || err}); retry in ${wait}ms`,
+        );
+        await sleep(wait);
+        attempt++;
+        continue;
+      }
+      clearTimeout(timer);
       if (res.status === 429 || res.status >= 500) {
         const wait = 1000 * Math.pow(2, attempt);
         console.warn(
@@ -92,6 +111,9 @@ export async function* streamSocrata<T = NypdComplaintRow>(
       break;
     }
     if (!rows) throw new Error(`Socrata ${q.dataset} failed after retries`);
+    console.log(
+      `[socrata] ${q.dataset} offset=${offset} returned ${rows.length} rows`,
+    );
 
     if (rows.length === 0) return;
     for (const row of rows) {

@@ -147,7 +147,10 @@ export async function syncNypdComplaints(opts: SyncOptions = {}): Promise<{
         dataset,
         select,
         where,
-        order: "cmplnt_fr_dt",
+        // Use :id order — Socrata's historic NYPD complaint dataset times
+        // out on `cmplnt_fr_dt` ordering at deep offsets. :id is the
+        // primary key index and paginates reliably.
+        order: ":id",
         pageSize: 50_000,
         maxRows: opts.maxRows,
       })) {
@@ -354,7 +357,28 @@ export async function recomputeSafetyIndex(): Promise<{
   const radii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
   const maxRadius = Math.max(...radii);
 
+  // Sort complaints by latitude once so per-school bbox lookup can use
+  // binary search on the lat axis (the recompute is otherwise O(N×M) on
+  // ~3,981 schools × ~1.08M complaints = 4B comparisons, which exceeds
+  // any reasonable cron budget).
+  const sortedByLat = allComplaints.slice().sort((a, b) => a.lat - b.lat);
+  const lats = new Float64Array(sortedByLat.length);
+  for (let i = 0; i < sortedByLat.length; i++) lats[i] = sortedByLat[i].lat;
+  // Lower-bound binary search: first index with lats[i] >= target
+  const lowerBound = (target: number): number => {
+    let lo = 0;
+    let hi = lats.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (lats[mid] < target) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+  console.log(`[safety-recompute] complaints sorted by lat`);
+
   const allRows: PerSchoolRow[] = [];
+  let processed = 0;
 
   for (const school of points) {
     const latDelta = maxRadius / METERS_PER_DEG_LAT;
@@ -364,17 +388,27 @@ export async function recomputeSafetyIndex(): Promise<{
     const minLng = school.lng - lngDelta;
     const maxLng = school.lng + lngDelta;
 
-    // Local bbox subset
+    // Bbox via binary search on sorted-by-lat array, then linear scan for lng
+    const startIdx = lowerBound(minLat);
+    const endIdx = lowerBound(maxLat);
     const nearby: ComplaintLite[] = [];
-    for (const c of allComplaints) {
-      if (
-        c.lat >= minLat &&
-        c.lat <= maxLat &&
-        c.lng >= minLng &&
-        c.lng <= maxLng
-      ) {
+    for (let i = startIdx; i < endIdx; i++) {
+      const c = sortedByLat[i];
+      if (c.lng >= minLng && c.lng <= maxLng) {
         nearby.push(c);
       }
+    }
+    processed++;
+    if (processed % 500 === 0) {
+      console.log(
+        `[safety-recompute] processed ${processed}/${points.length} schools`,
+      );
+    }
+    // Yield to the event loop every 50 schools so the dev server stays
+    // responsive (otherwise vite/HMR sees an unresponsive process and
+    // restarts the workflow, killing the recompute mid-run).
+    if (processed % 50 === 0) {
+      await new Promise<void>((resolve) => setImmediate(resolve));
     }
     if (nearby.length === 0) {
       // Still emit zero-rows so the school has data
