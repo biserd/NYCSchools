@@ -337,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const schoolKey = String(req.params.schoolKey).toUpperCase();
 
-      const userId = req.user?.id;
+      const userId = req.session?.userId;
       const isPremium = userId ? await isPremiumUser(userId) : false;
 
       const validRadii: number[] = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
