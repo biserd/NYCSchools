@@ -32,14 +32,14 @@ const GRADE_BAND_OPTIONS = [
 ];
 
 const GT_OPTIONS = [
-  { value: "all", label: "All Schools" },
+  { value: "all", label: "Any G&T Status" },
   { value: "gt", label: "Has G&T" },
   { value: "citywide", label: "Citywide G&T" },
   { value: "district", label: "District G&T" },
 ];
 
 const DUAL_LANGUAGE_OPTIONS = [
-  { value: "all", label: "All Schools" },
+  { value: "all", label: "Any Dual Language" },
   { value: "dl", label: "Has Dual Language" },
   { value: "spanish", label: "Spanish" },
   { value: "chinese", label: "Chinese" },
@@ -48,7 +48,7 @@ const DUAL_LANGUAGE_OPTIONS = [
 ];
 
 const IEP_OPTIONS = [
-  { value: "all", label: "All Schools" },
+  { value: "all", label: "Any IEP Level" },
   { value: "low", label: "Low IEP (<15%)" },
   { value: "medium", label: "Medium IEP (15-25%)" },
   { value: "high", label: "High IEP (>25%)" },
@@ -1073,7 +1073,7 @@ export default function MapPage() {
             <SelectValue placeholder="My Zoned Schools" />
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            <SelectItem value="all">All Schools</SelectItem>
+            <SelectItem value="all">All NYC Schools</SelectItem>
             <SelectItem value="elementary">
               <span className="flex items-center gap-2">
                 <Home className="h-3 w-3 text-primary" />
