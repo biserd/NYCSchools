@@ -21,6 +21,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Shield,
@@ -215,25 +220,52 @@ export function SafetyIndexCard({
           <CardTitle className="text-lg flex items-center gap-2">
             <Shield className="w-5 h-5" />
             Neighborhood Safety
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/safety-methodology"
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
                   className="text-muted-foreground hover-elevate rounded-md p-0.5 inline-flex"
-                  aria-label="Learn how the Neighborhood Safety score is calculated"
-                  data-testid="link-safety-info"
+                  aria-label="About the Neighborhood Safety score"
+                  data-testid="button-safety-info"
                 >
                   <Info className="w-4 h-4" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="text-sm">
-                  0–100 score based on NYPD complaint data within the selected
-                  radius over the last 12 months. Higher = safer relative to
-                  other NYC schools. Click for full methodology.
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-80 text-sm space-y-2"
+                align="start"
+                data-testid="popover-safety-info"
+              >
+                <p className="font-semibold text-foreground">
+                  How this score is calculated
                 </p>
-              </TooltipContent>
-            </Tooltip>
+                <p className="text-muted-foreground">
+                  A 0–100 score based on NYPD complaint data within the
+                  selected radius over the last 12 months. Higher = safer
+                  relative to other NYC schools.
+                </p>
+                <ul className="text-muted-foreground list-disc pl-4 space-y-1">
+                  <li>
+                    Reports are weighted by severity (violent felony 8 ·
+                    felony 4 · misdemeanor 2 · violation 1).
+                  </li>
+                  <li>
+                    Each school is ranked as a citywide percentile, so
+                    50 ≈ average.
+                  </li>
+                  <li>
+                    Trend compares the last 12 months to the prior 12.
+                  </li>
+                </ul>
+                <Link
+                  href="/safety-methodology"
+                  className="text-primary hover:underline inline-block pt-1"
+                  data-testid="link-safety-methodology-popover"
+                >
+                  View full methodology →
+                </Link>
+              </PopoverContent>
+            </Popover>
           </CardTitle>
           {isPremium ? (
             <Select
