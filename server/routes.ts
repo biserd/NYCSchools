@@ -10,6 +10,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
 import apiV1Router from "./routesV1";
 import { sameOriginGuard } from "./sameOriginGuard";
+import { nearbyPropertiesHandler } from "./realtorsApi";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
 import OpenAI from "openai";
 import compression from "compression";
@@ -317,6 +318,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
+
+  // Nearby properties from sister site Realtors Dashboard. Server-side
+  // proxy so we never expose REALTORS_DASHBOARD_API_KEY to the browser; the
+  // handler caches per ZIP for 12h. See server/realtorsApi.ts.
+  app.get("/api/realtors/nearby", nearbyPropertiesHandler);
 
   // Safe & Strong dashboard data: every public/charter school that has BOTH
   // an overall rating and a 0.5-mile safety index, with the 50/50 combined

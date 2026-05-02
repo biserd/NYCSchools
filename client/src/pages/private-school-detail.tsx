@@ -12,6 +12,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { PrivateSchoolMap } from "@/components/PrivateSchoolMap";
+import { NearbyPropertiesPanel } from "@/components/NearbyPropertiesPanel";
 import { useAuth } from "@/hooks/useAuth";
 import {
   MapPin,
@@ -771,6 +772,11 @@ export default function PrivateSchoolDetail() {
               </CardContent>
             </Card>
           </div>
+
+          <NearbyPropertiesPanel
+            schoolAddress={school.address}
+            schoolName={school.name}
+          />
         </div>
       </main>
 
