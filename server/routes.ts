@@ -108,6 +108,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setIsPremiumChecker(isPremiumUser);
   app.use("/api/v1", apiV1Router);
 
+  // Shared admin guard. The custom auth middleware (server/auth.ts) only
+  // populates req.session.userId — it does NOT set req.user — so we must
+  // look the user up by their session id and then check the email against
+  // ADMIN_EMAILS (with a sane fallback for the two known admin accounts).
+  async function isRequestFromAdmin(req: any): Promise<boolean> {
+    const userId = req.session?.userId as string | undefined;
+    if (!userId) return false;
+    const user = await storage.getUser(userId);
+    const email = user?.email;
+    if (!email) return false;
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim()) ||
+      ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
+    return adminEmails.includes(email);
+  }
+
   // Add compression middleware
   app.use(compression());
 
@@ -3620,10 +3635,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // Admin endpoint to inspect the last safety-sync run (and current data freshness).
   app.get("/api/admin/safety-sync/status", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userEmail = req.user?.email;
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) ||
-        ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
-      if (!userEmail || !adminEmails.includes(userEmail)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Forbidden' });
       }
       const status = await getSafetySyncStatus();
@@ -3692,14 +3704,10 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // Admin endpoint to check drip campaign status
   app.get("/api/admin/drip-campaign/status", isAuthenticated, async (req: any, res: Response) => {
     try {
-      // Check if user is admin (you might want to add a proper admin check)
-      const userEmail = req.user?.email;
-      const adminEmails = ['hello@bigappledigital.nyc'];
-      
-      if (!adminEmails.includes(userEmail)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Admin access required' });
       }
-      
+
       const isEnabled = await isDripCampaignEnabled();
       res.json({ enabled: isEnabled });
     } catch (error: any) {
@@ -3711,13 +3719,10 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // Admin endpoint to enable/disable drip campaign
   app.post("/api/admin/drip-campaign/toggle", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userEmail = req.user?.email;
-      const adminEmails = ['hello@bigappledigital.nyc'];
-      
-      if (!adminEmails.includes(userEmail)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Admin access required' });
       }
-      
+
       const { enabled } = req.body;
       if (typeof enabled !== 'boolean') {
         return res.status(400).json({ error: 'enabled must be a boolean' });
@@ -3738,13 +3743,12 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   
   app.post("/api/admin/send-newsletter-test", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userEmail = req.user?.email;
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
-      
-      if (!userEmail || !adminEmails.includes(userEmail)) {
+      if (!(await isRequestFromAdmin(req))) {
         return res.status(403).json({ error: 'Admin access required' });
       }
-      
+      const adminUser = await storage.getUser(req.session.userId as string);
+      const userEmail = adminUser!.email!;
+
       // Rate limiting check
       const lastSendTime = newsletterRateLimits.get(userEmail) || 0;
       const timeSinceLastSend = Date.now() - lastSendTime;
@@ -3794,22 +3798,6 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // The Developer API (Bearer-key gated /api/v1/*) writes one row per request
   // to api_request_log via apiObservability.ts. These endpoints expose that
   // data to the admin UI at /admin/api-usage and run the abuse-detection job.
-
-  // Shared admin guard for the API observability endpoints. The custom auth
-  // middleware (server/auth.ts) only populates req.session.userId — it does
-  // NOT set req.user — so we must look the user up by their session id and
-  // then check the email against ADMIN_EMAILS (with a sane fallback for the
-  // two known admin accounts).
-  async function isRequestFromAdmin(req: any): Promise<boolean> {
-    const userId = req.session?.userId as string | undefined;
-    if (!userId) return false;
-    const user = await storage.getUser(userId);
-    const email = user?.email;
-    if (!email) return false;
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim()) ||
-      ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
-    return adminEmails.includes(email);
-  }
 
   // Cron endpoint that performs the daily prune AND the abuse-detection sweep.
   // Trigger every 15 minutes from a Replit Scheduled Deployment with:
