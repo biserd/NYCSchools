@@ -164,7 +164,7 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
               </div>
               {stats.transactionCount != null && (
                 <span className="text-xs text-muted-foreground">
-                  {stats.transactionCount.toLocaleString()} recent sales
+                  {stats.transactionCount.toLocaleString()} sales · last 24 mo
                 </span>
               )}
             </div>
@@ -173,7 +173,7 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
                 <div className="text-lg font-semibold tabular-nums">
                   {formatMoney(stats.medianPrice)}
                 </div>
-                <div className="text-xs text-muted-foreground">Median price</div>
+                <div className="text-xs text-muted-foreground">Median sale price</div>
               </div>
               <div data-testid="stat-median-ppsqft">
                 <div className="text-lg font-semibold tabular-nums">
@@ -181,7 +181,7 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
                     ? `$${stats.medianPricePerSqft.toLocaleString()}`
                     : "—"}
                 </div>
-                <div className="text-xs text-muted-foreground">Median $/sqft</div>
+                <div className="text-xs text-muted-foreground">Median sale $/sqft</div>
               </div>
               {isPremium ? (
                 <>
@@ -189,7 +189,7 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
                     <div className="text-sm font-semibold tabular-nums">
                       {formatMoney(stats.p25Price)} – {formatMoney(stats.p75Price)}
                     </div>
-                    <div className="text-xs text-muted-foreground">Typical range</div>
+                    <div className="text-xs text-muted-foreground">Sale price range</div>
                   </div>
                   <div data-testid="stat-trend-12m">
                     <div
@@ -216,7 +216,7 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
                 >
                   <div className="flex items-center gap-1.5 text-xs">
                     <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Typical range &amp; 12-mo trend</span>
+                    <span>Sale price range &amp; 12-mo trend</span>
                   </div>
                   <Link href="/pricing">
                     <Button
