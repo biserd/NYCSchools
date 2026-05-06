@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, ExternalLink, TrendingUp, Lock, Crown } from "lucide-react";
+import { Building2, ExternalLink, TrendingUp, TrendingDown, Lock, Crown, Minus, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface SubscriptionStatus {
@@ -28,9 +28,23 @@ interface RealtorProperty {
   imageUrl: string | null;
 }
 
+interface RealtorMarketStats {
+  zipCode: string;
+  city: string | null;
+  medianPrice: number | null;
+  medianPricePerSqft: number | null;
+  p25Price: number | null;
+  p75Price: number | null;
+  transactionCount: number | null;
+  trend3m: number | null;
+  trend6m: number | null;
+  trend12m: number | null;
+}
+
 interface NearbyResponse {
   zip: string;
   properties: RealtorProperty[];
+  marketStats: RealtorMarketStats | null;
   deepLink: string;
 }
 
@@ -57,6 +71,18 @@ function formatMoney(value: number | null): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
   if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
   return `$${value.toLocaleString()}`;
+}
+
+function formatPct(decimal: number | null): string {
+  if (decimal == null || !isFinite(decimal)) return "—";
+  const pct = decimal * 100;
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}%`;
+}
+
+function trendColor(decimal: number | null): string {
+  if (decimal == null || Math.abs(decimal) < 0.001) return "text-muted-foreground";
+  return decimal > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
 function titleCase(s: string): string {
@@ -89,8 +115,11 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
 
   if (!zip) return null;
   if (isError) return null;
-  if (!isLoading && (!data || data.properties.length === 0)) return null;
+  const hasProps = (data?.properties?.length ?? 0) > 0;
+  const hasStats = !!data?.marketStats?.medianPrice;
+  if (!isLoading && !hasProps && !hasStats) return null;
 
+  const stats = data?.marketStats ?? null;
   const allProps = data?.properties ?? [];
   const visibleProps = isPremium ? allProps : allProps.slice(0, FREE_PREVIEW_COUNT);
   const teaserProps = isPremium ? [] : allProps.slice(FREE_PREVIEW_COUNT);
@@ -118,6 +147,94 @@ export function NearbyPropertiesPanel({ schoolAddress, schoolName, zipCode }: Pr
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {stats && (stats.medianPrice || stats.medianPricePerSqft) && (
+          <div
+            className="rounded-md border bg-muted/30 p-3 space-y-3"
+            data-testid="block-market-stats"
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Activity className="w-4 h-4 text-primary" />
+                Market snapshot
+                {stats.city && (
+                  <span className="text-xs text-muted-foreground font-normal">
+                    · {stats.city}
+                  </span>
+                )}
+              </div>
+              {stats.transactionCount != null && (
+                <span className="text-xs text-muted-foreground">
+                  {stats.transactionCount.toLocaleString()} recent sales
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div data-testid="stat-median-price">
+                <div className="text-lg font-semibold tabular-nums">
+                  {formatMoney(stats.medianPrice)}
+                </div>
+                <div className="text-xs text-muted-foreground">Median price</div>
+              </div>
+              <div data-testid="stat-median-ppsqft">
+                <div className="text-lg font-semibold tabular-nums">
+                  {stats.medianPricePerSqft != null
+                    ? `$${stats.medianPricePerSqft.toLocaleString()}`
+                    : "—"}
+                </div>
+                <div className="text-xs text-muted-foreground">Median $/sqft</div>
+              </div>
+              {isPremium ? (
+                <>
+                  <div data-testid="stat-price-range">
+                    <div className="text-sm font-semibold tabular-nums">
+                      {formatMoney(stats.p25Price)} – {formatMoney(stats.p75Price)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Typical range</div>
+                  </div>
+                  <div data-testid="stat-trend-12m">
+                    <div
+                      className={`text-lg font-semibold tabular-nums flex items-center gap-1 ${trendColor(stats.trend12m)}`}
+                    >
+                      {stats.trend12m != null && Math.abs(stats.trend12m) >= 0.001 ? (
+                        stats.trend12m > 0 ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4" />
+                        )
+                      ) : (
+                        <Minus className="w-4 h-4" />
+                      )}
+                      {formatPct(stats.trend12m)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">12-month trend</div>
+                  </div>
+                </>
+              ) : (
+                <div
+                  className="col-span-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-2 py-2 flex items-center justify-between gap-2 flex-wrap"
+                  data-testid="stat-trend-upgrade"
+                >
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span>Typical range &amp; 12-mo trend</span>
+                  </div>
+                  <Link href="/pricing">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      data-testid="button-trend-upgrade"
+                    >
+                      <Crown className="w-3 h-3 mr-1" />
+                      Premium
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {Array.from({ length: 4 }).map((_, i) => (

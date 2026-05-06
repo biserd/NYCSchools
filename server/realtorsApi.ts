@@ -39,6 +39,28 @@ interface RealtorPropertiesResponse {
   pagination: { limit: number; offset: number; count: number };
 }
 
+export interface RealtorZipStats {
+  zipCode: string;
+  city: string | null;
+  state: string | null;
+  medianPrice: number | null;
+  medianPricePerSqft: number | null;
+  p25Price: number | null;
+  p75Price: number | null;
+  p25PricePerSqft: number | null;
+  p75PricePerSqft: number | null;
+  transactionCount: number | null;
+  trend3m: number | null;
+  trend6m: number | null;
+  trend12m: number | null;
+  computedAt: string | null;
+}
+
+interface RealtorZipStatsResponse {
+  success: boolean;
+  data: RealtorZipStats;
+}
+
 // Pulls the 5-digit ZIP from a NYC school address like
 // "154 West 93 Street, New York, NY 10025". Falls back to null if no match.
 export function extractZip(address: string | null | undefined): string | null {
@@ -93,6 +115,41 @@ export async function getPropertiesForZip(zip: string, limit = 6): Promise<Realt
   return properties;
 }
 
+// Direct GET against /api/external/zip/:zip — params unused (path-style endpoint).
+export async function getMarketStatsForZip(zip: string): Promise<RealtorZipStats | null> {
+  if (!/^\d{5}$/.test(zip)) return null;
+  const cacheKey = `realtors:zipstats:${zip}`;
+  const cached = getCached<RealtorZipStats>(cacheKey);
+  if (cached) return cached;
+
+  const apiKey = process.env.REALTORS_DASHBOARD_API_KEY;
+  if (!apiKey) {
+    console.warn("REALTORS_DASHBOARD_API_KEY not set — market stats disabled.");
+    return null;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${REALTORS_BASE}/api/external/zip/${zip}`, {
+      headers: { "x-api-key": apiKey, Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      console.warn(`Realtors zip stats ${zip} returned ${res.status}`);
+      return null;
+    }
+    const json = (await res.json()) as RealtorZipStatsResponse;
+    const stats = json?.data ?? null;
+    if (stats) setCache(cacheKey, stats, REALTORS_TTL);
+    return stats;
+  } catch (err) {
+    console.warn(`Realtors zip stats ${zip} failed:`, err instanceof Error ? err.message : err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // GET /api/realtors/nearby/:zip  (also accepts ?zip= for back-compat)
 // Mounted in server/routes.ts after sameOriginGuard, so only first-party
 // browsers can hit it. Returns an empty array on any upstream failure so the
@@ -103,11 +160,15 @@ export async function nearbyPropertiesHandler(req: Request, res: Response) {
     if (!/^\d{5}$/.test(zip)) {
       return res.status(400).json({ error: "Invalid zip" });
     }
-    const properties = await getPropertiesForZip(zip, 6);
+    const [properties, marketStats] = await Promise.all([
+      getPropertiesForZip(zip, 6),
+      getMarketStatsForZip(zip),
+    ]);
     res.set("Cache-Control", "public, max-age=3600");
     res.json({
       zip,
       properties,
+      marketStats,
       deepLink: `https://realtorsdashboard.com/?state=NY&zipCodes=${zip}&utm_source=nycschoolsratings&utm_medium=school_page&utm_campaign=nearby_properties`,
     });
   } catch (err) {
