@@ -24,7 +24,12 @@ import {
   BoroughDemandChart,
   DemandTrendChart,
   TopCompetitiveSchoolsTable,
+  DiamondsKeyStatsCards,
+  DiamondsScatterChart,
+  DiamondsBoroughChart,
+  TopDiamondsTable,
 } from "@/components/blog/DataCharts";
+import { Shield } from "lucide-react";
 import { 
   Accordion, 
   AccordionContent, 
@@ -1830,6 +1835,253 @@ function BestCharterSchoolsPost() {
   );
 }
 
+function DiamondsInTheRoughPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        For decades, NYC parents have used one mental shortcut to size up a public school: <strong>"What's the neighborhood like?"</strong> Using new NYPD-backed{" "}
+        <Link href="/safe-and-strong" className="text-primary hover:underline">Neighborhood Safety Index</Link> data covering all 1,500 NYC public schools, we
+        ran the numbers. The shortcut is wrong. Crime in a school's ZIP code predicts almost nothing about how its students perform — and 72 schools in some
+        of the city's toughest neighborhoods are quietly outperforming most of Manhattan's brownstone belt.
+      </p>
+
+      <DiamondsKeyStatsCards />
+
+      <h2 id="the-myth">The Myth: Bad Neighborhood, Bad School</h2>
+
+      <p>
+        It is the assumption baked into every NYC parent group, every brownstone listing, every "what district should I move to?" thread. Crime equals chaos
+        equals failing schools. Our analysis of every NYC public school with both an Overall Rating and a Neighborhood Safety Index shows a different reality.
+      </p>
+
+      <p>
+        The <strong>correlation between a school's neighborhood safety and its academic rating is just r = 0.09</strong> — statistically indistinguishable from
+        zero. To put that in plain English: if you knew nothing about a school except the crime stats around it, you could not predict its rating any better
+        than guessing.
+      </p>
+
+      <Card className="my-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-amber-700 dark:text-amber-400">Why parents get this wrong</strong>
+              <p className="text-sm text-amber-600/80 dark:text-amber-300/80 mt-1 mb-0">
+                Neighborhood safety is what's <em>visible</em> from the street: police lights, news headlines, real-estate listings. School quality is locked
+                inside the building — driven by leadership, teaching, and community investment. The two simply aren't the same signal.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <DiamondsScatterChart />
+
+      <h2 id="meet-the-diamonds">Meet the Diamonds: 15 Top-Rated NYC Schools in High-Crime Areas</h2>
+
+      <p>
+        We defined a "diamond in the rough" as any NYC public school with an <strong>Overall Rating of 95 or above</strong> (the top 10% citywide) sitting in
+        a neighborhood with a <strong>Safety Index of 30 or below</strong> (the bottom third for safety). Seventy-two schools cleared that bar. Here are the
+        top 15, ranked by academic rating and tie-broken by lowest safety score (i.e., the toughest neighborhoods first).
+      </p>
+
+      <TopDiamondsTable />
+
+      <p>
+        Every name in that list is a public, district-run or charter elementary or K–8 school. Click any school for the full record — climate score, progress
+        score, demographics, multi-year test trends, and the full safety breakdown including top crime categories within walking distance.
+      </p>
+
+      <h2 id="where-they-are">Where the Diamonds Are: A Borough Map</h2>
+
+      <p>
+        The diamonds are not randomly distributed. The <strong>Bronx and Manhattan</strong> dominate the list, with Brooklyn close behind. Queens, by
+        contrast, has very few schools that fit the pattern — not because Queens schools underperform, but because Queens neighborhoods generally have higher
+        safety scores, so its top schools rarely qualify as "rough-neighborhood diamonds."
+      </p>
+
+      <DiamondsBoroughChart />
+
+      <h3 id="bronx-leads">Why the Bronx leads the diamond list</h3>
+
+      <p>
+        The Bronx has been written off for a generation. The data argues otherwise. Districts <strong>9 (Highbridge / Morrisania)</strong>,{" "}
+        <strong>10 (Fordham / Kingsbridge)</strong>, and <strong>12 (Williamsbridge)</strong> all show schools rated 98+ inside neighborhoods with single-digit
+        safety scores. These are not anomalies — they are the byproduct of a decade of post-recession investment in principal pipelines, dual-language
+        programs, and community-school models.
+      </p>
+
+      <h3 id="manhattan-pockets">Manhattan's hidden pockets: Lower East Side, East Harlem, Washington Heights</h3>
+
+      <p>
+        Manhattan's "diamonds" cluster in District 1 (Lower East Side), District 4 (East Harlem), and District 6 (Washington Heights / Inwood). These are
+        neighborhoods that gentrification has touched but not transformed — meaning the schools have remained authentically diverse while quietly racking up
+        top-decile ratings.
+      </p>
+
+      <h3 id="brooklyn-comeback">Brooklyn's comeback districts: Brownsville, Bed-Stuy, East New York</h3>
+
+      <p>
+        District 16 (Bed-Stuy), District 19 (East New York), and District 23 (Brownsville) — three of the most stigmatized school districts in the city — each
+        produced multiple diamond schools. This mirrors what we found in our{" "}
+        <Link href="/blog/nyc-schools-2025-covid-recovery" className="text-primary hover:underline">2025 COVID recovery analysis</Link>: these same districts
+        led the city in post-pandemic academic gains.
+      </p>
+
+      <h2 id="how-to-use-this">How Parents Should Actually Use Safety Data</h2>
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Lightbulb className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">A smarter way to read the safety score</strong>
+              <ol className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-2 list-decimal pl-5">
+                <li><strong>Use it for the commute, not the school.</strong> The Safety Index reflects the area kids walk through, wait at the bus stop in, and play around — not what happens inside the building.</li>
+                <li><strong>Compare across radii.</strong> A 0.25-mile score tells you about the immediate block; a 1-mile score reflects the broader neighborhood. Premium subscribers can toggle all four radii on every school page.</li>
+                <li><strong>Look at top crime categories.</strong> A high count of vehicle break-ins is a very different signal than violent felonies — and the data exposes that distinction.</li>
+                <li><strong>Read the safety + rating together.</strong> Our {" "}
+                  <Link href="/safe-and-strong" className="text-primary hover:underline">Safe &amp; Strong dashboard</Link> plots both axes for every school, so you can see your options visually.
+                </li>
+              </ol>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="diamond-vs-sweet-spot">Diamond vs. Sweet Spot: Which Should You Choose?</h2>
+
+      <p>
+        For families who can choose, the trade-off is real. A "sweet spot" school (high rating <em>and</em> high safety) means a calm walk to school in
+        addition to a strong classroom. A "diamond in the rough" means an equally strong classroom in a neighborhood that may require more situational
+        awareness — but often comes with smaller class sizes, more parent involvement per capita, and less test-prep culture.
+      </p>
+
+      <p>
+        For the many families who <em>cannot</em> easily choose — because their zoned school sits in one of these high-crime ZIP codes — the data is even more
+        important. It is permission to stop apologizing for the neighborhood and start trusting what the test scores, climate surveys, and progress metrics
+        actually say.
+      </p>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">Bottom line</strong>
+              <p className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-1 mb-0">
+                A school's neighborhood and a school's rating are two independent signals. Treat them that way. Use safety data to plan the commute and the
+                walk-up; use academic data to evaluate the education itself.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="methodology">Methodology</h2>
+
+      <p>
+        The Neighborhood Safety Index is a 0–100 citywide percentile derived from the trailing 12 months of NYPD complaint data, severity-weighted (violent
+        felonies count for more than misdemeanors) and aggregated within configurable radii (default 0.5 miles / 805 m) around each school's geocoded
+        address. Higher = safer. The Overall School Rating is computed from official NYC DOE data as <strong>Test Proficiency × 40% + Climate Score × 30% +
+        Progress Score × 30%</strong>. Both indices update monthly. We restricted this analysis to NYC public and charter schools (1,500 schools) where both
+        scores were available.
+      </p>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <Accordion type="single" collapsible className="w-full not-prose">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Is it actually safe to send my kid to a school in a high-crime neighborhood?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Inside the school building, yes — climate scores at most "diamond" schools are above 90%. The Neighborhood Safety Index measures the area within a
+            half-mile radius, not the school itself. The risks parents actually need to plan for are commute-related: pickup routine, walk-up route, and
+            after-school dispersal. NYC schools have full-time school safety agents, controlled entry, and well-established arrival/dismissal procedures.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              How is the Neighborhood Safety Index calculated?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            We pull NYPD complaint records from the trailing 12 months, weight each incident by severity (violent felonies count more than property crimes or
+            misdemeanors), and aggregate the weighted count within a configurable radius around each school's address. That weighted count is then converted
+            to a 0–100 citywide percentile — so a score of 30 means a school sits in a neighborhood with more crime than 70% of NYC schools.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Why do so many top-rated schools sit in the Bronx and Brownsville?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Two reasons. First, these districts have been the focus of intensive principal-pipeline investment, dual-language programs, and community-school
+            wraparound services for over a decade. Second, the citywide academic recovery from COVID was strongest in exactly these districts (Districts 16,
+            19, and 23 led the city in 2022–2025 proficiency gains). The schools were quietly improving while the neighborhoods kept their old reputations.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Can I see the safety score for any specific NYC school?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Yes. Every public, private, and NYCEEC school detail page on NYC School Ratings includes a Neighborhood Safety Index panel with the score, label,
+            and citywide percentile. Free users see the score and label at the default 0.5-mile radius. Premium subscribers can toggle four radii (0.25, 0.5,
+            1.0, 1.5 miles), see the top crime categories, view the 12-month trend, and compare percentiles across schools.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              How often does the data update?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            NYPD complaint data syncs monthly via the NYC Open Data Socrata API. Academic data refreshes annually with each NYSED state report card and NYC
+            DOE release. The list of "diamond" schools in this article is generated live from our database and updates automatically.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          Explore Safety + Quality Together
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          See every NYC public school plotted on a single chart — safety on one axis, academic rating on the other. Filter by borough, find the sweet spot,
+          or hunt for more diamonds.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/safe-and-strong">Open Safe &amp; Strong Dashboard</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Browse All NYC Schools</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/recommendations">Get Personalized Matches</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const post = getBlogPost(slug || "");
@@ -1932,6 +2184,7 @@ export default function BlogPostPage() {
           </p>
         </div>
 
+        {post.slug === "top-nyc-schools-high-crime-neighborhoods-2026" && <DiamondsInTheRoughPost />}
         {post.slug === "best-nyc-kindergartens-2026" && <BestKindergartensPost />}
         {post.slug === "best-nyc-elementary-schools-2026" && <BestElementarySchoolsPost />}
         {post.slug === "best-nyc-middle-schools-2026" && <BestMiddleSchoolsPost />}

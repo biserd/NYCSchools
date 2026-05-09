@@ -12,6 +12,27 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "top-nyc-schools-high-crime-neighborhoods-2026",
+    title: "Diamonds in the Rough: 15 Top-Rated NYC Public Schools in High-Crime Neighborhoods (2026 Data)",
+    description: "Using new NYPD-backed Neighborhood Safety Index data, we identified 72 NYC public schools that score 95+ academically while sitting in the bottom third for neighborhood safety. The Bronx, Manhattan, and Brooklyn dominate this list — and the data shows that ZIP-code crime is a near-zero predictor of school quality (r = 0.09).",
+    author: "NYC School Ratings Team",
+    publishedAt: "2026-05-09",
+    readTime: "11 min read",
+    category: "Data Analysis",
+    tags: [
+      "Neighborhood Safety",
+      "NYPD Data",
+      "Top NYC Schools",
+      "Bronx Schools",
+      "Brownsville",
+      "Mott Haven",
+      "East New York",
+      "Hidden Gems",
+      "School Safety",
+      "2026"
+    ]
+  },
+  {
     slug: "best-nyc-kindergartens-2026",
     title: "Best NYC Kindergartens 2026: Top-Rated Programs by Borough",
     description: "Discover the highest-rated kindergarten programs in New York City. Our data-driven analysis ranks the best K programs in Manhattan, Brooklyn, Queens, the Bronx, and Staten Island based on test scores, climate ratings, and parent reviews.",

@@ -979,3 +979,285 @@ export function TopCompetitiveSchoolsTable() {
     </Card>
   );
 }
+
+// ============================================================================
+// "Diamonds in the Rough" blog post — top-rated NYC schools in high-crime areas
+// Data sourced live from /api/safe-and-strong (joins schools × NYPD safety index)
+// ============================================================================
+
+interface SafeAndStrongRow {
+  dbn: string;
+  name: string;
+  slug: string;
+  borough: string;
+  district: number;
+  gradeBand: string | null;
+  enrollment: number;
+  overallScore: number;
+  safetyIndex: number;
+  combinedScore: number;
+}
+
+const BORO_NAMES: Record<string, string> = {
+  M: "Manhattan",
+  X: "Bronx",
+  K: "Brooklyn",
+  Q: "Queens",
+  R: "Staten Island",
+};
+
+const BORO_COLORS: Record<string, string> = {
+  Manhattan: "#3b82f6",
+  Bronx: "#ef4444",
+  Brooklyn: "#10b981",
+  Queens: "#f59e0b",
+  "Staten Island": "#8b5cf6",
+};
+
+function useSafeAndStrong() {
+  return useQuery<SafeAndStrongRow[]>({
+    queryKey: ["/api/safe-and-strong"],
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function DiamondsKeyStatsCards() {
+  const { data, isLoading } = useSafeAndStrong();
+
+  if (isLoading || !data) {
+    return (
+      <div className="not-prose grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+        {[0, 1, 2, 3].map((i) => (
+          <Card key={i} className="animate-pulse"><CardContent className="pt-6 h-24" /></Card>
+        ))}
+      </div>
+    );
+  }
+
+  const total = data.length;
+  const diamonds = data.filter((d) => d.overallScore >= 95 && d.safetyIndex <= 30).length;
+  const looseTier = data.filter((d) => d.overallScore >= 80 && d.safetyIndex <= 40).length;
+
+  // Pearson correlation between safety and overall
+  const n = data.length;
+  const meanX = data.reduce((a, d) => a + d.safetyIndex, 0) / n;
+  const meanY = data.reduce((a, d) => a + d.overallScore, 0) / n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (const d of data) {
+    const xd = d.safetyIndex - meanX;
+    const yd = d.overallScore - meanY;
+    num += xd * yd; dx2 += xd * xd; dy2 += yd * yd;
+  }
+  const r = dx2 && dy2 ? num / Math.sqrt(dx2 * dy2) : 0;
+
+  const stats = [
+    { label: "NYC Public Schools Analyzed", value: total.toLocaleString(), color: "text-foreground" },
+    { label: "Top-Rated in High-Crime Areas", value: looseTier.toLocaleString(), sub: "Rating ≥ 80, Safety ≤ 40", color: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Elite Diamonds", value: diamonds.toLocaleString(), sub: "Rating ≥ 95, Safety ≤ 30", color: "text-blue-600 dark:text-blue-400" },
+    { label: "Crime ↔ Quality Correlation", value: `r = ${r.toFixed(2)}`, sub: "Essentially zero", color: "text-amber-600 dark:text-amber-400" },
+  ];
+
+  return (
+    <div className="not-prose grid grid-cols-2 md:grid-cols-4 gap-4 my-8" data-testid="stats-diamonds-key">
+      {stats.map((s) => (
+        <Card key={s.label}>
+          <CardContent className="pt-6">
+            <div className={`text-2xl font-bold ${s.color}`} data-testid={`stat-value-${s.label.toLowerCase().replace(/\s+/g, "-")}`}>{s.value}</div>
+            <div className="text-xs font-medium text-foreground mt-1">{s.label}</div>
+            {s.sub && <div className="text-xs text-muted-foreground mt-0.5">{s.sub}</div>}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function DiamondsScatterChart() {
+  const { data, isLoading } = useSafeAndStrong();
+
+  if (isLoading || !data) {
+    return <Card className="my-6"><CardContent className="pt-6 h-80 animate-pulse" /></Card>;
+  }
+
+  // Down-sample to keep the chart light, then add highlight series
+  const stride = Math.max(1, Math.ceil(data.length / 220));
+  const sample = data
+    .filter((_, i) => i % stride === 0)
+    .map((d) => ({
+      x: d.safetyIndex,
+      y: d.overallScore,
+      name: d.name,
+      borough: BORO_NAMES[d.borough] || "Other",
+    }));
+
+  const diamonds = data
+    .filter((d) => d.overallScore >= 95 && d.safetyIndex <= 30)
+    .map((d) => ({
+      x: d.safetyIndex,
+      y: d.overallScore,
+      name: d.name,
+      borough: BORO_NAMES[d.borough] || "Other",
+    }));
+
+  return (
+    <Card className="my-6">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-diamonds-scatter">
+          Neighborhood Safety vs. School Quality (1,500 NYC Public Schools)
+        </CardTitle>
+        <CardDescription>
+          Each dot is one school. Highlighted dots are the elite "diamonds" — rating 95+ and bottom-third safety.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart margin={{ top: 16, right: 24, bottom: 48, left: 16 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="Neighborhood Safety Index"
+              domain={[0, 100]}
+              label={{ value: "Neighborhood Safety Index (0 = high crime, 100 = safest)", position: "insideBottom", offset: -8, style: { fontSize: 12 } }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="Overall School Rating"
+              domain={[0, 100]}
+              label={{ value: "Overall School Rating", angle: -90, position: "insideLeft", style: { fontSize: 12 } }}
+            />
+            <ReferenceLine x={30} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "Safety 30", position: "top", style: { fontSize: 10, fill: "#ef4444" } }} />
+            <ReferenceLine y={95} stroke="#10b981" strokeDasharray="4 4" label={{ value: "Rating 95", position: "right", style: { fontSize: 10, fill: "#10b981" } }} />
+            <Tooltip
+              cursor={{ strokeDasharray: "3 3" }}
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload.length) return null;
+                const p = payload[0].payload;
+                return (
+                  <div className="bg-background border rounded-md p-2 text-xs shadow-md">
+                    <div className="font-semibold">{p.name}</div>
+                    <div className="text-muted-foreground">{p.borough}</div>
+                    <div>Safety: <strong>{p.x}</strong> · Rating: <strong>{p.y}</strong></div>
+                  </div>
+                );
+              }}
+            />
+            <Scatter name="All NYC schools" data={sample} fill="#94a3b8" fillOpacity={0.55} />
+            <Scatter name="Elite diamonds (Rating ≥95, Safety ≤30)" data={diamonds} fill="#3b82f6" fillOpacity={0.95} />
+            <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 12 }} />
+          </ScatterChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DiamondsBoroughChart() {
+  const { data, isLoading } = useSafeAndStrong();
+
+  if (isLoading || !data) {
+    return <Card className="my-6"><CardContent className="pt-6 h-72 animate-pulse" /></Card>;
+  }
+
+  const tier = data.filter((d) => d.overallScore >= 80 && d.safetyIndex <= 40);
+  const counts = new Map<string, number>();
+  for (const d of tier) {
+    const b = BORO_NAMES[d.borough] || "Other";
+    counts.set(b, (counts.get(b) || 0) + 1);
+  }
+  const chartData = Array.from(counts.entries())
+    .map(([borough, count]) => ({ borough, count, fill: BORO_COLORS[borough] || "#64748b" }))
+    .sort((a, b) => b.count - a.count);
+
+  return (
+    <Card className="my-6">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-diamonds-borough">
+          Where Are the Diamonds? Borough Breakdown
+        </CardTitle>
+        <CardDescription>
+          Count of NYC public schools rated 80+ that sit in the bottom 40 for neighborhood safety.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="borough" />
+            <YAxis label={{ value: "# of schools", angle: -90, position: "insideLeft", style: { fontSize: 12 } }} />
+            <Tooltip />
+            <Bar dataKey="count" name="Top-rated schools in low-safety areas">
+              {chartData.map((entry) => (
+                <Cell key={entry.borough} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopDiamondsTable() {
+  const { data, isLoading } = useSafeAndStrong();
+
+  if (isLoading || !data) {
+    return <Card className="my-6"><CardContent className="pt-6 h-96 animate-pulse" /></Card>;
+  }
+
+  const top = data
+    .filter((d) => d.overallScore >= 95 && d.safetyIndex <= 30)
+    .sort((a, b) => (b.overallScore - a.overallScore) || (a.safetyIndex - b.safetyIndex))
+    .slice(0, 15);
+
+  return (
+    <Card className="my-6">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-top-diamonds">
+          <Award className="w-5 h-5 text-blue-600" />
+          15 Top-Rated NYC Public Schools in High-Crime Neighborhoods
+        </CardTitle>
+        <CardDescription>
+          Ranked by Overall Rating, then by lowest Safety Index. Click any school for full data.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-testid="table-top-diamonds">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-2 font-medium">#</th>
+                <th className="text-left py-2 px-2 font-medium">School</th>
+                <th className="text-center py-2 px-2 font-medium">Borough</th>
+                <th className="text-center py-2 px-2 font-medium">Grades</th>
+                <th className="text-center py-2 px-2 font-medium">Rating</th>
+                <th className="text-center py-2 px-2 font-medium">Safety</th>
+              </tr>
+            </thead>
+            <tbody>
+              {top.map((s, i) => (
+                <tr key={s.dbn} className="border-b hover-elevate">
+                  <td className="py-2 px-2 text-muted-foreground">{i + 1}</td>
+                  <td className="py-2 px-2 font-medium">
+                    <a href={`/school/${s.slug}`} className="text-primary hover:underline" data-testid={`link-school-${s.dbn}`}>
+                      {s.name}
+                    </a>
+                    <div className="text-xs text-muted-foreground">DBN {s.dbn} · D{s.district}</div>
+                  </td>
+                  <td className="text-center py-2 px-2 text-muted-foreground">{BORO_NAMES[s.borough] || s.borough}</td>
+                  <td className="text-center py-2 px-2 text-muted-foreground">{s.gradeBand || "—"}</td>
+                  <td className="text-center py-2 px-2 font-bold text-emerald-600 dark:text-emerald-400">{s.overallScore}</td>
+                  <td className="text-center py-2 px-2 font-bold text-red-600 dark:text-red-400">{s.safetyIndex}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-sm text-muted-foreground mt-4">
+          Safety Index is a 0–100 citywide percentile from the trailing 12 months of severity-weighted NYPD complaint data within 0.5 miles of each school. Data updates monthly.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
