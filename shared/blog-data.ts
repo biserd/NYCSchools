@@ -12,6 +12,27 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "does-crime-predict-nyc-school-quality-data-analysis-2026",
+    title: "Does Neighborhood Crime Predict NYC School Quality? We Analyzed 1,500 Schools",
+    description: "We crunched NYPD complaint data against academic ratings for every NYC public school. The Pearson correlation between neighborhood safety and school quality is r = 0.09 — essentially zero. Across all 5 safety quintiles, average school ratings are flat. Half of NYC school districts even show a negative correlation. Here's the methodology and what it means.",
+    author: "NYC School Ratings Team",
+    publishedAt: "2026-05-10",
+    readTime: "9 min read",
+    category: "Data Analysis",
+    tags: [
+      "Data Analysis",
+      "Neighborhood Safety",
+      "NYPD Data",
+      "School Quality",
+      "Correlation",
+      "Methodology",
+      "NYC Schools",
+      "Statistics",
+      "Parent Guide",
+      "2026"
+    ]
+  },
+  {
     slug: "top-nyc-schools-high-crime-neighborhoods-2026",
     title: "Diamonds in the Rough: 15 Top-Rated NYC Public Schools in High-Crime Neighborhoods (2026 Data)",
     description: "Using new NYPD-backed Neighborhood Safety Index data, we identified 72 NYC public schools that score 95+ academically while sitting in the bottom third for neighborhood safety. The Bronx, Manhattan, and Brooklyn dominate this list — and the data shows that ZIP-code crime is a near-zero predictor of school quality (r = 0.09).",

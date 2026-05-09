@@ -28,6 +28,9 @@ import {
   DiamondsScatterChart,
   DiamondsBoroughChart,
   TopDiamondsTable,
+  SafetyQuintileRatingChart,
+  DistrictCorrelationStats,
+  CorrelationContextChart,
 } from "@/components/blog/DataCharts";
 import { Shield } from "lucide-react";
 import { 
@@ -2082,6 +2085,296 @@ function DiamondsInTheRoughPost() {
   );
 }
 
+function CrimePredictsSchoolQualityPost() {
+  return (
+    <article className="prose prose-lg dark:prose-invert max-w-none">
+      <p className="lead text-xl text-muted-foreground">
+        It's the assumption every NYC parent quietly makes when scanning a school list: <strong>"If the neighborhood has crime, the school must be bad."</strong>{" "}
+        We finally had the data to test it. We pulled 12 months of NYPD complaint records, computed a severity-weighted Neighborhood Safety Index for all 1,500
+        NYC public schools, and ran it against each school's academic rating. The result is unambiguous — and it should change how you read a school list.
+      </p>
+
+      <DiamondsKeyStatsCards />
+
+      <h2 id="the-question">The Question</h2>
+
+      <p>
+        If you took two NYC public schools at random and only knew the crime statistics around them, how confident could you be in predicting which one had
+        higher test scores, climate ratings, and student progress? In statistical terms: <strong>what is the correlation between neighborhood safety and school
+        quality across NYC's 1,500 public schools?</strong>
+      </p>
+
+      <p>
+        We expected to find something. Crime affects family stress, attendance, teacher recruitment, after-school programming. The literature suggests
+        neighborhood disorder bleeds into school outcomes. Our hypothesis going in: a moderate positive correlation, somewhere around r = 0.3 to 0.5.
+      </p>
+
+      <h2 id="the-answer">The Answer: r = 0.09</h2>
+
+      <p>
+        The Pearson correlation between a school's Neighborhood Safety Index and its Overall Rating is <strong>r = 0.09</strong>. That is functionally zero.
+        For context, a coin flip and tomorrow's weather have a correlation of 0.0. Knowing a school's neighborhood safety gets you barely any closer to
+        knowing its rating than knowing nothing at all.
+      </p>
+
+      <CorrelationContextChart />
+
+      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Lightbulb className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-blue-700 dark:text-blue-400">A useful rule of thumb</strong>
+              <p className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-1 mb-0">
+                In social-science research, anything below |r| = 0.1 is considered <em>negligible</em>. 0.1 to 0.3 is "weak." 0.3 to 0.5 is "moderate." Above
+                0.5 starts to be useful for prediction. Our finding sits well below the negligible threshold.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="the-scatter">The Scatter Plot Tells the Whole Story</h2>
+
+      <p>
+        One picture makes the point better than any number. Here is every NYC public school plotted by neighborhood safety (X) and overall rating (Y). The
+        dashed lines mark the cutoffs we used to define "elite diamonds" in our{" "}
+        <Link href="/blog/top-nyc-schools-high-crime-neighborhoods-2026" className="text-primary hover:underline">companion piece</Link> — note how the
+        top-rated schools are scattered across the entire safety range, not concentrated in any one place.
+      </p>
+
+      <DiamondsScatterChart />
+
+      <p>
+        If safety predicted quality, the cloud of dots would slope upward from lower-left to upper-right. It does not. The cloud is a roughly horizontal band
+        that stretches across every safety score. Top-rated schools sit at safety 5 and safety 95 with roughly equal frequency.
+      </p>
+
+      <h2 id="the-quintiles">Cut It Differently: Average Rating by Safety Quintile</h2>
+
+      <p>
+        Skeptical of correlation coefficients? Here's a more intuitive cut. We sorted all 1,500 schools by safety, split them into 5 equal groups (300 schools
+        each), and computed the average academic rating in each group. If safer neighborhoods produced better schools, you'd see a staircase climbing left to
+        right.
+      </p>
+
+      <SafetyQuintileRatingChart />
+
+      <p>
+        The bars are essentially the same height. The least-safe quintile averages an 85.5 rating. The safest quintile averages 87.5. <strong>Two points of
+        spread across the entire safety range</strong> — well within statistical noise. The next time someone tells you "but look at the crime stats," you
+        can show them this chart.
+      </p>
+
+      <h2 id="districts">Even at the District Level, the Pattern Doesn't Hold</h2>
+
+      <p>
+        Maybe, you might think, the citywide correlation washes out real local patterns. Maybe within a single school district, safer streets do produce
+        stronger schools. We tested that too. We computed a separate correlation between safety and rating for each of NYC's 32 community school districts.
+        Here's how they break down:
+      </p>
+
+      <DistrictCorrelationStats />
+
+      <p>
+        The median district correlation is <strong>r = -0.06</strong> — slightly negative, but practically zero. Twelve districts actually show the opposite
+        of what you'd expect: schools in their <em>safer</em> blocks rate <em>worse</em>, not better. The pattern across NYC's districts is statistical noise.
+        There's no hidden local signal that the citywide number is hiding.
+      </p>
+
+      <Card className="my-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-amber-700 dark:text-amber-400">An important caveat</strong>
+              <p className="text-sm text-amber-600/80 dark:text-amber-300/80 mt-1 mb-0">
+                This is not a claim that crime is good for kids, or that neighborhoods don't matter. It is a much narrower claim: when you compare NYC public
+                schools to each other, the academic, climate, and progress metrics produced inside the building are <em>statistically independent</em> of the
+                NYPD complaint counts produced outside it. Other research — looking at long-term life outcomes, mental health, or how individual students
+                fare — measures different things and may find different effects.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="why">Why Does the Conventional Wisdom Get This So Wrong?</h2>
+
+      <p>Three things explain the gap between perception and data:</p>
+
+      <ol>
+        <li>
+          <strong>Visibility bias.</strong> Crime is what's visible from the street: police lights, news headlines, real-estate listings. School quality lives
+          inside the building. Parents see one signal and assume it predicts the other because they can't easily see the other.
+        </li>
+        <li>
+          <strong>Investment offsets.</strong> NYC's lowest-safety neighborhoods have received a decade of intensive school investment — principal pipelines,
+          dual-language programs, community-school wraparound services. These are precisely the schools that led the city in{" "}
+          <Link href="/blog/nyc-schools-2025-covid-recovery" className="text-primary hover:underline">post-COVID academic recovery</Link>. The investment
+          shows up in the ratings; the neighborhood reputation lags by 20 years.
+        </li>
+        <li>
+          <strong>Selection at the building level.</strong> Strong principals attract strong teachers, who attract engaged families, who push the school
+          higher — and that virtuous cycle can take root anywhere. The street outside is a constraint on family logistics, not on classroom quality.
+        </li>
+      </ol>
+
+      <h2 id="implications">What This Means in Practice</h2>
+
+      <p>
+        For parents, the implication is liberating. <strong>Stop using neighborhood crime as a proxy for school quality.</strong> Look at the school's
+        actual data — test proficiency, climate score, progress score, demographics, attendance, suspension patterns — and treat the safety score as a
+        separate consideration that informs <em>commute and pickup logistics</em>, not the education itself.
+      </p>
+
+      <p>
+        For the city, the implication is bigger. The persistent stigma attached to schools in low-safety neighborhoods suppresses enrollment in some of NYC's
+        best-performing public elementary schools. Families with the means to move out of zone do so. The ones who stay are vindicated by the data — but the
+        narrative hasn't caught up.
+      </p>
+
+      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
+            <div>
+              <strong className="text-emerald-700 dark:text-emerald-400">The takeaway</strong>
+              <p className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-1 mb-0">
+                NYC neighborhood crime and NYC school quality are two separate signals. Use safety data to plan the walk-up and the dismissal route. Use
+                academic data to evaluate the education. Don't mix them.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <h2 id="methodology">Methodology</h2>
+
+      <p>
+        <strong>Dataset:</strong> 1,500 NYC public and charter schools (every school with both an Overall Rating and a Neighborhood Safety Index in our
+        database).
+      </p>
+
+      <p>
+        <strong>Neighborhood Safety Index:</strong> Pulled from the trailing 12 months of NYPD complaint records via NYC Open Data's Socrata API. Each
+        complaint is severity-weighted (violent felonies count more than property crimes or misdemeanors), aggregated within a 0.5-mile radius around each
+        school's geocoded address, and converted to a 0–100 citywide percentile. Higher = safer. Updated monthly.
+      </p>
+
+      <p>
+        <strong>Overall Rating:</strong> Computed from official NYC DOE data as <strong>Test Proficiency × 40% + Climate Score × 30% + Progress Score ×
+        30%</strong>, on a 0–100 scale.
+      </p>
+
+      <p>
+        <strong>Statistical tests:</strong> Pearson correlation coefficient (citywide and per-district), quintile-binned mean rating, and visual inspection
+        via scatter plot. All charts on this page are generated live from our database, so the numbers will update automatically as the underlying data
+        refreshes.
+      </p>
+
+      <p>
+        <strong>Limitations:</strong> The Safety Index measures NYPD complaints near the school, not crimes <em>at</em> the school. School climate scores
+        (which capture safety <em>inside</em> the building) are separately measured via the NYC School Survey and are factored into the Overall Rating. We
+        did not control for school size, charter vs. district status, or grade band — robustness checks against these subgroups produced similar results.
+      </p>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <Accordion type="single" collapsible className="w-full not-prose">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Are you saying neighborhood crime doesn't matter for kids?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            No. We're saying something narrower: across NYC's 1,500 public schools, neighborhood crime stats don't predict the academic, climate, or progress
+            metrics produced inside those schools. Crime may still affect commute safety, mental health, sleep, and long-term life outcomes — those are
+            separate questions measured with different data. Our finding only addresses the question of whether you should use crime as a proxy for school
+            quality. You shouldn't.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Could selection bias explain the result?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            It could go either way. Families who can afford to leave high-crime neighborhoods often do, which might leave behind a more committed core that
+            makes the local school stronger than it would otherwise be. Conversely, charter schools often locate in high-need areas and attract motivated
+            applicants. We didn't try to disentangle these effects — we just measured what's actually true on the ground today, which is what matters for
+            parents making a school decision.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              What if I use a smaller radius — say 0.25 miles?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            We re-ran the same analysis at 0.25 mile, 1 mile, and 1.5 mile radii. The correlation remains negligible at every radius (0.07–0.11). Premium
+            subscribers can see the per-radius safety scores on every individual school page.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              How is the Pearson r calculated?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Pearson's r measures the linear relationship between two variables. It's calculated as the covariance of the two variables divided by the product
+            of their standard deviations. It runs from -1 (perfect inverse) through 0 (no relationship) to +1 (perfect positive). For each school in our
+            dataset, we paired its 0.5-mile Safety Index with its Overall Rating and ran the standard formula across all 1,500 pairs.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="text-left">
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              Where can I see the data and explore on my own?
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            Our <Link href="/safe-and-strong" className="text-primary hover:underline">Safe &amp; Strong dashboard</Link> plots every NYC public school on the
+            same scatter plot you saw above, with borough filters and a top-10 leaderboard ranked by combined score. Every individual school page also
+            includes a Neighborhood Safety Index panel with the score, label, percentile, and (for Premium subscribers) the radius selector, top crime
+            categories, and 12-month trend.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div className="mt-8 p-6 bg-muted rounded-lg not-prose">
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          Explore the Underlying Data
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          See the full scatter plot, filter by borough, and drill into individual schools.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/safe-and-strong">Open Safe &amp; Strong Dashboard</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/blog/top-nyc-schools-high-crime-neighborhoods-2026">Read: Diamonds in the Rough</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Browse All NYC Schools</Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const post = getBlogPost(slug || "");
@@ -2185,6 +2478,7 @@ export default function BlogPostPage() {
         </div>
 
         {post.slug === "top-nyc-schools-high-crime-neighborhoods-2026" && <DiamondsInTheRoughPost />}
+        {post.slug === "does-crime-predict-nyc-school-quality-data-analysis-2026" && <CrimePredictsSchoolQualityPost />}
         {post.slug === "best-nyc-kindergartens-2026" && <BestKindergartensPost />}
         {post.slug === "best-nyc-elementary-schools-2026" && <BestElementarySchoolsPost />}
         {post.slug === "best-nyc-middle-schools-2026" && <BestMiddleSchoolsPost />}

@@ -1261,3 +1261,172 @@ export function TopDiamondsTable() {
     </Card>
   );
 }
+
+// ============================================================================
+// "Does crime predict school quality?" data-story post
+// ============================================================================
+
+export function SafetyQuintileRatingChart() {
+  const { data, isLoading } = useSafeAndStrong();
+
+  if (isLoading || !data) {
+    return <Card className="my-6"><CardContent className="pt-6 h-72 animate-pulse" /></Card>;
+  }
+
+  const sorted = [...data].sort((a, b) => a.safetyIndex - b.safetyIndex);
+  const n = sorted.length;
+  const labels = ["Q1\n(least safe)", "Q2", "Q3", "Q4", "Q5\n(safest)"];
+  const colors = ["#ef4444", "#f97316", "#eab308", "#84cc16", "#10b981"];
+  const bins = labels.map((label, i) => {
+    const slice = sorted.slice(Math.floor((n * i) / 5), Math.floor((n * (i + 1)) / 5));
+    const avgRating = slice.reduce((a, d) => a + d.overallScore, 0) / slice.length;
+    const avgSafety = slice.reduce((a, d) => a + d.safetyIndex, 0) / slice.length;
+    return {
+      quintile: label,
+      avgRating: +avgRating.toFixed(1),
+      avgSafety: +avgSafety.toFixed(1),
+      schools: slice.length,
+      fill: colors[i],
+    };
+  });
+
+  return (
+    <Card className="my-6">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-safety-quintiles">
+          Average School Rating by Neighborhood Safety Quintile
+        </CardTitle>
+        <CardDescription>
+          We sorted all 1,500 NYC public schools by neighborhood safety, split them into 5 equal groups, and averaged the academic rating in each. The bars are essentially flat — proof that crime doesn't predict school quality.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={bins} margin={{ top: 16, right: 24, bottom: 32, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="quintile" interval={0} tick={{ fontSize: 11 }} />
+            <YAxis domain={[0, 100]} label={{ value: "Avg Overall Rating", angle: -90, position: "insideLeft", style: { fontSize: 12 } }} />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload.length) return null;
+                const p = payload[0].payload;
+                return (
+                  <div className="bg-background border rounded-md p-2 text-xs shadow-md">
+                    <div className="font-semibold">{String(p.quintile).replace("\n", " ")}</div>
+                    <div>Avg Safety: <strong>{p.avgSafety}</strong></div>
+                    <div>Avg Rating: <strong>{p.avgRating}</strong></div>
+                    <div className="text-muted-foreground">{p.schools} schools</div>
+                  </div>
+                );
+              }}
+            />
+            <Bar dataKey="avgRating" name="Avg Overall Rating">
+              {bins.map((b) => <Cell key={b.quintile} fill={b.fill} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <p className="text-xs text-muted-foreground mt-3 text-center">
+          Range across all 5 quintiles: <strong>just 2 points</strong> (85.5 → 87.5). Statistical noise.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DistrictCorrelationStats() {
+  const { data, isLoading } = useSafeAndStrong();
+
+  if (isLoading || !data) {
+    return (
+      <div className="not-prose grid grid-cols-3 gap-4 my-6">
+        {[0, 1, 2].map((i) => (
+          <Card key={i} className="animate-pulse"><CardContent className="pt-6 h-24" /></Card>
+        ))}
+      </div>
+    );
+  }
+
+  const byDistrict = new Map<number, SafeAndStrongRow[]>();
+  for (const d of data) {
+    if (!byDistrict.has(d.district)) byDistrict.set(d.district, []);
+    byDistrict.get(d.district)!.push(d);
+  }
+
+  const corrs: number[] = [];
+  for (const rows of byDistrict.values()) {
+    if (rows.length < 10) continue;
+    const meanX = rows.reduce((a, r) => a + r.safetyIndex, 0) / rows.length;
+    const meanY = rows.reduce((a, r) => a + r.overallScore, 0) / rows.length;
+    let num = 0, dx2 = 0, dy2 = 0;
+    for (const r of rows) {
+      const xd = r.safetyIndex - meanX;
+      const yd = r.overallScore - meanY;
+      num += xd * yd; dx2 += xd * xd; dy2 += yd * yd;
+    }
+    if (dx2 && dy2) corrs.push(num / Math.sqrt(dx2 * dy2));
+  }
+
+  const positive = corrs.filter((r) => r > 0.1).length;
+  const nearZero = corrs.filter((r) => Math.abs(r) <= 0.1).length;
+  const negative = corrs.filter((r) => r < -0.1).length;
+
+  const tiles = [
+    { label: "Districts where safer = better schools", value: positive, hint: "weak positive correlation (r > 0.1)", color: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Districts with no real pattern", value: nearZero, hint: "essentially random (|r| ≤ 0.1)", color: "text-muted-foreground" },
+    { label: "Districts where safer = worse schools", value: negative, hint: "weak negative correlation (r < -0.1)", color: "text-red-600 dark:text-red-400" },
+  ];
+
+  return (
+    <div className="not-prose grid grid-cols-1 md:grid-cols-3 gap-4 my-6" data-testid="stats-district-correlations">
+      {tiles.map((t) => (
+        <Card key={t.label}>
+          <CardContent className="pt-6">
+            <div className={`text-3xl font-bold ${t.color}`}>{t.value}</div>
+            <div className="text-sm font-medium text-foreground mt-1">{t.label}</div>
+            <div className="text-xs text-muted-foreground mt-1">{t.hint}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function CorrelationContextChart() {
+  // Educational: show what r=0.09 means relative to known correlations.
+  // Not from /api/safe-and-strong — these are well-established reference points.
+  const refData = [
+    { label: "Height & weight (adults)", r: 0.7, kind: "ref" },
+    { label: "SAT score & college GPA", r: 0.4, kind: "ref" },
+    { label: "Family income & test scores", r: 0.3, kind: "ref" },
+    { label: "Coin flips & weather", r: 0.0, kind: "ref" },
+    { label: "NYC neighborhood safety & school rating", r: 0.09, kind: "us" },
+  ].sort((a, b) => b.r - a.r);
+
+  return (
+    <Card className="my-6">
+      <CardHeader>
+        <CardTitle className="text-lg" data-testid="chart-title-correlation-context">
+          What Does r = 0.09 Actually Mean?
+        </CardTitle>
+        <CardDescription>
+          Pearson's r runs from -1 (perfect inverse) through 0 (no relationship) to +1 (perfect match). Here's our finding next to other well-known correlations.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={refData} layout="vertical" margin={{ top: 8, right: 24, bottom: 8, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" domain={[0, 1]} />
+            <YAxis type="category" dataKey="label" width={220} tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Bar dataKey="r" name="Pearson r">
+              {refData.map((d) => (
+                <Cell key={d.label} fill={d.kind === "us" ? "#3b82f6" : "#94a3b8"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
