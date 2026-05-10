@@ -405,24 +405,72 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     // Elementary / middle school questions
     faqItems.push({
       "@type": "Question",
-      name: `What is the overall rating of ${school.name}?`,
+      name: `Is ${school.name} a good school?`,
       acceptedAnswer: {
         "@type": "Answer",
-        text: `${school.name} has an overall score of ${overall}/100 based on academic performance (40%), school climate (30%), and student progress (30%).`,
+        text: `${school.name} has an overall score of ${overall}/100 based on academic performance (40%), school climate (30%), and student progress (30%).` +
+          (school.ela_proficiency != null || school.math_proficiency != null
+            ? ` Students achieve` +
+              (school.ela_proficiency != null ? ` ${school.ela_proficiency}% proficiency in ELA` : "") +
+              (school.ela_proficiency != null && school.math_proficiency != null ? " and" : "") +
+              (school.math_proficiency != null ? ` ${school.math_proficiency}% in Math` : "") +
+              " on NYC state assessments."
+            : ""),
       },
     });
 
-    if (school.ela_proficiency != null || school.math_proficiency != null) {
-      const profText =
-        `${school.name} students achieve` +
-        (school.ela_proficiency != null ? ` ${school.ela_proficiency}% proficiency in ELA` : "") +
-        (school.ela_proficiency != null && school.math_proficiency != null ? " and" : "") +
-        (school.math_proficiency != null ? ` ${school.math_proficiency}% in Math` : "") +
-        " based on NYC state assessments.";
+    faqItems.push({
+      "@type": "Question",
+      name: `What grades does ${school.name} serve?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${school.name} serves students in grades ${school.grade_band ?? "K-5"}` +
+          (school.enrollment != null ? ` with approximately ${school.enrollment.toLocaleString()} students enrolled` : "") +
+          ".",
+      },
+    });
+
+    // Admissions question — uses admission_method when present, otherwise generic NYC zoned guidance
+    const admissionMethod = (school as any).admission_method as string | null | undefined;
+    let admissionText: string;
+    if (admissionMethod) {
+      const m = admissionMethod.toLowerCase();
+      if (m.includes("zoned")) {
+        admissionText = `${school.name} is a zoned school. Families living within the school's attendance zone are guaranteed a seat. Apply through MySchools.nyc during the NYC enrollment window.`;
+      } else if (m.includes("lottery") || m.includes("unscreened")) {
+        admissionText = `${school.name} admits students through a ${admissionMethod.toLowerCase()} process. All families apply through MySchools.nyc, and seats are assigned by the NYC enrollment lottery.`;
+      } else if (m.includes("screen")) {
+        admissionText = `${school.name} uses a ${admissionMethod.toLowerCase()} admissions process. Applicants are evaluated using academic records, attendance, and other criteria.`;
+      } else {
+        admissionText = `${school.name} uses a ${admissionMethod} admissions process. Apply through MySchools.nyc.`;
+      }
+    } else {
+      admissionText = `${school.name} accepts applications through MySchools.nyc during the NYC enrollment window. Most NYC elementary schools are zoned, meaning families in the attendance zone are guaranteed a seat.`;
+    }
+    faqItems.push({
+      "@type": "Question",
+      name: `How do you apply to ${school.name}?`,
+      acceptedAnswer: { "@type": "Answer", text: admissionText },
+    });
+
+    // Programs question — only when at least one program flag is set
+    if (school.has_gifted_talented || school.has_dual_language || school.has_3k || school.has_prek) {
+      const progs: string[] = [];
+      if (school.has_gifted_talented) {
+        const gtType = school.gt_program_type === "citywide" ? "Citywide" : "District";
+        progs.push(`a ${gtType} Gifted & Talented program`);
+      }
+      if (school.has_dual_language) progs.push("a Dual Language program");
+      if (school.has_3k && school.has_prek) progs.push("3-K and Pre-K seats");
+      else if (school.has_3k) progs.push("3-K seats");
+      else if (school.has_prek) progs.push("Pre-K seats");
       faqItems.push({
         "@type": "Question",
-        name: `What are the test scores at ${school.name}?`,
-        acceptedAnswer: { "@type": "Answer", text: profText },
+        name: `What special programs does ${school.name} offer?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `${school.name} offers ${progs.join(", ")}.`,
+        },
       });
     }
 
@@ -432,15 +480,6 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
       acceptedAnswer: {
         "@type": "Answer",
         text: `${school.name} is located at ${school.address ?? `${borough}, NY`} in District ${school.district}.`,
-      },
-    });
-
-    faqItems.push({
-      "@type": "Question",
-      name: `How many students attend ${school.name}?`,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: `${school.name} has ${school.enrollment?.toLocaleString() ?? "an unknown number of"} students enrolled in grades ${school.grade_band ?? "K-5"}.`,
       },
     });
   }

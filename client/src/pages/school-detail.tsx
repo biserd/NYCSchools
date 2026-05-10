@@ -430,31 +430,60 @@ export default function SchoolDetail() {
             </div>
           </div>
 
-          {/* High School Prose Introduction */}
-          {isHS && (
-            <div className="text-muted-foreground leading-relaxed" data-testid="text-hs-intro">
-              {schoolWithScore.is_specialized_hs ? (
-                <p>
-                  {schoolWithScore.name} is one of NYC&apos;s nine specialized high schools, 
-                  consistently ranked among the top public high schools in the United States. 
-                  Admission requires passing the Specialized High Schools Admissions Test (SHSAT) — 
-                  cutoff scores vary each year based on test difficulty and the applicant pool.
-                  {schoolWithScore.graduation_rate_4yr != null && ` With a ${schoolWithScore.graduation_rate_4yr}% graduation rate`}
-                  {schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0 && ` and ${schoolWithScore.ap_course_count} AP courses`}
-                  {(schoolWithScore.graduation_rate_4yr != null || (schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0)) && `, it is one of the most academically rigorous public schools in New York City.`}
-                </p>
-              ) : (
-                <p>
-                  {schoolWithScore.name} is a{schoolWithScore.is_specialized_hs ? ' specialized' : ''} public high school in {schoolWithScore.dbn?.charAt(2) === 'M' ? 'Manhattan' : schoolWithScore.dbn?.charAt(2) === 'X' ? 'the Bronx' : schoolWithScore.dbn?.charAt(2) === 'K' ? 'Brooklyn' : schoolWithScore.dbn?.charAt(2) === 'Q' ? 'Queens' : 'Staten Island'}, District {schoolWithScore.district}.
-                  {schoolWithScore.graduation_rate_4yr != null && ` It has a ${schoolWithScore.graduation_rate_4yr}% 4-year graduation rate`}
-                  {schoolWithScore.college_readiness_rate != null && ` and ${schoolWithScore.college_readiness_rate}% of graduates meet college-readiness benchmarks`}
-                  {(schoolWithScore.graduation_rate_4yr != null || schoolWithScore.college_readiness_rate != null) && '.'}
-                  {schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0 && ` The school offers ${schoolWithScore.ap_course_count} AP courses.`}
-                  {schoolWithScore.hs_admission_method && ` Admissions are ${schoolWithScore.hs_admission_method}.`}
-                </p>
-              )}
-            </div>
-          )}
+          {/* School Prose Introduction — applies to all schools */}
+          {schoolWithScore && (() => {
+            const boroughLabel =
+              schoolWithScore.dbn?.charAt(2) === 'M' ? 'Manhattan' :
+              schoolWithScore.dbn?.charAt(2) === 'X' ? 'the Bronx' :
+              schoolWithScore.dbn?.charAt(2) === 'K' ? 'Brooklyn' :
+              schoolWithScore.dbn?.charAt(2) === 'Q' ? 'Queens' : 'Staten Island';
+            const gradeBand = schoolWithScore.grade_band ?? 'K-5';
+            const enrollmentText = schoolWithScore.enrollment != null
+              ? ` and serves approximately ${schoolWithScore.enrollment.toLocaleString()} students`
+              : '';
+            const programs: string[] = [];
+            if (schoolWithScore.has_gifted_talented) {
+              programs.push(`a ${schoolWithScore.gt_program_type === 'citywide' ? 'Citywide' : 'District'} Gifted & Talented program`);
+            }
+            if (schoolWithScore.has_dual_language) programs.push('a Dual Language program');
+            if (schoolWithScore.has_3k) programs.push('3-K');
+            if (schoolWithScore.has_prek && !schoolWithScore.has_3k) programs.push('Pre-K');
+
+            return (
+              <div className="text-muted-foreground leading-relaxed" data-testid="text-school-intro">
+                {isHS && schoolWithScore.is_specialized_hs ? (
+                  <p>
+                    {schoolWithScore.name} is one of NYC&apos;s nine specialized high schools,
+                    consistently ranked among the top public high schools in the United States.
+                    Admission requires passing the Specialized High Schools Admissions Test (SHSAT) —
+                    cutoff scores vary each year based on test difficulty and the applicant pool.
+                    {schoolWithScore.graduation_rate_4yr != null && ` With a ${schoolWithScore.graduation_rate_4yr}% graduation rate`}
+                    {schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0 && ` and ${schoolWithScore.ap_course_count} AP courses`}
+                    {(schoolWithScore.graduation_rate_4yr != null || (schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0)) && `, it is one of the most academically rigorous public schools in New York City.`}
+                  </p>
+                ) : isHS ? (
+                  <p>
+                    {schoolWithScore.name} is a public high school in {boroughLabel}, District {schoolWithScore.district}, serving grades {gradeBand}
+                    {schoolWithScore.enrollment != null && ` with approximately ${schoolWithScore.enrollment.toLocaleString()} students`}.
+                    {schoolWithScore.graduation_rate_4yr != null && ` It has a ${schoolWithScore.graduation_rate_4yr}% 4-year graduation rate`}
+                    {schoolWithScore.college_readiness_rate != null && ` and ${schoolWithScore.college_readiness_rate}% of graduates meet college-readiness benchmarks`}
+                    {(schoolWithScore.graduation_rate_4yr != null || schoolWithScore.college_readiness_rate != null) && '.'}
+                    {schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0 && ` The school offers ${schoolWithScore.ap_course_count} AP courses.`}
+                    {schoolWithScore.hs_admission_method && ` Admissions are ${schoolWithScore.hs_admission_method}.`}
+                  </p>
+                ) : (
+                  <p>
+                    {schoolWithScore.name} is a public {gradeBand.toLowerCase().includes('6') && !gradeBand.toLowerCase().includes('k') ? 'middle' : gradeBand.toLowerCase().includes('k') ? 'elementary' : ''} school in {boroughLabel}, District {schoolWithScore.district}, offering grades {gradeBand}{enrollmentText}.
+                    {schoolWithScore.ela_proficiency != null && ` Students achieve ${schoolWithScore.ela_proficiency}% proficiency in ELA`}
+                    {schoolWithScore.ela_proficiency != null && schoolWithScore.math_proficiency != null && ' and'}
+                    {schoolWithScore.math_proficiency != null && ` ${schoolWithScore.math_proficiency}% in Math`}
+                    {(schoolWithScore.ela_proficiency != null || schoolWithScore.math_proficiency != null) && ' on NYC state assessments.'}
+                    {programs.length > 0 && ` The school offers ${programs.join(', ')}.`}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Two-Column Layout: Location & School Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

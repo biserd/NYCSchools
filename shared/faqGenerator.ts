@@ -321,12 +321,93 @@ export function generateSchoolFAQ(school: SchoolWithOverallScore): SchoolFAQ {
         answer: generateHsCollegeReadyAnswer(school),
       });
     }
+  } else {
+    // Elementary / middle school questions
+    if (school.grade_band) {
+      faqs.push({
+        question: `What grades does ${school.name} serve?`,
+        answer: `${school.name} serves students in grades ${school.grade_band}` +
+          (school.enrollment != null ? ` with approximately ${school.enrollment.toLocaleString()} students enrolled` : '') +
+          '.',
+      });
+    }
+    faqs.push({
+      question: `How do you apply to ${school.name}?`,
+      answer: generateElementaryAdmissionsAnswer(school),
+    });
+    if (school.ela_proficiency != null || school.math_proficiency != null) {
+      faqs.push({
+        question: `What are the test scores at ${school.name}?`,
+        answer: generateTestScoresAnswer(school),
+      });
+    }
+    if (school.has_gifted_talented || school.has_dual_language || school.has_3k || school.has_prek) {
+      faqs.push({
+        question: `What special programs does ${school.name} offer?`,
+        answer: generateProgramsAnswer(school),
+      });
+    }
   }
 
   return {
     faqs,
     lastUpdated: new Date().toISOString().split('T')[0],
   };
+}
+
+function generateElementaryAdmissionsAnswer(school: SchoolWithOverallScore): string {
+  const method = (school as any).admission_method as string | null | undefined;
+  if (method) {
+    const m = method.toLowerCase();
+    if (m.includes('zoned')) {
+      return `${school.name} is a zoned school. Families living within the school's attendance zone are guaranteed a seat. Out-of-zone families may apply but admission depends on availability. Apply through MySchools.nyc during the kindergarten or middle school application window.`;
+    }
+    if (m.includes('lottery') || m.includes('unscreened')) {
+      return `${school.name} admits students through a ${method.toLowerCase()} process. There is no zoned attendance area — all families apply through MySchools.nyc, and seats are assigned based on the NYC enrollment lottery and applicant priorities.`;
+    }
+    if (m.includes('screen')) {
+      return `${school.name} uses a ${method.toLowerCase()} admissions process. Applicants are evaluated using academic records, attendance, and other criteria. Apply through MySchools.nyc during the application window.`;
+    }
+    return `${school.name} uses a ${method} admissions process. Apply through MySchools.nyc during the NYC enrollment window.`;
+  }
+  return `${school.name} accepts applications through MySchools.nyc during the NYC enrollment window. Most NYC elementary schools are zoned, meaning families in the attendance zone are guaranteed a seat. Contact the school directly to confirm current admissions requirements.`;
+}
+
+function generateTestScoresAnswer(school: SchoolWithOverallScore): string {
+  const parts: string[] = [];
+  if (school.ela_proficiency != null) {
+    parts.push(`${school.ela_proficiency}% of ${school.name} students are proficient in English Language Arts (ELA)`);
+  }
+  if (school.math_proficiency != null) {
+    parts.push(`${school.math_proficiency}% are proficient in Math`);
+  }
+  if (parts.length === 0) {
+    return `Test score data for ${school.name} is not yet available.`;
+  }
+  return parts.join(', and ') + ', based on the most recent NYC state assessments for grades 3-8.';
+}
+
+function generateProgramsAnswer(school: SchoolWithOverallScore): string {
+  const programs: string[] = [];
+  if (school.has_gifted_talented) {
+    const gtType = school.gt_program_type === 'citywide' ? 'Citywide' : 'District';
+    programs.push(`a **${gtType} Gifted & Talented program**`);
+  }
+  if (school.has_dual_language) {
+    const langs = school.dual_language_languages?.join(' and ');
+    programs.push(`a **Dual Language program**${langs ? ` in ${langs}` : ''}`);
+  }
+  if (school.has_3k && school.has_prek) {
+    programs.push(`**3-K and Pre-K** early childhood seats`);
+  } else if (school.has_3k) {
+    programs.push(`**3-K** early childhood seats`);
+  } else if (school.has_prek) {
+    programs.push(`**Pre-K** seats`);
+  }
+  if (programs.length === 0) {
+    return `${school.name} offers a standard NYC public school curriculum.`;
+  }
+  return `${school.name} offers ${programs.join(', ')}.`;
 }
 
 export function generateFAQStructuredData(school: SchoolWithOverallScore, faq: SchoolFAQ): object {
