@@ -1430,3 +1430,359 @@ export function CorrelationContextChart() {
     </Card>
   );
 }
+
+// ==========================================
+// BLOG SCHOOL TABLES + BOROUGH CHART
+// (used by Best K / Elementary / Charter posts)
+// ==========================================
+
+interface BlogSchoolRow {
+  dbn: string;
+  name: string;
+  district: number;
+  ela_proficiency: number | null;
+  math_proficiency: number | null;
+  enrollment: number | null;
+  grade_band: string | null;
+  admission_method: string | null;
+  academics_score: number | null;
+  climate_score: number | null;
+  progress_score: number | null;
+  has_gifted_talented?: boolean | null;
+  has_dual_language?: boolean | null;
+}
+
+function calcBlogOverall(s: BlogSchoolRow): number {
+  return Math.round(
+    (s.academics_score ?? 0) * 0.4 +
+    (s.climate_score ?? 0) * 0.3 +
+    (s.progress_score ?? 0) * 0.3
+  );
+}
+
+function blogAdmissionLabel(s: BlogSchoolRow): { label: string; tone: 'default' | 'screened' | 'lottery' } {
+  const m = (s.admission_method || '').toLowerCase();
+  if (m.includes('screen')) return { label: 'Screened', tone: 'screened' };
+  if (m.includes('lottery') || m.includes('open')) return { label: 'Lottery', tone: 'lottery' };
+  return { label: 'Zoned (Unscreened)', tone: 'default' };
+}
+
+const ACCENT_BORDER: Record<string, string> = {
+  primary: 'border-primary/30',
+  emerald: 'border-emerald-300 dark:border-emerald-800',
+  blue: 'border-blue-300 dark:border-blue-800',
+  purple: 'border-purple-300 dark:border-purple-800',
+  orange: 'border-orange-300 dark:border-orange-800',
+  teal: 'border-teal-300 dark:border-teal-800',
+};
+
+export function BlogSchoolTable({
+  dbns,
+  title,
+  description,
+  accentColor = 'primary',
+}: {
+  dbns: string[];
+  title: string;
+  description?: string;
+  accentColor?: 'primary' | 'emerald' | 'blue' | 'purple' | 'orange' | 'teal';
+}) {
+  const { data: schools, isLoading } = useQuery<BlogSchoolRow[]>({ queryKey: ['/api/schools'] });
+
+  const dbnSet = new Set(dbns.map(d => d.toUpperCase()));
+  const rows = (schools || [])
+    .filter(s => dbnSet.has(s.dbn.toUpperCase()))
+    .sort((a, b) => calcBlogOverall(b) - calcBlogOverall(a));
+
+  return (
+    <Card className={`my-6 ${ACCENT_BORDER[accentColor]}`}>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Award className="w-5 h-5" />
+          {title}
+        </CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="h-64 bg-muted animate-pulse rounded" />
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No data available.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid={`table-blog-${accentColor}`}>
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-2 font-medium">School</th>
+                  <th className="text-center py-2 px-2 font-medium">Rating</th>
+                  <th className="text-center py-2 px-2 font-medium">ELA</th>
+                  <th className="text-center py-2 px-2 font-medium">Math</th>
+                  <th className="text-center py-2 px-2 font-medium hidden sm:table-cell">Admissions</th>
+                  <th className="text-center py-2 px-2 font-medium hidden md:table-cell">Enrollment</th>
+                  <th className="text-center py-2 px-2 font-medium hidden md:table-cell">Grades</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(s => {
+                  const overall = calcBlogOverall(s);
+                  const adm = blogAdmissionLabel(s);
+                  return (
+                    <tr key={s.dbn} className="border-b">
+                      <td className="py-2 px-2">
+                        <a
+                          href={`/school/${s.dbn.toLowerCase()}`}
+                          className="text-primary hover:underline font-medium"
+                          data-testid={`link-blog-school-${s.dbn}`}
+                        >
+                          {s.name}
+                        </a>
+                        <div className="text-xs text-muted-foreground">
+                          DBN {s.dbn} • District {s.district}
+                          {s.has_gifted_talented ? ' • G&T' : ''}
+                          {s.has_dual_language ? ' • Dual-Lang' : ''}
+                        </div>
+                      </td>
+                      <td className="text-center py-2 px-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${
+                          overall >= 90 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                            : overall >= 80 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                            : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                        }`}>
+                          {overall}/100
+                        </span>
+                      </td>
+                      <td className="text-center py-2 px-2 font-medium">{s.ela_proficiency ?? '—'}%</td>
+                      <td className="text-center py-2 px-2 font-medium">{s.math_proficiency ?? '—'}%</td>
+                      <td className="text-center py-2 px-2 text-xs hidden sm:table-cell">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded ${
+                          adm.tone === 'screened' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'
+                            : adm.tone === 'lottery' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {adm.label}
+                        </span>
+                      </td>
+                      <td className="text-center py-2 px-2 text-muted-foreground hidden md:table-cell">
+                        {s.enrollment?.toLocaleString() ?? '—'}
+                      </td>
+                      <td className="text-center py-2 px-2 text-muted-foreground hidden md:table-cell">
+                        {s.grade_band ?? '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="text-xs text-muted-foreground mt-3">
+              Rating = Test Proficiency (40%) + Climate (30%) + Progress (30%). NYC elementary schools are <strong>unscreened</strong> — admission is by zone (guaranteed) or lottery (no test/grade requirement). Click any school name for the full profile.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function BoroughAvgProficiencyChart() {
+  const { data: schools, isLoading } = useQuery<BlogSchoolRow[]>({ queryKey: ['/api/schools'] });
+
+  const data = (() => {
+    if (!schools) return [];
+    const boroughOf = (dbn: string): string => {
+      const c = dbn.charAt(2).toUpperCase();
+      return ({ M: 'Manhattan', X: 'Bronx', K: 'Brooklyn', Q: 'Queens', R: 'Staten Island' } as Record<string,string>)[c] || 'Other';
+    };
+    const buckets: Record<string, { ela: number[]; math: number[] }> = {};
+    for (const s of schools) {
+      const gb = (s.grade_band || '').toLowerCase();
+      // Elementary-ish: PK/K through 5/6/8
+      if (!(gb.includes('k') || gb.includes('p'))) continue;
+      const b = boroughOf(s.dbn);
+      if (!buckets[b]) buckets[b] = { ela: [], math: [] };
+      if (s.ela_proficiency != null) buckets[b].ela.push(s.ela_proficiency);
+      if (s.math_proficiency != null) buckets[b].math.push(s.math_proficiency);
+    }
+    const avg = (a: number[]) => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0;
+    return ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'].map(b => ({
+      borough: b,
+      ela: avg(buckets[b]?.ela || []),
+      math: avg(buckets[b]?.math || []),
+      schools: buckets[b]?.ela.length || 0,
+    }));
+  })();
+
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-borough-avg">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          Average Elementary Proficiency by Borough
+        </CardTitle>
+        <CardDescription>
+          Live-computed average ELA and Math proficiency across all NYC public elementary schools (K-5, PK-5, K-8) in our database.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading || !data.length ? (
+          <div className="h-72 bg-muted animate-pulse rounded" />
+        ) : (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="borough" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value: number) => [`${value}%`, '']}
+                  labelFormatter={(label) => {
+                    const item = data.find(d => d.borough === label);
+                    return `${label} (${item?.schools ?? 0} schools)`;
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="ela" name="ELA %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="math" name="Math %" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ==========================================
+// CHARTER COMPONENTS (hand-curated; charters not in main schools DB)
+// ==========================================
+
+const charterNetworksData = [
+  { network: 'Success Academy', schools: 47, avgEla: 96, avgMath: 99 },
+  { network: 'Uncommon Schools', schools: 16, avgEla: 80, avgMath: 84 },
+  { network: 'Achievement First', schools: 12, avgEla: 76, avgMath: 79 },
+  { network: 'KIPP NYC', schools: 18, avgEla: 71, avgMath: 73 },
+  { network: 'Democracy Prep', schools: 8, avgEla: 65, avgMath: 67 },
+  { network: 'NYC Public Avg', schools: 1100, avgEla: 55, avgMath: 55 },
+];
+
+export function CharterNetworksChart() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-charter-networks">
+          <Award className="w-5 h-5 text-emerald-600" />
+          Charter Network Performance vs. Citywide Average
+        </CardTitle>
+        <CardDescription>
+          Average grade 3-8 ELA and Math proficiency across each network's NYC schools (2024-25 NYSED data). NYC public school average shown for reference.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={charterNetworksData} layout="vertical" margin={{ top: 10, right: 30, left: 110, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
+              <YAxis dataKey="network" type="category" tick={{ fontSize: 11 }} width={100} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                formatter={(value: number) => [`${value}%`, '']}
+                labelFormatter={(label) => {
+                  const item = charterNetworksData.find(d => d.network === label);
+                  return `${label} (${item?.schools ?? 0} schools)`;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="avgEla" name="ELA %" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="avgMath" name="Math %" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const topCharterSchoolsData: Array<{
+  name: string;
+  borough: string;
+  ela: number;
+  math: number;
+  enrollment: number;
+  grades: string;
+  network: string;
+  screen: string;
+}> = [
+  { name: 'Success Academy Harlem 1', borough: 'Manhattan', ela: 99, math: 100, enrollment: 535, grades: 'K-4', network: 'Success Academy', screen: 'No academic screening — citywide lottery, geographic priority within District 5' },
+  { name: 'Success Academy Bronx 1', borough: 'Bronx', ela: 96, math: 99, enrollment: 700, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — open lottery, District 7 geographic priority' },
+  { name: 'Success Academy Cobble Hill', borough: 'Brooklyn', ela: 97, math: 99, enrollment: 720, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — Brooklyn-priority lottery (~1-in-15 odds)' },
+  { name: 'Uncommon Schools North Star', borough: 'Brooklyn', ela: 84, math: 87, enrollment: 650, grades: 'K-8', network: 'Uncommon Schools', screen: 'No academic screening — D16/17 geographic priority + sibling priority' },
+  { name: 'Brooklyn Prospect Charter', borough: 'Brooklyn', ela: 82, math: 79, enrollment: 950, grades: 'K-12', network: 'Independent', screen: 'No academic screening — IB-curriculum lottery (~1-in-15 odds at flagship campus)' },
+  { name: 'Achievement First Brownsville', borough: 'Brooklyn', ela: 78, math: 81, enrollment: 590, grades: 'K-8', network: 'Achievement First', screen: 'No academic screening — Brooklyn-priority lottery + sibling priority' },
+  { name: 'KIPP Infinity', borough: 'Manhattan', ela: 78, math: 82, enrollment: 320, grades: '5-8', network: 'KIPP NYC', screen: 'No academic screening — sibling + District 5/6 priority' },
+  { name: 'Democracy Prep Harlem', borough: 'Manhattan', ela: 68, math: 70, enrollment: 580, grades: 'K-12', network: 'Democracy Prep', screen: 'No academic screening — sibling + District 5 priority' },
+];
+
+export function TopCharterSchoolsTable() {
+  return (
+    <Card className="my-6 border-emerald-300 dark:border-emerald-800">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-top-charters">
+          <School className="w-5 h-5 text-emerald-600" />
+          Top NYC Charter Schools — Detailed Profiles
+        </CardTitle>
+        <CardDescription>
+          All NYC charters use open, non-screened lotteries. Sibling and geographic priority apply at most networks.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-testid="table-top-charters">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-2 font-medium">School</th>
+                <th className="text-center py-2 px-2 font-medium">ELA</th>
+                <th className="text-center py-2 px-2 font-medium">Math</th>
+                <th className="text-center py-2 px-2 font-medium hidden sm:table-cell">Enroll.</th>
+                <th className="text-center py-2 px-2 font-medium hidden md:table-cell">Grades</th>
+                <th className="text-center py-2 px-2 font-medium hidden md:table-cell">Network</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topCharterSchoolsData.map((s, i) => (
+                <tr key={i} className="border-b">
+                  <td className="py-2 px-2">
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {s.borough} • <span className="italic">{s.screen}</span>
+                    </div>
+                  </td>
+                  <td className="text-center py-2 px-2 font-medium">{s.ela}%</td>
+                  <td className="text-center py-2 px-2 font-medium">{s.math}%</td>
+                  <td className="text-center py-2 px-2 text-muted-foreground hidden sm:table-cell">{s.enrollment.toLocaleString()}</td>
+                  <td className="text-center py-2 px-2 text-muted-foreground hidden md:table-cell">{s.grades}</td>
+                  <td className="text-center py-2 px-2 text-xs hidden md:table-cell">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                      {s.network}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-xs text-muted-foreground mt-3">
+            <strong>Charter admissions:</strong> Free, public, lottery-based. No grades, test scores, or interviews required. Lottery odds vary widely — newer charters are often ~1-in-3, top Brooklyn campuses are ~1-in-15.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

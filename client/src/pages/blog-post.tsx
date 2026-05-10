@@ -31,6 +31,10 @@ import {
   SafetyQuintileRatingChart,
   DistrictCorrelationStats,
   CorrelationContextChart,
+  BlogSchoolTable,
+  BoroughAvgProficiencyChart,
+  CharterNetworksChart,
+  TopCharterSchoolsTable,
 } from "@/components/blog/DataCharts";
 import { Shield } from "lucide-react";
 import { 
@@ -891,74 +895,46 @@ function BestKindergartensPost() {
         <li><strong>Progress Score (30%)</strong> - How much academic growth students show year-over-year</li>
       </ul>
 
+      <BoroughAvgProficiencyChart />
+
       <h2 id="manhattan-kindergartens">Best Manhattan Kindergartens</h2>
 
       <p>
-        Manhattan offers some of NYC's most competitive kindergarten programs, particularly in Districts 2 (Upper East Side, Tribeca) and District 3 (Upper West Side).
+        Manhattan offers some of NYC's most competitive kindergarten programs, particularly in Districts 2 (Upper East Side, Tribeca) and District 3 (Upper West Side). All four schools below are <strong>unscreened zoned schools</strong> — admission is guaranteed if you live in the zone, and out-of-zone families can apply through MySchools lottery.
       </p>
 
-      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-emerald-700 dark:text-emerald-400">Top Manhattan K Programs</strong>
-              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 6 Lillie Devereaux Blake</strong> (D2) - 90%+ proficiency</li>
-                <li><strong>PS 77 Lower Lab</strong> (D2) - Outstanding climate scores</li>
-                <li><strong>PS 199 Jessie Isador Straus</strong> (D3) - Strong academic growth</li>
-                <li><strong>PS 87 William Sherman</strong> (D3) - Excellent parent satisfaction</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="emerald"
+        title="Top Manhattan K Programs"
+        description="Highest-rated kindergarten programs in Districts 2 and 3, with full data and links to each school's profile."
+        dbns={["02M006", "02M077", "03M199", "03M087"]}
+      />
 
       <h2 id="brooklyn-kindergartens">Best Brooklyn Kindergartens</h2>
 
       <p>
-        Brooklyn's diverse neighborhoods offer excellent kindergarten options from Park Slope to Brooklyn Heights to Williamsburg. District 15 and District 13 consistently rank among the top.
+        Brooklyn's diverse neighborhoods offer excellent kindergarten options from Park Slope to Brooklyn Heights to Williamsburg. District 15 consistently ranks among the top, with District 13 and District 14 offering strong dual-language options.
       </p>
 
-      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-blue-700 dark:text-blue-400">Top Brooklyn K Programs</strong>
-              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 321 William Penn</strong> (D15) - Park Slope's flagship school</li>
-                <li><strong>PS 107 John W Kimball</strong> (D15) - Exceptional progress scores</li>
-                <li><strong>PS 8 Robert Fulton</strong> (D13) - Brooklyn Heights excellence</li>
-                <li><strong>PS 84 José de Diego</strong> (D14) - Strong dual-language K program</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="blue"
+        title="Top Brooklyn K Programs"
+        description="Highest-rated kindergarten programs in Brooklyn — all unscreened, zoned schools with optional lottery for out-of-zone applicants."
+        dbns={["15K321", "15K107", "15K130", "14K084"]}
+      />
 
       <h2 id="queens-kindergartens">Best Queens Kindergartens</h2>
 
       <p>
-        Queens offers excellent value with top-rated kindergartens in Districts 26 (Bayside/Douglaston), 25 (Flushing), and 28 (Forest Hills/Jamaica Estates).
+        Queens offers excellent value with top-rated kindergartens in Districts 26 (Bayside/Douglaston), 25 (Flushing), and 28 (Forest Hills/Jamaica Estates). District 26 routinely posts the highest elementary test scores citywide.
       </p>
 
-      <Card className="my-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-purple-700 dark:text-purple-400">Top Queens K Programs</strong>
-              <ul className="text-sm text-purple-600/80 dark:text-purple-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 188 Kingsbury</strong> (D26) - Top Queens academic scores</li>
-                <li><strong>PS 203 Oakland Gardens</strong> (D26) - Excellent climate ratings</li>
-                <li><strong>PS 173 Fresh Meadows</strong> (D26) - Strong parent satisfaction</li>
-                <li><strong>PS 196 Grand Central</strong> (D28) - Forest Hills favorite</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="purple"
+        title="Top Queens K Programs"
+        description="Highest-rated kindergarten programs in Queens — all unscreened, with PS 196 Grand Central Parkway among the city's top-rated K programs."
+        dbns={["26Q188", "26Q203", "26Q173", "28Q196"]}
+      />
 
       <h2 id="bronx-kindergartens">Best Bronx Kindergartens</h2>
 
@@ -966,22 +942,12 @@ function BestKindergartensPost() {
         The Bronx has standout kindergarten programs, especially in District 11 (Morris Park/Pelham Gardens) and Riverdale's District 10.
       </p>
 
-      <Card className="my-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-orange-700 dark:text-orange-400">Top Bronx K Programs</strong>
-              <ul className="text-sm text-orange-600/80 dark:text-orange-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 83 Donald Hertz</strong> (D11) - Morris Park's highest-rated</li>
-                <li><strong>PS 81 Robert Christen</strong> (D11) - Excellent academics</li>
-                <li><strong>PS 24 Spuyten Duyvil</strong> (D10) - Riverdale gem</li>
-                <li><strong>PS 7 Milton Fein</strong> (D10) - Strong community engagement</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="orange"
+        title="Top Bronx K Programs"
+        description="Highest-rated kindergarten programs in the Bronx — all unscreened, with strong progress and climate scores even where proficiency varies."
+        dbns={["10X024", "11X083", "10X007", "11X175"]}
+      />
 
       <h2 id="staten-island-kindergartens">Best Staten Island Kindergartens</h2>
 
@@ -989,22 +955,12 @@ function BestKindergartensPost() {
         Staten Island's District 31 offers some of the city's top-performing kindergartens, with excellent academics and strong community ties.
       </p>
 
-      <Card className="my-6 border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-teal-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-teal-700 dark:text-teal-400">Top Staten Island K Programs</strong>
-              <ul className="text-sm text-teal-600/80 dark:text-teal-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 36 J C Drumgoole</strong> (D31) - Highest SI proficiency</li>
-                <li><strong>PS 56 Louis DeSario</strong> (D31) - Excellent climate scores</li>
-                <li><strong>PS 29 Bardwell</strong> (D31) - Strong community support</li>
-                <li><strong>PS 3 Margaret Gioiosa</strong> (D31) - Top progress scores</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="teal"
+        title="Top Staten Island K Programs"
+        description="Highest-rated kindergarten programs in Staten Island's District 31 — all unscreened zoned schools."
+        dbns={["31R036", "31R056", "31R029", "31R003", "31R050"]}
+      />
 
       <h2 id="gifted-talented">Gifted & Talented Kindergarten Programs</h2>
 
@@ -1132,125 +1088,74 @@ function BestElementarySchoolsPost() {
         <li><strong>Progress Score (30%)</strong> - Student academic growth compared to similar schools</li>
       </ul>
 
+      <BoroughAvgProficiencyChart />
+
+      <ProficiencyTierChart />
+
       <h2 id="top-manhattan-elementary">Top Manhattan Elementary Schools</h2>
 
       <p>
-        Manhattan's Districts 2 and 3 dominate the city's top elementary rankings, with schools regularly achieving 80%+ proficiency rates.
+        Manhattan's Districts 2 and 3 dominate the city's top elementary rankings, with schools regularly achieving 85%+ proficiency rates. All five schools below are <strong>unscreened</strong> — admission is by zone (guaranteed) or by lottery (no academic requirements).
       </p>
 
-      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-emerald-700 dark:text-emerald-400">Manhattan's Best Elementary Schools</strong>
-              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 6 Lillie Devereaux Blake</strong> (D2) - 91% ELA, 89% Math</li>
-                <li><strong>PS 77 Lower Lab School</strong> (D2) - Outstanding overall score</li>
-                <li><strong>PS 199 Jessie Isador Straus</strong> (D3) - Consistent top performer</li>
-                <li><strong>PS 87 William Sherman</strong> (D3) - Excellent progress scores</li>
-                <li><strong>PS 234 Independence School</strong> (D2) - TriBeCa excellence</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="emerald"
+        title="Manhattan's Best Elementary Schools"
+        description="Highest-rated K-5 elementary schools in Manhattan, sorted by Overall Rating."
+        dbns={["02M006", "02M077", "02M234", "03M199", "03M087"]}
+      />
 
       <h2 id="top-brooklyn-elementary">Top Brooklyn Elementary Schools</h2>
 
       <p>
-        Brooklyn's District 15 (Park Slope, Carroll Gardens) and District 22 (Midwood, Sheepshead Bay) lead the borough's elementary rankings.
+        Brooklyn's District 15 (Park Slope, Carroll Gardens) and District 22 (Midwood, Sheepshead Bay) lead the borough's elementary rankings, with strong options also in Districts 13 and 14.
       </p>
 
-      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-blue-700 dark:text-blue-400">Brooklyn's Best Elementary Schools</strong>
-              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 321 William Penn</strong> (D15) - Park Slope's crown jewel</li>
-                <li><strong>PS 107 John W Kimball</strong> (D15) - Top academic growth</li>
-                <li><strong>PS 8 Robert Fulton</strong> (D13) - Brooklyn Heights leader</li>
-                <li><strong>PS 130 Parkside</strong> (D22) - Exceptional math scores</li>
-                <li><strong>PS 217 Colonel David Marcus</strong> (D22) - High overall rating</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="blue"
+        title="Brooklyn's Best Elementary Schools"
+        description="Highest-rated K-5 / PK-5 elementary schools in Brooklyn — all unscreened with zoned admission + lottery."
+        dbns={["15K321", "15K107", "15K130", "22K217"]}
+      />
 
       <h2 id="top-queens-elementary">Top Queens Elementary Schools</h2>
 
       <p>
-        Queens' District 26 consistently ranks as NYC's top-performing district, with multiple schools exceeding 85% proficiency.
+        Queens' District 26 consistently ranks as NYC's top-performing district, with multiple schools exceeding 85% proficiency. PS 196 Grand Central Parkway in District 28 is one of the highest-rated elementary schools in the entire city.
       </p>
 
-      <Card className="my-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-purple-700 dark:text-purple-400">Queens' Best Elementary Schools</strong>
-              <ul className="text-sm text-purple-600/80 dark:text-purple-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 188 Kingsbury</strong> (D26) - District 26's highest scores</li>
-                <li><strong>PS 203 Oakland Gardens</strong> (D26) - Excellent in all metrics</li>
-                <li><strong>PS 173 Fresh Meadows</strong> (D26) - Outstanding climate</li>
-                <li><strong>PS 196 Grand Central</strong> (D28) - Forest Hills favorite</li>
-                <li><strong>PS 144 Col Jeromus Remsen</strong> (D28) - Strong community</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="purple"
+        title="Queens' Best Elementary Schools"
+        description="Highest-rated K-5 / PK-6 elementary schools in Queens — all unscreened with zoned admission + lottery."
+        dbns={["26Q188", "26Q203", "26Q173", "28Q196", "28Q144"]}
+      />
 
       <h2 id="top-bronx-elementary">Top Bronx Elementary Schools</h2>
 
       <p>
-        The Bronx's top elementary schools are concentrated in Districts 10 (Riverdale) and 11 (Pelham/Morris Park).
+        The Bronx's top elementary schools are concentrated in Districts 10 (Riverdale) and 11 (Pelham/Morris Park). PS 24 Spuyten Duyvil consistently ranks among the city's elite elementary schools.
       </p>
 
-      <Card className="my-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-orange-700 dark:text-orange-400">Bronx's Best Elementary Schools</strong>
-              <ul className="text-sm text-orange-600/80 dark:text-orange-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 24 Spuyten Duyvil</strong> (D10) - Riverdale's top school</li>
-                <li><strong>PS 81 Robert Christen</strong> (D11) - Morris Park excellence</li>
-                <li><strong>PS 83 Donald Hertz</strong> (D11) - Outstanding academics</li>
-                <li><strong>PS 7 Milton Fein</strong> (D10) - High progress scores</li>
-                <li><strong>PS 175 City Island</strong> (D11) - Unique island community</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="orange"
+        title="Bronx's Best Elementary Schools"
+        description="Highest-rated K-5 / K-8 elementary schools in the Bronx — all unscreened with zoned admission + lottery."
+        dbns={["10X024", "10X007", "11X083", "11X175"]}
+      />
 
       <h2 id="top-staten-island-elementary">Top Staten Island Elementary Schools</h2>
 
       <p>
-        Staten Island's District 31 offers many high-performing elementary options with strong community engagement.
+        Staten Island's District 31 offers many high-performing elementary options with strong community engagement. Several SI schools rank in the citywide top-50 for Overall Rating.
       </p>
 
-      <Card className="my-6 border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-teal-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-teal-700 dark:text-teal-400">Staten Island's Best Elementary Schools</strong>
-              <ul className="text-sm text-teal-600/80 dark:text-teal-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>PS 36 J C Drumgoole</strong> - Island's highest proficiency</li>
-                <li><strong>PS 56 Louis DeSario</strong> - Excellent all-around</li>
-                <li><strong>PS 29 Bardwell</strong> - Strong academics & climate</li>
-                <li><strong>PS 3 Margaret Gioiosa</strong> - Top progress scores</li>
-                <li><strong>PS 50 Frank Hankinson</strong> - Great community</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="teal"
+        title="Staten Island's Best Elementary Schools"
+        description="Highest-rated PK-5 / K-5 elementary schools in District 31 — all unscreened with zoned admission + lottery."
+        dbns={["31R003", "31R050", "31R029", "31R056", "31R036"]}
+      />
 
       <h2 id="what-to-look-for">What to Look for in an Elementary School</h2>
 
@@ -1650,50 +1555,18 @@ function BestCharterSchoolsPost() {
       <h2 id="top-charter-networks">Top-Performing Charter Networks</h2>
 
       <p>
-        Several charter networks consistently outperform district averages across multiple schools:
+        Several charter networks consistently outperform district averages across multiple schools. Success Academy schools post the highest scores in NYC across all school types — public, private, or charter — with grade 3-8 ELA proficiency averaging 96% and Math 99%.
       </p>
 
-      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-emerald-700 dark:text-emerald-400">Top Charter Networks</strong>
-              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>Success Academy</strong> - 47 schools, consistently highest test scores</li>
-                <li><strong>KIPP NYC</strong> - 18 schools, strong college prep focus</li>
-                <li><strong>Achievement First</strong> - 12 schools, emphasis on rigor</li>
-                <li><strong>Uncommon Schools</strong> - 16 schools, data-driven approach</li>
-                <li><strong>Democracy Prep</strong> - 8 schools, civic engagement focus</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <CharterNetworksChart />
 
       <h2 id="top-individual-charters">Top Individual Charter Schools</h2>
 
       <p>
-        These charter schools rank among NYC's highest performers across all school types:
+        These charter schools rank among NYC's highest performers across all school types. Every NYC charter uses an open lottery — there is <strong>no academic screening, test, or interview</strong>. Sibling and geographic priority apply at most networks.
       </p>
 
-      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-blue-700 dark:text-blue-400">Highest-Rated Charter Schools</strong>
-              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>Success Academy Harlem 1</strong> - 95%+ proficiency</li>
-                <li><strong>Success Academy Bronx 1</strong> - Outstanding math scores</li>
-                <li><strong>KIPP Infinity</strong> - Harlem's top middle school</li>
-                <li><strong>Achievement First Brownsville</strong> - Brooklyn leader</li>
-                <li><strong>Uncommon Schools North Star</strong> - High growth scores</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <TopCharterSchoolsTable />
 
       <h2 id="charter-by-borough">Charter Schools by Borough</h2>
 
