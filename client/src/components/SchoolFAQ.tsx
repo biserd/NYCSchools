@@ -53,7 +53,7 @@ export function SchoolFAQ({ school }: SchoolFAQProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="multiple" defaultValue={faqData.faqs.map((_, i) => `faq-${i}`)} className="w-full">
             {faqData.faqs.map((faq, index) => (
               <AccordionItem 
                 key={index} 
