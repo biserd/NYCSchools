@@ -603,6 +603,13 @@ export default function PrivateSchoolDetail() {
               </Card>
             )}
 
+            {/* Nearby Properties (Realtors Dashboard) — full main-column width */}
+            <NearbyPropertiesPanel
+              schoolAddress={school.address}
+              schoolName={school.name}
+              zipCode={school.zipCode}
+            />
+
           </div>
 
           <div className="space-y-6">
@@ -773,11 +780,6 @@ export default function PrivateSchoolDetail() {
             </Card>
           </div>
 
-          <NearbyPropertiesPanel
-            schoolAddress={school.address}
-            schoolName={school.name}
-            zipCode={school.zipCode}
-          />
         </div>
       </main>
 
