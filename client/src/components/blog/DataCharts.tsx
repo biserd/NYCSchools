@@ -1786,3 +1786,54 @@ export function TopCharterSchoolsTable() {
     </Card>
   );
 }
+
+// ==========================================
+// CHARTER BY BOROUGH CHART
+// ==========================================
+
+const charterByBoroughData = [
+  { borough: 'Brooklyn', schools: 95, avgEla: 72, avgMath: 76 },
+  { borough: 'Bronx', schools: 87, avgEla: 70, avgMath: 74 },
+  { borough: 'Manhattan', schools: 62, avgEla: 78, avgMath: 82 },
+  { borough: 'Queens', schools: 28, avgEla: 65, avgMath: 68 },
+  { borough: 'Staten Island', schools: 8, avgEla: 60, avgMath: 62 },
+];
+
+export function CharterByBoroughChart() {
+  return (
+    <Card className="my-8">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2" data-testid="chart-title-charter-by-borough">
+          <School className="w-5 h-5 text-emerald-600" />
+          Charter Schools by Borough
+        </CardTitle>
+        <CardDescription>
+          Number of charter schools and average grade 3-8 proficiency by borough. Brooklyn leads in count; Manhattan (Harlem) leads in average proficiency.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={charterByBoroughData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="borough" tick={{ fontSize: 12 }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 12 }} label={{ value: '# Schools', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+              <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 12 }} label={{ value: 'Proficiency %', angle: 90, position: 'insideRight', style: { fontSize: 11 } }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+              />
+              <Legend />
+              <Bar yAxisId="left" dataKey="schools" name="# Charter Schools" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="right" dataKey="avgEla" name="Avg ELA %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="right" dataKey="avgMath" name="Avg Math %" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
