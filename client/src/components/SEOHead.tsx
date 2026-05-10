@@ -9,6 +9,7 @@ interface SEOHeadProps {
   ogType?: 'website' | 'article';
   canonicalPath?: string;
   noindex?: boolean;
+  appendSiteName?: boolean;
 }
 
 const DEFAULT_TITLE = 'NYC School Ratings';
@@ -25,11 +26,14 @@ export function SEOHead({
   ogType = 'website',
   canonicalPath,
   noindex = false,
+  appendSiteName = true,
 }: SEOHeadProps) {
   const [location] = useLocation();
   const createdElementsRef = useRef<Set<HTMLElement>>(new Set());
   
-  const fullTitle = title ? `${title} | ${DEFAULT_TITLE}` : DEFAULT_TITLE;
+  const fullTitle = title
+    ? (appendSiteName ? `${title} | ${DEFAULT_TITLE}` : title)
+    : DEFAULT_TITLE;
   const canonicalUrl = canonicalPath 
     ? `${SITE_URL}${canonicalPath}`
     : `${SITE_URL}${location}`;

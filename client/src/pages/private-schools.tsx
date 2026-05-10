@@ -157,9 +157,10 @@ export default function PrivateSchools() {
   return (
     <div className="min-h-screen bg-background" data-testid="page-private-schools">
       <SEOHead
-        title="NYC Private Schools Directory | Browse 600+ Schools"
-        description="Explore 600+ NYC private schools with enrollment data, religious affiliations, and grade information. Find the perfect private school for your child in Manhattan, Brooklyn, Queens, Bronx, and Staten Island."
+        title="NYC Private Schools 2026: Browse 623 Schools by Borough, Tuition & Grades"
+        description="Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by religious affiliation, grade level, enrollment size, and student-teacher ratio."
         canonicalPath="/private-schools"
+        appendSiteName={false}
         keywords="NYC private schools, private school directory, New York City private schools, Catholic schools NYC, independent schools"
       />
       <AppHeader />
@@ -172,10 +173,15 @@ export default function PrivateSchools() {
             </Badge>
             <Badge variant="outline">{schools.length} Schools</Badge>
           </div>
-          <h1 className="text-3xl font-bold mb-2">NYC Private Schools</h1>
-          <p className="text-muted-foreground">
-            Browse {schools.length}+ private schools across New York City. Filter by borough, religious affiliation, and more to find the right fit for your child.
-          </p>
+          <h1 className="text-3xl font-bold mb-3">NYC Private Schools</h1>
+          <div className="space-y-3 text-muted-foreground max-w-4xl">
+            <p>
+              New York City has 623 private schools ranging from elite Manhattan prep schools with $65,000+ tuition to small religious academies in Brooklyn and Queens. This directory covers every private school across all five boroughs — Catholic, Jewish, Islamic, non-sectarian, Montessori, and independent — with enrollment size, grade range, and student-teacher ratios for each.
+            </p>
+            <p>
+              Use the filters above to narrow by borough, religious affiliation, grade level, or school type. Looking for the most selective options? Manhattan's Upper East Side prep schools — Brearley, Chapin, Spence, Dalton, Trinity — are among the most competitive in the country, with tuition exceeding $65,000/year and waitlists that rival Ivy League admissions. Brooklyn and Queens offer strong Catholic academy options in the $8,000–$15,000 range.
+            </p>
+          </div>
         </div>
 
         {stats && (
