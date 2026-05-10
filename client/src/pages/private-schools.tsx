@@ -174,7 +174,7 @@ export default function PrivateSchools() {
             <Badge variant="outline">{schools.length} Schools</Badge>
           </div>
           <h1 className="text-3xl font-bold mb-3">NYC Private Schools</h1>
-          <div className="space-y-3 text-muted-foreground max-w-4xl">
+          <div className="space-y-3 text-muted-foreground">
             <p>
               New York City has 623 private schools ranging from elite Manhattan prep schools with $65,000+ tuition to small religious academies in Brooklyn and Queens. This directory covers every private school across all five boroughs — Catholic, Jewish, Islamic, non-sectarian, Montessori, and independent — with enrollment size, grade range, and student-teacher ratios for each.
             </p>
