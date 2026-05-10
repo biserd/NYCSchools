@@ -1759,6 +1759,10 @@ function BestCharterSchoolsPost() {
 
       <h2 id="faq">Frequently Asked Questions</h2>
 
+      <p className="text-muted-foreground">
+        <strong>The most common questions we get:</strong> Success Academy has the longest waitlists in the city (often 2–4 years at flagship Harlem and Brooklyn campuses), KIPP NYC gives sibling priority in its lottery, and admission odds vary widely — from roughly <strong>1-in-3</strong> at newer or less-known charter schools to as low as <strong>1-in-15</strong> at top Brooklyn campuses like Brooklyn Prospect and Success Academy Cobble Hill. Most NYC charter lotteries open in <strong>December</strong> and close in <strong>early April</strong>, with offers issued by mid-April. Below are the detailed answers.
+      </p>
+
       <Accordion type="single" collapsible className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">

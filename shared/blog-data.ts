@@ -85,13 +85,13 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: "best-nyc-charter-schools-2026",
-    title: "Best NYC Charter Schools 2026: Top Performers & How to Apply",
-    description: "Explore NYC's highest-performing charter schools. Compare academic results, lottery odds, and application deadlines. Learn which charter networks consistently outperform district schools.",
+    title: "Best NYC Charter Schools 2026: Ranked by Test Scores, Lottery Odds & Waitlists",
+    description: "See which NYC charter schools have the best test scores, shortest waitlists, and highest lottery odds for 2026. Success Academy, KIPP, Achievement First and 100+ schools ranked with real data.",
     author: "NYC School Ratings Team",
     publishedAt: "2026-01-04",
     readTime: "11 min read",
     category: "School Rankings",
-    tags: ["Charter Schools", "Best Schools", "NYC Schools", "School Rankings", "Lottery", "2026"]
+    tags: ["Charter Schools", "Best Schools", "NYC Schools", "School Rankings", "Lottery", "Waitlists", "Lottery Odds", "Success Academy", "KIPP", "2026"]
   },
   {
     slug: "nyc-prek-3k-kindergarten-admissions-demand-2025",
