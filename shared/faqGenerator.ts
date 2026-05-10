@@ -239,6 +239,57 @@ function generateBestForAnswer(school: SchoolWithOverallScore): string {
   return answer;
 }
 
+function isHighSchool(school: Pick<SchoolWithOverallScore, 'grade_band' | 'name'>): boolean {
+  const gb = school.grade_band?.toLowerCase() ?? '';
+  const n = school.name?.toLowerCase() ?? '';
+  return gb.includes('12') || gb.includes('9-') || gb === '9 to 12' || n.includes('high school');
+}
+
+function generateHsGraduationAnswer(school: SchoolWithOverallScore): string {
+  const parts: string[] = [];
+  if (school.graduation_rate_4yr != null) {
+    parts.push(`${school.name} has a ${school.graduation_rate_4yr}% 4-year graduation rate`);
+    if (school.graduation_rate_6yr != null) {
+      parts.push(`and a ${school.graduation_rate_6yr}% 6-year graduation rate`);
+    }
+  }
+  if (school.college_readiness_rate != null) {
+    parts.push(`${school.college_readiness_rate}% of graduates meet NYC's college and career readiness benchmarks`);
+  }
+  if (parts.length === 0) {
+    return `Graduation data for ${school.name} is not yet available. Check the High School Performance section of this page for the latest data.`;
+  }
+  return parts.join('. ') + '.';
+}
+
+function generateHsAdmissionsAnswer(school: SchoolWithOverallScore): string {
+  if (school.is_specialized_hs) {
+    return `${school.name} is one of NYC's nine specialized high schools. Admission is based solely on the Specialized High Schools Admissions Test (SHSAT). Students must list the school as a choice during the NYC high school application process. Cutoff scores vary each year based on test difficulty and the applicant pool. The Discovery Program reserves additional seats for economically disadvantaged students who score just below the cutoff.`;
+  }
+  if (school.hs_admission_method) {
+    const method = school.hs_admission_method;
+    return `${school.name} uses a **${method}** admissions process. Students apply through the NYC high school application system each fall. ${method.toLowerCase().includes('screen') ? 'Screened schools evaluate applicants based on academics, attendance, and/or other criteria.' : ''}`;
+  }
+  return `${school.name} accepts applications through the NYC high school admissions process. Contact the school directly for current admissions requirements.`;
+}
+
+function generateHsCollegeReadyAnswer(school: SchoolWithOverallScore): string {
+  const parts: string[] = [];
+  if (school.college_readiness_rate != null) {
+    parts.push(`${school.college_readiness_rate}% of ${school.name} students meet NYC's college and career readiness benchmarks`);
+  }
+  if (school.ap_course_count != null && school.ap_course_count > 0) {
+    parts.push(`the school offers ${school.ap_course_count} AP courses`);
+  }
+  if (school.ap_pass_rate != null) {
+    parts.push(`with an AP exam pass rate of ${school.ap_pass_rate}%`);
+  }
+  if (parts.length === 0) {
+    return `College readiness data for ${school.name} is not yet available on this page.`;
+  }
+  return parts.join('. ') + '.';
+}
+
 export function generateSchoolFAQ(school: SchoolWithOverallScore): SchoolFAQ {
   const faqs: FAQItem[] = [
     {
@@ -254,6 +305,23 @@ export function generateSchoolFAQ(school: SchoolWithOverallScore): SchoolFAQ {
       answer: generateBestForAnswer(school),
     },
   ];
+
+  if (isHighSchool(school)) {
+    faqs.push({
+      question: `What is the graduation rate at ${school.name}?`,
+      answer: generateHsGraduationAnswer(school),
+    });
+    faqs.push({
+      question: `How do you get into ${school.name}?`,
+      answer: generateHsAdmissionsAnswer(school),
+    });
+    if (school.college_readiness_rate != null || (school.ap_course_count != null && school.ap_course_count > 0)) {
+      faqs.push({
+        question: `How college-ready are graduates of ${school.name}?`,
+        answer: generateHsCollegeReadyAnswer(school),
+      });
+    }
+  }
 
   return {
     faqs,

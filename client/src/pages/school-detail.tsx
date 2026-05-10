@@ -430,6 +430,32 @@ export default function SchoolDetail() {
             </div>
           </div>
 
+          {/* High School Prose Introduction */}
+          {isHS && (
+            <div className="text-muted-foreground leading-relaxed" data-testid="text-hs-intro">
+              {schoolWithScore.is_specialized_hs ? (
+                <p>
+                  {schoolWithScore.name} is one of NYC&apos;s nine specialized high schools, 
+                  consistently ranked among the top public high schools in the United States. 
+                  Admission requires passing the Specialized High Schools Admissions Test (SHSAT) — 
+                  cutoff scores vary each year based on test difficulty and the applicant pool.
+                  {schoolWithScore.graduation_rate_4yr != null && ` With a ${schoolWithScore.graduation_rate_4yr}% graduation rate`}
+                  {schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0 && ` and ${schoolWithScore.ap_course_count} AP courses`}
+                  {(schoolWithScore.graduation_rate_4yr != null || (schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0)) && `, it is one of the most academically rigorous public schools in New York City.`}
+                </p>
+              ) : (
+                <p>
+                  {schoolWithScore.name} is a{schoolWithScore.is_specialized_hs ? ' specialized' : ''} public high school in {schoolWithScore.dbn?.charAt(2) === 'M' ? 'Manhattan' : schoolWithScore.dbn?.charAt(2) === 'X' ? 'the Bronx' : schoolWithScore.dbn?.charAt(2) === 'K' ? 'Brooklyn' : schoolWithScore.dbn?.charAt(2) === 'Q' ? 'Queens' : 'Staten Island'}, District {schoolWithScore.district}.
+                  {schoolWithScore.graduation_rate_4yr != null && ` It has a ${schoolWithScore.graduation_rate_4yr}% 4-year graduation rate`}
+                  {schoolWithScore.college_readiness_rate != null && ` and ${schoolWithScore.college_readiness_rate}% of graduates meet college-readiness benchmarks`}
+                  {(schoolWithScore.graduation_rate_4yr != null || schoolWithScore.college_readiness_rate != null) && '.'}
+                  {schoolWithScore.ap_course_count != null && schoolWithScore.ap_course_count > 0 && ` The school offers ${schoolWithScore.ap_course_count} AP courses.`}
+                  {schoolWithScore.hs_admission_method && ` Admissions are ${schoolWithScore.hs_admission_method}.`}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Two-Column Layout: Location & School Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Location & Zone Map - Takes 2 columns */}

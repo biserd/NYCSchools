@@ -206,6 +206,13 @@ function applyMeta(baseHtml: string, meta: Meta): string {
 // Per-route renderers
 // ---------------------------------------------------------------------------
 
+// Mirrors shared/schema.ts isHighSchool — kept here to avoid importing client code server-side.
+function schoolIsHS(school: { grade_band?: string | null; name?: string | null }): boolean {
+  const gb = school.grade_band?.toLowerCase() ?? "";
+  const n = school.name?.toLowerCase() ?? "";
+  return gb.includes("12") || gb.includes("9-") || gb === "9 to 12" || n.includes("high school");
+}
+
 async function renderSchool(slug: string, baseHtml: string): Promise<string | null> {
   const dbn = slug.split("-")[0]?.toUpperCase();
   if (!dbn) return null;
@@ -219,14 +226,43 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
      (school.progress_score || 0) * 0.3),
   );
 
-  const title = `${school.name} (${school.dbn}) — ${borough} | NYC School Ratings`;
-  const description =
-    `${school.name} in ${borough}, District ${school.district}. ` +
-    `Overall Score ${overall}/100` +
-    (school.ela_proficiency != null ? `, ELA ${school.ela_proficiency}%` : "") +
-    (school.math_proficiency != null ? `, Math ${school.math_proficiency}%` : "") +
-    `. ${school.enrollment ?? 0} students. View ratings, test scores, NYC ` +
-    `School Survey results, parent reviews, and commute times.`;
+  const isHS = schoolIsHS(school);
+  const gradRate = school.graduation_rate_4yr;
+  const crRate = school.college_readiness_rate;
+  const apCount = school.ap_course_count;
+  const isSpecialized = school.is_specialized_hs;
+
+  // --- Title ---
+  let title: string;
+  if (isHS) {
+    const parts: string[] = [`Rating ${overall}/100`];
+    if (isSpecialized) parts.push("Specialized HS");
+    if (gradRate != null) parts.push(`${gradRate}% Graduation`);
+    title = `${school.name} — ${parts.join(" | ")} | NYC School Ratings`;
+  } else {
+    const parts: string[] = [`Rating ${overall}/100`];
+    if (school.ela_proficiency != null) parts.push(`ELA ${school.ela_proficiency}%`);
+    if (school.math_proficiency != null) parts.push(`Math ${school.math_proficiency}%`);
+    title = `${school.name} — ${parts.join(" | ")} | NYC School Ratings`;
+  }
+
+  // --- Description ---
+  let description: string;
+  if (isHS) {
+    const bits: string[] = [`${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.`];
+    if (gradRate != null) bits.push(`${gradRate}% 4-year graduation rate.`);
+    if (crRate != null) bits.push(`${crRate}% college-ready.`);
+    if (apCount != null && apCount > 0) bits.push(`${apCount} AP courses.`);
+    if (school.enrollment != null) bits.push(`${school.enrollment.toLocaleString()} students enrolled in grades ${school.grade_band ?? "9-12"}.`);
+    description = bits.join(" ");
+  } else {
+    description =
+      `${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.` +
+      (school.ela_proficiency != null ? ` ELA proficiency: ${school.ela_proficiency}%.` : "") +
+      (school.math_proficiency != null ? ` Math proficiency: ${school.math_proficiency}%.` : "") +
+      (school.enrollment != null ? ` ${school.enrollment.toLocaleString()} students in grades ${school.grade_band ?? "K-5"}.` : "") +
+      " View ratings, test scores, parent reviews, and commute times.";
+  }
   const canonical = `${SITE_ORIGIN}/school/${slug}`;
 
   // Fetch related schools in the same district for internal linking. The
@@ -254,6 +290,13 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     related = [];
   }
 
+  // Rich JSON-LD description for EducationalOrganization
+  const ldDescription =
+    `${school.name} in ${borough}, District ${school.district}. Overall Score ${overall}/100.` +
+    (school.enrollment != null ? ` ${school.enrollment.toLocaleString()} students enrolled in grades ${school.grade_band ?? "K-5"}.` : "") +
+    (isHS && gradRate != null ? ` ${gradRate}% 4-year graduation rate.` : "") +
+    (isHS && crRate != null ? ` ${crRate}% college-ready.` : "");
+
   const educationalOrg = {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
@@ -266,7 +309,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
       addressRegion: "NY",
       addressCountry: "US",
     },
-    description,
+    description: ldDescription,
     educationalLevel: school.grade_band,
     numberOfStudents: school.enrollment,
     telephone: school.phone || undefined,
@@ -292,43 +335,120 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     ],
   };
 
+  // Build FAQ — data-rich questions that match real parent searches
+  const faqItems: object[] = [];
+
+  if (isHS) {
+    // "Is it a good school?" — lead with graduation + college readiness
+    const goodAnswer =
+      `${school.name} is rated ${overall}/100 by NYC School Ratings` +
+      (gradRate != null ? `, with a ${gradRate}% 4-year graduation rate` : "") +
+      (crRate != null ? ` and ${crRate}% of graduates meeting college-readiness benchmarks` : "") +
+      "." +
+      (apCount != null && apCount > 0 ? ` The school offers ${apCount} AP courses.` : "");
+    faqItems.push({
+      "@type": "Question",
+      name: `Is ${school.name} a good school?`,
+      acceptedAnswer: { "@type": "Answer", text: goodAnswer },
+    });
+
+    // Graduation rate question
+    if (gradRate != null) {
+      faqItems.push({
+        "@type": "Question",
+        name: `What is the graduation rate at ${school.name}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `${school.name} has a ${gradRate}% 4-year graduation rate` +
+            (school.graduation_rate_6yr != null ? ` and a ${school.graduation_rate_6yr}% 6-year graduation rate` : "") +
+            ".",
+        },
+      });
+    }
+
+    // Specialized HS admission question
+    if (isSpecialized) {
+      faqItems.push({
+        "@type": "Question",
+        name: `How do you get into ${school.name}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `${school.name} is one of NYC's specialized high schools. Admission is based solely on the Specialized High Schools Admissions Test (SHSAT). Students must list the school as a choice during the high school application process. Cutoff scores vary each year based on test difficulty and applicant pool.`,
+        },
+      });
+    } else if (school.hs_admission_method) {
+      faqItems.push({
+        "@type": "Question",
+        name: `How do you get into ${school.name}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `${school.name} uses a ${school.hs_admission_method} admissions process. Students apply through the NYC high school application system each fall.`,
+        },
+      });
+    }
+
+    // AP / college readiness
+    if (crRate != null || (apCount != null && apCount > 0)) {
+      const crText =
+        (crRate != null ? `${crRate}% of students meet NYC's college and career readiness benchmarks` : "") +
+        (apCount != null && apCount > 0
+          ? (crRate != null ? `, and the school offers ${apCount} AP courses` : `The school offers ${apCount} AP courses`)
+          : "") +
+        ".";
+      faqItems.push({
+        "@type": "Question",
+        name: `How college-ready are graduates of ${school.name}?`,
+        acceptedAnswer: { "@type": "Answer", text: crText },
+      });
+    }
+  } else {
+    // Elementary / middle school questions
+    faqItems.push({
+      "@type": "Question",
+      name: `What is the overall rating of ${school.name}?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${school.name} has an overall score of ${overall}/100 based on academic performance (40%), school climate (30%), and student progress (30%).`,
+      },
+    });
+
+    if (school.ela_proficiency != null || school.math_proficiency != null) {
+      const profText =
+        `${school.name} students achieve` +
+        (school.ela_proficiency != null ? ` ${school.ela_proficiency}% proficiency in ELA` : "") +
+        (school.ela_proficiency != null && school.math_proficiency != null ? " and" : "") +
+        (school.math_proficiency != null ? ` ${school.math_proficiency}% in Math` : "") +
+        " based on NYC state assessments.";
+      faqItems.push({
+        "@type": "Question",
+        name: `What are the test scores at ${school.name}?`,
+        acceptedAnswer: { "@type": "Answer", text: profText },
+      });
+    }
+
+    faqItems.push({
+      "@type": "Question",
+      name: `Where is ${school.name} located?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${school.name} is located at ${school.address ?? `${borough}, NY`} in District ${school.district}.`,
+      },
+    });
+
+    faqItems.push({
+      "@type": "Question",
+      name: `How many students attend ${school.name}?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${school.name} has ${school.enrollment?.toLocaleString() ?? "an unknown number of"} students enrolled in grades ${school.grade_band ?? "K-5"}.`,
+      },
+    });
+  }
+
   const faq = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: `What is the overall rating of ${school.name}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `${school.name} has an overall score of ${overall}/100 based on academic performance, school climate, and student progress.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: `Where is ${school.name} located?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `${school.name} is located at ${school.address ?? `${borough}, NY`} in District ${school.district}.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: `How many students attend ${school.name}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `${school.name} has ${school.enrollment ?? "an unknown number of"} students enrolled in grades ${school.grade_band ?? "K-5"}.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: `What grades does ${school.name} serve?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `${school.name} serves grades ${school.grade_band ?? "K-5"}.`,
-        },
-      },
-    ],
+    mainEntity: faqItems,
   };
 
   // Build a noscript content stub: heading, key stats, related links.
