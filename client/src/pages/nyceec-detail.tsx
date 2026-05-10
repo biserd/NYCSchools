@@ -329,12 +329,6 @@ export default function NyceecDetail() {
             schoolName={center.name}
           />
 
-          <NearbyPropertiesPanel
-            schoolAddress={center.address}
-            schoolName={center.name}
-            zipCode={center.zipCode}
-          />
-
           <Card data-testid="card-program">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -569,6 +563,12 @@ export default function NyceecDetail() {
               </div>
             </CardContent>
           </Card>
+
+          <NearbyPropertiesPanel
+            schoolAddress={center.address}
+            schoolName={center.name}
+            zipCode={center.zipCode}
+          />
 
           <Card data-testid="card-reviews">
             <CardHeader>
