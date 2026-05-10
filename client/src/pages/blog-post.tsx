@@ -1299,122 +1299,67 @@ function BestMiddleSchoolsPost() {
       <h2 id="top-manhattan-middle">Top Manhattan Middle Schools</h2>
 
       <p>
-        Manhattan's screened middle schools are among the most competitive in the city, with some receiving thousands of applications.
+        Manhattan's screened middle schools are among the most competitive in the city, with some receiving thousands of applications. Lab MS (D2) and Booker T (D3) typically post 90%+ proficiency.
       </p>
 
-      <Card className="my-6 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-emerald-700 dark:text-emerald-400">Manhattan's Best Middle Schools</strong>
-              <ul className="text-sm text-emerald-600/80 dark:text-emerald-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>Lab Middle School</strong> (D2) - Top academics citywide</li>
-                <li><strong>MS 54 Booker T Washington</strong> (D3) - Screened excellence</li>
-                <li><strong>East Side Middle School</strong> (D2) - Outstanding scores</li>
-                <li><strong>NEST+m</strong> (D1) - Citywide G&T 6-12</li>
-                <li><strong>Wagner Middle School</strong> (D2) - Arts integration</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="emerald"
+        title="Manhattan's Best Middle Schools"
+        description="Top middle schools in Manhattan — most are screened (admissions based on grades + state test scores), with NEST+m offering a citywide G&T track."
+        dbns={["02M312", "03M054", "02M114", "01M539", "02M167"]}
+      />
 
       <h2 id="top-brooklyn-middle">Top Brooklyn Middle Schools</h2>
 
       <p>
-        Brooklyn offers excellent middle school options from established screened programs to innovative unscreened schools.
+        Brooklyn offers excellent middle school options from established screened programs to innovative unscreened schools. Mark Twain IS 239 is one of NYC's best-known citywide G&T middle schools, with talent-test admissions in arts, athletics, math, science, and writing.
       </p>
 
-      <Card className="my-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-blue-700 dark:text-blue-400">Brooklyn's Best Middle Schools</strong>
-              <ul className="text-sm text-blue-600/80 dark:text-blue-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>Mark Twain IS 239</strong> (D21) - Citywide G&T for talented</li>
-                <li><strong>JHS 51 William Alexander</strong> (D15) - Park Slope strong</li>
-                <li><strong>MS 447 Math & Science</strong> (D15) - STEM excellence</li>
-                <li><strong>MS 51 William Alexander</strong> (D15) - High academics</li>
-                <li><strong>Bay Academy IS 98</strong> (D22) - South Brooklyn leader</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="blue"
+        title="Brooklyn's Best Middle Schools"
+        description="Top middle schools in Brooklyn — Mark Twain (D21) uses talent-test screening; MS 51 (D15) and Bay Academy (D22) blend screened and unscreened seats."
+        dbns={["21K239", "15K051", "15K447", "21K098", "22K078"]}
+      />
 
       <h2 id="top-queens-middle">Top Queens Middle Schools</h2>
 
       <p>
-        Queens' middle schools, particularly in Districts 25, 26, and 28, offer strong academic programs with diverse student bodies.
+        Queens' middle schools, particularly in Districts 25, 26, and 28, offer strong academic programs with diverse student bodies. District 26 routinely posts the highest middle-school test scores in the city.
       </p>
 
-      <Card className="my-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-purple-700 dark:text-purple-400">Queens' Best Middle Schools</strong>
-              <ul className="text-sm text-purple-600/80 dark:text-purple-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>IS 74 Nathaniel Hawthorne</strong> (D26) - Top Queens scores</li>
-                <li><strong>JHS 194 William Carr</strong> (D26) - Excellent academics</li>
-                <li><strong>MS 158 Marie Curie</strong> (D26) - Strong STEM focus</li>
-                <li><strong>IS 25 Adrien Block</strong> (D25) - Flushing excellence</li>
-                <li><strong>JHS 157 Stephen A Halsey</strong> (D25) - High progress</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="purple"
+        title="Queens' Best Middle Schools"
+        description="Top middle schools in Queens — District 26 schools (Bayside) lead the borough; D25 Flushing schools also screen using grades + state tests."
+        dbns={["26Q074", "25Q194", "26Q158", "25Q025", "28Q157"]}
+      />
 
       <h2 id="top-bronx-middle">Top Bronx Middle Schools</h2>
 
       <p>
-        The Bronx has strong middle school options, especially in Districts 10 and 11, with several citywide programs.
+        The Bronx has strong middle school options, especially in Districts 10 and 11, with several citywide programs. Riverdale/Kingsbridge Academy (MS 141) is a popular K-12 pathway in the borough.
       </p>
 
-      <Card className="my-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-orange-700 dark:text-orange-400">Bronx's Best Middle Schools</strong>
-              <ul className="text-sm text-orange-600/80 dark:text-orange-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>MS 101 Edward R Byrne</strong> (D11) - Bronx's highest</li>
-                <li><strong>MS 141 Riverdale/Kingsbridge</strong> (D10) - Strong academics</li>
-                <li><strong>JHS 144 Michelangelo</strong> (D11) - Arts & academics</li>
-                <li><strong>MS 118 William W Niles</strong> (D10) - Riverdale area</li>
-                <li><strong>MS 180 Dr Daniel Fisher</strong> (D11) - Solid performer</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="orange"
+        title="Bronx's Best Middle Schools"
+        description="Top middle schools in the Bronx — most use District 10/11 priority + lottery; some have screened seats based on grades and attendance."
+        dbns={["11X144", "10X141", "10X118", "11X180", "10X368"]}
+      />
 
       <h2 id="top-staten-island-middle">Top Staten Island Middle Schools</h2>
 
       <p>
-        Staten Island's District 31 middle schools offer strong academics with close-knit community feel.
+        Staten Island's District 31 middle schools offer strong academics with a close-knit community feel. IS 34 Tottenville and IS 75 Frank D. Paulo lead the borough on test proficiency.
       </p>
 
-      <Card className="my-6 border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <CheckCircle className="w-6 h-6 text-teal-600 shrink-0 mt-1" />
-            <div>
-              <strong className="text-teal-700 dark:text-teal-400">Staten Island's Best Middle Schools</strong>
-              <ul className="text-sm text-teal-600/80 dark:text-teal-300/80 mt-2 mb-0 space-y-1">
-                <li><strong>IS 24 Myra S Barnes</strong> - Top SI middle school</li>
-                <li><strong>IS 27 Anning S Prall</strong> - Strong academics</li>
-                <li><strong>IS 72 Rocco Laurie</strong> - High scores</li>
-                <li><strong>IS 34 Tottenville</strong> - South Shore leader</li>
-                <li><strong>IS 75 Frank D Paulo</strong> - Solid performer</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <BlogSchoolTable
+        accentColor="teal"
+        title="Staten Island's Best Middle Schools"
+        description="Top middle schools in Staten Island's District 31 — primarily zoned/unscreened with strong test proficiency and large enrollments."
+        dbns={["31R034", "31R007", "31R075", "31R024", "31R027", "31R072"]}
+      />
 
       <h2 id="screened-admissions">Understanding Screened Admissions</h2>
 
