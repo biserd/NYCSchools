@@ -39,6 +39,12 @@ import {
   LogIn,
   Star,
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface AiInsightsResponse {
   overview: string;
@@ -561,6 +567,95 @@ export default function NyceecDetail() {
                   </ul>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-faq">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <HelpCircle className="w-5 h-5" />
+                Frequently Asked Questions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" defaultValue={["faq-1","faq-2","faq-3","faq-4","faq-5","faq-6"]} className="w-full">
+                <AccordionItem value="faq-1">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">Is {center.name} free?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {center.centerType === "DOE"
+                        ? `Yes. ${center.name} is a DOE school-based program, which means Pre-K and 3-K seats are free for all eligible NYC families.`
+                        : center.centerType === "CHARTER"
+                        ? `${center.name} is a charter school program. Pre-K at NYC charter schools is generally free for eligible children, but confirm directly with the center.`
+                        : `${center.name} is a community-based early childhood center. Pre-K and 3-K seats funded by the NYC DOE are free. Some centers also offer privately funded full-day programs that may have fees — contact the center for details.`}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-2">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">How do I apply to {center.name}?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Applications for NYC Pre-K and 3-K are processed through <strong>MySchools.nyc</strong>. You can rank up to 12 programs in order of preference. The application window typically opens in December and closes in March, with offers issued in spring. {center.seats ? `${center.name} has ${center.seats} Pre-K seats available.` : ''}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-3">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">What ages does {center.name} serve?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      NYC Pre-K is for children turning 4 by December 31 of the school year. 3-K (where available) is for children turning 3 by December 31.
+                      {center.extendedDay
+                        ? ` ${center.name} offers an extended day option, which provides care beyond the standard 6-hour school day — helpful for working parents.`
+                        : ''}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-4">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">Does {center.name} offer extended day care?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {center.extendedDay
+                        ? `Yes, ${center.name} offers extended day programming beyond the standard 6-hour session. Contact the center directly to ask about schedules, hours, and any associated fees.`
+                        : `${center.name} does not currently list extended day availability. Contact the center directly at ${center.phone || 'the number listed above'} to confirm current scheduling options.`}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-5">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">What district is {center.name} in?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {center.name} is located in NYC Community School District {center.district} in {boroughName}. District assignment can affect admissions priority for some programs.
+                      You can explore all early childhood centers in District {center.district} using our map view.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-6">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">What should I look for when visiting an early childhood center?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      When visiting any early childhood center — including {center.name} — focus on teacher-child interactions, classroom cleanliness and safety, staff qualifications, group size, and how transitions like potty training or nap time are handled.
+                      Key questions to ask: What is the student-to-teacher ratio? How do you communicate with parents? What meals are provided? How are allergies and special needs accommodated?
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
 

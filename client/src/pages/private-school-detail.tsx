@@ -34,7 +34,14 @@ import {
   CheckCircle,
   Mail,
   Lock,
+  HelpCircle,
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 function EnrollmentByGradeChart({ enrollmentByGrade }: { enrollmentByGrade: Record<string, number> }) {
   const gradeOrder = ['PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -781,6 +788,108 @@ export default function PrivateSchoolDetail() {
           </div>
 
         </div>
+
+          {/* FAQ Card */}
+          <Card data-testid="card-faq" className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <HelpCircle className="w-5 h-5" />
+                Frequently Asked Questions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" defaultValue={["faq-1","faq-2","faq-3","faq-4","faq-5","faq-6"]} className="w-full">
+                <AccordionItem value="faq-1">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">Is {school.name} a good private school?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {school.name} is a {school.coedStatus === 'coed' ? 'coeducational' : school.coedStatus === 'male' ? "boys'" : "girls'"} private {school.schoolType || 'day'} school in {school.borough || 'New York City'}
+                      {school.isReligious && school.religiousAffiliation ? ` with a ${school.religiousAffiliation} affiliation` : ''}.
+                      {school.enrollment ? ` It serves ${school.enrollment.toLocaleString()} students` : ''}
+                      {school.gradesOffered ? ` in grades ${school.gradesOffered}` : ''}.
+                      {school.studentTeacherRatio ? ` The student-to-teacher ratio is ${school.studentTeacherRatio}:1.` : ''}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-2">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">What grades does {school.name} offer?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {school.name} serves {school.gradesOffered ? `grades ${school.gradesOffered}` : 'a range of grade levels'}.
+                      {school.enrollment ? ` Total enrollment is ${school.enrollment.toLocaleString()} students.` : ''}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-3">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">How do I apply to {school.name}?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {school.admissionsSelectivity
+                        ? `${school.name} is considered ${school.admissionsSelectivity.toLowerCase()} in selectivity. `
+                        : ''}
+                      Contact the school directly to request admissions information, schedule a tour, and obtain an application.
+                      {school.testingTypes && school.testingTypes.length > 0
+                        ? ` Accepted entrance exams include: ${school.testingTypes.join(', ')}.`
+                        : ''}
+                      {school.hasFinancialAid ? ' Financial aid is available for qualifying families.' : ''}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {school.isReligious && (
+                  <AccordionItem value="faq-4">
+                    <AccordionTrigger className="text-left hover:no-underline">
+                      <span className="font-medium">Do you have to be {school.religiousAffiliation} to attend {school.name}?</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {school.name} is affiliated with the {school.religiousAffiliation} tradition.
+                        Many religiously affiliated schools in NYC welcome students from all backgrounds, though religious studies may be part of the curriculum.
+                        Contact the school directly to confirm their admissions policy regarding religious background.
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                <AccordionItem value="faq-5">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">What is the student-teacher ratio at {school.name}?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {school.studentTeacherRatio
+                        ? `${school.name} has a student-to-teacher ratio of ${school.studentTeacherRatio}:1${school.teachersFte ? `, with approximately ${Math.round(school.teachersFte)} full-time equivalent teachers` : ''}.`
+                        : `Student-teacher ratio data is not currently available for ${school.name}. Contact the school directly for this information.`}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="faq-6">
+                  <AccordionTrigger className="text-left hover:no-underline">
+                    <span className="font-medium">Is {school.name} coeducational?</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {school.coedStatus === 'coed'
+                        ? `Yes, ${school.name} is a coeducational school and admits both boys and girls.`
+                        : school.coedStatus === 'male'
+                        ? `No, ${school.name} is a single-sex school for boys only.`
+                        : `No, ${school.name} is a single-sex school for girls only.`}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+
       </main>
 
       <Footer />

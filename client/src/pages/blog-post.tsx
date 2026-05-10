@@ -694,7 +694,7 @@ function AdmissionsDemandPost() {
       <h2 id="faq">Frequently Asked Questions About NYC Admissions</h2>
 
       <div className="not-prose my-6">
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" defaultValue={["faq-1","faq-2","faq-3","faq-4","faq-5","faq-6","faq-7"]} className="w-full">
           <AccordionItem value="faq-1">
             <AccordionTrigger className="text-left">
               <div className="flex items-center gap-2">
@@ -1020,7 +1020,7 @@ function BestKindergartensPost() {
 
       <h2 id="faq">Frequently Asked Questions</h2>
 
-      <Accordion type="single" collapsible className="w-full not-prose">
+      <Accordion type="multiple" defaultValue={["item-1","item-2","item-3","item-4","item-5"]} className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">
             <span className="flex items-center gap-2">
@@ -1274,7 +1274,7 @@ function BestElementarySchoolsPost() {
 
       <h2 id="faq">Frequently Asked Questions</h2>
 
-      <Accordion type="single" collapsible className="w-full not-prose">
+      <Accordion type="multiple" defaultValue={["item-1","item-2","item-3","item-4","item-5"]} className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">
             <span className="flex items-center gap-2">
@@ -1533,7 +1533,7 @@ function BestMiddleSchoolsPost() {
 
       <h2 id="faq">Frequently Asked Questions</h2>
 
-      <Accordion type="single" collapsible className="w-full not-prose">
+      <Accordion type="multiple" defaultValue={["item-1","item-2","item-3","item-4","item-5"]} className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">
             <span className="flex items-center gap-2">
@@ -1763,7 +1763,7 @@ function BestCharterSchoolsPost() {
         <strong>The most common questions we get:</strong> Success Academy has the longest waitlists in the city (often 2–4 years at flagship Harlem and Brooklyn campuses), KIPP NYC gives sibling priority in its lottery, and admission odds vary widely — from roughly <strong>1-in-3</strong> at newer or less-known charter schools to as low as <strong>1-in-15</strong> at top Brooklyn campuses like Brooklyn Prospect and Success Academy Cobble Hill. Most NYC charter lotteries open in <strong>December</strong> and close in <strong>early April</strong>, with offers issued by mid-April. Below are the detailed answers.
       </p>
 
-      <Accordion type="single" collapsible className="w-full not-prose">
+      <Accordion type="multiple" defaultValue={["item-1","item-2","item-3","item-4","item-5"]} className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">
             <span className="flex items-center gap-2">
@@ -1997,7 +1997,7 @@ function DiamondsInTheRoughPost() {
 
       <h2 id="faq">Frequently Asked Questions</h2>
 
-      <Accordion type="single" collapsible className="w-full not-prose">
+      <Accordion type="multiple" defaultValue={["item-1","item-2","item-3","item-4","item-5"]} className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">
             <span className="flex items-center gap-2">
@@ -2285,7 +2285,7 @@ function CrimePredictsSchoolQualityPost() {
 
       <h2 id="faq">Frequently Asked Questions</h2>
 
-      <Accordion type="single" collapsible className="w-full not-prose">
+      <Accordion type="multiple" defaultValue={["item-1","item-2","item-3","item-4","item-5"]} className="w-full not-prose">
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-left">
             <span className="flex items-center gap-2">
