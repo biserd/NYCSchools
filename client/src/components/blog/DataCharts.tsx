@@ -1714,6 +1714,7 @@ export function CharterNetworksChart() {
 const topCharterSchoolsData: Array<{
   name: string;
   borough: string;
+  district: number;
   ela: number;
   math: number;
   enrollment: number;
@@ -1721,14 +1722,14 @@ const topCharterSchoolsData: Array<{
   network: string;
   screen: string;
 }> = [
-  { name: 'Success Academy Harlem 1', borough: 'Manhattan', ela: 99, math: 100, enrollment: 535, grades: 'K-4', network: 'Success Academy', screen: 'No academic screening — citywide lottery, geographic priority within District 5' },
-  { name: 'Success Academy Bronx 1', borough: 'Bronx', ela: 96, math: 99, enrollment: 700, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — open lottery, District 7 geographic priority' },
-  { name: 'Success Academy Cobble Hill', borough: 'Brooklyn', ela: 97, math: 99, enrollment: 720, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — Brooklyn-priority lottery (~1-in-15 odds)' },
-  { name: 'Uncommon Schools North Star', borough: 'Brooklyn', ela: 84, math: 87, enrollment: 650, grades: 'K-8', network: 'Uncommon Schools', screen: 'No academic screening — D16/17 geographic priority + sibling priority' },
-  { name: 'Brooklyn Prospect Charter', borough: 'Brooklyn', ela: 82, math: 79, enrollment: 950, grades: 'K-12', network: 'Independent', screen: 'No academic screening — IB-curriculum lottery (~1-in-15 odds at flagship campus)' },
-  { name: 'Achievement First Brownsville', borough: 'Brooklyn', ela: 78, math: 81, enrollment: 590, grades: 'K-8', network: 'Achievement First', screen: 'No academic screening — Brooklyn-priority lottery + sibling priority' },
-  { name: 'KIPP Infinity', borough: 'Manhattan', ela: 78, math: 82, enrollment: 320, grades: '5-8', network: 'KIPP NYC', screen: 'No academic screening — sibling + District 5/6 priority' },
-  { name: 'Democracy Prep Harlem', borough: 'Manhattan', ela: 68, math: 70, enrollment: 580, grades: 'K-12', network: 'Democracy Prep', screen: 'No academic screening — sibling + District 5 priority' },
+  { name: 'Success Academy Harlem 1', borough: 'Manhattan', district: 5, ela: 99, math: 100, enrollment: 535, grades: 'K-4', network: 'Success Academy', screen: 'No academic screening — citywide lottery, geographic priority within District 5' },
+  { name: 'Success Academy Bronx 1', borough: 'Bronx', district: 7, ela: 96, math: 99, enrollment: 700, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — open lottery, District 7 geographic priority' },
+  { name: 'Success Academy Cobble Hill', borough: 'Brooklyn', district: 15, ela: 97, math: 99, enrollment: 720, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — Brooklyn-priority lottery (~1-in-15 odds)' },
+  { name: 'Uncommon Schools North Star', borough: 'Brooklyn', district: 16, ela: 84, math: 87, enrollment: 650, grades: 'K-8', network: 'Uncommon Schools', screen: 'No academic screening — D16/17 geographic priority + sibling priority' },
+  { name: 'Brooklyn Prospect Charter', borough: 'Brooklyn', district: 15, ela: 82, math: 79, enrollment: 950, grades: 'K-12', network: 'Independent', screen: 'No academic screening — IB-curriculum lottery (~1-in-15 odds at flagship campus)' },
+  { name: 'Achievement First Brownsville', borough: 'Brooklyn', district: 23, ela: 78, math: 81, enrollment: 590, grades: 'K-8', network: 'Achievement First', screen: 'No academic screening — Brooklyn-priority lottery + sibling priority' },
+  { name: 'KIPP Infinity', borough: 'Manhattan', district: 5, ela: 78, math: 82, enrollment: 320, grades: '5-8', network: 'KIPP NYC', screen: 'No academic screening — sibling + District 5/6 priority' },
+  { name: 'Democracy Prep Harlem', borough: 'Manhattan', district: 5, ela: 68, math: 70, enrollment: 580, grades: 'K-12', network: 'Democracy Prep', screen: 'No academic screening — sibling + District 5 priority' },
 ];
 
 export function TopCharterSchoolsTable() {
@@ -1762,7 +1763,14 @@ export function TopCharterSchoolsTable() {
                   <td className="py-2 px-2">
                     <div className="font-medium">{s.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {s.borough} • <span className="italic">{s.screen}</span>
+                      <a
+                        href={`/?district=${s.district}`}
+                        className="text-primary hover:underline"
+                        data-testid={`link-charter-district-${i}`}
+                      >
+                        {s.borough} • District {s.district}
+                      </a>
+                      {' '}<span className="italic">— {s.screen}</span>
                     </div>
                   </td>
                   <td className="text-center py-2 px-2 font-medium">{s.ela}%</td>
@@ -1781,6 +1789,21 @@ export function TopCharterSchoolsTable() {
           <p className="text-xs text-muted-foreground mt-3">
             <strong>Charter admissions:</strong> Free, public, lottery-based. No grades, test scores, or interviews required. Lottery odds vary widely — newer charters are often ~1-in-3, top Brooklyn campuses are ~1-in-15.
           </p>
+          <div className="mt-4 pt-4 border-t flex flex-wrap gap-x-4 gap-y-2 text-xs">
+            <span className="font-medium text-foreground">Related tools:</span>
+            <a href="/chances-calculator" className="text-primary hover:underline" data-testid="link-charter-chances">Chances Calculator</a>
+            <a href="/lottery-simulator" className="text-primary hover:underline" data-testid="link-charter-lottery">Lottery Simulator</a>
+            <a href="/compare" className="text-primary hover:underline" data-testid="link-charter-compare">Compare Schools</a>
+            <a href="/safe-and-strong" className="text-primary hover:underline" data-testid="link-charter-safe">Safe &amp; Strong</a>
+            <a href="/map" className="text-primary hover:underline" data-testid="link-charter-map">Map View</a>
+            <a href="/recommendations" className="text-primary hover:underline" data-testid="link-charter-rec">Find My Match</a>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs">
+            <span className="font-medium text-foreground">Related guides:</span>
+            <a href="/blog/best-nyc-elementary-schools-2026" className="text-primary hover:underline" data-testid="link-charter-elem">Best NYC Elementary</a>
+            <a href="/blog/best-nyc-middle-schools-2026" className="text-primary hover:underline" data-testid="link-charter-middle">Best NYC Middle</a>
+            <a href="/blog/best-nyc-kindergartens-2026" className="text-primary hover:underline" data-testid="link-charter-k">Best NYC Kindergartens</a>
+          </div>
         </div>
       </CardContent>
     </Card>
