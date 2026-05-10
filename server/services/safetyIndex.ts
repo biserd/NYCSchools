@@ -705,6 +705,196 @@ export async function recomputeSafetyIndex(): Promise<{
   };
 }
 
+/**
+ * Re-rank safety_index + percentile_citywide across the ENTIRE
+ * school_safety_index table (not filtered by run). Used after a targeted
+ * recompute so newly inserted rows get correct citywide percentiles.
+ */
+async function finalizeSafetyPercentilesAll(): Promise<number> {
+  const result = await db.execute<{ updated: string }>(sql`
+    WITH ranked AS (
+      SELECT id,
+             percent_rank() OVER (
+               PARTITION BY radius_meters
+               ORDER BY weighted_risk_score
+             ) AS rp
+      FROM school_safety_index
+    )
+    UPDATE school_safety_index s
+    SET safety_index = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int)),
+        percentile_citywide = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int))
+    FROM ranked
+    WHERE s.id = ranked.id
+    RETURNING (1)::text AS updated
+  `);
+  const rows = (result as any).rows ?? (result as any);
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
+/**
+ * Targeted recompute for a small set of schools. Loads all complaints
+ * (last 24mo) once, computes per-radius rows for ONLY the supplied keys,
+ * upserts them, then re-ranks the entire safety_index table so percentiles
+ * stay consistent. Vastly faster than a full recompute when backfilling
+ * a handful of newly-geocoded schools.
+ */
+export async function recomputeSafetyForKeys(
+  keys: Array<{ type: SchoolType; key: string }>,
+): Promise<{ schoolsProcessed: number; rowsWritten: number; rowsRanked: number }> {
+  if (!keys.length) return { schoolsProcessed: 0, rowsWritten: 0, rowsRanked: 0 };
+
+  const now = new Date();
+  const periodEnd = now;
+  const periodStart = new Date(now);
+  periodStart.setMonth(periodStart.getMonth() - 12);
+  const priorStart = new Date(now);
+  priorStart.setMonth(priorStart.getMonth() - 24);
+
+  // Resolve coordinates for the requested keys.
+  const allPoints = await loadAllSchoolPoints();
+  const wanted = new Set(keys.map((k) => `${k.type}|${k.key}`));
+  const targets = allPoints.filter((p) => wanted.has(`${p.type}|${p.key}`));
+  console.log(
+    `[safety-recompute-targeted] requested ${keys.length}, resolved ${targets.length} with coords`,
+  );
+  if (!targets.length) return { schoolsProcessed: 0, rowsWritten: 0, rowsRanked: 0 };
+
+  const allComplaints = await loadComplaintsInMemory(priorStart);
+  console.log(
+    `[safety-recompute-targeted] complaints loaded: ${allComplaints.length}`,
+  );
+
+  const radii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
+  const maxRadius = Math.max(...radii);
+
+  const sortedByLat = allComplaints.slice().sort((a, b) => a.lat - b.lat);
+  const lats = new Float64Array(sortedByLat.length);
+  for (let i = 0; i < sortedByLat.length; i++) lats[i] = sortedByLat[i].lat;
+  const lowerBound = (target: number): number => {
+    let lo = 0;
+    let hi = lats.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (lats[mid] < target) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+
+  const pendingRows: PerSchoolRow[] = [];
+  for (const school of targets) {
+    const latDelta = maxRadius / METERS_PER_DEG_LAT;
+    const lngDelta = maxRadius / metersPerDegLng(school.lat);
+    const minLat = school.lat - latDelta;
+    const maxLat = school.lat + latDelta;
+    const minLng = school.lng - lngDelta;
+    const maxLng = school.lng + lngDelta;
+
+    const startIdx = lowerBound(minLat);
+    const endIdx = lowerBound(maxLat);
+    const nearby: ComplaintLite[] = [];
+    for (let i = startIdx; i < endIdx; i++) {
+      const c = sortedByLat[i];
+      if (c.lng >= minLng && c.lng <= maxLng) nearby.push(c);
+    }
+
+    const aggs = new Map<number, { current: RadiusAggregate; prior: RadiusAggregate }>();
+    for (const r of radii) aggs.set(r, { current: emptyAgg(), prior: emptyAgg() });
+    for (const c of nearby) {
+      const d = haversineMeters(school.lat, school.lng, c.lat, c.lng);
+      const isCurrent = c.date >= periodStart && c.date <= periodEnd;
+      const isPrior = c.date >= priorStart && c.date < periodStart;
+      if (!isCurrent && !isPrior) continue;
+      for (const r of radii) {
+        if (d <= r) {
+          const slot = aggs.get(r)!;
+          if (isCurrent) bumpAgg(slot.current, c);
+          else bumpAgg(slot.prior, c);
+        }
+      }
+    }
+    for (const r of radii) {
+      const slot = aggs.get(r)!;
+      const areaSqKm = Math.PI * (r / 1000) ** 2;
+      pendingRows.push({
+        schoolType: school.type,
+        schoolKey: school.key,
+        radiusMeters: r,
+        current: slot.current,
+        prior: slot.prior,
+        weightedRiskScore: weightedScore(slot.current, areaSqKm),
+      });
+    }
+  }
+
+  const stamp = new Date();
+  const values = pendingRows.map((row) => {
+    const priorTotal = row.prior.total;
+    const delta =
+      priorTotal > 0 ? ((row.current.total - priorTotal) / priorTotal) * 100 : null;
+    let trend: string;
+    if (priorTotal < 10 || row.current.total < 10) trend = "insufficient_data";
+    else if (delta == null) trend = "insufficient_data";
+    else if (delta <= -10) trend = "improving";
+    else if (delta >= 10) trend = "worsening";
+    else trend = "stable";
+    return {
+      schoolType: row.schoolType,
+      schoolKey: row.schoolKey,
+      radiusMeters: row.radiusMeters,
+      periodStart,
+      periodEnd,
+      totalReports: row.current.total,
+      felonyReports: row.current.felony,
+      violentFelonyReports: row.current.violentFelony,
+      misdemeanorReports: row.current.misdemeanor,
+      violationReports: row.current.violation,
+      topCategories: topCategories(row.current.byCategory),
+      weightedRiskScore: row.weightedRiskScore,
+      safetyIndex: 50,
+      percentileCitywide: 50,
+      trend,
+      trendDelta: delta,
+      priorPeriodTotal: priorTotal,
+      lastCalculatedAt: stamp,
+    };
+  });
+
+  await db
+    .insert(schoolSafetyIndex)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [
+        schoolSafetyIndex.schoolType,
+        schoolSafetyIndex.schoolKey,
+        schoolSafetyIndex.radiusMeters,
+      ],
+      set: {
+        periodStart: sql`excluded.period_start`,
+        periodEnd: sql`excluded.period_end`,
+        totalReports: sql`excluded.total_reports`,
+        felonyReports: sql`excluded.felony_reports`,
+        violentFelonyReports: sql`excluded.violent_felony_reports`,
+        misdemeanorReports: sql`excluded.misdemeanor_reports`,
+        violationReports: sql`excluded.violation_reports`,
+        topCategories: sql`excluded.top_categories`,
+        weightedRiskScore: sql`excluded.weighted_risk_score`,
+        safetyIndex: sql`excluded.safety_index`,
+        percentileCitywide: sql`excluded.percentile_citywide`,
+        trend: sql`excluded.trend`,
+        trendDelta: sql`excluded.trend_delta`,
+        priorPeriodTotal: sql`excluded.prior_period_total`,
+        lastCalculatedAt: sql`excluded.last_calculated_at`,
+      },
+    });
+
+  const ranked = await finalizeSafetyPercentilesAll();
+  console.log(
+    `[safety-recompute-targeted] schools=${targets.length} rowsWritten=${values.length} rowsRanked=${ranked}`,
+  );
+  return { schoolsProcessed: targets.length, rowsWritten: values.length, rowsRanked: ranked };
+}
+
 // ---------------------------------------------------------------------------
 // 3. Read path
 // ---------------------------------------------------------------------------
