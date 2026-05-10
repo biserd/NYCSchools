@@ -1761,16 +1761,15 @@ export function TopCharterSchoolsTable() {
               {topCharterSchoolsData.map((s, i) => (
                 <tr key={i} className="border-b">
                   <td className="py-2 px-2">
-                    <div className="font-medium">{s.name}</div>
+                    <a
+                      href={`/?q=${encodeURIComponent(s.name)}`}
+                      className="font-medium text-primary hover:underline"
+                      data-testid={`link-charter-school-${i}`}
+                    >
+                      {s.name}
+                    </a>
                     <div className="text-xs text-muted-foreground">
-                      <a
-                        href={`/?district=${s.district}`}
-                        className="text-primary hover:underline"
-                        data-testid={`link-charter-district-${i}`}
-                      >
-                        {s.borough} • District {s.district}
-                      </a>
-                      {' '}<span className="italic">— {s.screen}</span>
+                      {s.borough} • District {s.district} <span className="italic">— {s.screen}</span>
                     </div>
                   </td>
                   <td className="text-center py-2 px-2 font-medium">{s.ela}%</td>
