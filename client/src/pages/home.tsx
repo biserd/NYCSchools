@@ -32,6 +32,7 @@ function getInitialFiltersFromURL(): {
   search: string;
   district: string;
   gradeBand: string;
+  schoolType: "all" | "public" | "charter";
   earlyChildhood: string;
   giftedTalented: string;
   trend: string;
@@ -47,6 +48,7 @@ function getInitialFiltersFromURL(): {
       search: "",
       district: "all",
       gradeBand: "All",
+      schoolType: "all",
       earlyChildhood: "All",
       giftedTalented: "All",
       trend: "All",
@@ -63,6 +65,7 @@ function getInitialFiltersFromURL(): {
     search: params.get("q") || "",
     district: params.get("district") || "all",
     gradeBand: params.get("grade") || "All",
+    schoolType: (params.get("type") as "all" | "public" | "charter") || "all",
     earlyChildhood: params.get("ec") || "All",
     giftedTalented: params.get("gt") || "All",
     trend: params.get("trend") || "All",
@@ -82,6 +85,7 @@ export default function Home() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialFilters.search);
   const [selectedDistrict, setSelectedDistrict] = useState(initialFilters.district);
   const [selectedGradeBand, setSelectedGradeBand] = useState(initialFilters.gradeBand);
+  const [selectedSchoolType, setSelectedSchoolType] = useState<"all" | "public" | "charter">(initialFilters.schoolType);
   const [earlyChildhoodFilter, setEarlyChildhoodFilter] = useState(initialFilters.earlyChildhood);
   const [giftedTalentedFilter, setGiftedTalentedFilter] = useState(initialFilters.giftedTalented);
   const [trendFilter, setTrendFilter] = useState(initialFilters.trend);
@@ -140,6 +144,7 @@ export default function Home() {
         zip: "",
         zoned: "all",
         sort: "overall",
+        type: "all",
       };
       
       if (value === defaultValues[key]) {
@@ -166,6 +171,11 @@ export default function Home() {
   const handleGradeBandChange = useCallback((value: string) => {
     setSelectedGradeBand(value);
     updateURLParams({ grade: value });
+  }, [updateURLParams]);
+
+  const handleSchoolTypeChange = useCallback((value: "all" | "public" | "charter") => {
+    setSelectedSchoolType(value);
+    updateURLParams({ type: value });
   }, [updateURLParams]);
 
   const handleEarlyChildhoodChange = useCallback((value: string) => {
@@ -296,6 +306,8 @@ export default function Home() {
     const giftedTalented = schools.filter(s => s.has_gifted_talented).length;
     
     const dualLanguage = schools.filter(s => s.has_dual_language).length;
+
+    const charters = schools.filter(s => s.dbn?.startsWith("84")).length;
     
     // Count improving schools (those with positive historical trends)
     const improving = trends 
@@ -311,6 +323,7 @@ export default function Home() {
       giftedTalented,
       dualLanguage,
       improving,
+      charters,
       nyceecCenters: nyceecCenters?.length || 0,
       privateSchools: privateSchoolsStats?.totalSchools || 0,
     };
@@ -347,6 +360,12 @@ export default function Home() {
       filtered = filtered.filter(
         (school) => school.district === parseInt(selectedDistrict)
       );
+    }
+
+    if (selectedSchoolType === "charter") {
+      filtered = filtered.filter((school) => school.dbn?.startsWith("84"));
+    } else if (selectedSchoolType === "public") {
+      filtered = filtered.filter((school) => !school.dbn?.startsWith("84"));
     }
 
     if (selectedGradeBand !== "All") {
@@ -555,7 +574,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, zonedFilter, userZones, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, selectedSchoolType, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, zonedFilter, userZones, trends, sortBy]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -847,6 +866,20 @@ export default function Home() {
               )}
               <span>Private Schools</span>
             </Link>
+            <a
+              href="/?type=charter"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSchoolTypeChange("charter");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              data-testid="stat-charter"
+            >
+              <SchoolIcon className="w-3.5 h-3.5 text-amber-500" />
+              <span className="font-medium text-foreground">{schoolCounts.charters.toLocaleString()}</span>
+              <span>Charter Schools</span>
+            </a>
           </div>
         </div>
       )}
@@ -882,12 +915,35 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground" data-testid="text-results-count">
             {isLoading
               ? 'Loading schools…'
               : `Showing ${filteredAndSortedSchools.length} ${filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}`}
           </p>
+          <div className="inline-flex items-center rounded-md border bg-card p-0.5" role="tablist" aria-label="Filter by school type">
+            {([
+              { value: "all", label: "All" },
+              { value: "public", label: "District" },
+              { value: "charter", label: "Charter" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="tab"
+                aria-selected={selectedSchoolType === opt.value}
+                onClick={() => handleSchoolTypeChange(opt.value)}
+                data-testid={`button-type-${opt.value}`}
+                className={`px-3 py-1 text-xs rounded-sm hover-elevate active-elevate-2 ${
+                  selectedSchoolType === opt.value
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="skeleton-schools">
