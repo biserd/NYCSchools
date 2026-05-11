@@ -1713,7 +1713,7 @@ export function CharterNetworksChart() {
 
 const topCharterSchoolsData: Array<{
   name: string;
-  url: string;
+  dbn: string;
   borough: string;
   district: number;
   ela: number;
@@ -1723,14 +1723,14 @@ const topCharterSchoolsData: Array<{
   network: string;
   screen: string;
 }> = [
-  { name: 'Success Academy Harlem 1', url: 'https://www.successacademies.org/schools/success-academy-harlem-1/', borough: 'Manhattan', district: 5, ela: 99, math: 100, enrollment: 535, grades: 'K-4', network: 'Success Academy', screen: 'No academic screening — citywide lottery, geographic priority within District 5' },
-  { name: 'Success Academy Bronx 1', url: 'https://www.successacademies.org/schools/success-academy-bronx-1/', borough: 'Bronx', district: 7, ela: 96, math: 99, enrollment: 700, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — open lottery, District 7 geographic priority' },
-  { name: 'Success Academy Cobble Hill', url: 'https://www.successacademies.org/schools/success-academy-cobble-hill/', borough: 'Brooklyn', district: 15, ela: 97, math: 99, enrollment: 720, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — Brooklyn-priority lottery (~1-in-15 odds)' },
-  { name: 'Uncommon Schools North Star', url: 'https://uncommonschools.org/north-star-academy/', borough: 'Brooklyn', district: 16, ela: 84, math: 87, enrollment: 650, grades: 'K-8', network: 'Uncommon Schools', screen: 'No academic screening — D16/17 geographic priority + sibling priority' },
-  { name: 'Brooklyn Prospect Charter', url: 'https://www.brooklynprospect.org/', borough: 'Brooklyn', district: 15, ela: 82, math: 79, enrollment: 950, grades: 'K-12', network: 'Independent', screen: 'No academic screening — IB-curriculum lottery (~1-in-15 odds at flagship campus)' },
-  { name: 'Achievement First Brownsville', url: 'https://www.achievementfirst.org/schools/af-brownsville/', borough: 'Brooklyn', district: 23, ela: 78, math: 81, enrollment: 590, grades: 'K-8', network: 'Achievement First', screen: 'No academic screening — Brooklyn-priority lottery + sibling priority' },
-  { name: 'KIPP Infinity', url: 'https://kippnyc.org/schools/kipp-infinity-middle-school/', borough: 'Manhattan', district: 5, ela: 78, math: 82, enrollment: 320, grades: '5-8', network: 'KIPP NYC', screen: 'No academic screening — sibling + District 5/6 priority' },
-  { name: 'Democracy Prep Harlem', url: 'https://democracyprep.org/schools/democracy-prep-harlem/', borough: 'Manhattan', district: 5, ela: 68, math: 70, enrollment: 580, grades: 'K-12', network: 'Democracy Prep', screen: 'No academic screening — sibling + District 5 priority' },
+  { name: 'Success Academy Harlem 1', dbn: '84M351', borough: 'Manhattan', district: 5, ela: 99, math: 100, enrollment: 535, grades: 'K-4', network: 'Success Academy', screen: 'No academic screening — citywide lottery, geographic priority within District 5' },
+  { name: 'Success Academy Bronx 1', dbn: '84X493', borough: 'Bronx', district: 7, ela: 96, math: 99, enrollment: 700, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — open lottery, District 7 geographic priority' },
+  { name: 'Success Academy Cobble Hill', dbn: '84K129', borough: 'Brooklyn', district: 15, ela: 97, math: 99, enrollment: 720, grades: 'K-8', network: 'Success Academy', screen: 'No academic screening — Brooklyn-priority lottery (~1-in-15 odds)' },
+  { name: 'Leadership Prep Bedford Stuyvesant (Uncommon)', dbn: '84K517', borough: 'Brooklyn', district: 16, ela: 84, math: 87, enrollment: 650, grades: 'K-8', network: 'Uncommon Schools', screen: 'No academic screening — D16/17 geographic priority + sibling priority' },
+  { name: 'Brooklyn Prospect Charter School', dbn: '84K707', borough: 'Brooklyn', district: 15, ela: 82, math: 79, enrollment: 950, grades: 'K-12', network: 'Independent', screen: 'No academic screening — IB-curriculum lottery (~1-in-15 odds at flagship campus)' },
+  { name: 'Achievement First Brownsville', dbn: '84K626', borough: 'Brooklyn', district: 23, ela: 78, math: 81, enrollment: 590, grades: 'K-8', network: 'Achievement First', screen: 'No academic screening — Brooklyn-priority lottery + sibling priority' },
+  { name: 'KIPP Infinity', dbn: '84M336', borough: 'Manhattan', district: 5, ela: 78, math: 82, enrollment: 320, grades: '5-8', network: 'KIPP NYC', screen: 'No academic screening — sibling + District 5/6 priority' },
+  { name: 'Democracy Prep Harlem', dbn: '84M481', borough: 'Manhattan', district: 5, ela: 68, math: 70, enrollment: 580, grades: 'K-12', network: 'Democracy Prep', screen: 'No academic screening — sibling + District 5 priority' },
 ];
 
 export function TopCharterSchoolsTable() {
@@ -1763,9 +1763,7 @@ export function TopCharterSchoolsTable() {
                 <tr key={i} className="border-b">
                   <td className="py-2 px-2">
                     <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={`/school/${s.dbn.toLowerCase()}-${s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
                       className="font-medium text-primary hover:underline"
                       data-testid={`link-charter-school-${i}`}
                     >
