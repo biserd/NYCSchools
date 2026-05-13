@@ -10,23 +10,23 @@ import { CompareBar } from "@/components/CompareBar";
 import { ChatBot } from "@/components/ChatBot";
 import { Skeleton } from "@/components/ui/skeleton";
 import Home from "@/pages/home";
-import SettingsPage from "@/pages/settings";
-import PrivacyPage from "@/pages/privacy";
-import TermsPage from "@/pages/terms";
-import FAQPage from "@/pages/faq";
-import FeaturesPage from "@/pages/features";
-import BenefitsPage from "@/pages/benefits";
-import ReleaseNotesPage from "@/pages/release-notes";
-import LoginPage from "@/pages/login";
-import RegisterPage from "@/pages/register";
-import ForgotPasswordPage from "@/pages/forgot-password";
-import ResetPasswordPage from "@/pages/reset-password";
-import DevelopersPage from "@/pages/developers";
-import ContactPage from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 
-// Lazy load secondary route components to reduce initial bundle size.
-// Home is intentionally NOT lazy: it's the landing page and must paint LCP fast.
+// Lazy load EVERY non-Home route so the homepage chunk only contains what it
+// needs to paint LCP. Home is intentionally NOT lazy.
+const SettingsPage = lazy(() => import("@/pages/settings"));
+const PrivacyPage = lazy(() => import("@/pages/privacy"));
+const TermsPage = lazy(() => import("@/pages/terms"));
+const FAQPage = lazy(() => import("@/pages/faq"));
+const FeaturesPage = lazy(() => import("@/pages/features"));
+const BenefitsPage = lazy(() => import("@/pages/benefits"));
+const ReleaseNotesPage = lazy(() => import("@/pages/release-notes"));
+const LoginPage = lazy(() => import("@/pages/login"));
+const RegisterPage = lazy(() => import("@/pages/register"));
+const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
+const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
+const DevelopersPage = lazy(() => import("@/pages/developers"));
+const ContactPage = lazy(() => import("@/pages/contact"));
 const FavoritesPage = lazy(() => import("@/pages/favorites"));
 const SchoolDetail = lazy(() => import("@/pages/school-detail"));
 const ComparePage = lazy(() => import("@/pages/compare"));
