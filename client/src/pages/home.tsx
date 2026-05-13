@@ -885,9 +885,7 @@ export default function Home() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
-        {/* min-height reserves the AI banner slot before auth resolves to
-            prevent CLS (PageSpeed flagged 0.161 on this <main>). Two
-            breakpoints: ~180px stacked on mobile, ~108px single-row on md+. */}
+        {/* min-h reserves the banner slot to prevent CLS. */}
         <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 rounded-lg p-6 min-h-[180px] md:min-h-[108px]" data-testid="banner-ai-assistant">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-start gap-4">

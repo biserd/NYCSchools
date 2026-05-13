@@ -30,19 +30,6 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    // Manual vendor chunks so big libs are cached separately from app code.
-    // Keeps repeat-visit downloads small and isolates cache busts on app
-    // updates. Heavy route-only deps (recharts, leaflet, framer-motion)
-    // are NOT named here so they stay inside their lazy-route chunks and
-    // never appear in the homepage initial bundle.
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react/jsx-runtime", "wouter"],
-          "vendor-query": ["@tanstack/react-query"],
-        },
-      },
-    },
   },
   server: {
     fs: {

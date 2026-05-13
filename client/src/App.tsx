@@ -12,8 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 
-// Lazy load EVERY non-Home route so the homepage chunk only contains what it
-// needs to paint LCP. Home is intentionally NOT lazy.
+// Lazy-load every non-Home route so its JS + CSS split into separate chunks.
+// Home stays eager so its LCP element ships in the initial bundle.
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const TermsPage = lazy(() => import("@/pages/terms"));

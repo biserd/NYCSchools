@@ -28,12 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Inter font: load NON-render-blocking via the preload-as-style swap
-         pattern. The CSS request is fetched in parallel with HTML parsing,
-         and the onload swap promotes it to a stylesheet without blocking
-         first paint. font-display=swap means LCP text paints immediately
-         in the system fallback and upgrades to Inter once it arrives. The
-         <noscript> fallback ensures users with JS disabled still get Inter. -->
+    <!-- Inter: non-blocking preload-as-style with noscript fallback. -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
   </head>
@@ -41,11 +36,7 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Google Analytics 4 - Loaded inside requestIdleCallback so it never
-         competes with LCP or steals main-thread time during interaction.
-         Events fired before the script loads queue in dataLayer and replay
-         on init. Falls back to a 3s setTimeout on browsers (Safari) that
-         lack requestIdleCallback. -->
+    <!-- GA4: load via requestIdleCallback so it doesn't compete with LCP. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
