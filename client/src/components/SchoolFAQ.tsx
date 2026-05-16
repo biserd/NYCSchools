@@ -8,8 +8,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import type { SchoolWithOverallScore } from '@shared/schema';
-import { generateSchoolFAQ, generateFAQStructuredData } from '@shared/faqGenerator';
-import { StructuredData } from './StructuredData';
+import { generateSchoolFAQ } from '@shared/faqGenerator';
+// NOTE: FAQPage JSON-LD is emitted server-side by server/seoRenderer.ts.
+// Do not also emit it here — Google Search Console flags duplicates as
+// invalid ("Duplicate field FAQPage") and drops the rich result.
 
 interface SchoolFAQProps {
   school: SchoolWithOverallScore;
@@ -40,11 +42,9 @@ function formatAnswerWithMarkdown(text: string): JSX.Element {
 
 export function SchoolFAQ({ school }: SchoolFAQProps) {
   const faqData = useMemo(() => generateSchoolFAQ(school), [school]);
-  const structuredData = useMemo(() => generateFAQStructuredData(school, faqData), [school, faqData]);
 
   return (
     <>
-      <StructuredData data={structuredData} />
       <Card data-testid="card-faq">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
