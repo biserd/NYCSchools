@@ -800,9 +800,11 @@ export default function Home() {
         hasZonedSchools={hasZonedSchools}
       />
 
-      {/* School Database Stats */}
-      {schoolCounts && (
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6" data-testid="section-school-stats">
+      {/* School Database Stats — wrapper reserves height to prevent CLS while
+          schoolCounts is still loading. Mobile wraps to ~3 lines (~140px),
+          desktop fits in a single row (~64px). */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 min-h-[140px] md:min-h-[64px]" data-testid="section-school-stats">
+        {schoolCounts && (
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 text-sm">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full" data-testid="stat-total">
               <Building2 className="w-4 h-4 text-primary" />
@@ -881,8 +883,8 @@ export default function Home() {
               <span>Charter Schools</span>
             </a>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
         {/* min-h reserves the banner slot to prevent CLS. */}
