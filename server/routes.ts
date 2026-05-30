@@ -3471,6 +3471,33 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     res.send(robotsTxt);
   });
 
+  // 301 redirect: old two-segment school URLs → current single-segment slug.
+  // Google cached URLs like /school/06M314/muscota from the previous URL scheme.
+  // Express handles this server-side so Googlebot gets a real 301 (not a soft 404).
+  // Pattern: /school/{UPPERCASE-DBN}/{anything…}
+  app.get("/school/:dbn/*", async (req: Request, res: Response) => {
+    const rawDbn = req.params.dbn;
+    // Only intercept when the segment looks like a DBN (6 chars: 2 digits + letter + 3 chars)
+    // e.g. "06M314", "04M497". Current slugs start with lowercase like "06m314-…"
+    if (!/^[0-9]{2}[A-Z][0-9A-Z]{3}$/.test(rawDbn)) {
+      return res.status(404).send("Not found");
+    }
+    try {
+      const school = await storage.getSchool(rawDbn.toUpperCase());
+      if (!school) {
+        return res.status(404).send("School not found");
+      }
+      const slug = `${school.dbn.toLowerCase()}-${school.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")}`;
+      return res.redirect(301, `/school/${slug}`);
+    } catch (err) {
+      console.error("Legacy school redirect error:", err);
+      return res.status(500).send("Server error");
+    }
+  });
+
   // OAuth 2.0 Protected Resource Metadata (RFC 9728)
   // This tells ChatGPT where to find our authorization server
   app.get("/.well-known/oauth-protected-resource", (req: Request, res: Response) => {
