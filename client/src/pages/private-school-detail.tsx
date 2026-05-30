@@ -12,7 +12,6 @@ import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { PrivateSchoolMap } from "@/components/PrivateSchoolMap";
-import { NearbyPropertiesPanel } from "@/components/NearbyPropertiesPanel";
 import { useAuth } from "@/hooks/useAuth";
 import {
   MapPin,
@@ -610,12 +609,6 @@ export default function PrivateSchoolDetail() {
               </Card>
             )}
 
-            {/* Nearby Properties (Realtors Dashboard) — full main-column width */}
-            <NearbyPropertiesPanel
-              schoolAddress={school.address}
-              schoolName={school.name}
-              zipCode={school.zipCode}
-            />
 
           </div>
 

@@ -15,7 +15,6 @@ import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { NyceecReviewForm } from "@/components/NyceecReviewForm";
-import { NearbyPropertiesPanel } from "@/components/NearbyPropertiesPanel";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
@@ -658,12 +657,6 @@ export default function NyceecDetail() {
               </Accordion>
             </CardContent>
           </Card>
-
-          <NearbyPropertiesPanel
-            schoolAddress={center.address}
-            schoolName={center.name}
-            zipCode={center.zipCode}
-          />
 
           <Card data-testid="card-reviews">
             <CardHeader>

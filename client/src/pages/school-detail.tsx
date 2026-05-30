@@ -23,7 +23,6 @@ import { ReviewsList } from "@/components/ReviewsList";
 import { AdmissionsSection } from "@/components/AdmissionsSection";
 import { SchoolZoneMap } from "@/components/SchoolZoneMap";
 import { SchoolFAQ } from "@/components/SchoolFAQ";
-import { NearbyPropertiesPanel } from "@/components/NearbyPropertiesPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDistrictAverages, DistrictComparisonBadge, DistrictAverages, InlineComparison } from "@/components/DistrictComparison";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
@@ -2758,13 +2757,6 @@ export default function SchoolDetail() {
               </CardContent>
             </Card>
           )}
-
-          {/* Nearby Properties (Realtors Dashboard) */}
-          <NearbyPropertiesPanel
-            schoolAddress={schoolWithScore.address}
-            schoolName={schoolWithScore.name}
-            zipCode={schoolWithScore.zip_code}
-          />
 
           {/* Other Schools in District Section */}
           {topDistrictSchools.length > 0 && (
