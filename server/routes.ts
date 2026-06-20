@@ -968,7 +968,7 @@ Please provide a JSON response with the following structure:
 Focus on practical, actionable advice. Don't make claims about the center's quality since there are no official ratings.`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -2151,7 +2151,7 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
 
       // Stream response from OpenAI - low temperature to prevent hallucination
       const stream = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages,
         stream: true,
         temperature: 0.3,
@@ -2549,7 +2549,7 @@ When answering:
 
       // Stream response from OpenAI - low temperature to prevent hallucination of school data
       const stream = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages,
         stream: true,
         temperature: 0.3,

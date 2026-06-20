@@ -38,7 +38,7 @@ The system uses PostgreSQL with Drizzle ORM. Dedicated API endpoints handle data
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.
-- **OpenAI**: AI chat assistant and smart recommendations (`gpt-4o-mini`).
+- **OpenAI**: AI chat assistant and smart recommendations (`gpt-5-mini`).
 - **Replit Auth**: User authentication and session management.
 - **Leaflet**: Interactive maps.
 - **NYC School Survey Data**: CSV data for school survey results.

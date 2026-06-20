@@ -34,7 +34,7 @@ Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
 - **Side-by-side comparison** with shareable, SEO-friendly URLs
   (e.g. `/compare/PS006-M-vs-PS290-M`).
 - **District comparison** dashboard.
-- **AI chat assistant** powered by OpenAI's `gpt-4o-mini` (Premium).
+- **AI chat assistant** powered by OpenAI's `gpt-5-mini` (Premium).
 - **Smart Recommendations ("Find My Match")** — a short questionnaire that
   produces personalized school suggestions.
 - **Application Tracker** to manage applications across schools (Premium).
@@ -56,7 +56,7 @@ Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
   via signed email tokens; magic-link sign-in
 - **Payments:** Stripe (Checkout + Customer Portal + webhooks) for the
   Freemium / Premium subscription model
-- **AI:** OpenAI `gpt-4o-mini` for chat assistant and recommendations
+- **AI:** OpenAI `gpt-5-mini` for chat assistant and recommendations
 - **Email:** Resend (welcome emails, password reset, drip campaign)
 - **Maps & geo:** Google Maps Geocoding API, Google Distance Matrix API,
   Leaflet for rendering, NYC Open Data point locations and zone polygons
