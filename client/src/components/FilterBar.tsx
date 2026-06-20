@@ -45,6 +45,7 @@ interface FilterBarProps {
   zonedFilter?: string;
   onZonedFilterChange?: (value: string) => void;
   hasZonedSchools?: boolean;
+  isAuthenticatedUser?: boolean;
 }
 
 const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -113,6 +114,7 @@ export function FilterBar({
   zonedFilter = "all",
   onZonedFilterChange,
   hasZonedSchools = false,
+  isAuthenticatedUser = false,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -260,40 +262,46 @@ export function FilterBar({
           />
         </div>
       )}
-      {onZonedFilterChange && hasZonedSchools && (
-        <Select value={zonedFilter} onValueChange={onZonedFilterChange}>
-          <SelectTrigger data-testid="select-zoned" className="w-full md:w-44 h-10">
-            <Home className="h-4 w-4 mr-2 text-primary" />
-            <SelectValue placeholder="My Zoned Schools" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem data-testid="option-zoned-all" value="all">All NYC Schools</SelectItem>
-            <SelectItem data-testid="option-zoned-elementary" value="elementary">
-              <span className="flex items-center gap-2">
-                <Home className="h-3 w-3 text-primary" />
-                My Elementary Zone
-              </span>
-            </SelectItem>
-            <SelectItem data-testid="option-zoned-middle" value="middle">
-              <span className="flex items-center gap-2">
-                <Home className="h-3 w-3 text-primary" />
-                My Middle School Zone
-              </span>
-            </SelectItem>
-            <SelectItem data-testid="option-zoned-high" value="high">
-              <span className="flex items-center gap-2">
-                <Home className="h-3 w-3 text-primary" />
-                My High School Zone
-              </span>
-            </SelectItem>
-            <SelectItem data-testid="option-zoned-any" value="any">
-              <span className="flex items-center gap-2">
-                <Home className="h-3 w-3 text-primary" />
-                All My Zoned Schools
-              </span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Zoned-schools filter: reserve the slot as soon as we know the user is
+          authenticated (even before /api/user-zones resolves) so the filter
+          bar never grows in height when the data arrives — preventing CLS.
+          The slot stays invisible until hasZonedSchools is confirmed. */}
+      {onZonedFilterChange && (hasZonedSchools || isAuthenticatedUser) && (
+        <div className={!hasZonedSchools ? "invisible pointer-events-none" : undefined}>
+          <Select value={zonedFilter} onValueChange={onZonedFilterChange}>
+            <SelectTrigger data-testid="select-zoned" className="w-full md:w-44 h-10">
+              <Home className="h-4 w-4 mr-2 text-primary" />
+              <SelectValue placeholder="My Zoned Schools" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem data-testid="option-zoned-all" value="all">All NYC Schools</SelectItem>
+              <SelectItem data-testid="option-zoned-elementary" value="elementary">
+                <span className="flex items-center gap-2">
+                  <Home className="h-3 w-3 text-primary" />
+                  My Elementary Zone
+                </span>
+              </SelectItem>
+              <SelectItem data-testid="option-zoned-middle" value="middle">
+                <span className="flex items-center gap-2">
+                  <Home className="h-3 w-3 text-primary" />
+                  My Middle School Zone
+                </span>
+              </SelectItem>
+              <SelectItem data-testid="option-zoned-high" value="high">
+                <span className="flex items-center gap-2">
+                  <Home className="h-3 w-3 text-primary" />
+                  My High School Zone
+                </span>
+              </SelectItem>
+              <SelectItem data-testid="option-zoned-any" value="any">
+                <span className="flex items-center gap-2">
+                  <Home className="h-3 w-3 text-primary" />
+                  All My Zoned Schools
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       )}
     </>
   );

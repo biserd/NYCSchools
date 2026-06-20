@@ -650,35 +650,49 @@ export default function Home() {
                   Chances
                 </Link>
               </Button>
-              {isAuthenticated && user && (
-                <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
-                  <Link href="/settings">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </Link>
-                </Button>
-              )}
-              {isAuthenticated && user && (
-                <Button variant="outline" size="sm" asChild data-testid="button-favorites-nav">
-                  <Link href="/favorites">
-                    <Heart className="w-4 h-4 mr-2" />
-                    Favorites
-                  </Link>
-                </Button>
-              )}
-              {isAuthenticated ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    await fetch('/api/logout', { method: 'POST' });
-                    window.location.href = '/';
-                  }}
-                  data-testid="button-logout"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
+              {/* Auth-conditional nav buttons.
+                  During authLoading we render the authenticated set as invisible
+                  so the header never changes height when auth resolves — invisible
+                  elements don't contribute to the CLS score. */}
+              {authLoading ? (
+                <span className="invisible flex items-center gap-2" aria-hidden="true">
+                  <Button variant="outline" size="sm" tabIndex={-1}>
+                    <Settings className="w-4 h-4 mr-2" />Settings
+                  </Button>
+                  <Button variant="outline" size="sm" tabIndex={-1}>
+                    <Heart className="w-4 h-4 mr-2" />Favorites
+                  </Button>
+                  <Button variant="outline" size="sm" tabIndex={-1}>
+                    <LogOut className="w-4 h-4 mr-2" />Logout
+                  </Button>
+                </span>
+              ) : isAuthenticated && user ? (
+                <>
+                  <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
+                    <Link href="/settings">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild data-testid="button-favorites-nav">
+                    <Link href="/favorites">
+                      <Heart className="w-4 h-4 mr-2" />
+                      Favorites
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      await fetch('/api/logout', { method: 'POST' });
+                      window.location.href = '/';
+                    }}
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button variant="outline" size="sm" asChild data-testid="button-pricing-nav">
@@ -800,6 +814,7 @@ export default function Home() {
         zonedFilter={zonedFilter}
         onZonedFilterChange={handleZonedFilterChange}
         hasZonedSchools={hasZonedSchools}
+        isAuthenticatedUser={isAuthenticated && !authLoading}
       />
 
       {/* School Database Stats — wrapper reserves height to prevent CLS while
