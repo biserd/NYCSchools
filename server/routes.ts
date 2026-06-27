@@ -972,7 +972,6 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.7,
         response_format: { type: "json_object" },
       });
 
@@ -2152,7 +2151,6 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
         model: "gpt-5-mini",
         messages,
         stream: true,
-        temperature: 0.3,
       });
 
       for await (const chunk of stream) {
@@ -2549,7 +2547,6 @@ When answering:
         model: "gpt-5-mini",
         messages,
         stream: true,
-        temperature: 0.3,
       });
 
       let fullResponse = "";
