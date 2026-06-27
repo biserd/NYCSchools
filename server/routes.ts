@@ -973,7 +973,6 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
           { role: "user", content: userPrompt }
         ],
         temperature: 0.7,
-        max_completion_tokens: 700,
         response_format: { type: "json_object" },
       });
 
@@ -2154,7 +2153,6 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
         messages,
         stream: true,
         temperature: 0.3,
-        max_completion_tokens: 1000,
       });
 
       for await (const chunk of stream) {
@@ -2552,7 +2550,6 @@ When answering:
         messages,
         stream: true,
         temperature: 0.3,
-        max_completion_tokens: 800,
       });
 
       let fullResponse = "";
