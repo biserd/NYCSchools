@@ -973,7 +973,10 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
           { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-      });
+        reasoning_effort: "minimal",
+        verbosity: "low",
+        max_completion_tokens: 1000,
+      } as any);
 
       const responseText = completion.choices[0]?.message?.content;
       if (!responseText) {
@@ -2146,12 +2149,15 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI - low temperature to prevent hallucination
-      const stream = await openai.chat.completions.create({
+      // Stream response from OpenAI - minimal reasoning + low verbosity for speed
+      const stream: any = await openai.chat.completions.create({
         model: "gpt-5-mini",
         messages,
         stream: true,
-      });
+        reasoning_effort: "minimal",
+        verbosity: "low",
+        max_completion_tokens: 600,
+      } as any);
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
@@ -2542,12 +2548,15 @@ When answering:
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI - low temperature to prevent hallucination of school data
-      const stream = await openai.chat.completions.create({
+      // Stream response from OpenAI - minimal reasoning + low verbosity for speed
+      const stream: any = await openai.chat.completions.create({
         model: "gpt-5-mini",
         messages,
         stream: true,
-      });
+        reasoning_effort: "minimal",
+        verbosity: "low",
+        max_completion_tokens: 600,
+      } as any);
 
       let fullResponse = "";
       for await (const chunk of stream) {
