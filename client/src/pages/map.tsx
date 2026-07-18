@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import L from "leaflet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1238,13 +1238,20 @@ export default function MapPage() {
             </Button>
           </div>
         )}
-        <div 
-          ref={mapRef} 
+        <div
+          ref={mapRef}
           className="w-full h-[600px] rounded-lg border shadow-lg"
           data-testid="map-container"
         />
+        <div className="mt-3 p-3 bg-card border rounded-md text-sm">
+          <span className="text-muted-foreground">Also explore: </span>
+          <Link href="/private-schools" className="text-primary hover:underline font-medium">
+            Best Private Schools NYC 2026
+          </Link>
+          <span className="text-muted-foreground"> — browse 623 private schools across all five boroughs.</span>
+        </div>
       </div>
-      
+
       <Footer />
     </div>
   );

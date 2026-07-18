@@ -1772,6 +1772,13 @@ export default function ComparePage() {
         </div>
       </div>
       
+      <div className="mt-4 p-3 bg-card border rounded-md text-sm">
+        <span className="text-muted-foreground">Also explore: </span>
+        <Link href="/private-schools" className="text-primary hover:underline font-medium">
+          Best Private Schools NYC 2026
+        </Link>
+        <span className="text-muted-foreground"> — browse 623 private schools across all five boroughs.</span>
+      </div>
       <Footer />
     </div>
   );

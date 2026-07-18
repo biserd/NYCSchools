@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
+import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import {
   Search,
@@ -157,11 +158,37 @@ export default function PrivateSchools() {
   return (
     <div className="min-h-screen bg-background" data-testid="page-private-schools">
       <SEOHead
-        title="NYC Private Schools 2026: Browse 623 Schools by Borough, Tuition & Grades"
+        title="Best Private Schools NYC 2026: Browse 623 Schools by Borough, Tuition & Grades"
         description="Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by religious affiliation, grade level, enrollment size, and student-teacher ratio."
         canonicalPath="/private-schools"
         appendSiteName={false}
-        keywords="NYC private schools, private school directory, New York City private schools, Catholic schools NYC, independent schools"
+        keywords="best private schools NYC 2026, NYC private schools, private school directory, New York City private schools, Catholic schools NYC, independent schools, private school tuition NYC"
+      />
+      <StructuredData
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Best Private Schools NYC 2026",
+          description: "Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by borough, religious affiliation, grade level, and tuition.",
+          url: "https://nycschoolsratings.com/private-schools",
+          itemListElement: schools.slice(0, 50).map((school, idx) => ({
+            "@type": "ListItem",
+            position: idx + 1,
+            item: {
+              "@type": "School",
+              name: school.name,
+              url: `https://nycschoolsratings.com${getPrivateSchoolUrl(school)}`,
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: school.borough,
+                addressRegion: "NY",
+                addressCountry: "US",
+              },
+              ...((school.tuitionElementary || school.tuitionMiddle || school.tuitionHigh) ? { priceRange: getTuitionRange(school) } : {}),
+              ...(school.enrollment ? { numberOfStudents: school.enrollment } : {}),
+            },
+          })),
+        }}
       />
       <AppHeader />
 
