@@ -1,6 +1,7 @@
 import { useComparison } from "@/contexts/ComparisonContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
@@ -312,12 +313,13 @@ function PTACell({ total, perStudent }: { total: number | null | undefined; perS
 }
 
 export default function ComparePage() {
-  const { comparedSchools, removeFromComparison, clearComparison, setComparedSchools } = useComparison();
+  const { comparedSchools, addToComparison, removeFromComparison, clearComparison, setComparedSchools, maxCompare } = useComparison();
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [urlInitialized, setUrlInitialized] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState("");
   
   // Check for URL params
   const [, params] = useRoute("/compare/:schools");
@@ -354,6 +356,38 @@ export default function ComparePage() {
   
   // Filter out any null schools before using them
   const validComparedSchools = comparedSchools.filter((s): s is School => s !== null && s !== undefined);
+
+  const { data: directorySchools = [], isLoading: directoryLoading } = useQuery<School[]>({
+    queryKey: ["/api/schools"],
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const schoolSearchResults = schoolSearch.trim().length < 2
+    ? []
+    : directorySchools
+        .filter((school) => {
+          const query = schoolSearch.trim().toLowerCase();
+          return !validComparedSchools.some((compared) => compared.dbn === school.dbn) &&
+            (school.name.toLowerCase().includes(query) || school.dbn.toLowerCase().includes(query));
+        })
+        .slice(0, 8);
+
+  const handleAddFromSearch = (school: School) => {
+    const result = addToComparison(school);
+    if (!result.success) {
+      toast({
+        title: "Could not add school",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    setSchoolSearch("");
+    toast({
+      title: "School added",
+      description: `${school.name} is ready to compare.`,
+    });
+  };
   
   // Update URL immediately when schools change (after initial load)
   useEffect(() => {
@@ -481,28 +515,73 @@ export default function ComparePage() {
   if (validComparedSchools.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        <SEOHead
+          title="Compare NYC Schools Side by Side"
+          description="Search for NYC schools and compare ratings, outcomes, climate, programs, demographics, admissions context, and commute fit side by side."
+          canonicalPath="/compare"
+        />
         <AppHeader />
 
-        <div className="flex-1 flex items-center justify-center p-8">
-          <Card className="max-w-md w-full">
-            <CardContent className="pt-6 text-center">
-              <div className="mb-4">
-                <GraduationCap className="w-12 h-12 mx-auto text-muted-foreground" />
+        <main className="flex-1 flex items-start justify-center px-4 py-12">
+          <Card className="max-w-2xl w-full">
+            <CardContent className="pt-8">
+              <div className="text-center mb-6">
+                <GraduationCap className="w-12 h-12 mx-auto text-primary mb-4" />
+                <h1 className="text-2xl font-semibold mb-2" data-testid="text-empty-compare-title">
+                  Compare NYC schools side by side
+                </h1>
+                <p className="text-muted-foreground" data-testid="text-empty-compare-description">
+                  Search here to add your first school. You can compare up to {maxCompare} schools on your current plan.
+                </p>
               </div>
-              <h2 className="text-xl font-semibold mb-2" data-testid="text-empty-compare-title">
-                No Schools to Compare
-              </h2>
-              <p className="text-muted-foreground mb-6" data-testid="text-empty-compare-description">
-                Add schools to your comparison from the main page by clicking the "Compare" button on school cards.
-              </p>
-              <Link href="/">
-                <Button data-testid="button-browse-schools">
-                  Browse Schools
+
+              <Input
+                value={schoolSearch}
+                onChange={(event) => setSchoolSearch(event.target.value)}
+                placeholder="Search by school name or DBN…"
+                className="min-h-11"
+                aria-label="Search schools to compare"
+                data-testid="input-empty-compare-search"
+              />
+
+              <div className="mt-3 divide-y rounded-md border" aria-live="polite">
+                {directoryLoading ? (
+                  <p className="p-4 text-sm text-muted-foreground">Loading the school directory…</p>
+                ) : schoolSearch.trim().length < 2 ? (
+                  <p className="p-4 text-sm text-muted-foreground">Enter at least two characters to search.</p>
+                ) : schoolSearchResults.length === 0 ? (
+                  <p className="p-4 text-sm text-muted-foreground">No matching schools found.</p>
+                ) : (
+                  schoolSearchResults.map((school) => (
+                    <div key={school.dbn} className="flex items-center justify-between gap-3 p-3">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{school.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {school.dbn} · District {school.district} · {school.grade_band || "Grades not listed"}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="min-h-11 shrink-0"
+                        onClick={() => handleAddFromSearch(school)}
+                        data-testid={`button-add-compare-${school.dbn}`}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-6 text-center">
+                <Button asChild variant="ghost" className="min-h-11">
+                  <Link href="/">Browse the full directory</Link>
                 </Button>
-              </Link>
+              </div>
             </CardContent>
           </Card>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
