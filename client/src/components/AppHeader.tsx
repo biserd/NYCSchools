@@ -42,11 +42,11 @@ export function AppHeader() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Link href="/">
-              <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
+              <div className="flex min-h-11 items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
                 <Home className="w-5 h-5 text-primary" />
-                <h1 className="text-xl md:text-2xl font-bold" data-testid="text-site-title">
+                <span className="text-xl md:text-2xl font-bold" data-testid="text-site-title">
                   NYC School Ratings
-                </h1>
+                </span>
               </div>
             </Link>
             {subscriptionFetched && isPremiumUser && (
@@ -57,7 +57,7 @@ export function AppHeader() {
             )}
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap [&_button]:min-h-11 [&_button]:min-w-11">
             {isAuthenticated ? (
               <>
                 <Link href="/recommendations">
