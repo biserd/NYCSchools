@@ -53,32 +53,11 @@ const features: PricingFeature[] = [
   { name: "Priority Support", free: false, premium: true },
 ];
 
-const testimonials = [
-  {
-    quote: "The AI recommendations helped us discover a school we never would have found. Our daughter is thriving!",
-    author: "Maria S.",
-    location: "Brooklyn",
-    avatar: "M",
-  },
-  {
-    quote: "Worth every penny. The commute calculator alone saved us from choosing a school that would have been a nightmare.",
-    author: "James T.",
-    location: "Queens",
-    avatar: "J",
-  },
-  {
-    quote: "Finally, a tool that makes comparing NYC schools simple. The unlimited favorites feature is a game-changer.",
-    author: "Sarah L.",
-    location: "Manhattan",
-    avatar: "S",
-  },
-];
-
 const stats = [
-  { value: "2,100+", label: "Schools Analyzed", icon: School },
-  { value: "50K+", label: "Parents Helped", icon: Users },
-  { value: "4.8", label: "Average Rating", icon: Star },
-  { value: "2hrs", label: "Avg. Time Saved", icon: Clock },
+  { value: "2,100+", label: "School Profiles", icon: School },
+  { value: "3", label: "School Types", icon: Check },
+  { value: "5", label: "NYC Boroughs", icon: Target },
+  { value: "6 months", label: "One-Time Access", icon: Clock },
 ];
 
 function FeatureRow({ feature }: { feature: PricingFeature }) {
@@ -112,14 +91,14 @@ export default function PricingPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
       toast({
-        title: "Subscription Active",
-        description: "Welcome to Premium! You now have access to all features.",
+        title: "Season Pass Active",
+        description: "Your six months of full access are ready.",
       });
       window.history.replaceState({}, "", "/pricing");
     } else if (params.get("canceled") === "true") {
       toast({
         title: "Checkout Canceled",
-        description: "No changes were made to your subscription.",
+        description: "No payment was made and your access did not change.",
         variant: "destructive",
       });
       window.history.replaceState({}, "", "/pricing");
@@ -259,30 +238,22 @@ export default function PricingPage() {
   const seasonPassProduct = allSeasonPassProducts[allSeasonPassProducts.length - 1];
   const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
   
-  // Fallback to premium monthly if Season Pass not found
-  const premiumProduct = products?.data?.find(p => 
-    p.name?.toLowerCase().includes("premium") || 
-    p.metadata?.plan === "premium"
-  );
-  const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
+  // The public offer is intentionally one product: a non-renewing Season Pass.
+  // Legacy monthly subscribers retain access, but new checkout never falls
+  // back to a recurring price when the Season Pass is unavailable.
+  const currentPriceId = seasonPassPrice?.id;
   
-  // Use Season Pass price if available, otherwise monthly
-  const currentPriceId = seasonPassPrice?.id || monthlyPrice?.id;
-  const isSeasonPass = !!seasonPassPrice;
-  
-  // Helper to start checkout with the correct mode
   const handleCheckout = () => {
     if (currentPriceId) {
-      const mode = isSeasonPass ? 'payment' : 'subscription';
-      checkoutMutation.mutate({ priceId: currentPriceId, mode });
+      checkoutMutation.mutate({ priceId: currentPriceId, mode: 'payment' });
     }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Pricing - NYC School Ratings"
-        description="Find your child's perfect NYC school faster. Browse 2,100+ public, charter, and private schools. Premium features include unlimited AI assistance, commute calculator, and personalized recommendations."
+        title="Enrollment Season Pass Pricing"
+        description="Get six months of NYC school comparison, personalized recommendations, commute planning, and application tracking with one payment and no renewal."
         canonicalPath="/pricing"
       />
 
@@ -304,7 +275,7 @@ export default function PricingPage() {
               {isPremium ? (
                 <div className="flex items-center justify-center gap-2">
                   <Star className="w-5 h-5 text-yellow-500" />
-                  <span className="font-medium">You're on the Premium plan</span>
+                  <span className="font-medium">Your full access is active</span>
                   <Badge variant="default" className="ml-2">Active</Badge>
                 </div>
               ) : (
@@ -327,10 +298,10 @@ export default function PricingPage() {
               Season Pass Available
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-4" data-testid="heading-pricing">
-              Secure Your Child's Spot <span className="text-primary">This Enrollment Season</span>
+              Build a Confident NYC School Plan <span className="text-primary">This Enrollment Season</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              Stop spending hours researching schools. Our AI-powered tools help you find, compare, and choose the best NYC school for your family.
+              Turn school data into an explainable shortlist, side-by-side comparison, commute plan, and application checklist.
             </p>
             
             {/* Stats Row */}
@@ -427,7 +398,7 @@ export default function PricingPage() {
                         {portalMutation.isPending ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : null}
-                        Manage Subscription
+                        Manage Access
                       </Button>
                     )
                   ) : (
@@ -514,7 +485,7 @@ export default function PricingPage() {
                         {portalMutation.isPending ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : null}
-                        Manage Subscription
+                        Manage Access
                       </Button>
                     ) : (
                       <Button 
@@ -578,40 +549,47 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
+        {/* Concrete deliverable preview */}
         <section className="py-16 px-4 bg-muted/30">
           <div className="container mx-auto max-w-5xl">
-            <div className="text-center mb-12">
+            <div className="text-center mb-10">
               <Badge variant="secondary" className="mb-4">
-                <Users className="w-3 h-3 mr-1" />
-                Parent Stories
+                <Sparkles className="w-3 h-3 mr-1" />
+                What You Get
               </Badge>
-              <h2 className="text-3xl font-bold mb-4">
-                Trusted by NYC Parents
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">
-                Join thousands of families who found their perfect school match
+              <h2 className="text-3xl font-bold mb-3">A decision plan, not another list of ratings</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Preview the workflow before checkout. Every recommendation includes the reason it fits and what your family should verify.
               </p>
             </div>
-            
             <div className="grid md:grid-cols-3 gap-6">
-              {testimonials.map((testimonial, i) => (
-                <Card key={i} className="bg-background">
-                  <CardContent className="pt-6">
-                    <Quote className="w-8 h-8 text-primary/20 mb-4" />
-                    <p className="text-sm mb-4 italic">"{testimonial.quote}"</p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                        {testimonial.avatar}
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">{testimonial.author}</div>
-                        <div className="text-xs text-muted-foreground">{testimonial.location}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card>
+                <CardHeader>
+                  <Target className="w-6 h-6 text-primary mb-2" />
+                  <CardTitle className="text-lg">Explainable shortlist</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Match grade, location, programs, priorities, and school data with clear fit explanations.
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <TrendingUp className="w-6 h-6 text-primary mb-2" />
+                  <CardTitle className="text-lg">Side-by-side decision view</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Compare outcomes, climate, programs, admissions context, and commute tradeoffs in one place.
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <ClipboardList className="w-6 h-6 text-primary mb-2" />
+                  <CardTitle className="text-lg">Application checklist</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  Track schools, deadlines, open houses, documents, offers, and waitlist follow-ups.
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
@@ -715,11 +693,11 @@ export default function PricingPage() {
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Can I cancel anytime?</CardTitle>
+                  <CardTitle className="text-lg">Does the Season Pass renew?</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
-                    Yes! You can cancel your Premium subscription at any time with one click. You'll continue to have access until the end of your billing period.
+                    No. The Enrollment Season Pass is a one-time payment for six months of access. It does not automatically renew, so there is nothing to cancel.
                   </p>
                 </CardContent>
               </Card>
@@ -739,7 +717,7 @@ export default function PricingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
-                    Absolutely! If you're not satisfied within the first 7 days after your trial, contact us for a full refund. No questions asked.
+                    If the product is not a fit, contact us within seven days of purchase to request a refund. There is no trial or automatic renewal.
                   </p>
                 </CardContent>
               </Card>
@@ -754,7 +732,7 @@ export default function PricingPage() {
               Ready to Secure Your Child's Spot?
             </h3>
             <p className="text-muted-foreground mb-6">
-              Join thousands of NYC parents who got ahead of deadlines and secured their top choice schools.
+              Build your shortlist, compare tradeoffs, and keep the application process organized in one place.
             </p>
             {user && !isPremium ? (
               <Button 

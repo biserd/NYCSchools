@@ -42,22 +42,22 @@ export function AppHeader() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Link href="/">
-              <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
+              <div className="flex min-h-11 items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
                 <Home className="w-5 h-5 text-primary" />
-                <h1 className="text-xl md:text-2xl font-bold" data-testid="text-site-title">
+                <span className="text-xl md:text-2xl font-bold" data-testid="text-site-title">
                   NYC School Ratings
-                </h1>
+                </span>
               </div>
             </Link>
             {subscriptionFetched && isPremiumUser && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium" data-testid="badge-premium">
                 <Star className="w-3 h-3" />
-                <span>Premium</span>
+                <span>Full Access</span>
               </div>
             )}
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap [&_button]:min-h-11 [&_button]:min-w-11">
             {isAuthenticated ? (
               <>
                 <Link href="/recommendations">

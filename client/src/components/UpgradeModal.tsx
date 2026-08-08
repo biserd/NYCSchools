@@ -65,27 +65,21 @@ const triggerContent: Record<UpgradeModalTrigger, { title: string; description: 
     icon: Target,
   },
   general: {
-    title: "Upgrade to Premium",
-    description: "Unlock all features and find your child's perfect school faster.",
+    title: "Get the Enrollment Season Pass",
+    description: "Unlock six months of comparison, planning, and application tools with one payment and no renewal.",
     icon: Sparkles,
   },
 };
 
-const testimonial = {
-  quote: "The AI recommendations helped us discover a school we never would have found. Worth every penny!",
-  author: "Maria S., Brooklyn",
-};
-
 export function UpgradeModal({ open, onOpenChange, trigger = "general" }: UpgradeModalProps) {
-  const { startCheckout, isPending, priceAmount, isSeasonPass, isReady } = useCheckout();
+  const { startCheckout, isPending, priceAmount, isReady } = useCheckout();
   const content = triggerContent[trigger];
   const IconComponent = content.icon;
 
-  // Dynamic text based on product type
-  const priceLabel = isSeasonPass ? "one-time" : "/month";
-  const priceDescription = isSeasonPass ? "6 months of full Premium access" : "Cancel anytime";
-  const badgeText = isSeasonPass ? "Season Pass" : "Premium";
-  const buttonText = isSeasonPass ? "Get Season Pass" : "Upgrade to Premium";
+  const priceLabel = "one-time";
+  const priceDescription = "6 months of full access · no automatic renewal";
+  const badgeText = "Enrollment Season Pass";
+  const buttonText = "Get Season Pass";
 
   const premiumFeatures = [
     { icon: MessageCircle, text: "Unlimited AI questions" },
@@ -133,12 +127,6 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
             ))}
           </div>
 
-          {/* Testimonial */}
-          <div className="bg-muted/50 rounded-lg p-3 mb-4">
-            <p className="text-sm italic text-muted-foreground">"{testimonial.quote}"</p>
-            <p className="text-xs text-muted-foreground mt-1">— {testimonial.author}</p>
-          </div>
-
           {/* Trust badges */}
           <div className="flex justify-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
@@ -147,7 +135,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
             </div>
             <div className="flex items-center gap-1">
               <Check className="w-3 h-3" />
-              Cancel anytime
+              No renewal
             </div>
           </div>
         </div>

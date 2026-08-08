@@ -604,10 +604,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background" data-testid="home-page">
-      <SEOHead 
-        description="Find and compare 2,100+ NYC public, charter, and private schools. Browse ratings, test scores, tuition, demographics, and parent reviews to make informed school decisions."
-        keywords="NYC schools, kindergarten, elementary schools, public schools, charter schools, private schools, school ratings, school finder, New York City education, school comparison, parent reviews, NYC DOE, private school tuition"
+      <SEOHead
+        title="NYC School Ratings & Rankings | Compare 2,100+ Schools"
+        description="Build a shortlist from 2,100+ NYC public, charter, private, and early-childhood schools using ratings, admissions context, programs, demographics, and parent reviews."
         canonicalPath="/"
+        appendSiteName={false}
       />
       <StructuredData data={organizationSchema} />
       <StructuredData data={websiteSchema} />
@@ -615,15 +616,16 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">NYC School Ratings</p>
               <h1 className="text-xl md:text-3xl font-bold" data-testid="text-page-title">
-                NYC School Ratings
+                Find the right NYC school for your child
               </h1>
               <p className="text-muted-foreground text-sm hidden sm:block" data-testid="text-page-subtitle">
-                Find and compare NYC public, charter, and private schools
+                Compare official data, admissions context, programs, and commute fit
               </p>
             </div>
             
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2 [&_button]:min-h-11">
               <Button variant="outline" size="sm" asChild data-testid="button-recommendations-nav">
                 <Link href="/recommendations">
                   <Sparkles className="w-4 h-4 mr-2" />

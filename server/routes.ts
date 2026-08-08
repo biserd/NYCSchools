@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
@@ -20,7 +20,6 @@ import { getStripeSync, getUncachableStripeClient, getStripePublishableKey, getS
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
-import { neighborhoodComparisons, getComparisonSlugForNeighborhood } from "@shared/neighborhoodComparisons";
 import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/safetyIndex";
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
 import { flushApiLogsNow } from "./apiObservability";
@@ -3270,13 +3269,10 @@ When answering:
   app.get("/sitemap.xml", async (req: Request, res: Response) => {
     try {
       const schools = await storage.getSchools();
-      const today = new Date().toISOString().split('T')[0];
-      
       // Static pages
       const staticPages = [
         { url: '/', changefreq: 'daily', priority: '1.0' },
         { url: '/map', changefreq: 'weekly', priority: '0.8' },
-        { url: '/favorites', changefreq: 'weekly', priority: '0.7' },
         { url: '/compare', changefreq: 'weekly', priority: '0.7' },
         { url: '/recommendations', changefreq: 'weekly', priority: '0.8' },
         { url: '/early-childhood', changefreq: 'weekly', priority: '0.8' },
@@ -3310,7 +3306,6 @@ When answering:
       staticPages.forEach(page => {
         xml += '  <url>\n';
         xml += `    <loc>https://nycschoolsratings.com${page.url}</loc>\n`;
-        xml += `    <lastmod>${today}</lastmod>\n`;
         xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
         xml += `    <priority>${page.priority}</priority>\n`;
         xml += '  </url>\n';
@@ -3328,94 +3323,33 @@ When answering:
       
       // Add school pages
       schools.forEach(school => {
-        const slug = `${school.dbn.toLowerCase()}-${school.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}`;
+        const slug = getSchoolSlug(school);
         xml += '  <url>\n';
         xml += `    <loc>https://nycschoolsratings.com/school/${slug}</loc>\n`;
-        xml += `    <lastmod>${today}</lastmod>\n`;
         xml += `    <changefreq>weekly</changefreq>\n`;
         xml += `    <priority>0.9</priority>\n`;
         xml += '  </url>\n';
       });
       
-      // Add NYCEEC early childhood center pages
+      // Add canonical NYCEEC early-childhood pages from the same storage
+      // layer used by the detail route. This avoids sitemap URLs drifting
+      // from the records the application can actually render.
       try {
-        const nyceecResponse = await fetch('https://data.cityofnewyork.us/resource/kiyv-ks3f.json?$limit=2000');
-        if (nyceecResponse.ok) {
-          const nyceecCenters = await nyceecResponse.json();
-          nyceecCenters.forEach((center: any) => {
-            if (center.loccode && center.locname) {
-              const slug = `${center.loccode.toLowerCase()}-${center.locname.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}`;
-              xml += '  <url>\n';
-              xml += `    <loc>https://nycschoolsratings.com/early-childhood/${slug}</loc>\n`;
-              xml += `    <lastmod>${today}</lastmod>\n`;
-              xml += `    <changefreq>monthly</changefreq>\n`;
-              xml += `    <priority>0.7</priority>\n`;
-              xml += '  </url>\n';
-            }
-          });
-        }
+        const nyceecCenters = await storage.getNyceecCenters();
+        nyceecCenters.forEach((center) => {
+          xml += '  <url>\n';
+          xml += `    <loc>https://nycschoolsratings.com/early-childhood/${getNyceecSlug(center)}</loc>\n`;
+          xml += `    <changefreq>monthly</changefreq>\n`;
+          xml += `    <priority>0.7</priority>\n`;
+          xml += '  </url>\n';
+        });
       } catch (nyceecError) {
         console.error("Error fetching NYCEEC data for sitemap:", nyceecError);
       }
       
-      // Add neighborhood comparison pages (pre-seeded for SEO)
-      neighborhoodComparisons.forEach(comparison => {
-        const comparisonSlug = getComparisonSlugForNeighborhood(comparison);
-        xml += '  <url>\n';
-        xml += `    <loc>https://nycschoolsratings.com/compare/${comparisonSlug}</loc>\n`;
-        xml += `    <lastmod>${today}</lastmod>\n`;
-        xml += `    <changefreq>weekly</changefreq>\n`;
-        xml += `    <priority>0.8</priority>\n`;
-        xml += '  </url>\n';
-      });
-
-      // Programmatic per-district comparison URLs: for each district, pick
-      // the top 3 schools by overall score and emit all 3 pairwise compare
-      // URLs (3 per district). These are high-signal "best schools in
-      // district X" comparisons that crawlers can follow into rich detail
-      // pages. Cap at 1000 entries to keep the sitemap reasonable.
-      const byDistrict = new Map<number, { dbn: string; name: string; score: number }[]>();
-      for (const s of schools) {
-        const score = Math.round(
-          ((s.academics_score || 0) * 0.4 +
-            (s.climate_score || 0) * 0.3 +
-            (s.progress_score || 0) * 0.3),
-        );
-        if (!byDistrict.has(s.district)) byDistrict.set(s.district, []);
-        byDistrict.get(s.district)!.push({ dbn: s.dbn, name: s.name, score });
-      }
-      let compareCount = 0;
-      const COMPARE_CAP = 1000;
-      const slugify = (n: string) =>
-        n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      for (const [, listRaw] of Array.from(byDistrict.entries()).sort((a, b) => a[0] - b[0])) {
-        const list = listRaw.sort((a, b) => b.score - a.score).slice(0, 3);
-        for (let i = 0; i < list.length; i++) {
-          for (let j = i + 1; j < list.length; j++) {
-            if (compareCount >= COMPARE_CAP) break;
-            const a = list[i];
-            const b = list[j];
-            const compareSlug = `${a.dbn}-${slugify(a.name)}-vs-${b.dbn}-${slugify(b.name)}`;
-            xml += '  <url>\n';
-            xml += `    <loc>https://nycschoolsratings.com/compare/${compareSlug}</loc>\n`;
-            xml += `    <lastmod>${today}</lastmod>\n`;
-            xml += `    <changefreq>monthly</changefreq>\n`;
-            xml += `    <priority>0.6</priority>\n`;
-            xml += '  </url>\n';
-            compareCount++;
-          }
-          if (compareCount >= COMPARE_CAP) break;
-        }
-        if (compareCount >= COMPARE_CAP) break;
-      }
-      
-      // Add private schools browse page
-      xml += '  <url>\n';
-      xml += `    <loc>https://nycschoolsratings.com/private-schools</loc>\n`;
-      xml += `    <lastmod>${today}</lastmod>\n`;
-      xml += `    <changefreq>weekly</changefreq>\n`;
-      xml += `    <priority>0.8</priority>\n`;
-      xml += '  </url>\n';
+      // Comparison combinations are intentionally omitted. They are useful
+      // when a family creates them, but emitting hundreds of thin variants
+      // wastes crawl budget and contributed to crawled-not-indexed growth.
       
       // Add private school detail pages
       try {
@@ -3425,15 +3359,9 @@ When answering:
         }).from(privateSchools);
         
         privateSchoolsList.forEach(school => {
-          const nameSlug = school.name.toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '');
-          const slug = `${nameSlug}-${school.ncesId.toLowerCase()}`;
+          const slug = getPrivateSchoolSlug(school);
           xml += '  <url>\n';
           xml += `    <loc>https://nycschoolsratings.com/private-school/${slug}</loc>\n`;
-          xml += `    <lastmod>${today}</lastmod>\n`;
           xml += `    <changefreq>monthly</changefreq>\n`;
           xml += `    <priority>0.7</priority>\n`;
           xml += '  </url>\n';
@@ -3481,10 +3409,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       if (!school) {
         return res.status(404).send("School not found");
       }
-      const slug = `${school.dbn.toLowerCase()}-${school.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "")}`;
+      const slug = getSchoolSlug(school);
       return res.redirect(301, `/school/${slug}`);
     } catch (err) {
       console.error("Legacy school redirect error:", err);

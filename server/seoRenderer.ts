@@ -27,7 +27,13 @@
  */
 
 import { storage } from "./storage";
-import { extractNcesIdFromSlug } from "@shared/schema";
+import {
+  calculateOverallScore,
+  extractNcesIdFromSlug,
+  getNyceecSlug,
+  getPrivateSchoolSlug,
+  getSchoolSlug,
+} from "@shared/schema";
 import { getBlogPost } from "@shared/blog-data";
 import type { School, PrivateSchool, NyceecCenter } from "@shared/schema";
 
@@ -175,17 +181,22 @@ function applyMeta(baseHtml: string, meta: Meta): string {
     html = html.replace(/<\/head>/i, `    ${canonicalTag}\n  </head>`);
   }
 
-  // JSON-LD blocks
+  // Replace only server-managed JSON-LD. Client components adopt these
+  // scripts by schema type instead of appending duplicate entities.
+  html = html.replace(
+    /\s*<script[^>]*data-seo-managed="server"[^>]*>[\s\S]*?<\/script>/gi,
+    "",
+  );
   if (meta.jsonLd) {
     const blocks = Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd];
     const jsonLdHtml = blocks
-      .map(
-        (b) =>
-          `    <script type="application/ld+json">${JSON.stringify(b).replace(
-            /</g,
-            "\\u003c",
-          )}</script>`,
-      )
+      .map((block) => {
+        const schemaType = String((block as Record<string, unknown>)["@type"] ?? "Thing");
+        return `    <script type="application/ld+json" data-seo-managed="server" data-schema-type="${escapeAttr(schemaType)}">${JSON.stringify(block).replace(
+          /</g,
+          "\\u003c",
+        )}</script>`;
+      })
       .join("\n");
     html = html.replace(/<\/head>/i, `${jsonLdHtml}\n  </head>`);
   }
@@ -220,11 +231,9 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
   if (!school) return null;
 
   const borough = boroughName(school.dbn?.charAt(2));
-  const overall = (school as any).overall_score ?? Math.round(
-    ((school.academics_score || 0) * 0.4 +
-     (school.climate_score || 0) * 0.3 +
-     (school.progress_score || 0) * 0.3),
-  );
+  // Use the same shared scoring function as the client so visible scores,
+  // metadata, FAQs, and structured data cannot disagree.
+  const overall = calculateOverallScore(school);
 
   const isHS = schoolIsHS(school);
   const gradRate = school.graduation_rate_4yr;
@@ -263,7 +272,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
       (school.enrollment != null ? ` ${school.enrollment.toLocaleString()} students in grades ${school.grade_band ?? "K-5"}.` : "") +
       " View ratings, test scores, parent reviews, and commute times.";
   }
-  const canonical = `${SITE_ORIGIN}/school/${slug}`;
+  const canonical = `${SITE_ORIGIN}/school/${getSchoolSlug(school)}`;
 
   // Fetch related schools in the same district for internal linking. The
   // storage layer doesn't expose a district filter, so we pull all schools
@@ -277,11 +286,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
       .filter((s) => s.district === school.district && s.dbn !== school.dbn)
       .map((s) => ({
         s,
-        score: Math.round(
-          ((s.academics_score || 0) * 0.4 +
-            (s.climate_score || 0) * 0.3 +
-            (s.progress_score || 0) * 0.3),
-        ),
+        score: calculateOverallScore(s),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
@@ -549,7 +554,7 @@ async function renderPrivateSchool(slug: string, baseHtml: string): Promise<stri
     ((school as any).gradeRange ? ` serving grades ${(school as any).gradeRange}` : "") +
     ((school as any).enrollment != null ? ` with ${(school as any).enrollment} students` : "") +
     `. View tuition, religious affiliation, programs, and admissions information.`;
-  const canonical = `${SITE_ORIGIN}/private-school/${slug}`;
+  const canonical = `${SITE_ORIGIN}/private-school/${getPrivateSchoolSlug(school)}`;
 
   const schoolSchema = {
     "@context": "https://schema.org",
@@ -603,7 +608,7 @@ async function renderNyceec(slug: string, baseHtml: string): Promise<string | nu
   const description =
     `${center.name} is a NYC Early Childhood Center (NYCEEC) in ${borough}. ` +
     `View 3-K and Pre-K programs, neighborhood safety, and parent reviews.`;
-  const canonical = `${SITE_ORIGIN}/early-childhood/${slug}`;
+  const canonical = `${SITE_ORIGIN}/early-childhood/${getNyceecSlug(center)}`;
 
   const childcareSchema = {
     "@context": "https://schema.org",
@@ -738,10 +743,7 @@ async function renderCompare(slug: string, baseHtml: string): Promise<string | n
         <ul>
           ${schools
             .map((s) => {
-              const sSlug = `${s.dbn.toLowerCase()}-${(s.name || "")
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-|-$/g, "")}`;
+              const sSlug = getSchoolSlug(s);
               return `<li><a href="${SITE_ORIGIN}/school/${sSlug}">${escapeHtml(s.name)} (${escapeHtml(s.dbn)})</a> — District ${s.district}</li>`;
             })
             .join("")}
@@ -755,6 +757,162 @@ async function renderCompare(slug: string, baseHtml: string): Promise<string | n
     jsonLd: breadcrumb,
     noscriptHtml,
   });
+}
+
+
+interface StaticRouteMeta {
+  title: string;
+  description: string;
+  heading: string;
+  jsonLd?: object | object[];
+}
+
+const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
+  "/": {
+    title: "NYC School Ratings & Rankings | Compare 2,100+ Schools",
+    description: "Build a shortlist from 2,100+ NYC public, charter, private, and early-childhood schools using ratings, admissions context, programs, demographics, and parent reviews.",
+    heading: "Find the right NYC school for your child",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "NYC School Ratings",
+        url: SITE_ORIGIN,
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "NYC School Ratings",
+        url: SITE_ORIGIN,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${SITE_ORIGIN}/?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  },
+  "/map": {
+    title: "NYC School District Map & School Finder | NYC School Ratings",
+    description: "Explore NYC public and charter schools by address, borough, district, grade, programs, and school type on an interactive map.",
+    heading: "NYC School District Map and School Finder",
+  },
+  "/private-schools": {
+    title: "NYC Private Schools 2026: Tuition, Grades & Admissions",
+    description: "Compare NYC private schools by borough, tuition, grade range, enrollment, religious affiliation, and student-teacher ratio.",
+    heading: "NYC Private Schools",
+  },
+  "/early-childhood": {
+    title: "NYC 3-K & Pre-K Programs: Early Childhood Directory",
+    description: "Find NYC 3-K and Pre-K programs at early childhood centers, district schools, Pre-K centers, and participating community organizations.",
+    heading: "NYC 3-K and Pre-K Programs",
+  },
+  "/compare": {
+    title: "Compare NYC Schools Side by Side | NYC School Ratings",
+    description: "Compare NYC schools side by side across ratings, outcomes, climate, programs, demographics, admissions context, and commute fit.",
+    heading: "Compare NYC Schools",
+  },
+  "/recommendations": {
+    title: "Personalized NYC School Finder | Build Your Shortlist",
+    description: "Build a personalized NYC school shortlist using grade, location, programs, family priorities, school data, and admissions context.",
+    heading: "Find Your NYC School Match",
+  },
+  "/lottery-simulator": {
+    title: "NYC 3-K & Pre-K Lottery Estimate | NYC School Ratings",
+    description: "Explore estimated NYC 3-K and Pre-K outcomes using eligible programs, priority groups, rankings, and clearly stated assumptions.",
+    heading: "NYC 3-K and Pre-K Lottery Estimate",
+  },
+  "/chances-calculator": {
+    title: "NYC School Admissions Chances Estimate | NYC School Ratings",
+    description: "Review a transparent estimate of NYC school admissions chances using priority, demand assumptions, and program context.",
+    heading: "NYC School Admissions Chances Estimate",
+  },
+  "/pricing": {
+    title: "Enrollment Season Pass Pricing | NYC School Ratings",
+    description: "Get six months of NYC school comparison, recommendations, commute planning, and application tracking with one payment and no renewal.",
+    heading: "Enrollment Season Pass",
+  },
+  "/blog": {
+    title: "NYC School Guides, Rankings & Admissions Resources",
+    description: "Read NYC school rankings, admissions explainers, district guides, application tips, and data-backed resources for families.",
+    heading: "NYC School Guides and Admissions Resources",
+  },
+  "/features": {
+    title: "NYC School Finder Features | Compare, Shortlist & Track",
+    description: "Explore school comparison, personalized recommendations, commute planning, admissions context, favorites, and application tracking.",
+    heading: "NYC School Finder Features",
+  },
+  "/benefits": {
+    title: "Plan Your NYC School Search with Trusted Data",
+    description: "Turn NYC school data into a transparent shortlist, side-by-side comparison, commute plan, and application checklist.",
+    heading: "Plan Your NYC School Search",
+  },
+};
+
+function renderStaticRoute(path: string, baseHtml: string): string | null {
+  const meta = STATIC_ROUTE_META[path];
+  if (!meta) return null;
+  const canonical = `${SITE_ORIGIN}${path === "/" ? "/" : path}`;
+  const breadcrumb = path === "/" ? undefined : {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_ORIGIN}/` },
+      { "@type": "ListItem", position: 2, name: meta.heading, item: canonical },
+    ],
+  };
+
+  const jsonLd = meta.jsonLd
+    ? (breadcrumb ? [...(Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]), breadcrumb] : meta.jsonLd)
+    : breadcrumb;
+
+  return applyMeta(baseHtml, {
+    title: meta.title,
+    description: meta.description,
+    canonical,
+    jsonLd,
+    noscriptHtml: `
+      <main>
+        <h1>${escapeHtml(meta.heading)}</h1>
+        <p>${escapeHtml(meta.description)}</p>
+      </main>`,
+  });
+}
+
+/**
+ * Return the normalized canonical path for entity routes when the requested
+ * URL is an alternate identifier. The production server uses this to issue
+ * a permanent redirect before rendering.
+ */
+export async function getCanonicalRedirectPath(rawUrl: string): Promise<string | null> {
+  const path = rawUrl.split("?")[0].split("#")[0];
+  let match: RegExpMatchArray | null;
+
+  if ((match = path.match(/^\/school\/([^/]+)$/))) {
+    const dbn = match[1].split("-")[0]?.toUpperCase();
+    const school = dbn ? await storage.getSchool(dbn) : null;
+    if (!school) return null;
+    const canonical = `/school/${getSchoolSlug(school)}`;
+    return canonical === path ? null : canonical;
+  }
+
+  if ((match = path.match(/^\/private-school\/([^/]+)$/))) {
+    const ncesId = extractNcesIdFromSlug(match[1]);
+    const school = await storage.getPrivateSchool(ncesId);
+    if (!school) return null;
+    const canonical = `/private-school/${getPrivateSchoolSlug(school)}`;
+    return canonical === path ? null : canonical;
+  }
+
+  if ((match = path.match(/^\/early-childhood\/([^/]+)$/))) {
+    const locCode = match[1].split("-")[0]?.toUpperCase();
+    const center = locCode ? await storage.getNyceecCenter(locCode) : null;
+    if (!center) return null;
+    const canonical = `/early-childhood/${getNyceecSlug(center)}`;
+    return canonical === path ? null : canonical;
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -784,9 +942,11 @@ export async function renderSeoHtml(
   if (cached) return cached;
 
   try {
-    let result: string | null = null;
+    let result: string | null = renderStaticRoute(path, baseHtml);
     let m: RegExpMatchArray | null;
-    if ((m = path.match(/^\/school\/([^/]+)$/))) {
+    if (result) {
+      // Static landing page metadata is complete.
+    } else if ((m = path.match(/^\/school\/([^/]+)$/))) {
       result = await renderSchool(m[1], baseHtml);
     } else if ((m = path.match(/^\/private-school\/([^/]+)$/))) {
       result = await renderPrivateSchool(m[1], baseHtml);

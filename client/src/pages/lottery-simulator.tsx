@@ -75,11 +75,11 @@ const PRIORITY_LABELS: Record<PriorityType, string> = {
   citywide: "Citywide",
 };
 
-// Priority tiers determine order within each school's applicant pool
-// Higher tier = processed first (guaranteed seat if available)
+// Priority tiers estimate ordering within a school's applicant pool.
+// A priority improves position but never guarantees an offer.
 const PRIORITY_TIERS: Record<PriorityType, number> = {
-  sibling: 1,    // Processed first - nearly guaranteed if seats exist
-  zoned: 2,      // Processed second - high priority for zoned schools
+  sibling: 1,
+  zoned: 2,
   district: 3,   // In-district applicants processed next
   borough: 4,    // In-borough processed after district
   citywide: 5,   // Citywide applicants processed last
@@ -174,28 +174,13 @@ function runMonteCarloSimulation(
       const profile = demandProfiles[i];
       lastSchoolIndex = i;
       
-      // Sibling priority is nearly guaranteed (99% - rare edge cases only)
-      if (rankedSchools[i].priority === "sibling") {
-        if (Math.random() < 0.99) {
-          results[i].matchedInSimulations++;
-          matched = true;
-          totalMatched++;
-          break;
-        }
-        continue;
-      }
-      
-      // Zoned priority is GUARANTEED - NYC zoned schools must accept all zoned students
-      if (rankedSchools[i].priority === "zoned") {
-        results[i].matchedInSimulations++;
-        matched = true;
-        totalMatched++;
-        break;
-      }
-      
+      // Estimate a within-tier draw after higher-priority applicants.
+      // The cap reflects model uncertainty and prevents false certainty.
       // For other priorities: lottery within tier
       // Acceptance probability = seats available / applicants in tier
-      const acceptanceProb = Math.min(0.95, profile.estimatedSeats / profile.estimatedApplicants);
+      const acceptanceProb = profile.estimatedSeats <= 0
+        ? 0
+        : Math.min(0.9, profile.estimatedSeats / profile.estimatedApplicants);
       const lotteryNumber = Math.random();
       
       if (lotteryNumber < acceptanceProb) {
@@ -326,10 +311,7 @@ export default function LotterySimulatorPage() {
   // Filter schools to only show 3-K and Pre-K eligible (elementary schools)
   const eligibleSchools = useMemo(() => {
     if (!allSchools) return [];
-    return allSchools.filter(school => 
-      (school.has_3k || school.has_prek) ||
-      (school.grade_band === "ES" || school.grade_band?.includes("K"))
-    );
+    return allSchools.filter((school) => school.has_3k === true || school.has_prek === true);
   }, [allSchools]);
 
   // Apply search and district filter
@@ -418,8 +400,8 @@ export default function LotterySimulatorPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
-        title="NYC School Lottery Simulator"
-        description="Simulate your NYC 3-K and Pre-K school lottery outcomes. Rank schools, set your priority status, and see estimated acceptance probabilities."
+        title="NYC 3-K & Pre-K Lottery Estimate"
+        description="Explore estimated NYC 3-K and Pre-K outcomes using eligible programs, priority groups, rankings, and clearly stated assumptions."
         keywords="NYC school lottery, 3-K lottery simulator, Pre-K lottery, school lottery odds, NYC DOE lottery"
         canonicalPath="/lottery-simulator"
       />
@@ -429,7 +411,7 @@ export default function LotterySimulatorPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shuffle className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold" data-testid="text-page-title">NYC School Lottery Simulator</h1>
+            <h1 className="text-3xl font-bold" data-testid="text-page-title">NYC 3-K &amp; Pre-K Lottery Estimate</h1>
           </div>
           <p className="text-muted-foreground">
             Simulate your 3-K/Pre-K lottery outcomes based on your school rankings and priority status
@@ -441,10 +423,8 @@ export default function LotterySimulatorPage() {
           <HelpCircle className="h-4 w-4" />
           <AlertTitle>How This Works</AlertTitle>
           <AlertDescription>
-            This simulator estimates your lottery odds based on school popularity, your priority status, and ranking order. 
-            Actual lottery results depend on thousands of other applicants and their preferences. 
-            <strong> Always rank schools by your true preference</strong> — the NYC lottery algorithm is designed so that 
-            ranking strategically doesn't improve your odds.
+            This planning estimate uses school ratings as a demand proxy, published program flags, your selected priority, and assumed seat counts. It is not an NYCPS prediction and does not use the actual applicant pool or lottery number.
+            <strong> Verify eligibility and priorities in MySchools, and rank programs in your true preference order.</strong>
           </AlertDescription>
         </Alert>
 
@@ -456,7 +436,7 @@ export default function LotterySimulatorPage() {
                 <p className="text-sm font-medium text-foreground">Your Zoned School Detected</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Based on your saved address, you have priority at: {zonedSchoolInfo.map(z => z.name).join(", ")}. 
-                  Zoned schools are automatically set to "Zoned" priority when added, giving you near-guaranteed admission.
+                  Eligible programs are automatically set to "Zoned" priority when added. Priority improves ordering but does not guarantee an offer; verify the program's rules in MySchools.
                 </p>
               </div>
             </div>
@@ -751,11 +731,11 @@ export default function LotterySimulatorPage() {
               <CardContent className="text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sibling</span>
-                  <span className="text-emerald-600 font-medium">~99% guaranteed</span>
+                  <span className="text-emerald-600 font-medium">Highest estimated priority</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Zoned</span>
-                  <span className="text-emerald-600 font-medium">100% guaranteed</span>
+                  <span className="text-emerald-600 font-medium">Strong estimated priority</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">In-District</span>
