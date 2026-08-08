@@ -144,7 +144,7 @@ The app uses a Freemium model powered by Stripe.
   smart recommendations questionnaire, see the Neighborhood Safety score at
   the default radius, view one premium school detail page in full
   ("One Free School View").
-- **Premium ($4.99/month):** AI chat assistant, side-by-side & district
+- **Enrollment Season Pass ($29 one-time / 6 months):** AI chat assistant, side-by-side & district
   comparison, application tracker, full safety drill-down (radius selector,
   trend, percentile, top categories), commute time calculator, and the
   **Developer API** (see below).
@@ -172,7 +172,7 @@ documentation and live curl examples live at
 
 All requests require a Bearer token issued from your account:
 
-1. Subscribe to Premium ($4.99/month).
+1. Purchase the Enrollment Season Pass ($29 for six months; no automatic renewal).
 2. Go to **Settings → API Access** (`/settings#api-access`).
 3. Click **Generate API Key**. The plaintext key is shown exactly once —
    copy it immediately. Only a SHA-256 hash is stored server-side.

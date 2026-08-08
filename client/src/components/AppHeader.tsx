@@ -52,7 +52,7 @@ export function AppHeader() {
             {subscriptionFetched && isPremiumUser && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium" data-testid="badge-premium">
                 <Star className="w-3 h-3" />
-                <span>Premium</span>
+                <span>Full Access</span>
               </div>
             )}
           </div>

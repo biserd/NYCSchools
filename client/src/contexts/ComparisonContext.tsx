@@ -54,7 +54,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     if (comparedSchools.length >= maxCompare) {
       const message = isPremium 
         ? `Cannot add more than ${PREMIUM_MAX_COMPARE} schools to comparison`
-        : `Free accounts can compare up to ${FREE_MAX_COMPARE} schools. Upgrade to Premium to compare up to ${PREMIUM_MAX_COMPARE} schools.`;
+        : `Free accounts can compare up to ${FREE_MAX_COMPARE} schools. The Enrollment Season Pass increases the limit to ${PREMIUM_MAX_COMPARE}.`;
       return { success: false, error: message };
     }
     if (comparedSchools.find(s => s.dbn === school.dbn)) {

@@ -86,17 +86,11 @@ export function useCheckout() {
   const seasonPassProduct = allSeasonPassProducts[allSeasonPassProducts.length - 1];
   const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
 
-  // Fallback to premium monthly if Season Pass not found
-  const premiumProduct = products?.data?.find(p => 
-    p.name?.toLowerCase().includes("premium") || 
-    p.name?.toLowerCase().includes("pro") || 
-    p.metadata?.plan === "premium"
-  );
-  const monthlyPrice = premiumProduct?.prices?.find(p => p.recurring?.interval === "month" && p.active);
-
-  // Prefer Season Pass, fallback to monthly
-  const currentPrice = seasonPassPrice || monthlyPrice;
-  const isSeasonPass = !!seasonPassPrice;
+  // New checkout is intentionally one non-renewing offer. Legacy monthly
+  // subscribers retain access, but a missing Season Pass must not silently
+  // turn a one-time CTA into a recurring subscription.
+  const currentPrice = seasonPassPrice;
+  const isSeasonPass = true;
 
   // Check for premium access - includes recurring subscriptions and Season Pass
   const isPremium = subscription?.status === "active" && 
@@ -118,15 +112,14 @@ export function useCheckout() {
       return;
     }
 
-    // Season Pass uses 'payment' mode, monthly uses 'subscription' mode
-    const mode = isSeasonPass ? 'payment' : 'subscription';
+    const mode = 'payment' as const;
 
     // If authenticated, check premium status and use authenticated checkout
     if (user) {
       if (isPremium) {
         toast({
-          title: "Already Premium",
-          description: "You already have an active Premium subscription.",
+          title: "Access already active",
+          description: "You already have full NYC School Ratings access.",
         });
         return;
       }
