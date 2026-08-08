@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, type HsAdmissionsProgram, REGENTS_EXAMS } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, type HsAdmissionsProgram, REGENTS_EXAMS, getSchoolSlug } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -277,8 +277,33 @@ export default function SchoolDetail() {
   };
 
   const boroughText = borough ? ` in ${borough}` : '';
-  const schoolDescription = `${schoolWithScore.name}${boroughText}, District ${schoolWithScore.district}. Overall Score: ${schoolWithScore.overall_score}. ELA: ${schoolWithScore.ela_proficiency}%, Math: ${schoolWithScore.math_proficiency}%. View detailed metrics, NYC School Survey results, parent reviews, and commute times.`;
-  const schoolSlug = slug || '';
+  const schoolDescriptionParts = [
+    `${schoolWithScore.name}${boroughText}, District ${schoolWithScore.district}.`,
+  ];
+  if (schoolWithScore.overall_score >= 0) {
+    schoolDescriptionParts.push(`NYC School Ratings score: ${schoolWithScore.overall_score}/100.`);
+  }
+  if (isHS) {
+    if (schoolWithScore.graduation_rate_4yr != null) {
+      schoolDescriptionParts.push(`${schoolWithScore.graduation_rate_4yr}% four-year graduation rate.`);
+    }
+    if (schoolWithScore.college_readiness_rate != null) {
+      schoolDescriptionParts.push(`${schoolWithScore.college_readiness_rate}% college and career ready.`);
+    }
+  } else {
+    if (schoolWithScore.ela_proficiency != null) {
+      schoolDescriptionParts.push(`ELA proficiency: ${schoolWithScore.ela_proficiency}%.`);
+    }
+    if (schoolWithScore.math_proficiency != null) {
+      schoolDescriptionParts.push(`Math proficiency: ${schoolWithScore.math_proficiency}%.`);
+    }
+  }
+  if (schoolWithScore.enrollment != null) {
+    schoolDescriptionParts.push(`${schoolWithScore.enrollment.toLocaleString()} students.`);
+  }
+  schoolDescriptionParts.push('View outcomes, programs, school climate, admissions context, parent reviews, and commute times.');
+  const schoolDescription = schoolDescriptionParts.join(' ');
+  const schoolSlug = getSchoolSlug(schoolWithScore);
 
   const educationalOrgSchema = {
     "@context": "https://schema.org",
