@@ -24,6 +24,7 @@ import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/s
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
 import { flushApiLogsNow } from "./apiObservability";
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
+import { SCHOOL_GUIDES } from "@shared/school-guides";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -845,6 +846,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Homepage only needs the total, not the full early-childhood directory.
+  app.get("/api/nyceec-centers-stats", async (_req: Request, res: Response) => {
+    try {
+      const cacheKey = "nyceec-centers-stats";
+      const cachedData = getCached<{ totalCenters: number }>(cacheKey);
+      if (cachedData) return res.json(cachedData);
+      const centers = await storage.getNyceecCenters();
+      const result = { totalCenters: centers.length };
+      setCache(cacheKey, result, CACHE_TTL_LONG);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error fetching NYCEEC center count:", error);
+      return res.status(500).json({ error: "Failed to fetch early childhood center count" });
+    }
+  });
+
   // Individual NYCEEC center with 10-minute cache (normalize locCode to uppercase for consistent cache keys)
   app.get("/api/nyceec-centers/:locCode", async (req: Request, res: Response) => {
     try {
@@ -1277,6 +1294,27 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
   });
 
   // All school trends API (public) with caching
+  app.get("/api/schools-trends-summary", async (_req: Request, res: Response) => {
+    try {
+      const cacheKey = "school-trends-summary";
+      const cachedData = getCached<Record<string, { direction: string; changePercent: number; yearsAnalyzed: number }>>(cacheKey);
+      if (cachedData) return res.json(cachedData);
+      const trendsMap = await storage.getAllSchoolTrends();
+      const summary = Object.fromEntries(
+        Array.from(trendsMap.entries()).map(([dbn, trend]) => [dbn, {
+          direction: trend.direction,
+          changePercent: trend.changePercent,
+          yearsAnalyzed: trend.yearsAnalyzed,
+        }]),
+      );
+      setCache(cacheKey, summary);
+      return res.json(summary);
+    } catch (error) {
+      console.error("Error fetching school trend summary:", error);
+      return res.status(500).json({ error: "Failed to fetch school trend summary" });
+    }
+  });
+
   app.get("/api/schools-trends", async (req: Request, res: Response) => {
     try {
       const cacheKey = "all-school-trends";
@@ -3294,6 +3332,11 @@ When answering:
         { url: '/developers/docs', changefreq: 'monthly', priority: '0.6' },
         { url: '/privacy', changefreq: 'monthly', priority: '0.3' },
         { url: '/terms', changefreq: 'monthly', priority: '0.3' },
+        ...SCHOOL_GUIDES.map((guide) => ({
+          url: `/nyc-schools/${guide.slug}`,
+          changefreq: 'monthly',
+          priority: '0.8',
+        })),
       ];
       
       // Blog posts — single source of truth in shared/blog-data.ts so the

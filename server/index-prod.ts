@@ -18,7 +18,7 @@ const KNOWN_STATIC_ROUTES = new Set([
   "/auth/magic-link/callback",
 ]);
 
-const ENTITY_ROUTE = /^\/(?:school|private-school|early-childhood|blog|compare)\/[^/]+$/;
+const ENTITY_ROUTE = /^\/(?:school|private-school|early-childhood|blog|compare|nyc-schools)\/[^/]+$/;
 const MAGIC_LINK_ROUTE = /^\/auth\/magic-link\/[^/]+$/;
 
 function normalizePath(rawUrl: string): string {
@@ -54,6 +54,14 @@ function renderNotFoundHtml(template: string): string {
   }
 
   return html;
+}
+
+function renderPrivateRouteHtml(template: string): string {
+  const robotsTag = '<meta name="robots" content="noindex, nofollow" />';
+  if (/<meta\s+name="robots"[^>]*>/i.test(template)) {
+    return template.replace(/<meta\s+name="robots"[^>]*>/i, robotsTag);
+  }
+  return template.replace(/<\/head>/i, `    ${robotsTag}\n  </head>`);
 }
 
 export async function serveStatic(app: Express, _server: Server) {
@@ -123,13 +131,17 @@ export async function serveStatic(app: Express, _server: Server) {
           .end(renderNotFoundHtml(indexHtmlTemplate));
       }
 
+      const responseHtml = enriched ?? (MAGIC_LINK_ROUTE.test(pathname)
+        ? renderPrivateRouteHtml(indexHtmlTemplate)
+        : indexHtmlTemplate);
+
       return res
         .status(200)
         .set({
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=0, must-revalidate",
         })
-        .end(enriched ?? indexHtmlTemplate);
+        .end(responseHtml);
     } catch (err) {
       console.error("[INDEX_HTML]", err);
       return res

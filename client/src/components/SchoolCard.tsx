@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type SchoolTrend, type TrendDirection } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface SchoolCardProps {
   school: School;
-  trend?: SchoolTrend;
+  trend?: { direction: TrendDirection; changePercent: number; yearsAnalyzed: number };
 }
 
 function getTrendBadgeConfig(direction: TrendDirection) {
@@ -408,7 +408,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-4 w-4 p-0"
+                    className="h-11 w-11 -m-3 p-0"
                     data-testid={`button-tooltip-overall-${school.dbn}`}
                     onClick={(e) => e.stopPropagation()}
                     aria-label="Overall score information"
@@ -443,7 +443,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 p-0 shrink-0"
+                      className="h-11 w-11 -m-3 p-0 shrink-0"
                       data-testid={`button-tooltip-gradrate-${school.dbn}`}
                       onClick={(e) => e.stopPropagation()}
                       aria-label="Graduation rate information"
@@ -491,7 +491,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 p-0 shrink-0"
+                      className="h-11 w-11 -m-3 p-0 shrink-0"
                       data-testid={`button-tooltip-sat-${school.dbn}`}
                       onClick={(e) => e.stopPropagation()}
                       aria-label="College readiness or SAT information"
@@ -525,7 +525,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 p-0 shrink-0"
+                      className="h-11 w-11 -m-3 p-0 shrink-0"
                       data-testid={`button-tooltip-ela-${school.dbn}`}
                       onClick={(e) => e.stopPropagation()}
                       aria-label="ELA proficiency information"
@@ -551,7 +551,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 p-0 shrink-0"
+                      className="h-11 w-11 -m-3 p-0 shrink-0"
                       data-testid={`button-tooltip-math-${school.dbn}`}
                       onClick={(e) => e.stopPropagation()}
                       aria-label="Math proficiency information"

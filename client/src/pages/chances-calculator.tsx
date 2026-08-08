@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
@@ -33,7 +32,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 type PriorityType = "sibling" | "zoned" | "district" | "general";
 
 interface ChanceResult {
-  probability: number;
   tier: "high" | "medium" | "low" | "very_low";
   tierLabel: string;
   explanation: string;
@@ -63,147 +61,61 @@ const PRIORITY_LABELS: Record<PriorityType, { label: string; icon: typeof Home; 
   },
 };
 
-function calculateChances(school: School, priority: PriorityType): ChanceResult {
-  const overallScore = calculateOverallScore(school);
-  
-  // Base probability based on priority
-  let baseProbability: number;
-  switch (priority) {
-    case "sibling":
-      baseProbability = 95; // Nearly guaranteed
-      break;
-    case "zoned":
-      baseProbability = 85; // Very high for zoned schools
-      break;
-    case "district":
-      baseProbability = 45; // Moderate
-      break;
-    case "general":
-      baseProbability = 15; // Lower for out-of-district
-      break;
-  }
-  
-  // Adjust based on school popularity (higher scores = more competitive)
-  let popularityModifier = 0;
-  if (overallScore >= 90) popularityModifier = -20;
-  else if (overallScore >= 80) popularityModifier = -15;
-  else if (overallScore >= 70) popularityModifier = -10;
-  else if (overallScore >= 60) popularityModifier = -5;
-  else popularityModifier = 5;
-  
-  // Special programs increase competition
-  let programModifier = 0;
-  if (school.has_gifted_talented) programModifier -= 15;
-  if (school.has_dual_language) programModifier -= 10;
-  
-  // Enrollment size affects odds (larger schools have more seats)
-  let sizeModifier = 0;
-  if (school.enrollment && school.enrollment > 800) sizeModifier = 10;
-  else if (school.enrollment && school.enrollment > 500) sizeModifier = 5;
-  else if (school.enrollment && school.enrollment < 300) sizeModifier = -5;
-  
-  // Calculate final probability
-  let probability = baseProbability + popularityModifier + programModifier + sizeModifier;
-  probability = Math.max(5, Math.min(98, probability)); // Clamp between 5-98%
-  
-  // Determine tier
-  let tier: ChanceResult["tier"];
-  let tierLabel: string;
-  if (probability >= 75) {
-    tier = "high";
-    tierLabel = "High Chance";
-  } else if (probability >= 50) {
-    tier = "medium";
-    tierLabel = "Moderate Chance";
-  } else if (probability >= 25) {
-    tier = "low";
-    tierLabel = "Competitive";
-  } else {
-    tier = "very_low";
-    tierLabel = "Very Competitive";
-  }
-  
-  // Build explanation
-  let explanation = "";
-  switch (priority) {
-    case "sibling":
-      explanation = "Sibling priority gives you the highest placement in the lottery. You're very likely to secure a spot.";
-      break;
-    case "zoned":
-      explanation = probability >= 75 
-        ? "As a zoned family, you have strong priority for this school."
-        : "While you have zone priority, this school is in high demand which may affect your chances.";
-      break;
-    case "district":
-      explanation = "In-district applicants are considered after zoned families. Your chances depend on remaining seats.";
-      break;
-    case "general":
-      explanation = "General applicants are considered after zone and district families. Focus on schools where you have higher priority.";
-      break;
-  }
-  
-  // Build factors list
+function assessPriorityContext(school: School, priority: PriorityType): ChanceResult {
+  const priorityContext: Record<PriorityType, Pick<ChanceResult, "tier" | "tierLabel" | "explanation">> = {
+    sibling: {
+      tier: "high",
+      tierLabel: "Sibling priority reported",
+      explanation: "You indicated that a sibling is currently enrolled. Sibling priority can matter for some programs, but its order and eligibility must be confirmed in the program's current MySchools rules.",
+    },
+    zoned: {
+      tier: "medium",
+      tierLabel: "Zoned priority reported",
+      explanation: "You indicated that this is your zoned school. Zone priority can be important, but it does not guarantee an offer and may not apply to every program at the school.",
+    },
+    district: {
+      tier: "low",
+      tierLabel: "In-district status reported",
+      explanation: "You indicated that you live in the school's district. Some programs use district priority and others do not, so verify the exact priority order for each program in MySchools.",
+    },
+    general: {
+      tier: "very_low",
+      tierLabel: "No local priority reported",
+      explanation: "You did not report sibling, zone, or district priority. You may still be eligible, but the tool cannot determine your position without program-specific rules and the actual applicant pool.",
+    },
+  };
+
   const factors: ChanceResult["factors"] = [];
-  
-  // Priority factor
   factors.push({
     label: PRIORITY_LABELS[priority].label,
-    impact: priority === "sibling" || priority === "zoned" ? "positive" : priority === "district" ? "neutral" : "negative",
-    description: priority === "sibling" 
-      ? "Highest priority tier - processed first"
-      : priority === "zoned"
-      ? "Second priority tier - strong advantage"
-      : priority === "district"
-      ? "Third priority tier - moderate advantage"
-      : "Lowest priority tier - processed last"
+    impact: priority === "sibling" || priority === "zoned" ? "positive" : "neutral",
+    description: "Self-reported planning context. Confirm eligibility and priority order for the specific program in MySchools.",
   });
-  
-  // School rating factor
-  if (overallScore >= 80) {
-    factors.push({
-      label: "High-Rated School",
-      impact: "negative",
-      description: `This school has a ${overallScore} rating, attracting more applicants`
-    });
-  } else if (overallScore < 60) {
-    factors.push({
-      label: "Lower Competition",
-      impact: "positive",
-      description: "This school may have fewer applicants competing for seats"
-    });
-  }
-  
-  // Special programs
+
   if (school.has_gifted_talented) {
     factors.push({
       label: "Gifted & Talented Program",
-      impact: "negative",
-      description: "G&T programs attract citywide applicants, increasing competition"
+      impact: "neutral",
+      description: "This school reports a G&T program. Program eligibility and priorities may differ from the school's other programs.",
     });
   }
-  
   if (school.has_dual_language) {
     factors.push({
       label: "Dual Language Program",
-      impact: "negative",
-      description: "Dual language programs are in high demand"
+      impact: "neutral",
+      description: "This school reports a dual-language program. Confirm language, grade, eligibility, and priority details before applying.",
     });
   }
-  
-  // School size
-  if (school.enrollment && school.enrollment > 700) {
+  if (school.enrollment) {
     factors.push({
-      label: "Large School",
-      impact: "positive",
-      description: "More seats available per grade level"
+      label: "School enrollment",
+      impact: "neutral",
+      description: `${school.enrollment.toLocaleString()} students are reported enrolled. Total enrollment is not the number of seats available for your grade or program.`,
     });
   }
-  
+
   return {
-    probability,
-    tier,
-    tierLabel,
-    explanation,
+    ...priorityContext[priority],
     factors,
   };
 }
@@ -218,19 +130,6 @@ function getTierColor(tier: ChanceResult["tier"]) {
       return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700";
     case "very_low":
       return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700";
-  }
-}
-
-function getProgressColor(tier: ChanceResult["tier"]) {
-  switch (tier) {
-    case "high":
-      return "[&>div]:bg-emerald-500";
-    case "medium":
-      return "[&>div]:bg-yellow-500";
-    case "low":
-      return "[&>div]:bg-orange-500";
-    case "very_low":
-      return "[&>div]:bg-red-500";
   }
 }
 
@@ -275,7 +174,7 @@ export default function ChancesCalculatorPage() {
   // Calculate chances
   const chanceResult = useMemo(() => {
     if (!selectedSchool || !priority) return null;
-    return calculateChances(selectedSchool, priority);
+    return assessPriorityContext(selectedSchool, priority);
   }, [selectedSchool, priority]);
 
   const handleCalculate = () => {
@@ -296,8 +195,8 @@ export default function ChancesCalculatorPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SEOHead
-          title="Chances Calculator - NYC School Ratings"
-          description="Calculate your chances of getting into your target NYC school based on priority groups."
+          title="NYC School Admissions Priority Planner | NYC School Ratings"
+          description="Review your stated NYC school admissions priority context without fabricated acceptance percentages or guarantees."
           canonicalPath="/chances-calculator"
         />
         <AppHeader />
@@ -309,14 +208,14 @@ export default function ChancesCalculatorPage() {
               </div>
               <h1 className="text-2xl font-bold mb-2">Premium Feature</h1>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                The Chances Calculator helps you understand your odds of admission to any NYC school based on priority groups.
+                The Admissions Priority Planner helps you review the priority context you report without inventing an admission percentage.
               </p>
               <div className="bg-muted/50 rounded-lg p-4 mb-6 max-w-md mx-auto text-left">
                 <h3 className="font-medium mb-2">What you'll get:</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    Admission probability estimates
+                    Qualitative priority context
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -324,7 +223,7 @@ export default function ChancesCalculatorPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    School demand factors
+                    Program-specific verification prompts
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -362,8 +261,8 @@ export default function ChancesCalculatorPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Chances Calculator - NYC School Ratings"
-        description="Calculate your chances of getting into your target NYC school based on priority groups like zone, sibling, and district status."
+        title="NYC School Admissions Priority Planner | NYC School Ratings"
+        description="Review your stated NYC school admissions priority context without fabricated acceptance percentages or guarantees."
         canonicalPath="/chances-calculator"
       />
       <AppHeader />
@@ -376,10 +275,10 @@ export default function ChancesCalculatorPage() {
             Premium Tool
           </Badge>
           <h1 className="text-3xl font-bold mb-2" data-testid="heading-chances">
-            Chances Calculator
+            Admissions Priority Planner
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Estimate your admission chances based on your priority status and school demand factors.
+            Understand the priority context you report, what still needs verification, and which unknowns prevent a reliable admission prediction.
           </p>
         </div>
 
@@ -484,7 +383,7 @@ export default function ChancesCalculatorPage() {
                   Select Your Priority Status
                 </CardTitle>
                 <CardDescription>
-                  Your priority determines your place in the admission queue
+                  Priority rules vary by program and admissions cycle
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -530,17 +429,16 @@ export default function ChancesCalculatorPage() {
                 data-testid="button-calculate"
               >
                 <Calculator className="w-4 h-4 mr-2" />
-                Calculate My Chances
+                Review My Priority Context
               </Button>
             </div>
 
             {/* Info Note */}
             <Alert>
               <Info className="w-4 h-4" />
-              <AlertTitle>How This Works</AlertTitle>
+              <AlertTitle>What This Tool Can and Cannot Do</AlertTitle>
               <AlertDescription>
-                This calculator estimates your admission chances based on NYC DOE priority groups, school popularity, 
-                and enrollment data. Actual results may vary based on year-to-year applicant pools.
+                This tool organizes the priority information you provide. It does not have the current applicant pool, seats by program, your lottery number, or verified offer history, so it does not calculate an admission probability.
               </AlertDescription>
             </Alert>
           </div>
@@ -552,45 +450,12 @@ export default function ChancesCalculatorPage() {
                 {/* Main Result Card */}
                 <Card data-testid="card-result">
                   <CardHeader className="text-center pb-2">
-                    <CardDescription>Your estimated chances at</CardDescription>
+                    <CardDescription>Your reported priority context at</CardDescription>
                     <CardTitle className="text-xl">{selectedSchool.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-6">
-                    {/* Probability Circle */}
-                    <div className="relative w-40 h-40 mx-auto">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle
-                          cx="80"
-                          cy="80"
-                          r="70"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="12"
-                          className="text-muted"
-                        />
-                        <circle
-                          cx="80"
-                          cy="80"
-                          r="70"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="12"
-                          strokeDasharray={`${chanceResult.probability * 4.4} 440`}
-                          className={
-                            chanceResult.tier === "high" ? "text-emerald-500" :
-                            chanceResult.tier === "medium" ? "text-yellow-500" :
-                            chanceResult.tier === "low" ? "text-orange-500" :
-                            "text-red-500"
-                          }
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-4xl font-bold" data-testid="text-probability">
-                          {chanceResult.probability}%
-                        </span>
-                        <span className="text-sm text-muted-foreground">chance</span>
-                      </div>
+                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
+                      <Info className="h-12 w-12" />
                     </div>
 
                     {/* Tier Badge */}
@@ -614,7 +479,7 @@ export default function ChancesCalculatorPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="w-5 h-5" />
-                      Factors Affecting Your Chances
+                      Priority and Program Context
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -649,7 +514,7 @@ export default function ChancesCalculatorPage() {
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
                   <Button variant="outline" onClick={handleReset} data-testid="button-reset">
-                    Calculate for Another School
+                    Review Another School
                   </Button>
                   <Link href={`/school/${selectedSchool.dbn}`}>
                     <Button data-testid="button-view-school">
@@ -663,9 +528,7 @@ export default function ChancesCalculatorPage() {
                   <AlertCircle className="w-4 h-4" />
                   <AlertTitle>Important Note</AlertTitle>
                   <AlertDescription>
-                    These estimates are based on historical patterns and school characteristics. 
-                    Actual admission outcomes depend on the specific applicant pool each year. 
-                    Always apply to multiple schools to maximize your options.
+                    No percentage or offer prediction is calculated. Always confirm current eligibility and priorities in MySchools, review each program rather than only the school, and use a balanced application list.
                   </AlertDescription>
                 </Alert>
               </>

@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
-import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend, type NyceecCenter } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
@@ -257,14 +257,14 @@ export default function Home() {
   });
 
   // Fetch all school trends for filtering
-  const { data: trends, isLoading: trendsLoading } = useQuery<Record<string, SchoolTrend>>({
-    queryKey: ['/api/schools-trends'],
+  const { data: trends, isLoading: trendsLoading } = useQuery<Record<string, Pick<SchoolTrend, "direction" | "changePercent" | "yearsAnalyzed">>>({
+    queryKey: ['/api/schools-trends-summary'],
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Fetch NYCEEC centers count
-  const { data: nyceecCenters, isLoading: nyceecLoading } = useQuery<NyceecCenter[]>({
-    queryKey: ['/api/nyceec-centers'],
+  const { data: nyceecStats, isLoading: nyceecLoading } = useQuery<{ totalCenters: number }>({
+    queryKey: ['/api/nyceec-centers-stats'],
     staleTime: 1000 * 60 * 30, // 30 minutes cache
   });
 
@@ -324,10 +324,10 @@ export default function Home() {
       dualLanguage,
       improving,
       charters,
-      nyceecCenters: nyceecCenters?.length || 0,
+      nyceecCenters: nyceecStats?.totalCenters || 0,
       privateSchools: privateSchoolsStats?.totalSchools || 0,
     };
-  }, [schools, trends, nyceecCenters, privateSchoolsStats]);
+  }, [schools, trends, nyceecStats, privateSchoolsStats]);
 
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
@@ -597,7 +597,7 @@ export default function Home() {
     "url": "https://nycschoolsratings.com",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://nycschoolsratings.com/?search={search_term_string}",
+      "target": "https://nycschoolsratings.com/?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };
@@ -613,7 +613,7 @@ export default function Home() {
       <StructuredData data={organizationSchema} />
       <StructuredData data={websiteSchema} />
       <header className="bg-background border-b" data-testid="header-main">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4 md:py-6">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">NYC School Ratings</p>
@@ -625,59 +625,60 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="hidden md:flex items-center gap-2 [&_button]:min-h-11">
-              <Button variant="outline" size="sm" asChild data-testid="button-recommendations-nav">
+            <div className="hidden md:flex shrink-0 items-center gap-2 [&_button]:min-h-11 [&_button]:min-w-11">
+              <Button variant="outline" size="sm" asChild data-testid="button-recommendations-nav" aria-label="Find My Match">
                 <Link href="/recommendations">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Find My Match
+                  <Sparkles className="w-4 h-4 2xl:mr-2" />
+                  <span className="sr-only 2xl:not-sr-only">Find My Match</span>
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" asChild data-testid="button-map-nav">
+              <Button variant="outline" size="sm" asChild data-testid="button-map-nav" aria-label="Map View">
                 <Link href="/map">
-                  <Map className="w-4 h-4 mr-2" />
-                  Map View
+                  <Map className="w-4 h-4 2xl:mr-2" />
+                  <span className="sr-only 2xl:not-sr-only">Map View</span>
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" asChild data-testid="button-lottery-nav">
+              <Button variant="outline" size="sm" asChild data-testid="button-lottery-nav" aria-label="Lottery">
                 <Link href="/lottery-simulator">
-                  <Shuffle className="w-4 h-4 mr-2" />
-                  Lottery
+                  <Shuffle className="w-4 h-4 2xl:mr-2" />
+                  <span className="sr-only 2xl:not-sr-only">Lottery</span>
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" asChild data-testid="button-chances-nav">
+              <Button variant="outline" size="sm" asChild data-testid="button-chances-nav" aria-label="Admissions Priority Planner">
                 <Link href="/chances-calculator">
-                  <Target className="w-4 h-4 mr-2" />
-                  Chances
+                  <Target className="w-4 h-4 2xl:mr-2" />
+                  <span className="sr-only 2xl:not-sr-only">Admissions Priority Planner</span>
                 </Link>
               </Button>
               {/* Auth-conditional nav buttons.
                   During authLoading we render the authenticated set as invisible
                   so the header never changes height when auth resolves — invisible
                   elements don't contribute to the CLS score. */}
-              {authLoading ? (
-                <span className="invisible flex items-center gap-2" aria-hidden="true">
+              <span className="flex min-w-[196px] 2xl:min-w-[288px] items-center justify-end gap-2">
+                {authLoading ? (
+                  <span className="invisible flex items-center gap-2" aria-hidden="true">
                   <Button variant="outline" size="sm" tabIndex={-1}>
-                    <Settings className="w-4 h-4 mr-2" />Settings
+                    <Settings className="w-4 h-4 2xl:mr-2" /><span className="sr-only 2xl:not-sr-only">Settings</span>
                   </Button>
                   <Button variant="outline" size="sm" tabIndex={-1}>
-                    <Heart className="w-4 h-4 mr-2" />Favorites
+                    <Heart className="w-4 h-4 2xl:mr-2" /><span className="sr-only 2xl:not-sr-only">Favorites</span>
                   </Button>
                   <Button variant="outline" size="sm" tabIndex={-1}>
-                    <LogOut className="w-4 h-4 mr-2" />Logout
+                    <LogOut className="w-4 h-4 2xl:mr-2" /><span className="sr-only 2xl:not-sr-only">Logout</span>
                   </Button>
-                </span>
-              ) : isAuthenticated && user ? (
-                <>
+                  </span>
+                ) : isAuthenticated && user ? (
+                  <>
                   <Button variant="outline" size="sm" asChild data-testid="button-settings-nav">
                     <Link href="/settings">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
+                      <Settings className="w-4 h-4 2xl:mr-2" />
+                      <span className="sr-only 2xl:not-sr-only">Settings</span>
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" asChild data-testid="button-favorites-nav">
                     <Link href="/favorites">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Favorites
+                      <Heart className="w-4 h-4 2xl:mr-2" />
+                      <span className="sr-only 2xl:not-sr-only">Favorites</span>
                     </Link>
                   </Button>
                   <Button
@@ -689,12 +690,12 @@ export default function Home() {
                     }}
                     data-testid="button-logout"
                   >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
+                    <LogOut className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Logout</span>
                   </Button>
-                </>
-              ) : (
-                <>
+                  </>
+                ) : (
+                  <>
                   <Button variant="outline" size="sm" asChild data-testid="button-pricing-nav">
                     <Link href="/pricing">
                       <Zap className="w-4 h-4 mr-2" />
@@ -707,8 +708,9 @@ export default function Home() {
                       Log In
                     </Link>
                   </Button>
-                </>
-              )}
+                  </>
+                )}
+              </span>
               <ThemeToggle />
             </div>
 
@@ -814,13 +816,10 @@ export default function Home() {
         zonedFilter={zonedFilter}
         onZonedFilterChange={handleZonedFilterChange}
         hasZonedSchools={hasZonedSchools}
-        isAuthenticatedUser={isAuthenticated && !authLoading}
       />
 
-      {/* School Database Stats — wrapper reserves height to prevent CLS while
-          schoolCounts is still loading. Mobile wraps to ~3 lines (~140px),
-          desktop fits in a single row (~64px). */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 min-h-[140px] md:min-h-[64px]" data-testid="section-school-stats">
+      {/* Reserve the measured rendered height while counts are loading. */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 min-h-[140px] md:min-h-[100px]" data-testid="section-school-stats">
         {schoolCounts && (
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 text-sm">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full" data-testid="stat-total">
@@ -954,7 +953,7 @@ export default function Home() {
                 aria-selected={selectedSchoolType === opt.value}
                 onClick={() => handleSchoolTypeChange(opt.value)}
                 data-testid={`button-type-${opt.value}`}
-                className={`px-3 py-1 text-xs rounded-sm hover-elevate active-elevate-2 ${
+                className={`min-h-11 min-w-11 px-3 py-2 text-xs rounded-sm hover-elevate active-elevate-2 ${
                   selectedSchoolType === opt.value
                     ? "bg-primary text-primary-foreground font-medium"
                     : "text-muted-foreground"
@@ -968,7 +967,7 @@ export default function Home() {
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="skeleton-schools">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-64" data-testid={`skeleton-card-${i}`} />
+              <Skeleton key={i} className="h-[280px]" data-testid={`skeleton-card-${i}`} />
             ))}
           </div>
         ) : (

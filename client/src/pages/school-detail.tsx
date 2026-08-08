@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Footer } from "@/components/Footer";
 import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SEOHead } from "@/components/SEOHead";
+import { getSchoolSeoMeta } from "@shared/school-seo";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -276,33 +277,7 @@ export default function SchoolDetail() {
     return "Below Average";
   };
 
-  const boroughText = borough ? ` in ${borough}` : '';
-  const schoolDescriptionParts = [
-    `${schoolWithScore.name}${boroughText}, District ${schoolWithScore.district}.`,
-  ];
-  if (schoolWithScore.overall_score >= 0) {
-    schoolDescriptionParts.push(`NYC School Ratings score: ${schoolWithScore.overall_score}/100.`);
-  }
-  if (isHS) {
-    if (schoolWithScore.graduation_rate_4yr != null) {
-      schoolDescriptionParts.push(`${schoolWithScore.graduation_rate_4yr}% four-year graduation rate.`);
-    }
-    if (schoolWithScore.college_readiness_rate != null) {
-      schoolDescriptionParts.push(`${schoolWithScore.college_readiness_rate}% college and career ready.`);
-    }
-  } else {
-    if (schoolWithScore.ela_proficiency != null) {
-      schoolDescriptionParts.push(`ELA proficiency: ${schoolWithScore.ela_proficiency}%.`);
-    }
-    if (schoolWithScore.math_proficiency != null) {
-      schoolDescriptionParts.push(`Math proficiency: ${schoolWithScore.math_proficiency}%.`);
-    }
-  }
-  if (schoolWithScore.enrollment != null) {
-    schoolDescriptionParts.push(`${schoolWithScore.enrollment.toLocaleString()} students.`);
-  }
-  schoolDescriptionParts.push('View outcomes, programs, school climate, admissions context, parent reviews, and commute times.');
-  const schoolDescription = schoolDescriptionParts.join(' ');
+  const { title: schoolTitle, description: schoolDescription } = getSchoolSeoMeta(schoolWithScore);
   const schoolSlug = getSchoolSlug(schoolWithScore);
 
   const educationalOrgSchema = {
@@ -332,10 +307,11 @@ export default function SchoolDetail() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
-        title={schoolWithScore.name}
+        title={schoolTitle}
         description={schoolDescription}
         keywords={`${schoolWithScore.name}, NYC school, District ${schoolWithScore.district}, ${borough} schools, kindergarten, elementary school, school ratings`}
         canonicalPath={`/school/${schoolSlug}`}
+        appendSiteName={false}
       />
       <StructuredData data={educationalOrgSchema} />
       <AppHeader />

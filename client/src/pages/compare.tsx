@@ -624,11 +624,11 @@ export default function ComparePage() {
     ? `${validComparedSchools[0].name} vs ${validComparedSchools[1].name}${validComparedSchools.length > 2 ? ` + ${validComparedSchools.length - 2} more` : ''} | NYC School Comparison`
     : validComparedSchools.length === 1
     ? `${validComparedSchools[0].name} | NYC School Comparison`
-    : "Compare NYC Schools Side-by-Side";
+    : "Compare NYC Schools Side by Side";
     
   const seoDescription = validComparedSchools.length >= 2
     ? `Compare ${validComparedSchools.map(s => s.name).join(' vs ')} side-by-side. View overall scores, test results, and ratings to choose the best school for your child in NYC.`
-    : "Compare NYC schools side-by-side. View test scores, ratings, demographics, historical trends, and key metrics to make informed enrollment decisions.";
+    : "Compare NYC schools side by side across ratings, outcomes, climate, programs, demographics, admissions context, and commute fit.";
     
   const seoKeywords = validComparedSchools.length > 0
     ? `${validComparedSchools.map(s => s.name).join(', ')}, compare NYC schools, school comparison, NYC school ratings`

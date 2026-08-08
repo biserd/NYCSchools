@@ -126,9 +126,10 @@ export default function EarlyChildhood() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Early Childhood Centers"
-        description="Browse 1,800+ NYC early childhood education centers offering Pre-K and 3-K programs. Find community-based NYCEECs, DOE schools, and charter programs near you."
+        title="NYC 3-K & Pre-K Programs: Early Childhood Directory"
+        description="Find NYC 3-K and Pre-K programs at early childhood centers, district schools, Pre-K centers, and participating community organizations."
         canonicalPath="/early-childhood"
+        appendSiteName={false}
       />
 
       <AppHeader />

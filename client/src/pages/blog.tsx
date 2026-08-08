@@ -39,9 +39,10 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Blog - NYC School Ratings"
-        description="Data-driven insights and analysis about NYC public and charter schools. Explore DOE data, district comparisons, and expert guidance for parents."
+        title="NYC School Guides, Rankings & Admissions Resources"
+        description="Read NYC school rankings, admissions explainers, district guides, application tips, and data-backed resources for families."
         canonicalPath="/blog"
+        appendSiteName={false}
       />
       <StructuredData data={blogListSchema} />
 

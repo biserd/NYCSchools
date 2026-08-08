@@ -38,9 +38,9 @@ export function AppHeader() {
 
   return (
     <header className="bg-background border-b" data-testid="header-main">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4">
+        <div className="flex min-h-11 items-center justify-between gap-4 flex-nowrap">
+          <div className="flex shrink-0 items-center gap-3">
             <Link href="/">
               <div className="flex min-h-11 items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
                 <Home className="w-5 h-5 text-primary" />
@@ -57,54 +57,50 @@ export function AppHeader() {
             )}
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap [&_button]:min-h-11 [&_button]:min-w-11">
+          <div className="flex shrink-0 items-center gap-2 flex-nowrap [&_button]:min-h-11 [&_button]:min-w-11">
             {isAuthenticated ? (
               <>
                 <Link href="/recommendations">
-                  <Button variant="outline" size="sm" data-testid="button-recommendations-nav">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Find My Match</span>
-                    <span className="sm:hidden">Match</span>
+                  <Button variant="outline" size="sm" data-testid="button-recommendations-nav" aria-label="Find My Match">
+                    <Sparkles className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Find My Match</span>
                   </Button>
                 </Link>
                 <Link href="/lottery-simulator">
                   <Button variant="outline" size="sm" data-testid="button-lottery-nav">
-                    <Shuffle className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Lottery</span>
-                    <span className="sm:hidden">Lottery</span>
+                    <Shuffle className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Lottery</span>
                   </Button>
                 </Link>
                 <Link href="/chances-calculator">
                   <Button variant="outline" size="sm" data-testid="button-chances-nav">
-                    <Target className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Chances</span>
-                    <span className="sm:hidden">Chances</span>
+                    <Target className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Chances</span>
                   </Button>
                 </Link>
                 <Link href="/map">
                   <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-map-nav">
-                    <Map className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Map</span>
+                    <Map className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Map</span>
                   </Button>
                 </Link>
                 <Link href="/safe-and-strong">
                   <Button variant="outline" size="sm" data-testid="button-safe-and-strong-nav">
-                    <Shield className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Safe &amp; Strong</span>
-                    <span className="sm:hidden">Safe</span>
+                    <Shield className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Safe &amp; Strong</span>
                   </Button>
                 </Link>
                 <Link href="/favorites">
                   <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-favorites-nav">
-                    <Heart className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Favorites</span>
+                    <Heart className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Favorites</span>
                   </Button>
                 </Link>
                 {isPremium && (
                   <Link href="/application-tracker">
                     <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-tracker-nav">
-                      <ClipboardList className="w-4 h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Tracker</span>
+                      <ClipboardList className="w-4 h-4 2xl:mr-2" />
+                      <span className="sr-only 2xl:not-sr-only">Tracker</span>
                     </Button>
                   </Link>
                 )}
@@ -117,15 +113,14 @@ export function AppHeader() {
                       data-testid="button-upgrade-nav"
                     >
                       <Zap className="w-4 h-4 mr-1" />
-                      <span className="hidden sm:inline">Upgrade</span>
-                      <span className="sm:hidden">Pro</span>
+                      <span>Upgrade</span>
                     </Button>
                   </Link>
                 )}
                 <Link href="/settings">
                   <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-settings-nav">
-                    <Settings className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Settings</span>
+                    <Settings className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Settings</span>
                   </Button>
                 </Link>
                 <Button
@@ -138,35 +133,34 @@ export function AppHeader() {
                   }}
                   data-testid="button-logout"
                 >
-                  <LogOut className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <LogOut className="w-4 h-4 2xl:mr-2" />
+                  <span className="sr-only 2xl:not-sr-only">Logout</span>
                 </Button>
               </>
             ) : (
               <>
                 <Link href="/recommendations">
-                  <Button variant="outline" size="sm" data-testid="button-recommendations-nav">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Find My Match</span>
-                    <span className="sm:hidden">Match</span>
+                  <Button variant="outline" size="sm" data-testid="button-recommendations-nav" aria-label="Find My Match">
+                    <Sparkles className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Find My Match</span>
                   </Button>
                 </Link>
                 <Link href="/lottery-simulator">
                   <Button variant="outline" size="sm" data-testid="button-lottery-nav">
-                    <Shuffle className="w-4 h-4 mr-2" />
-                    <span>Lottery</span>
+                    <Shuffle className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Lottery</span>
                   </Button>
                 </Link>
                 <Link href="/chances-calculator">
                   <Button variant="outline" size="sm" data-testid="button-chances-nav">
-                    <Target className="w-4 h-4 mr-2" />
-                    <span>Chances</span>
+                    <Target className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Chances</span>
                   </Button>
                 </Link>
                 <Link href="/safe-and-strong">
                   <Button variant="outline" size="sm" data-testid="button-safe-and-strong-nav">
-                    <Shield className="w-4 h-4 mr-2" />
-                    <span>Safe &amp; Strong</span>
+                    <Shield className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">Safe &amp; Strong</span>
                   </Button>
                 </Link>
                 <Link href="/pricing">

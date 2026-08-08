@@ -49,6 +49,7 @@ const PrivateSchoolDetailPage = lazy(() => import("@/pages/private-school-detail
 const SafetyMethodologyPage = lazy(() => import("@/pages/safety-methodology"));
 const SafeAndStrongPage = lazy(() => import("@/pages/safe-and-strong"));
 const AdminApiUsagePage = lazy(() => import("@/pages/admin-api-usage"));
+const SchoolGuidePage = lazy(() => import("@/pages/school-guide"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -154,6 +155,9 @@ function Router() {
         </Route>
         <Route path="/safe-and-strong">
           <SafeAndStrongPage />
+        </Route>
+        <Route path="/nyc-schools/:slug">
+          <SchoolGuidePage />
         </Route>
         <Route path="/admin/api-usage">
           <AdminApiUsagePage />

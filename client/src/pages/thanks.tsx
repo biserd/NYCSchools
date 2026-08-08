@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Mail, Loader2, ArrowRight, Sparkles, Shield, MessageSquare, GitCompareArrows } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function ThanksPage() {
   const [, navigate] = useLocation();
@@ -68,6 +69,7 @@ export default function ThanksPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead title="Thank You" description="Payment confirmation." canonicalPath="/thanks" noindex />
       <div className="container mx-auto px-4 py-12 max-w-2xl">
         <Card className="border-0 shadow-lg">
           <CardHeader className="text-center pb-2">

@@ -161,16 +161,16 @@ export default function PrivateSchoolDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <AppHeader />
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <main className="container mx-auto flex-1 px-4 py-8 max-w-5xl">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-4 w-48 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Skeleton className="h-48" />
             <Skeleton className="h-48" />
           </div>
-        </div>
+        </main>
         <Footer />
       </div>
     );

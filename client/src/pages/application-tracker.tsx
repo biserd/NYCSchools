@@ -167,6 +167,7 @@ export default function ApplicationTracker() {
         <SEOHead 
           title="Application Tracker | NYC School Ratings"
           description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
+          noindex
         />
         <AppHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
@@ -188,6 +189,7 @@ export default function ApplicationTracker() {
         <SEOHead 
           title="Application Tracker | NYC School Ratings"
           description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
+          noindex
         />
         <AppHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
@@ -220,6 +222,7 @@ export default function ApplicationTracker() {
         <SEOHead 
           title="Application Tracker | NYC School Ratings"
           description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
+          noindex
         />
         <AppHeader />
         <main className="flex-1 container mx-auto px-4 py-8">
@@ -275,6 +278,7 @@ export default function ApplicationTracker() {
       <SEOHead 
         title="Application Tracker | NYC School Ratings"
         description="Track your NYC school applications, deadlines, tours, and open houses with our comprehensive application tracker."
+        noindex
       />
       <AppHeader />
       <main className="flex-1 container mx-auto px-4 py-8">

@@ -17,8 +17,8 @@ const LOAD_MORE_INCREMENT = 20;
 export function SchoolList({ schools }: SchoolListProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_LOAD);
 
-  const { data: trends } = useQuery<Record<string, SchoolTrend>>({
-    queryKey: ['/api/schools-trends'],
+  const { data: trends } = useQuery<Record<string, Pick<SchoolTrend, "direction" | "changePercent" | "yearsAnalyzed">>>({
+    queryKey: ['/api/schools-trends-summary'],
     staleTime: 1000 * 60 * 10,
   });
 

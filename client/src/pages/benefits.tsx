@@ -71,9 +71,10 @@ export default function BenefitsPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Premium Benefits - NYC School Ratings"
-        description="Discover the benefits of Premium on NYC School Ratings. Get AI chat assistant, school comparison, commute times, favorites, and more."
+        title="Plan Your NYC School Search with Trusted Data"
+        description="Turn NYC school data into a transparent shortlist, side-by-side comparison, commute plan, and application checklist."
         canonicalPath="/benefits"
+        appendSiteName={false}
       />
 
       <AppHeader />

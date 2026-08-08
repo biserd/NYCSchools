@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Activity, AlertTriangle, ShieldOff, ChevronRight, RefreshCcw } from "lucide-react";
+import { SEOHead } from "@/components/SEOHead";
 
 interface KeyUsageSummary {
   total: number;
@@ -124,6 +125,7 @@ export default function AdminApiUsagePage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
+        <SEOHead title="API Usage Admin" description="Private administration page." canonicalPath="/admin/api-usage" noindex />
         <AppHeader />
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <Skeleton className="h-12 w-64 mb-6" />
@@ -140,6 +142,7 @@ export default function AdminApiUsagePage() {
   if (isForbidden) {
     return (
       <div className="min-h-screen bg-background">
+        <SEOHead title="API Usage Admin" description="Private administration page." canonicalPath="/admin/api-usage" noindex />
         <AppHeader />
         <div className="max-w-3xl mx-auto px-4 md:px-8 py-16 text-center">
           <h1 className="text-2xl font-semibold mb-2" data-testid="text-forbidden-title">Admin access required</h1>
@@ -158,6 +161,7 @@ export default function AdminApiUsagePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead title="API Usage Admin" description="Private administration page." canonicalPath="/admin/api-usage" noindex />
       <AppHeader />
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-6">

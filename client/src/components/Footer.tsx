@@ -97,6 +97,56 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-3">Best Schools</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
+                <Link href="/nyc-schools/manhattan" className="hover:text-foreground transition-colors">
+                  Manhattan Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/brooklyn" className="hover:text-foreground transition-colors">
+                  Brooklyn Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/queens" className="hover:text-foreground transition-colors">
+                  Queens Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/bronx" className="hover:text-foreground transition-colors">
+                  Bronx Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/staten-island" className="hover:text-foreground transition-colors">
+                  Staten Island Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/elementary-schools" className="hover:text-foreground transition-colors">
+                  NYC Elementary Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/high-schools" className="hover:text-foreground transition-colors">
+                  NYC High Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/middle-schools" className="hover:text-foreground transition-colors">
+                  NYC Middle Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/dual-language" className="hover:text-foreground transition-colors">
+                  Dual-Language Schools
+                </Link>
+              </li>
+              <li>
+                <Link href="/nyc-schools/gifted-and-talented" className="hover:text-foreground transition-colors">
+                  Gifted &amp; Talented Programs
+                </Link>
+              </li>
+              <li>
                 <Link href="/blog/best-nyc-kindergartens-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-kindergartens">
                   Best Kindergartens 2026
                 </Link>

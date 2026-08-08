@@ -35,10 +35,12 @@ import {
   getSchoolSlug,
 } from "@shared/schema";
 import { getBlogPost } from "@shared/blog-data";
+import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
+import { getSchoolSeoMeta } from "@shared/school-seo";
 import type { School, PrivateSchool, NyceecCenter } from "@shared/schema";
 
 const SITE_ORIGIN = "https://nycschoolsratings.com";
-const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image.jpg`;
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image.png`;
 
 // ---------------------------------------------------------------------------
 // LRU-ish cache
@@ -113,6 +115,7 @@ interface Meta {
   ogImage?: string;
   jsonLd?: object | object[];
   noscriptHtml?: string;
+  noindex?: boolean;
 }
 
 /**
@@ -157,21 +160,28 @@ function applyMeta(baseHtml: string, meta: Meta): string {
 
   // Twitter
   html = html.replace(
-    /<meta\s+property="twitter:url"\s+content="[^"]*"\s*\/?>/i,
-    `<meta property="twitter:url" content="${escapeAttr(url)}" />`,
+    /<meta\s+(?:name|property)="twitter:url"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:url" content="${escapeAttr(url)}" />`,
   );
   html = html.replace(
-    /<meta\s+property="twitter:title"\s+content="[^"]*"\s*\/?>/i,
-    `<meta property="twitter:title" content="${t}" />`,
+    /<meta\s+(?:name|property)="twitter:title"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:title" content="${t}" />`,
   );
   html = html.replace(
-    /<meta\s+property="twitter:description"\s+content="[^"]*"\s*\/?>/i,
-    `<meta property="twitter:description" content="${d}" />`,
+    /<meta\s+(?:name|property)="twitter:description"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:description" content="${d}" />`,
   );
   html = html.replace(
-    /<meta\s+property="twitter:image"\s+content="[^"]*"\s*\/?>/i,
-    `<meta property="twitter:image" content="${escapeAttr(img)}" />`,
+    /<meta\s+(?:name|property)="twitter:image"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:image" content="${escapeAttr(img)}" />`,
   );
+
+  const robotsTag = `<meta name="robots" content="${meta.noindex ? "noindex, nofollow" : "index, follow"}" />`;
+  if (/<meta\s+name="robots"[^>]*>/i.test(html)) {
+    html = html.replace(/<meta\s+name="robots"[^>]*>/i, robotsTag);
+  } else {
+    html = html.replace(/<\/head>/i, `    ${robotsTag}\n  </head>`);
+  }
 
   // Canonical link — insert if missing, otherwise replace.
   const canonicalTag = `<link rel="canonical" href="${escapeAttr(url)}" />`;
@@ -241,37 +251,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
   const apCount = school.ap_course_count;
   const isSpecialized = school.is_specialized_hs;
 
-  // --- Title ---
-  let title: string;
-  if (isHS) {
-    const parts: string[] = [`Rating ${overall}/100`];
-    if (isSpecialized) parts.push("Specialized HS");
-    if (gradRate != null) parts.push(`${gradRate}% Graduation`);
-    title = `${school.name} — ${parts.join(" | ")} | NYC School Ratings`;
-  } else {
-    const parts: string[] = [`Rating ${overall}/100`];
-    if (school.ela_proficiency != null) parts.push(`ELA ${school.ela_proficiency}%`);
-    if (school.math_proficiency != null) parts.push(`Math ${school.math_proficiency}%`);
-    title = `${school.name} — ${parts.join(" | ")} | NYC School Ratings`;
-  }
-
-  // --- Description ---
-  let description: string;
-  if (isHS) {
-    const bits: string[] = [`${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.`];
-    if (gradRate != null) bits.push(`${gradRate}% 4-year graduation rate.`);
-    if (crRate != null) bits.push(`${crRate}% college-ready.`);
-    if (apCount != null && apCount > 0) bits.push(`${apCount} AP courses.`);
-    if (school.enrollment != null) bits.push(`${school.enrollment.toLocaleString()} students enrolled in grades ${school.grade_band ?? "9-12"}.`);
-    description = bits.join(" ");
-  } else {
-    description =
-      `${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.` +
-      (school.ela_proficiency != null ? ` ELA proficiency: ${school.ela_proficiency}%.` : "") +
-      (school.math_proficiency != null ? ` Math proficiency: ${school.math_proficiency}%.` : "") +
-      (school.enrollment != null ? ` ${school.enrollment.toLocaleString()} students in grades ${school.grade_band ?? "K-5"}.` : "") +
-      " View ratings, test scores, parent reviews, and commute times.";
-  }
+  const { title, description } = getSchoolSeoMeta(school);
   const canonical = `${SITE_ORIGIN}/school/${getSchoolSlug(school)}`;
 
   // Fetch related schools in the same district for internal linking. The
@@ -765,6 +745,7 @@ interface StaticRouteMeta {
   description: string;
   heading: string;
   jsonLd?: object | object[];
+  noindex?: boolean;
 }
 
 const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
@@ -798,8 +779,8 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     heading: "NYC School District Map and School Finder",
   },
   "/private-schools": {
-    title: "NYC Private Schools 2026: Tuition, Grades & Admissions",
-    description: "Compare NYC private schools by borough, tuition, grade range, enrollment, religious affiliation, and student-teacher ratio.",
+    title: "Best Private Schools NYC 2026: Browse 623 Schools by Borough, Tuition & Grades",
+    description: "Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by religious affiliation, grade level, enrollment size, and student-teacher ratio.",
     heading: "NYC Private Schools",
   },
   "/early-childhood": {
@@ -823,13 +804,13 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     heading: "NYC 3-K and Pre-K Lottery Estimate",
   },
   "/chances-calculator": {
-    title: "NYC School Admissions Chances Estimate | NYC School Ratings",
-    description: "Review a transparent estimate of NYC school admissions chances using priority, demand assumptions, and program context.",
-    heading: "NYC School Admissions Chances Estimate",
+    title: "NYC School Admissions Priority Planner | NYC School Ratings",
+    description: "Review your stated NYC school admissions priority context without fabricated acceptance percentages or guarantees.",
+    heading: "NYC School Admissions Priority Planner",
   },
   "/pricing": {
     title: "Enrollment Season Pass Pricing | NYC School Ratings",
-    description: "Get six months of NYC school comparison, recommendations, commute planning, and application tracking with one payment and no renewal.",
+    description: "Get six months of NYC school comparison, personalized recommendations, commute planning, and application tracking with one payment and no renewal.",
     heading: "Enrollment Season Pass",
   },
   "/blog": {
@@ -847,6 +828,61 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     description: "Turn NYC school data into a transparent shortlist, side-by-side comparison, commute plan, and application checklist.",
     heading: "Plan Your NYC School Search",
   },
+  "/faq": {
+    title: "FAQ - Frequently Asked Questions | NYC School Ratings",
+    description: "Find answers to common questions about using NYC School Ratings, including how scores are calculated, data sources, and feature guides.",
+    heading: "Frequently Asked Questions",
+  },
+  "/contact": {
+    title: "Contact Us | NYC School Ratings",
+    description: "Get in touch with NYC School Ratings. We're here to help parents navigate NYC public school choices.",
+    heading: "Contact NYC School Ratings",
+  },
+  "/safety-methodology": {
+    title: "Neighborhood Safety Index Methodology | NYC School Ratings",
+    description: "Learn exactly how we calculate the 0-100 Neighborhood Safety Index for every NYC school using NYPD complaint data, severity weights, and citywide percentiles.",
+    heading: "Neighborhood Safety Index Methodology",
+  },
+  "/safe-and-strong": {
+    title: "Safest & Highest-Rated NYC Schools | NYC School Ratings",
+    description: "Interactive scatter plot of every NYC public elementary, middle, and high school by neighborhood safety and overall school rating. The top-right quadrant shows the safest, highest-rated schools.",
+    heading: "Safest and Highest-Rated NYC Schools",
+  },
+  "/developers": {
+    title: "Developer API | NYC School Ratings",
+    description: "Access NYC school data through our RESTful API. Build applications with comprehensive school information including academics, demographics, and program data.",
+    heading: "NYC School Ratings Developer API",
+  },
+  "/developers/docs": {
+    title: "API Documentation | NYC School Ratings",
+    description: "Complete API documentation for NYC School Ratings. Learn how to authenticate, explore endpoints, and integrate school data into your applications.",
+    heading: "API Documentation",
+  },
+  "/privacy": {
+    title: "Privacy Policy | NYC School Ratings",
+    description: "Learn how NYC School Ratings protects your privacy and handles your personal information. Read our comprehensive privacy policy.",
+    heading: "Privacy Policy",
+  },
+  "/terms": {
+    title: "Terms of Service | NYC School Ratings",
+    description: "Read the terms and conditions for using NYC School Ratings. Understand your rights and responsibilities.",
+    heading: "Terms of Service",
+  },
+  "/release-notes": {
+    title: "Release Notes - NYC School Ratings",
+    description: "See what's new in NYC School Ratings. Track new features, improvements, and updates to help you find the perfect NYC school.",
+    heading: "Release Notes",
+  },
+  "/login": { title: "Log In | NYC School Ratings", description: "Log in to access your saved NYC school research and personalized tools.", heading: "Log In", noindex: true },
+  "/register": { title: "Create Account | NYC School Ratings", description: "Create an account for NYC School Ratings.", heading: "Create Account", noindex: true },
+  "/forgot-password": { title: "Forgot Password | NYC School Ratings", description: "Reset your NYC School Ratings password.", heading: "Forgot Password", noindex: true },
+  "/reset-password": { title: "Reset Password | NYC School Ratings", description: "Choose a new NYC School Ratings password.", heading: "Reset Password", noindex: true },
+  "/favorites": { title: "My Favorite Schools | NYC School Ratings", description: "View and manage your saved schools.", heading: "My Favorite Schools", noindex: true },
+  "/application-tracker": { title: "Application Tracker | NYC School Ratings", description: "Manage your private school application checklist.", heading: "Application Tracker", noindex: true },
+  "/settings": { title: "Settings | NYC School Ratings", description: "Configure your private NYC School Ratings account settings.", heading: "Settings", noindex: true },
+  "/admin/api-usage": { title: "API Usage Admin | NYC School Ratings", description: "Private administration page.", heading: "API Usage Admin", noindex: true },
+  "/thanks": { title: "Thank You | NYC School Ratings", description: "Payment confirmation.", heading: "Thank You", noindex: true },
+  "/auth/magic-link/callback": { title: "Signing In | NYC School Ratings", description: "Secure sign-in callback.", heading: "Signing In", noindex: true },
 };
 
 function renderStaticRoute(path: string, baseHtml: string): string | null {
@@ -866,16 +902,67 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
     ? (breadcrumb ? [...(Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]), breadcrumb] : meta.jsonLd)
     : breadcrumb;
 
+  const homepageSections = path === "/" ? `
+    <section>
+      <h2>Compare NYC schools with transparent data</h2>
+      <p>Explore academics, student progress, school climate, programs, demographics, admissions context, parent reviews, and commute fit across public, charter, private, 3-K, and Pre-K options.</p>
+      <ul>
+        <li><a href="/nyc-schools/elementary-schools">NYC elementary schools</a></li>
+        <li><a href="/nyc-schools/middle-schools">NYC middle schools</a></li>
+        <li><a href="/nyc-schools/high-schools">NYC high schools</a></li>
+        <li><a href="/nyc-schools/dual-language">NYC dual-language schools</a></li>
+        <li><a href="/nyc-schools/gifted-and-talented">NYC Gifted and Talented programs</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Explore schools by borough</h2>
+      <nav aria-label="NYC school guides by borough">
+        <a href="/nyc-schools/manhattan">Manhattan</a>
+        <a href="/nyc-schools/brooklyn">Brooklyn</a>
+        <a href="/nyc-schools/queens">Queens</a>
+        <a href="/nyc-schools/bronx">The Bronx</a>
+        <a href="/nyc-schools/staten-island">Staten Island</a>
+      </nav>
+    </section>` : "";
+  const crawlerHtml = `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}</main>`;
+
   return applyMeta(baseHtml, {
     title: meta.title,
     description: meta.description,
     canonical,
     jsonLd,
-    noscriptHtml: `
-      <main>
-        <h1>${escapeHtml(meta.heading)}</h1>
-        <p>${escapeHtml(meta.description)}</p>
-      </main>`,
+    noindex: meta.noindex,
+    noscriptHtml: crawlerHtml,
+  });
+}
+
+function renderSchoolGuide(slug: string, baseHtml: string): string | null {
+  const guide = SCHOOL_GUIDE_BY_SLUG.get(slug);
+  if (!guide) return null;
+  const path = `/nyc-schools/${guide.slug}`;
+  const canonical = `${SITE_ORIGIN}${path}`;
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_ORIGIN}/` },
+      { "@type": "ListItem", position: 2, name: guide.heading, item: canonical },
+    ],
+  };
+  const collectionPage = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: guide.heading,
+    description: guide.description,
+    url: canonical,
+  };
+  const content = `<main data-server-rendered="true"><p>${escapeHtml(guide.eyebrow)}</p><h1>${escapeHtml(guide.heading)}</h1><p>${escapeHtml(guide.intro)}</p><h2>What you can compare</h2><ul>${guide.highlights.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul><a href="${escapeAttr(guide.searchHref)}">${escapeHtml(guide.searchLabel)}</a></main>`;
+  return applyMeta(baseHtml, {
+    title: guide.title,
+    description: guide.description,
+    canonical,
+    jsonLd: [collectionPage, breadcrumb],
+    noscriptHtml: content,
   });
 }
 
@@ -956,6 +1043,8 @@ export async function renderSeoHtml(
       result = await renderBlogPost(m[1], baseHtml);
     } else if ((m = path.match(/^\/compare\/([^/]+)$/))) {
       result = await renderCompare(m[1], baseHtml);
+    } else if ((m = path.match(/^\/nyc-schools\/([^/]+)$/))) {
+      result = renderSchoolGuide(m[1], baseHtml);
     }
     if (result) cacheSet(cacheKey, result);
     return result;

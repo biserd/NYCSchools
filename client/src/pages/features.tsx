@@ -65,9 +65,10 @@ export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="Features - NYC School Ratings"
-        description="Explore all the features of NYC School Ratings - browse 2,100+ public, charter, and private schools with AI assistant, interactive maps, school comparison, filtering, and more."
+        title="NYC School Finder Features | Compare, Shortlist & Track"
+        description="Explore school comparison, personalized recommendations, commute planning, admissions context, favorites, and application tracking."
         canonicalPath="/features"
+        appendSiteName={false}
       />
 
       <AppHeader />

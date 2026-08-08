@@ -14,7 +14,7 @@ interface SEOHeadProps {
 
 const SITE_NAME = 'NYC School Ratings';
 const DEFAULT_DESCRIPTION = 'Compare NYC public, charter, private, and early-childhood schools using ratings, admissions context, programs, demographics, and parent reviews.';
-const DEFAULT_OG_IMAGE = 'https://nycschoolsratings.com/og-image.jpg';
+const DEFAULT_OG_IMAGE = 'https://nycschoolsratings.com/og-image.png';
 const SITE_URL = 'https://nycschoolsratings.com';
 
 function cleanCanonicalPath(path: string): string {

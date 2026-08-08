@@ -368,10 +368,11 @@ I focused on schools with strong academics and Dual Language programs in Brookly
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <SEOHead 
-          title="Personalized School Recommendations"
-          description="AI-powered personalized NYC school recommendations for elementary, middle, and high schools. Find schools with G&T programs, Dual Language, and more."
+          title="Personalized NYC School Finder | Build Your Shortlist"
+          description="Build a personalized NYC school shortlist using grade, location, programs, family priorities, school data, and admissions context."
           keywords="NYC school recommendations, personalized schools, G&T programs, Dual Language schools, school finder, AI recommendations"
           canonicalPath="/recommendations"
+          appendSiteName={false}
         />
         <AppHeader />
 
@@ -464,10 +465,11 @@ I focused on schools with strong academics and Dual Language programs in Brookly
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <SEOHead 
-        title="Find Your Perfect NYC School"
-        description="Get AI-powered personalized NYC school recommendations. Find elementary, middle, and high schools with G&T programs, Dual Language, early childhood options, and more."
+        title="Personalized NYC School Finder | Build Your Shortlist"
+        description="Build a personalized NYC school shortlist using grade, location, programs, family priorities, school data, and admissions context."
         keywords="NYC school finder, personalized schools, G&T programs, Dual Language, school recommendations, AI school matcher"
         canonicalPath="/recommendations"
+        appendSiteName={false}
       />
       <AppHeader />
 

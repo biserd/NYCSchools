@@ -282,6 +282,7 @@ export default function Settings() {
           description="Configure your NYC School Ratings experience. Set your home address for commute time calculations."
           keywords="settings, commute calculator, home address, NYC schools"
           canonicalPath="/settings"
+          noindex
         />
         <AppHeader />
         <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
@@ -303,6 +304,7 @@ export default function Settings() {
           description="Configure your NYC School Ratings experience. Set your home address for commute time calculations."
           keywords="settings, commute calculator, home address, NYC schools"
           canonicalPath="/settings"
+          noindex
         />
         <AppHeader />
         <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
@@ -353,6 +355,7 @@ export default function Settings() {
         description="Configure your NYC School Ratings experience. Set your home address for commute time calculations."
         keywords="settings, commute calculator, home address, NYC schools"
         canonicalPath="/settings"
+        noindex
       />
       <AppHeader />
 

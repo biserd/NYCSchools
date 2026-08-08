@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Loader2, ArrowRight, Clock } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function MagicLinkPage() {
   const [, navigate] = useLocation();
@@ -60,6 +61,7 @@ export default function MagicLinkPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <SEOHead title="Secure Sign In" description="Secure sign-in verification." noindex />
       <Card className="max-w-md w-full border-0 shadow-lg">
         <CardHeader className="text-center pb-2">
           {status === 'verifying' && (

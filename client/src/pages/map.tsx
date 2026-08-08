@@ -485,7 +485,7 @@ export default function MapPage() {
   // Generate dynamic SEO title, description, and canonical path from active filter state
   const seoContent = useMemo(() => {
     const parts: string[] = [];
-    let description = "Explore NYC schools on an interactive map.";
+    let description = "Explore NYC public and charter schools by address, borough, district, grade, programs, and school type on an interactive map.";
     
     if (selectedType !== "all") {
       const typeLabel = GRADE_BAND_OPTIONS.find(o => o.value === selectedType)?.label || "";
@@ -516,12 +516,12 @@ export default function MapPage() {
       parts.push(`Zip ${selectedZipCode}`);
     }
     
-    let title = "NYC School Map";
+    let title = "NYC School District Map & School Finder | NYC School Ratings";
     if (parts.length > 0) {
       title = `${parts.join(" - ")} Schools Map`;
       description = `Find ${parts.join(", ")} schools in NYC. View ${filteredSchools.length} school locations, ratings, and details on our interactive map.`;
     } else {
-      description = `Explore ${schoolsWithCoords.length} NYC schools on an interactive map. View school locations, ratings, and filter by district, grade level, G&T, dual language, and special education programs.`;
+      description = "Explore NYC public and charter schools by address, borough, district, grade, programs, and school type on an interactive map.";
     }
     
     // Build canonical path from active filter state

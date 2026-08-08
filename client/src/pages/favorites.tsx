@@ -63,6 +63,7 @@ export default function FavoritesPage() {
   if (authLoading || favoritesLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background" data-testid="loading-favorites">
+        <SEOHead title="My Favorite Schools" description="View and manage your saved schools." canonicalPath="/favorites" noindex />
         <AppHeader />
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
           <Skeleton className="h-10 w-64 mb-2" />
@@ -83,6 +84,7 @@ export default function FavoritesPage() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col min-h-screen bg-background" data-testid="favorites-login-prompt">
+        <SEOHead title="My Favorite Schools" description="View and manage your saved schools." canonicalPath="/favorites" noindex />
         <AppHeader />
         <div className="flex-1 flex items-center justify-center">
           <Card className="p-8 max-w-md text-center">
@@ -110,6 +112,7 @@ export default function FavoritesPage() {
         description="View and manage your favorite NYC elementary schools. Compare saved schools and make informed kindergarten enrollment decisions."
         keywords="favorite schools, saved schools, NYC kindergarten favorites, school bookmarks, compare schools"
         canonicalPath="/favorites"
+        noindex
       />
       <AppHeader />
 
