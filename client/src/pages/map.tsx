@@ -11,7 +11,7 @@ import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-rea
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl, type PrivateSchool, getPrivateSchoolUrl } from "@shared/schema";
+import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl, type PrivateSchool, getPrivateSchoolUrl, type TwokCenter } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 
@@ -58,6 +58,13 @@ const DATA_SOURCE_OPTIONS = [
   { value: "schools", label: "Public Schools" },
   { value: "private", label: "Private Schools" },
   { value: "nyceec", label: "Early Childhood Centers" },
+  { value: "twok", label: "2-K Programs" },
+];
+
+const TWOK_SEAT_OPTIONS = [
+  { value: "all", label: "All Seat Types" },
+  { value: "EDFY", label: "Expanded Day & Full Year" },
+  { value: "SDY", label: "School Day" },
 ];
 
 const NYCEEC_TYPE_OPTIONS = [
@@ -137,6 +144,7 @@ export default function MapPage() {
   const [selectedZoned, setSelectedZoned] = useState(() => urlParams.get("zoned") || "all");
   const [dataSource, setDataSource] = useState(() => urlParams.get("source") || "schools");
   const [selectedNyceecType, setSelectedNyceecType] = useState(() => urlParams.get("centerType") || "all");
+  const [selectedTwokSeatType, setSelectedTwokSeatType] = useState(() => urlParams.get("seatType") || "all");
   
   // Auth hook for zoned schools
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -254,6 +262,11 @@ export default function MapPage() {
   const { data: allPrivateSchools } = useQuery<PrivateSchool[]>({
     queryKey: ["/api/private-schools"],
     enabled: dataSource === "private",
+  });
+
+  const { data: allTwokCenters } = useQuery<TwokCenter[]>({
+    queryKey: ["/api/twok-centers"],
+    enabled: dataSource === "twok",
   });
 
   // Filter schools that have geocoded coordinates
@@ -434,6 +447,34 @@ export default function MapPage() {
     
     return result;
   }, [allNyceecCenters, selectedDistrict, selectedNyceecType, selectedZipCode]);
+
+  // Filter 2-K centers with coordinates
+  const filteredTwokCenters = useMemo(() => {
+    if (!allTwokCenters) return [];
+
+    let result = allTwokCenters.filter(
+      c => c.latitude !== null && c.longitude !== null
+    );
+
+    if (selectedDistrict !== "all") {
+      result = result.filter(c => c.district === parseInt(selectedDistrict));
+    }
+
+    if (selectedTwokSeatType !== "all") {
+      result = result.filter(c => {
+        const prog = (c.programName || "").toLowerCase();
+        if (selectedTwokSeatType === "EDFY") return prog.includes("expanded day");
+        if (selectedTwokSeatType === "SDY") return prog.includes("school day");
+        return true;
+      });
+    }
+
+    if (selectedZipCode && selectedZipCode.length === 5) {
+      result = result.filter(c => c.zipCode === selectedZipCode);
+    }
+
+    return result;
+  }, [allTwokCenters, selectedDistrict, selectedTwokSeatType, selectedZipCode]);
 
   // Filter private schools with coordinates
   const filteredPrivateSchools = useMemo(() => {
@@ -919,6 +960,64 @@ export default function MapPage() {
         );
         mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
       }
+    } else if (dataSource === "twok") {
+      // Add markers for 2-K centers (teal markers)
+      filteredTwokCenters.forEach(center => {
+        const isEDFY = (center.programName || "").toLowerCase().includes("expanded day");
+        const markerColor = isEDFY ? "#0d9488" : "#0891b2"; // teal-600 vs cyan-600
+
+        const markerHtml = `
+          <div style="
+            background-color: ${markerColor};
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            cursor: pointer;
+            pointer-events: auto;
+          "></div>
+        `;
+
+        const marker = L.marker([center.latitude!, center.longitude!], {
+          icon: L.divIcon({
+            className: 'custom-marker twok-marker',
+            html: markerHtml,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+          interactive: true,
+        });
+
+        const seatLabel = isEDFY ? "Expanded Day & Full Year" : "School Day";
+        const boroughDisplay = center.borough || "";
+
+        marker.bindPopup(`
+          <div style="min-width: 220px;">
+            <h3 style="margin: 0 0 6px 0; font-weight: 600; font-size: 14px;">${center.name}</h3>
+            <div style="margin-bottom: 8px;">
+              <span style="background: ${markerColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">2-K</span>
+              <span style="background: #6b7280; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px;">${seatLabel}</span>
+            </div>
+            <p style="margin: 0; font-size: 12px; color: #666;">${center.address}</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #666;">${boroughDisplay}${center.zipCode ? " " + center.zipCode : ""}</p>
+            ${center.district ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">District ${center.district}</p>` : ""}
+            ${center.phone ? `<p style="margin: 4px 0; font-size: 12px;"><a href="tel:${center.phone}" style="color: #2563eb;">${center.phone}</a></p>` : ""}
+          </div>
+        `);
+
+        marker.addTo(mapInstanceRef.current!);
+        markersRef.current.push(marker);
+      });
+
+      if (filteredTwokCenters.length > 0) {
+        const bounds = L.latLngBounds(
+          filteredTwokCenters
+            .filter(c => c.latitude && c.longitude)
+            .map(c => [c.latitude!, c.longitude!])
+        );
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
     }
 
     // Cleanup function for effect
@@ -926,7 +1025,7 @@ export default function MapPage() {
       popupListenersRef.current.forEach(cleanup => cleanup());
       popupListenersRef.current.clear();
     };
-  }, [filteredSchools, filteredNyceecCenters, filteredPrivateSchools, dataSource, setLocation]);
+  }, [filteredSchools, filteredNyceecCenters, filteredPrivateSchools, filteredTwokCenters, dataSource, setLocation]);
 
   // Clear all filters (reset to defaults)
   const clearFilters = () => {
@@ -939,6 +1038,7 @@ export default function MapPage() {
     setSelectedZoned("all");
     setDataSource("schools");
     setSelectedNyceecType("all");
+    setSelectedTwokSeatType("all");
   };
 
   // Handle zip code input changes - switches to All Districts when 5 digits entered
@@ -953,7 +1053,13 @@ export default function MapPage() {
 
   const filterDropdownsContent = (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-      <Select value={dataSource} onValueChange={setDataSource}>
+      <Select value={dataSource} onValueChange={(val) => {
+          setDataSource(val);
+          // Early childhood sources aren't district-organised like K-12 schools;
+          // default to All Districts so centers are visible immediately.
+          if (val === "nyceec" || val === "twok") setSelectedDistrict("all");
+          else setSelectedDistrict("2");
+        }}>
         <SelectTrigger data-testid="select-map-data-source" className="h-9 border-primary/50 bg-primary/5">
           <SelectValue placeholder="K-12 Schools" />
         </SelectTrigger>
@@ -987,6 +1093,21 @@ export default function MapPage() {
           </SelectTrigger>
           <SelectContent className="z-[9999]">
             {NYCEEC_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {dataSource === "twok" && (
+        <Select value={selectedTwokSeatType} onValueChange={setSelectedTwokSeatType}>
+          <SelectTrigger data-testid="select-map-twok-seat-type" className="h-9">
+            <SelectValue placeholder="All Seat Types" />
+          </SelectTrigger>
+          <SelectContent className="z-[9999]">
+            {TWOK_SEAT_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -1121,7 +1242,13 @@ export default function MapPage() {
             <h1 className="text-xl font-semibold" data-testid="text-map-title">School Map</h1>
           </div>
           <div className="text-sm text-muted-foreground">
-            {filteredSchools.length} of {schoolsWithCoords.length} schools
+            {dataSource === "nyceec"
+              ? `${filteredNyceecCenters.length} of ${allNyceecCenters?.length ?? 0} centers`
+              : dataSource === "twok"
+              ? `${filteredTwokCenters.length} of ${allTwokCenters?.length ?? 0} 2-K programs`
+              : dataSource === "private"
+              ? `${filteredPrivateSchools.length} of ${allPrivateSchools?.length ?? 0} private schools`
+              : `${filteredSchools.length} of ${schoolsWithCoords.length} schools`}
           </div>
         </div>
 

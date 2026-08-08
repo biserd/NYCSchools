@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert } from "@shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, twokCenters, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert, type TwokCenter, type InsertTwokCenter } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray, lt } from "drizzle-orm";
 
 export interface IStorage {
@@ -59,6 +59,10 @@ export interface IStorage {
   getSchoolTrend(dbn: string): Promise<SchoolTrend>;
   getAllSchoolTrends(): Promise<Map<string, SchoolTrend>>;
   
+  // 2-K Center operations
+  getTwokCenters(filters?: { borough?: string; district?: number; zipCode?: string }): Promise<TwokCenter[]>;
+  upsertTwokCenters(centers: InsertTwokCenter[]): Promise<void>;
+
   // NYCEEC Center operations
   getNyceecCenters(filters?: NyceecFilters): Promise<NyceecCenter[]>;
   getNyceecCenter(locCode: string): Promise<NyceecCenter | undefined>;
@@ -899,6 +903,55 @@ export class DbStorage implements IStorage {
     }
     
     return trends;
+  }
+
+  // 2-K Center operations
+  async getTwokCenters(filters?: { borough?: string; district?: number; zipCode?: string }): Promise<TwokCenter[]> {
+    const conditions = [];
+
+    if (filters?.borough) {
+      conditions.push(eq(twokCenters.borough, filters.borough));
+    }
+    if (filters?.district) {
+      conditions.push(eq(twokCenters.district, filters.district));
+    }
+    if (filters?.zipCode) {
+      conditions.push(eq(twokCenters.zipCode, filters.zipCode));
+    }
+
+    if (conditions.length > 0) {
+      return db.select().from(twokCenters).where(and(...conditions)).orderBy(twokCenters.name);
+    }
+    return db.select().from(twokCenters).orderBy(twokCenters.name);
+  }
+
+  async upsertTwokCenters(centers: InsertTwokCenter[]): Promise<void> {
+    if (centers.length === 0) return;
+    for (let i = 0; i < centers.length; i += 100) {
+      const batch = centers.slice(i, i + 100);
+      await db
+        .insert(twokCenters)
+        .values(batch)
+        .onConflictDoUpdate({
+          target: twokCenters.dbn,
+          set: {
+            name: sql`EXCLUDED.name`,
+            borough: sql`EXCLUDED.borough`,
+            district: sql`EXCLUDED.district`,
+            address: sql`EXCLUDED.address`,
+            zipCode: sql`EXCLUDED.zip_code`,
+            latitude: sql`EXCLUDED.latitude`,
+            longitude: sql`EXCLUDED.longitude`,
+            phone: sql`EXCLUDED.phone`,
+            email: sql`EXCLUDED.email`,
+            website: sql`EXCLUDED.website`,
+            programName: sql`EXCLUDED.program_name`,
+            programType: sql`EXCLUDED.program_type`,
+            schoolType: sql`EXCLUDED.school_type`,
+            lastUpdated: sql`NOW()`,
+          },
+        });
+    }
   }
 
   // NYCEEC Center operations

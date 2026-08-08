@@ -790,6 +790,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 2-K Centers API (public)
+  app.get("/api/twok-centers", async (req: Request, res: Response) => {
+    try {
+      const { borough, district, zipCode } = req.query;
+
+      const filters: { borough?: string; district?: number; zipCode?: string } = {};
+      if (borough && typeof borough === "string") filters.borough = borough;
+      if (district && typeof district === "string") {
+        const d = parseInt(district, 10);
+        if (!isNaN(d)) filters.district = d;
+      }
+      if (zipCode && typeof zipCode === "string") filters.zipCode = zipCode;
+
+      const hasFilters = Object.keys(filters).length > 0;
+      const cacheKey = "all-twok-centers";
+
+      if (!hasFilters) {
+        const cachedData = getCached(cacheKey);
+        if (cachedData) return res.json(cachedData);
+      }
+
+      const centers = await storage.getTwokCenters(hasFilters ? filters : undefined);
+
+      if (!hasFilters) setCache(cacheKey, centers);
+      res.json(centers);
+    } catch (error) {
+      console.error("Error fetching 2-K centers:", error);
+      res.status(500).json({ error: "Failed to fetch 2-K centers" });
+    }
+  });
+
   // NYCEEC Early Childhood Centers API (public) with caching
   app.get("/api/nyceec-centers", async (req: Request, res: Response) => {
     try {

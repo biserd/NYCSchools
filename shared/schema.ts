@@ -1163,6 +1163,49 @@ export interface AiChatSessionWithMessages extends AiChatSession {
 }
 
 // NYCEEC Centers - NYC Early Education Centers (community-based Pre-K/3-K providers)
+// ─── 2-K Early Childhood Centers ────────────────────────────────────────────
+export const twokCenters = pgTable("twok_centers", {
+  id: serial("id").primaryKey(),
+  dbn: varchar("dbn").unique().notNull(),       // NYC school DBN code
+
+  // Basic info
+  name: text("name").notNull(),
+  borough: varchar("borough").notNull(),         // Bronx, Brooklyn, Manhattan, Queens, Staten Island
+  district: integer("district"),
+
+  // Location
+  address: text("address").notNull(),
+  zipCode: varchar("zip_code"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+
+  // Contact
+  phone: varchar("phone"),
+  email: varchar("email"),
+  website: varchar("website"),
+
+  // Program details
+  programName: varchar("program_name"),          // '2-K - Expanded Day and Full Year' | '2-K - School Day'
+  programType: varchar("program_type"),          // 'EDFY' | 'SDY'
+  schoolType: varchar("school_type"),            // 'PUBLIC' | 'PRIVATE'
+
+  // Metadata
+  lastUpdated: timestamp("last_updated").defaultNow(),
+}, (table) => [
+  index("idx_twok_borough").on(table.borough),
+  index("idx_twok_district").on(table.district),
+  index("idx_twok_zip").on(table.zipCode),
+]);
+
+export const insertTwokCenterSchema = createInsertSchema(twokCenters).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+export type InsertTwokCenter = z.infer<typeof insertTwokCenterSchema>;
+export type TwokCenter = typeof twokCenters.$inferSelect;
+
+// ─── NYCEEC Early Childhood Centers ─────────────────────────────────────────
 export const nyceecCenters = pgTable("nyceec_centers", {
   id: serial("id").primaryKey(),
   locCode: varchar("loc_code").unique().notNull(), // Location code (e.g., "KCPY")
