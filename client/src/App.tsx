@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Switch, Route } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -64,6 +64,21 @@ function PageLoader() {
       </div>
     </div>
   );
+}
+
+function AnalyticsPageView() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
+    gtag?.('event', 'page_view', {
+      page_location: window.location.href,
+      page_path: location,
+      page_title: document.title,
+    });
+  }, [location]);
+
+  return null;
 }
 
 function Router() {
@@ -168,6 +183,7 @@ function App() {
         <ComparisonProvider>
           <TooltipProvider>
             <Toaster />
+            <AnalyticsPageView />
             <Router />
             <ChatBot />
             <CompareBar />
