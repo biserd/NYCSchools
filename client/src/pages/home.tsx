@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
 import { SchoolList } from "@/components/SchoolList";
+import { TwokCenterCard } from "@/components/TwokCenterCard";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
@@ -289,6 +290,27 @@ export default function Home() {
     staleTime: 1000 * 60 * 30,
     enabled: show2K,
   });
+
+  // Apply the homepage's compatible filters (search, district, zip) to the 2-K list
+  const filteredTwokCenters = useMemo(() => {
+    if (!twokCentersList) return [];
+    let list = twokCentersList;
+    if (selectedDistrict !== "All") {
+      const d = parseInt(selectedDistrict, 10);
+      list = list.filter((c) => c.district === d);
+    }
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.trim().toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          c.address.toLowerCase().includes(q) ||
+          c.dbn.toLowerCase().includes(q) ||
+          (c.zipCode ?? "").includes(q)
+      );
+    }
+    return [...list].sort((a, b) => a.name.localeCompare(b.name));
+  }, [twokCentersList, selectedDistrict, debouncedSearchQuery]);
 
   const schools = useMemo(() => {
     if (!rawSchools) return [];
@@ -965,7 +987,7 @@ export default function Home() {
             {show2K
               ? twokCentersLoading
                 ? 'Loading 2-K programs…'
-                : `Showing ${twokCentersList?.length ?? 0} 2-K programs`
+                : `Showing ${filteredTwokCenters.length} 2-K programs`
               : isLoading
               ? 'Loading schools…'
               : `Showing ${filteredAndSortedSchools.length} ${filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}`}
@@ -1006,40 +1028,8 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {(twokCentersList ?? []).map((center) => (
-                <div key={center.id} className="rounded-lg border bg-card p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold text-sm leading-tight">{center.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        District {center.district} · {center.borough}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 px-2 py-0.5 font-medium">
-                      {center.programType === "EDFY" ? "Expanded Day" : "School Day"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span>{center.address}{center.zipCode ? `, ${center.zipCode}` : ""}</span>
-                    </div>
-                    {center.phone && (
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="w-3 h-3 shrink-0" />
-                        <span>{center.phone}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Link
-                      href={`/map?source=twok&district=all&highlight=${center.dbn}`}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      View on map →
-                    </Link>
-                  </div>
-                </div>
+              {filteredTwokCenters.map((center) => (
+                <TwokCenterCard key={center.id} center={center} />
               ))}
             </div>
           )

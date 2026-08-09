@@ -19,7 +19,7 @@ import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, getUncachableStripeClient, getStripePublishableKey, getStripeMode } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
-import { getCached, setCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
+import { getCached, setCache, deleteCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
 import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/safetyIndex";
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
 import { flushApiLogsNow } from "./apiObservability";
@@ -3739,7 +3739,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     try {
       const expectedSecret = process.env.CRON_SECRET;
       if (!expectedSecret) return res.status(503).json({ error: "CRON_SECRET not configured" });
-      const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
+      const cronSecret = req.headers["x-cron-secret"];
       if (cronSecret !== expectedSecret) return res.status(401).json({ error: "Unauthorized" });
 
       const fs = await import("fs");
@@ -3798,6 +3798,9 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         });
         inserted += batch.length;
       }
+
+      deleteCache("all-twok-centers");
+      deleteCache("twok-centers-stats");
 
       console.log(`[TWOK_SEED] Seeded ${inserted} 2-K centers`);
       res.json({ success: true, inserted });
