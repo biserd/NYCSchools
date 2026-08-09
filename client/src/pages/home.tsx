@@ -7,12 +7,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
-import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend, type TwokCenter } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target } from "lucide-react";
+import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 interface UserZones {
@@ -171,13 +171,9 @@ export default function Home() {
   const [, navigate] = useLocation();
 
   const handleGradeBandChange = useCallback((value: string) => {
-    if (value === "2K") {
-      navigate("/map?source=twok&district=all");
-      return;
-    }
     setSelectedGradeBand(value);
     updateURLParams({ grade: value });
-  }, [updateURLParams, navigate]);
+  }, [updateURLParams]);
 
   const handleSchoolTypeChange = useCallback((value: "all" | "public" | "charter") => {
     setSelectedSchoolType(value);
@@ -284,6 +280,14 @@ export default function Home() {
   const { data: twokStats, isLoading: twokLoading } = useQuery<{ totalCenters: number }>({
     queryKey: ['/api/twok-centers-stats'],
     staleTime: 1000 * 60 * 30, // 30 minutes cache
+  });
+
+  const show2K = selectedGradeBand === "2K";
+
+  const { data: twokCentersList, isLoading: twokCentersLoading } = useQuery<TwokCenter[]>({
+    queryKey: ['/api/twok-centers'],
+    staleTime: 1000 * 60 * 30,
+    enabled: show2K,
   });
 
   const schools = useMemo(() => {
@@ -958,35 +962,88 @@ export default function Home() {
         
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground" data-testid="text-results-count">
-            {isLoading
+            {show2K
+              ? twokCentersLoading
+                ? 'Loading 2-K programs…'
+                : `Showing ${twokCentersList?.length ?? 0} 2-K programs`
+              : isLoading
               ? 'Loading schools…'
               : `Showing ${filteredAndSortedSchools.length} ${filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}`}
           </p>
-          <div className="inline-flex items-center rounded-md border bg-card p-0.5" role="tablist" aria-label="Filter by school type">
-            {([
-              { value: "all", label: "All" },
-              { value: "public", label: "District" },
-              { value: "charter", label: "Charter" },
-            ] as const).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                role="tab"
-                aria-selected={selectedSchoolType === opt.value}
-                onClick={() => handleSchoolTypeChange(opt.value)}
-                data-testid={`button-type-${opt.value}`}
-                className={`min-h-11 min-w-11 px-3 py-2 text-xs rounded-sm hover-elevate active-elevate-2 ${
-                  selectedSchoolType === opt.value
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {!show2K && (
+            <div className="inline-flex items-center rounded-md border bg-card p-0.5" role="tablist" aria-label="Filter by school type">
+              {([
+                { value: "all", label: "All" },
+                { value: "public", label: "District" },
+                { value: "charter", label: "Charter" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedSchoolType === opt.value}
+                  onClick={() => handleSchoolTypeChange(opt.value)}
+                  data-testid={`button-type-${opt.value}`}
+                  className={`min-h-11 min-w-11 px-3 py-2 text-xs rounded-sm hover-elevate active-elevate-2 ${
+                    selectedSchoolType === opt.value
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        {isLoading ? (
+
+        {show2K ? (
+          twokCentersLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-[140px]" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {(twokCentersList ?? []).map((center) => (
+                <div key={center.id} className="rounded-lg border bg-card p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold text-sm leading-tight">{center.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        District {center.district} · {center.borough}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 px-2 py-0.5 font-medium">
+                      {center.programType === "EDFY" ? "Expanded Day" : "School Day"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span>{center.address}{center.zipCode ? `, ${center.zipCode}` : ""}</span>
+                    </div>
+                    {center.phone && (
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 shrink-0" />
+                        <span>{center.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Link
+                      href={`/map?source=twok&district=all&highlight=${center.dbn}`}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      View on map →
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="skeleton-schools">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-[280px]" data-testid={`skeleton-card-${i}`} />
