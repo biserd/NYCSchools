@@ -51,9 +51,9 @@ const NYC_DISTRICTS = Array.from({ length: 32 }, (_, i) => String(i + 1));
 
 const GRADE_BAND_OPTIONS = [
   { value: "All", label: "All Grade Levels" },
+  { value: "2K", label: "2-K Programs" },
   { value: "PreK", label: "Pre-K Programs" },
   { value: "3K", label: "3-K Programs" },
-  { value: "2K", label: "2-K Programs" },
   { value: "Elementary", label: "Elementary (K-5)" },
   { value: "Middle", label: "Middle School (6-8)" },
   { value: "K-8", label: "K-8 Schools" },
