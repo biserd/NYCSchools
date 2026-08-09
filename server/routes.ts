@@ -893,6 +893,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Homepage only needs the total 2-K program count, not the full directory.
+  app.get("/api/twok-centers-stats", async (_req: Request, res: Response) => {
+    try {
+      const cacheKey = "twok-centers-stats";
+      const cachedData = getCached<{ totalCenters: number }>(cacheKey);
+      if (cachedData) return res.json(cachedData);
+      const centers = await storage.getTwokCenters();
+      const result = { totalCenters: centers.length };
+      setCache(cacheKey, result, CACHE_TTL_LONG);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error fetching 2-K center count:", error);
+      return res.status(500).json({ error: "Failed to fetch 2-K center count" });
+    }
+  });
+
   // Individual NYCEEC center with 10-minute cache (normalize locCode to uppercase for consistent cache keys)
   app.get("/api/nyceec-centers/:locCode", async (req: Request, res: Response) => {
     try {

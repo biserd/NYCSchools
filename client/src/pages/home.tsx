@@ -274,6 +274,12 @@ export default function Home() {
     staleTime: 1000 * 60 * 30, // 30 minutes cache
   });
 
+  // Fetch 2-K centers count
+  const { data: twokStats, isLoading: twokLoading } = useQuery<{ totalCenters: number }>({
+    queryKey: ['/api/twok-centers-stats'],
+    staleTime: 1000 * 60 * 30, // 30 minutes cache
+  });
+
   const schools = useMemo(() => {
     if (!rawSchools) return [];
     
@@ -326,8 +332,9 @@ export default function Home() {
       charters,
       nyceecCenters: nyceecStats?.totalCenters || 0,
       privateSchools: privateSchoolsStats?.totalSchools || 0,
+      twokCenters: twokStats?.totalCenters || 0,
     };
-  }, [schools, trends, nyceecStats, privateSchoolsStats]);
+  }, [schools, trends, nyceecStats, privateSchoolsStats, twokStats]);
 
   const filteredAndSortedSchools = useMemo(() => {
     let filtered = schools;
@@ -874,6 +881,15 @@ export default function Home() {
                 <span className="font-medium text-foreground">{schoolCounts.nyceecCenters.toLocaleString()}</span>
               )}
               <span>Early Ed Centers</span>
+            </Link>
+            <Link href="/map?source=twok&district=all" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-twok">
+              <Baby className="w-3.5 h-3.5 text-pink-500" />
+              {twokLoading ? (
+                <Skeleton className="h-4 w-8" />
+              ) : (
+                <span className="font-medium text-foreground">{schoolCounts.twokCenters.toLocaleString()}</span>
+              )}
+              <span>2-K Programs</span>
             </Link>
             <Link href="/private-schools" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-private">
               <Building2 className="w-3.5 h-3.5 text-purple-500" />
