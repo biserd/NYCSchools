@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, twokCenters } from "@shared/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
@@ -3733,6 +3733,80 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // Cron job endpoint to refresh the Neighborhood Safety Index.
   // Pulls the last 24 months of NYPD complaints (5uac-w243 + qgea-i56i) and
   // recomputes per-school scores. Designed for monthly invocation via a
+  // One-time 2-K center seeder — seeds the CSV data into whatever database
+  // the running server is connected to (works in both dev and production).
+  app.post("/api/cron/seed-twok-centers", async (req: Request, res: Response) => {
+    try {
+      const expectedSecret = process.env.CRON_SECRET;
+      if (!expectedSecret) return res.status(503).json({ error: "CRON_SECRET not configured" });
+      const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
+      if (cronSecret !== expectedSecret) return res.status(401).json({ error: "Unauthorized" });
+
+      const fs = await import("fs");
+      const { parse } = await import("csv-parse/sync");
+
+      const BOROUGH_MAP: Record<string, string> = {
+        bronx: "Bronx", brooklyn: "Brooklyn", manhattan: "Manhattan",
+        queens: "Queens", "staten island": "Staten Island",
+      };
+      const normBorough = (raw: string) => BOROUGH_MAP[(raw || "").toLowerCase().trim()] ?? raw;
+      const progType = (n: string) => n.toLowerCase().includes("expanded day") ? "EDFY" : "SDY";
+
+      const csvPath = "attached_assets/nyc-2k-schools_1786231670808.csv";
+      const rows: Record<string, string>[] = parse(
+        fs.readFileSync(csvPath, "utf-8"),
+        { columns: true, skip_empty_lines: true }
+      );
+
+      const records = rows.map((r) => {
+        const dbn = (r["school.dbn"] || "").trim();
+        if (!dbn) return null;
+        const lat = parseFloat((r["school.address.latitude"] || "").replace(/['"]/g, "").trim());
+        const lon = parseFloat((r["school.address.longitude"] || "").replace(/['"]/g, "").trim());
+        return {
+          dbn,
+          name: (r["school.name"] || r["name"] || dbn).trim(),
+          borough: normBorough(r["school.district.borough"] || ""),
+          district: r["school.district.code"] ? parseInt(r["school.district.code"], 10) || null : null,
+          address: (r["school.address.address_1"] || r["school.full_address"] || "").trim() || "N/A",
+          zipCode: (r["school.address.zip_code"] || "").trim() || null,
+          latitude: isNaN(lat) ? null : lat,
+          longitude: isNaN(lon) ? null : lon,
+          phone: (r["telephone"] || r["program.provider_phone_number"] || "").trim() || null,
+          email: (r["email"] || r["program.provider_email"] || "").trim() || null,
+          website: (r["independent_website"] || r["program.provider_website"] || "").trim() || null,
+          programName: (r["program.name"] || "2-K").trim(),
+          programType: progType(r["program.name"] || ""),
+          schoolType: (r["school.school_type.name"] || "PUBLIC").trim(),
+        };
+      }).filter(Boolean) as any[];
+
+      let inserted = 0;
+      for (let i = 0; i < records.length; i += 100) {
+        const batch = records.slice(i, i + 100);
+        await db.insert(twokCenters).values(batch).onConflictDoUpdate({
+          target: twokCenters.dbn,
+          set: {
+            name: sql`EXCLUDED.name`, borough: sql`EXCLUDED.borough`,
+            district: sql`EXCLUDED.district`, address: sql`EXCLUDED.address`,
+            zipCode: sql`EXCLUDED.zip_code`, latitude: sql`EXCLUDED.latitude`,
+            longitude: sql`EXCLUDED.longitude`, phone: sql`EXCLUDED.phone`,
+            email: sql`EXCLUDED.email`, website: sql`EXCLUDED.website`,
+            programName: sql`EXCLUDED.program_name`, programType: sql`EXCLUDED.program_type`,
+            schoolType: sql`EXCLUDED.school_type`, lastUpdated: sql`NOW()`,
+          },
+        });
+        inserted += batch.length;
+      }
+
+      console.log(`[TWOK_SEED] Seeded ${inserted} 2-K centers`);
+      res.json({ success: true, inserted });
+    } catch (error) {
+      console.error("[TWOK_SEED] Error:", error);
+      res.status(500).json({ error: "Seed failed", detail: String(error) });
+    }
+  });
+
   // Replit Scheduled Deployment (`curl -X POST $URL/api/cron/safety-sync \
   // -H "x-cron-secret: $CRON_SECRET"`) or any external scheduler.
   // The job is fire-and-forget: returns 202 immediately so HTTP clients
