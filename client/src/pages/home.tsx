@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
 import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface UserZones {
   elementary: string | null;
@@ -168,10 +168,16 @@ export default function Home() {
     updateURLParams({ district: value });
   }, [updateURLParams]);
 
+  const [, navigate] = useLocation();
+
   const handleGradeBandChange = useCallback((value: string) => {
+    if (value === "2K") {
+      navigate("/map?source=twok&district=all");
+      return;
+    }
     setSelectedGradeBand(value);
     updateURLParams({ grade: value });
-  }, [updateURLParams]);
+  }, [updateURLParams, navigate]);
 
   const handleSchoolTypeChange = useCallback((value: "all" | "public" | "charter") => {
     setSelectedSchoolType(value);
