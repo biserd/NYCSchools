@@ -1,10 +1,10 @@
 ---
 name: 2-K centers data model
-description: Why 2-K programs must stay a separate table and list view
+description: How 2-K programs are integrated into the schools table despite being standalone daycares
 ---
 
-**Rule:** NYC 2-K program sites (589 rows, `twok_centers`) are standalone daycares/family childcare providers with their own code format (e.g. 06G262, 10XAPN). Zero overlap with `schools.dbn` and zero overlap with `nyceec_centers.loc_code` — verified by JOIN counts.
+**Rule:** NYC 2-K sites (589, source table `twok_centers`) are standalone daycares with their own code format (06G262, 10XAPN) — zero natural overlap with real school DBNs. Per explicit user decision they are ALSO mirrored into the `schools` table as rows with `grade_band='2K'`, `has_2k=true`, scores `-1` (renders "Insufficient Data"/N/A), enrollment/ratio 0. They render with the standard SchoolCard and school detail page.
 
-**Why:** User asked to add a `has_2k` column to the main schools table populated from twok_centers; it would flag 0 schools. UX consistency was instead achieved with `TwokCenterCard` mirroring `SchoolCard` layout, rendered inline on home when the "2K" grade-band filter is active.
+**Why:** User rejected a separate card/list twice — required identical cards, a `has_2k` flag, and click-through to detail pages, not the map.
 
-**How to apply:** Any future request to "merge" or cross-link 2-K data with schools should be redirected to the separate-table pattern; only search/district/zip filters apply to 2-K mode (no scores, trends, or sort options exist for these sites).
+**How to apply:** Keep `grade_band='2K'` rows excluded from school stats and from every list/filter except the 2-K grade-band filter (see home.tsx filteredAndSortedSchools/schoolCounts). The seed cron endpoint upserts both `twok_centers` and the mirror rows in `schools` and invalidates `all-schools` cache — prod gets rows by republishing and re-running that endpoint. Detail page has a 2K-specific intro prose branch (borough-from-DBN logic is wrong for 2-K codes; avoid it).

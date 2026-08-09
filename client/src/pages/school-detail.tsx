@@ -451,7 +451,14 @@ export default function SchoolDetail() {
 
             return (
               <div className="text-muted-foreground leading-relaxed" data-testid="text-school-intro">
-                {isHS && schoolWithScore.is_specialized_hs ? (
+                {gradeBand === '2K' ? (
+                  <p>
+                    {schoolWithScore.name} is a 2-K program site in District {schoolWithScore.district}, part of New York City&apos;s
+                    early childhood education expansion offering care and learning for 2-year-olds.
+                    2-K programs are run by community-based providers and family childcare organizations;
+                    contact the provider directly for enrollment details and seat availability.
+                  </p>
+                ) : isHS && schoolWithScore.is_specialized_hs ? (
                   <p>
                     {schoolWithScore.name} is one of NYC&apos;s nine specialized high schools,
                     consistently ranked among the top public high schools in the United States.

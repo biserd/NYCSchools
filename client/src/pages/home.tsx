@@ -2,13 +2,12 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
 import { SchoolList } from "@/components/SchoolList";
-import { TwokCenterCard } from "@/components/TwokCenterCard";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
-import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend, type TwokCenter } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
@@ -285,33 +284,6 @@ export default function Home() {
 
   const show2K = selectedGradeBand === "2K";
 
-  const { data: twokCentersList, isLoading: twokCentersLoading } = useQuery<TwokCenter[]>({
-    queryKey: ['/api/twok-centers'],
-    staleTime: 1000 * 60 * 30,
-    enabled: show2K,
-  });
-
-  // Apply the homepage's compatible filters (search, district, zip) to the 2-K list
-  const filteredTwokCenters = useMemo(() => {
-    if (!twokCentersList) return [];
-    let list = twokCentersList;
-    const d = parseInt(selectedDistrict, 10);
-    if (!isNaN(d)) {
-      list = list.filter((c) => c.district === d);
-    }
-    if (debouncedSearchQuery.trim()) {
-      const q = debouncedSearchQuery.trim().toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          c.address.toLowerCase().includes(q) ||
-          c.dbn.toLowerCase().includes(q) ||
-          (c.zipCode ?? "").includes(q)
-      );
-    }
-    return [...list].sort((a, b) => a.name.localeCompare(b.name));
-  }, [twokCentersList, selectedDistrict, debouncedSearchQuery]);
-
   const schools = useMemo(() => {
     if (!rawSchools) return [];
     
@@ -324,36 +296,38 @@ export default function Home() {
   // Calculate school counts by type for stats display
   const schoolCounts = useMemo(() => {
     if (!schools.length) return null;
+    // Exclude 2-K daycare sites from school stats
+    const regularSchools = schools.filter(s => s.grade_band !== "2K");
     
-    const elementary = schools.filter(s => 
+    const elementary = regularSchools.filter(s => 
       s.grade_band?.includes("K-5") || 
       s.grade_band?.includes("PK-5") ||
       s.grade_band?.match(/^[0-5]-[0-5]$/)
     ).length;
     
-    const middle = schools.filter(s => s.grade_band === "6-8").length;
+    const middle = regularSchools.filter(s => s.grade_band === "6-8").length;
     
-    const highSchool = schools.filter(s => 
+    const highSchool = regularSchools.filter(s => 
       s.grade_band?.includes("9-12") || 
       s.grade_band?.includes("6-12") ||
       s.grade_band?.includes("7-12")
     ).length;
     
-    const earlyChildhood = schools.filter(s => s.has_3k || s.has_prek).length;
+    const earlyChildhood = regularSchools.filter(s => s.has_3k || s.has_prek).length;
     
-    const giftedTalented = schools.filter(s => s.has_gifted_talented).length;
+    const giftedTalented = regularSchools.filter(s => s.has_gifted_talented).length;
     
-    const dualLanguage = schools.filter(s => s.has_dual_language).length;
+    const dualLanguage = regularSchools.filter(s => s.has_dual_language).length;
 
-    const charters = schools.filter(s => s.dbn?.startsWith("84")).length;
+    const charters = regularSchools.filter(s => s.dbn?.startsWith("84")).length;
     
     // Count improving schools (those with positive historical trends)
     const improving = trends 
-      ? schools.filter(s => trends[s.dbn]?.direction === 'improving').length 
+      ? regularSchools.filter(s => trends[s.dbn]?.direction === 'improving').length 
       : 0;
     
     return {
-      total: schools.length,
+      total: regularSchools.length,
       elementary,
       middle,
       highSchool,
@@ -369,7 +343,11 @@ export default function Home() {
   }, [schools, trends, nyceecStats, privateSchoolsStats, twokStats]);
 
   const filteredAndSortedSchools = useMemo(() => {
-    let filtered = schools;
+    // 2-K program sites live in the schools table with has_2k=true and grade_band '2K'.
+    // They only appear when the 2-K grade filter is selected; otherwise they're excluded.
+    let filtered = show2K
+      ? schools.filter((school) => school.has_2k === true)
+      : schools.filter((school) => school.grade_band !== "2K");
 
     if (debouncedSearchQuery) {
       const normalizeBasic = (str: string) => 
@@ -411,6 +389,9 @@ export default function Home() {
       switch (selectedGradeBand) {
         case "PreK":
           filtered = filtered.filter((school) => school.has_prek === true);
+          break;
+        case "2K":
+          // Already filtered to has_2k above
           break;
         case "3K":
           filtered = filtered.filter((school) => school.has_3k === true);
@@ -984,12 +965,10 @@ export default function Home() {
         
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground" data-testid="text-results-count">
-            {show2K
-              ? twokCentersLoading
-                ? 'Loading 2-K programs…'
-                : `Showing ${filteredTwokCenters.length} 2-K programs`
-              : isLoading
-              ? 'Loading schools…'
+            {isLoading
+              ? show2K ? 'Loading 2-K programs…' : 'Loading schools…'
+              : show2K
+              ? `Showing ${filteredAndSortedSchools.length} 2-K programs`
               : `Showing ${filteredAndSortedSchools.length} ${filteredAndSortedSchools.length === 1 ? 'school' : 'schools'}`}
           </p>
           {!show2K && (
@@ -1019,21 +998,7 @@ export default function Home() {
           )}
         </div>
 
-        {show2K ? (
-          twokCentersLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-[140px]" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredTwokCenters.map((center) => (
-                <TwokCenterCard key={center.id} center={center} />
-              ))}
-            </div>
-          )
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="skeleton-schools">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-[280px]" data-testid={`skeleton-card-${i}`} />

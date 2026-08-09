@@ -94,6 +94,7 @@ export const schools = pgTable("schools", {
   // Early Childhood Programs
   has_3k: boolean("has_3k").default(false),
   has_prek: boolean("has_prek").default(false),
+  has_2k: boolean("has_2k").default(false),
   
   // Gifted & Talented Programs
   has_gifted_talented: boolean("has_gifted_talented").default(false),

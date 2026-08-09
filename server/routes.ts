@@ -3799,8 +3799,23 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         inserted += batch.length;
       }
 
+      // Mirror 2-K sites into the schools table so they render with standard
+      // school cards and detail pages (grade_band '2K', has_2k = true)
+      await db.execute(sql`
+        INSERT INTO schools (dbn, name, district, address, grade_band, academics_score, climate_score, progress_score, enrollment, student_teacher_ratio, latitude, longitude, zip_code, phone, website, has_2k)
+        SELECT dbn,
+               regexp_replace(name, '\s*\([0-9A-Z]{6}\)\s*$', ''),
+               COALESCE(district, 0),
+               address,
+               '2K', -1, -1, -1, 0, 0,
+               latitude, longitude, zip_code, phone, website, true
+        FROM twok_centers
+        ON CONFLICT (dbn) DO UPDATE SET has_2k = true
+      `);
+
       deleteCache("all-twok-centers");
       deleteCache("twok-centers-stats");
+      deleteCache("all-schools");
 
       console.log(`[TWOK_SEED] Seeded ${inserted} 2-K centers`);
       res.json({ success: true, inserted });
