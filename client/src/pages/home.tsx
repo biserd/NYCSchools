@@ -295,8 +295,8 @@ export default function Home() {
   const filteredTwokCenters = useMemo(() => {
     if (!twokCentersList) return [];
     let list = twokCentersList;
-    if (selectedDistrict !== "All") {
-      const d = parseInt(selectedDistrict, 10);
+    const d = parseInt(selectedDistrict, 10);
+    if (!isNaN(d)) {
       list = list.filter((c) => c.district === d);
     }
     if (debouncedSearchQuery.trim()) {
