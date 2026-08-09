@@ -3804,13 +3804,17 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       await db.execute(sql`
         INSERT INTO schools (dbn, name, district, address, grade_band, academics_score, climate_score, progress_score, enrollment, student_teacher_ratio, latitude, longitude, zip_code, phone, website, has_2k)
         SELECT dbn,
-               regexp_replace(name, '\s*\([0-9A-Z]{6}\)\s*$', ''),
+               regexp_replace(name, '\\s*\\([0-9A-Z]{6}\\)\\s*$', ''),
                COALESCE(district, 0),
                address,
                '2K', -1, -1, -1, 0, 0,
                latitude, longitude, zip_code, phone, website, true
         FROM twok_centers
-        ON CONFLICT (dbn) DO UPDATE SET has_2k = true
+        ON CONFLICT (dbn) DO UPDATE SET
+          has_2k = true,
+          name = CASE WHEN schools.grade_band = '2K' THEN EXCLUDED.name ELSE schools.name END,
+          address = CASE WHEN schools.grade_band = '2K' THEN EXCLUDED.address ELSE schools.address END,
+          phone = CASE WHEN schools.grade_band = '2K' THEN EXCLUDED.phone ELSE schools.phone END
       `);
 
       deleteCache("all-twok-centers");
