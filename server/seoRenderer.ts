@@ -29,6 +29,7 @@
 import { storage } from "./storage";
 import {
   calculateOverallScore,
+  getAssessmentConfidence,
   extractNcesIdFromSlug,
   getNyceecSlug,
   getPrivateSchoolSlug,
@@ -246,6 +247,12 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
   const overall = calculateOverallScore(school);
 
   const isHS = schoolIsHS(school);
+  const lowAssessmentConfidence = !isHS && getAssessmentConfidence(school) === "low";
+  const ratingSentence = overall < 0
+    ? (lowAssessmentConfidence
+      ? "Overall rating withheld because state-test participation was limited."
+      : "Overall rating unavailable because required data was not reported.")
+    : `Overall Score ${overall}/100.`;
   const gradRate = school.graduation_rate_4yr;
   const crRate = school.college_readiness_rate;
   const apCount = school.ap_course_count;
@@ -268,6 +275,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
         s,
         score: calculateOverallScore(s),
       }))
+      .filter((x) => x.score >= 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map((x) => x.s);
@@ -277,7 +285,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
 
   // Rich JSON-LD description for EducationalOrganization
   const ldDescription =
-    `${school.name} in ${borough}, District ${school.district}. Overall Score ${overall}/100.` +
+    `${school.name} in ${borough}, District ${school.district}. ${ratingSentence}` +
     (school.enrollment != null ? ` ${school.enrollment.toLocaleString()} students enrolled in grades ${school.grade_band ?? "K-5"}.` : "") +
     (isHS && gradRate != null ? ` ${gradRate}% 4-year graduation rate.` : "") +
     (isHS && crRate != null ? ` ${crRate}% college-ready.` : "");
@@ -326,7 +334,9 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
   if (isHS) {
     // "Is it a good school?" — lead with graduation + college readiness
     const goodAnswer =
-      `${school.name} is rated ${overall}/100 by NYC School Ratings` +
+      (overall < 0
+        ? `${school.name}'s overall rating is unavailable because required data was not reported`
+        : `${school.name} is rated ${overall}/100 by NYC School Ratings`) +
       (gradRate != null ? `, with a ${gradRate}% 4-year graduation rate` : "") +
       (crRate != null ? ` and ${crRate}% of graduates meeting college-readiness benchmarks` : "") +
       "." +
@@ -393,7 +403,9 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
       name: `Is ${school.name} a good school?`,
       acceptedAnswer: {
         "@type": "Answer",
-        text: `${school.name} has an overall score of ${overall}/100 based on academic performance (40%), school climate (30%), and student progress (30%).` +
+        text: (overall < 0
+          ? `${school.name}: ${ratingSentence}`
+          : `${school.name} has an overall score of ${overall}/100 based on academic performance (40%), school climate (30%), and student progress (30%).`) +
           (school.ela_proficiency != null || school.math_proficiency != null
             ? ` Students achieve` +
               (school.ela_proficiency != null ? ` ${school.ela_proficiency}% proficiency in ELA` : "") +
@@ -498,7 +510,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
           <li>Borough: ${escapeHtml(borough)}</li>
           <li>Grade band: ${escapeHtml(school.grade_band ?? "K-5")}</li>
           <li>Enrollment: ${school.enrollment ?? "n/a"}</li>
-          <li>Overall score: ${overall}/100</li>
+          <li>${overall < 0 ? escapeHtml(ratingSentence) : `Overall score: ${overall}/100`}</li>
           ${school.ela_proficiency != null ? `<li>ELA proficiency: ${school.ela_proficiency}%</li>` : ""}
           ${school.math_proficiency != null ? `<li>Math proficiency: ${school.math_proficiency}%</li>` : ""}
           ${school.address ? `<li>Address: ${escapeHtml(school.address)}</li>` : ""}

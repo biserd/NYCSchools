@@ -1,4 +1,4 @@
-import { SchoolWithOverallScore, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/schema";
+import { SchoolWithOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { AdmissionsSection } from "./AdmissionsSection";
@@ -37,6 +37,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
 
   const scoreColor = getScoreColor(school.overall_score);
   const scoreLabel = getScoreLabel(school.overall_score);
+  const hasLowAssessmentConfidence = !isHighSchool(school) && getAssessmentConfidence(school) === "low";
   const borough = getBoroughFromDBN(school.dbn);
   
   const elaColor = getMetricColor(school.ela_proficiency);
@@ -204,7 +205,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
               </div>
               <div>
                 <p className="text-sm text-muted-foreground" data-testid="label-overall-score">
-                  {school.overall_score < 0 ? "Insufficient Data" : "Overall Score"}
+                  {hasLowAssessmentConfidence ? "Withheld: limited participation" : school.overall_score < 0 ? "Insufficient Data" : "Overall Score"}
                 </p>
                 <p className="text-base font-medium" data-testid="text-detail-score-label">{scoreLabel}</p>
               </div>
@@ -213,7 +214,15 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
             {school.overall_score < 0 ? (
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-4" data-testid="container-insufficient-data-notice">
                 <p className="text-sm text-amber-700 dark:text-amber-300">
-                  <strong>Why is there insufficient data?</strong> This high school lacks the graduation rate, college readiness, or test proficiency data needed to calculate a reliable overall score. This may occur for newer schools, schools with small cohorts, or schools where data was not reported to NYC DOE.
+                  {hasLowAssessmentConfidence ? (
+                    <>
+                      <strong>Why was this rating withheld?</strong> Test participation was below {ASSESSMENT_PARTICIPATION_THRESHOLD}%, or fewer than {ASSESSMENT_MINIMUM_TESTED_COUNT} students took ELA or Math when participation rates were unavailable.
+                      {" "}ELA: {school.ela_participation_rate != null ? `${school.ela_participation_rate}% participation` : `${school.ela_tested_count ?? "N/A"} tested`};
+                      {" "}Math: {school.math_participation_rate != null ? `${school.math_participation_rate}% participation` : `${school.math_tested_count ?? "N/A"} tested`}.
+                    </>
+                  ) : (
+                    <><strong>Why is there insufficient data?</strong> This school lacks the graduation, college readiness, or test proficiency data needed to calculate a reliable overall score.</>
+                  )}
                 </p>
               </div>
             ) : !isPremium ? (

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, twokCenters } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, twokCenters, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
@@ -324,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // score precomputed. Cached for 30 minutes.
   app.get("/api/safe-and-strong", async (_req: Request, res: Response) => {
     try {
-      const cacheKey = "safe-and-strong:v1";
+      const cacheKey = "safe-and-strong:v2";
       const cached = getCached(cacheKey);
       if (cached) return res.json(cached);
 
@@ -352,12 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map((s) => {
           const safety = safetyByDbn.get(s.dbn);
           if (safety === undefined) return null;
-          const overall = Math.round(
-            (s.academics_score || 0) * 0.4 +
-              (s.climate_score || 0) * 0.3 +
-              (s.progress_score || 0) * 0.3,
-          );
-          if (!overall) return null;
+          const overall = calculateOverallScore(s);
+          if (overall < 0) return null;
           const combined = Math.round((overall + safety) / 2);
           return {
             dbn: s.dbn,
@@ -771,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: s.name,
                 latitude: s.latitude,
                 longitude: s.longitude,
-                overall_score: s.academics_score + s.climate_score + s.progress_score, // Basic score calc if needed
+                overall_score: calculateOverallScore(s),
                 grade_band: s.grade_band
               });
             }
@@ -2172,12 +2168,16 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
       if (!cachedRecommendationSummary) {
         const schools = await storage.getSchools();
         // Get a comprehensive sample with special program info
-        const schoolSample = schools.slice(0, 200).map(s => ({
+        const schoolSample = schools.slice(0, 200).map(s => {
+          const score = calculateOverallScore(s);
+          const status = score >= 0 ? "rated" : !isHighSchool(s) && getAssessmentConfidence(s) === "low" ? "withheld_limited_participation" : "unavailable";
+          return {
           dbn: s.dbn,
           name: s.name,
           district: s.district,
           grade_band: s.grade_band,
-          overall: Math.round(0.4 * s.academics_score + 0.3 * s.climate_score + 0.3 * s.progress_score),
+          overall: score >= 0 ? score : null,
+          rating_status: status,
           academics: s.academics_score,
           climate: s.climate_score,
           progress: s.progress_score,
@@ -2191,7 +2191,8 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
           has_prek: s.has_prek,
           student_teacher_ratio: s.student_teacher_ratio,
           enrollment: s.enrollment,
-        }));
+          };
+        });
         cachedRecommendationSummary = JSON.stringify(schoolSample, null, 2);
       }
 
@@ -2216,6 +2217,8 @@ Districts by Borough:
 - Staten Island: 31
 
 Score Calculation: 40% academics + 30% climate + 30% progress
+- A null overall with rating_status "withheld_limited_participation" is not a rating. Never rank, recommend, or describe it as a numeric score; explain that limited test participation prevents a fair rating.
+- A null overall with rating_status "unavailable" means required data was not reported and must not participate in score comparisons.
 
 IMPORTANT: When recommending schools, you MUST:
 1. Start with a 2-3 sentence explanation of your approach
@@ -2318,7 +2321,10 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
           const academics = typeof currentSchool.academics_score === 'number' ? currentSchool.academics_score : 0;
           const climate = typeof currentSchool.climate_score === 'number' ? currentSchool.climate_score : 0;
           const progress = typeof currentSchool.progress_score === 'number' ? currentSchool.progress_score : 0;
-          const overallScore = Math.round(0.4 * academics + 0.3 * climate + 0.3 * progress);
+          const overallScore = calculateOverallScore(currentSchool);
+          const overallDisplay = overallScore < 0
+            ? (getAssessmentConfidence(currentSchool) === "low" ? "Withheld: limited test participation" : "Not available")
+            : String(overallScore);
           const dualLangInfo = currentSchool.has_dual_language && currentSchool.dual_language_languages?.length 
             ? 'Yes - ' + currentSchool.dual_language_languages.join(', ')
             : currentSchool.has_dual_language ? 'Yes' : 'No';
@@ -2363,7 +2369,7 @@ Grade Band: ${currentSchool.grade_band}
 Address: ${currentSchool.address || 'Not available'}
 
 Current Scores (Most Recent Year):
-- Overall Score: ${overallScore}
+- Overall Score: ${overallDisplay}
 - Academics Score: ${academics}
 - Climate Score: ${climate}
 - Progress Score: ${progress}
@@ -2427,10 +2433,13 @@ When asked about score trends or how scores have changed over time, USE THE HIST
         const academics = typeof school.academics_score === 'number' ? school.academics_score : 0;
         const climate = typeof school.climate_score === 'number' ? school.climate_score : 0;
         const progress = typeof school.progress_score === 'number' ? school.progress_score : 0;
-        const overallScore = Math.round(0.4 * academics + 0.3 * climate + 0.3 * progress);
+        const overallScore = calculateOverallScore(school);
+        const overallDisplay = overallScore < 0
+          ? (getAssessmentConfidence(school) === "low" ? "Withheld: limited test participation" : "Not available")
+          : String(overallScore);
         return `\nMentioned School: ${school.name} (DBN: ${school.dbn})
 District: ${school.district} | Grade Band: ${school.grade_band} | Address: ${school.address || 'N/A'}
-Overall Score: ${overallScore} | Academics: ${academics} | Climate: ${climate} | Progress: ${progress}
+Overall Score: ${overallDisplay} | Academics: ${academics} | Climate: ${climate} | Progress: ${progress}
 ELA: ${school.ela_proficiency ?? 'N/A'}% | Math: ${school.math_proficiency ?? 'N/A'}%
 Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.student_teacher_ratio ?? 'N/A'}
 `;
@@ -2503,7 +2512,8 @@ Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.stud
         schools.forEach(s => {
           const borough = s.dbn.slice(2, 3) as keyof typeof byBorough;
           if (byBorough[borough]) {
-            const overall = Math.round(0.4 * (s.academics_score || 0) + 0.3 * (s.climate_score || 0) + 0.3 * (s.progress_score || 0));
+            const overall = calculateOverallScore(s);
+            const ratingStatus = overall >= 0 ? "rated" : !isHighSchool(s) && getAssessmentConfidence(s) === "low" ? "withheld_limited_participation" : "unavailable";
             const flags = [
               s.has_gifted_talented ? 'GT' + (s.gt_program_type === 'citywide' ? '+' : '') : '',
               s.has_dual_language ? 'DL' : '',
@@ -2514,7 +2524,8 @@ Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.stud
               d: s.dbn,
               n: s.name,
               g: s.grade_band,
-              o: overall,
+              o: overall >= 0 ? overall : null,
+              rs: ratingStatus,
               f: flags || null,
             };
             if (s.enrollment != null) entry.e = s.enrollment;
@@ -2527,7 +2538,7 @@ Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.stud
         
         // Sort each borough by overall score descending
         Object.keys(byBorough).forEach(b => {
-          byBorough[b as keyof typeof byBorough].sort((a, c) => c.o - a.o);
+          byBorough[b as keyof typeof byBorough].sort((a, c) => (c.o ?? Number.NEGATIVE_INFINITY) - (a.o ?? Number.NEGATIVE_INFINITY));
         });
         
         cachedSchoolSummary = JSON.stringify(byBorough);
@@ -2573,6 +2584,8 @@ CRITICAL RULES - FOLLOW STRICTLY:
 5. **DATA ACCURACY**: When citing a school's enrollment, ELA, or math proficiency:
    - Use the EXACT numbers from the data fields: e=enrollment, el=ELA proficiency %, ma=Math proficiency %
    - If a field is missing for a school, say "data not available" — do NOT estimate
+    - o is the Overall Score only when numeric. If o is null and rs is "withheld_limited_participation", explain that limited state-test participation prevents a fair rating.
+    - If o is null, NEVER rank, recommend, compare, or describe the school using an overall rating. A null score is not zero and cannot win or lose a score comparison.
 
 Borough codes in the data (the database is organized by these borough keys):
 - M = Manhattan (DBN middle letter M)
@@ -2605,7 +2618,7 @@ Score Ranges:
 - 90+: Outstanding | 80-89: Strong | 70-79: Average | Below 70: Needs Improvement
 
 SCHOOL DATABASE (grouped by borough, sorted by overall score):
-Data format: d=DBN, n=Name, g=GradeBand, o=OverallScore, f=Flags (GT=Gifted&Talented, GT+=Citywide G&T, DL=DualLanguage, 3K=Has3K, PK=HasPreK), e=Enrollment, el=ELA%, ma=Math%, di=District
+Data format: d=DBN, n=Name, g=GradeBand, o=OverallScore or null, rs=rating status, f=Flags (GT=Gifted&Talented, GT+=Citywide G&T, DL=DualLanguage, 3K=Has3K, PK=HasPreK), e=Enrollment, el=ELA%, ma=Math%, di=District
 ${cachedSchoolSummary}
 
 When answering:

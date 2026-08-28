@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-import { getSchoolSlug } from "@shared/schema";
+import { getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 
 // MCP (Model Context Protocol) Server for OpenAI ChatGPT Apps SDK
 // This implements the JSON-RPC 2.0 protocol that ChatGPT uses to communicate with apps
@@ -257,13 +257,25 @@ const SERVER_CAPABILITIES = {
   tools: {}
 };
 
-// Calculate overall score
-function calculateOverallScore(school: any): number {
-  return Math.round(
-    0.4 * (school.academics_score || 0) +
-    0.3 * (school.climate_score || 0) +
-    0.3 * (school.progress_score || 0)
-  );
+function getRatingState(school: any) {
+  const score = calculateOverallScore(school);
+  const assessmentDriven = !isHighSchool(school);
+  const confidence = assessmentDriven ? getAssessmentConfidence(school) : "not_applicable";
+  const status = score >= 0
+    ? "rated"
+    : confidence === "low"
+      ? "withheld_limited_participation"
+      : "unavailable";
+  return {
+    overall_score: score >= 0 ? score : null,
+    rating_status: status,
+    rating_confidence: confidence,
+    rating_note: status === "withheld_limited_participation"
+      ? "Overall rating withheld because state-test participation was limited."
+      : status === "unavailable"
+        ? "Overall rating unavailable because required data was not reported."
+        : null,
+  };
 }
 
 // Borough mapping from DBN
@@ -397,7 +409,7 @@ async function handleSearchSchools(params: Record<string, any>) {
     district: s.district,
     borough: getBoroughFromDbn(s.dbn),
     grade_band: s.grade_band,
-    overall_score: calculateOverallScore(s),
+    ...getRatingState(s),
     academics_score: s.academics_score,
     climate_score: s.climate_score,
     progress_score: s.progress_score,
@@ -415,7 +427,7 @@ async function handleSearchSchools(params: Record<string, any>) {
   return {
     _formatting_hint: {
       format: "ranked_list",
-      presentation: "Present as a numbered list sorted by score. For each school show: name, overall score, key programs (G&T, dual language), and one distinguishing fact. Offer to show details for any school or compare multiple.",
+      presentation: "Present only schools with numeric overall_score values as a numbered list ranked by score. If a matching school has overall_score null, show it separately as an unranked result using rating_note; never treat a withheld or unavailable rating as a score, rank, recommendation, winner, or loser. For rated schools show: name, overall score, key programs (G&T, dual language), and one distinguishing fact. Offer to show details for any school or compare multiple.",
       score_interpretation: "80+ = Excellent, 60-79 = Good, 40-59 = Fair, Below 40 = Needs Improvement",
       next_actions: ["Ask for details on specific school", "Compare 2-4 schools", "Refine search with more filters"]
     },
@@ -443,6 +455,7 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
   }
 
   const overallScore = calculateOverallScore(school);
+  const ratingState = getRatingState(school);
   
   return {
     _formatting_hint: {
@@ -464,8 +477,8 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     longitude: school.longitude,
     
     // Scores with interpretation
-    overall_score: overallScore,
-    overall_rating: overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : overallScore >= 40 ? "Fair" : "Needs Improvement",
+    ...ratingState,
+    overall_rating: overallScore < 0 ? ratingState.rating_note : overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : overallScore >= 40 ? "Fair" : "Needs Improvement",
     academics_score: school.academics_score,
     climate_score: school.climate_score,
     progress_score: school.progress_score,
@@ -527,7 +540,7 @@ async function handleCompareSchools(params: Record<string, any>) {
         address: school.address,
         latitude: school.latitude,
         longitude: school.longitude,
-        overall_score: calculateOverallScore(school),
+        ...getRatingState(school),
         academics_score: school.academics_score,
         climate_score: school.climate_score,
         progress_score: school.progress_score,
@@ -546,7 +559,7 @@ async function handleCompareSchools(params: Record<string, any>) {
   return {
     _formatting_hint: {
       format: "comparison_table",
-      presentation: "Present as a side-by-side comparison table. Show school names as column headers. Key metrics as rows: Overall Score, Academics, Climate, Progress, ELA %, Math %, Enrollment, and Programs. Highlight the 'winner' for each metric. Conclude with a brief summary of trade-offs.",
+       presentation: "Present as a side-by-side comparison table. Show school names as column headers. Key metrics as rows: Overall Score, Academics, Climate, Progress, ELA %, Math %, Enrollment, and Programs. For Overall Score, show the rating note when the value is null. Highlight a winner only among numeric, available values; never treat a withheld or unavailable rating as a score or winner. Conclude with a brief summary of trade-offs.",
       highlight_winner: true,
       key_metrics: ["overall_score", "academics_score", "ela_proficiency", "math_proficiency", "enrollment"],
       next_actions: ["Get details on winning school", "View trends for any school", "Search for more options"]
@@ -626,6 +639,7 @@ async function handleGetTopSchools(params: Record<string, any>) {
   }
 
   // Sort by overall score descending
+  filtered = filtered.filter(s => calculateOverallScore(s) >= 0);
   filtered.sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a));
 
   const limit = Math.min(params.limit || 10, 25);
@@ -656,7 +670,7 @@ async function handleGetTopSchools(params: Record<string, any>) {
       address: s.address,
       latitude: s.latitude,
       longitude: s.longitude,
-      overall_score: calculateOverallScore(s),
+      ...getRatingState(s),
       overall_rating: calculateOverallScore(s) >= 80 ? "Excellent" : calculateOverallScore(s) >= 60 ? "Good" : "Fair",
       academics_score: s.academics_score,
       climate_score: s.climate_score,
@@ -688,7 +702,7 @@ async function handleGetFavorites(userId: string) {
       address: school.address,
       latitude: school.latitude,
       longitude: school.longitude,
-      overall_score: calculateOverallScore(school),
+      ...getRatingState(school),
       academics_score: school.academics_score,
       climate_score: school.climate_score,
       progress_score: school.progress_score,
@@ -704,7 +718,7 @@ async function handleGetFavorites(userId: string) {
     _formatting_hint: {
       format: "favorites_list",
       presentation: favoriteSchools.length > 0 
-        ? `Present the user's ${favoriteSchools.length} saved school(s) as a personalized list. For each, show name, overall score, and key programs. Offer to compare favorites or get detailed info on any school.`
+        ? `Present the user's ${favoriteSchools.length} saved school(s) as a personalized list. For each, show name, available overall score, and key programs. When overall_score is null, show rating_note instead; never present, rank, or compare it as a numeric rating. Offer to compare favorites or get detailed info on any school.`
         : "The user hasn't saved any schools yet. Suggest starting a search to find schools to save.",
       personalized: true,
       next_actions: favoriteSchools.length > 1 

@@ -32,7 +32,7 @@ import {
   ListOrdered,
   ArrowRight
 } from "lucide-react";
-import { School, calculateOverallScore } from "@shared/schema";
+import { School, calculateOverallScore, getAssessmentConfidence } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
@@ -99,7 +99,8 @@ function estimateSchoolDemand(school: School, priority: PriorityType): SchoolDem
   const overallScore = calculateOverallScore(school);
   let demandMultiplier = 1.0;
   
-  if (overallScore >= 90) demandMultiplier = 3.5;
+  if (overallScore < 0) demandMultiplier = 1.0;
+  else if (overallScore >= 90) demandMultiplier = 3.5;
   else if (overallScore >= 80) demandMultiplier = 2.5;
   else if (overallScore >= 70) demandMultiplier = 1.8;
   else if (overallScore >= 60) demandMultiplier = 1.2;
@@ -558,6 +559,7 @@ export default function LotterySimulatorPage() {
                               variant="outline" 
                               className={`${getScoreColor(score)} font-bold text-sm w-12 justify-center`}
                               data-testid={`rating-${school.dbn}`}
+                               title={score < 0 && getAssessmentConfidence(school) === "low" ? "Rating withheld because test participation was limited" : undefined}
                             >
                               {score > 0 ? score : "N/A"}
                             </Badge>

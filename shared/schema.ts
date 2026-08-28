@@ -17,6 +17,12 @@ export const schools = pgTable("schools", {
   ela_proficiency: integer("ela_proficiency"), // Nullable - NULL means no data available
   math_proficiency: integer("math_proficiency"), // Nullable - NULL means no data available
   science_proficiency: integer("science_proficiency"), // Science % Level 3+4 (Grades 5 & 8)
+  ela_tested_count: integer("ela_tested_count"),
+  ela_eligible_count: integer("ela_eligible_count"),
+  ela_participation_rate: integer("ela_participation_rate"),
+  math_tested_count: integer("math_tested_count"),
+  math_eligible_count: integer("math_eligible_count"),
+  math_participation_rate: integer("math_participation_rate"),
   
   // Grade-Level Assessment Breakdowns (NYSED Grades 3-8)
   ela_grade3: integer("ela_grade3"), // ELA % proficient Grade 3
@@ -143,6 +149,12 @@ export const schoolHistoricalScores = pgTable("school_historical_scores", {
   ela_proficiency: integer("ela_proficiency"), // ELA % Level 3+4
   math_proficiency: integer("math_proficiency"), // Math % Level 3+4
   science_proficiency: integer("science_proficiency"), // Science % Level 3+4 (Grades 5 & 8)
+  ela_tested_count: integer("ela_tested_count"),
+  ela_eligible_count: integer("ela_eligible_count"),
+  ela_participation_rate: integer("ela_participation_rate"),
+  math_tested_count: integer("math_tested_count"),
+  math_eligible_count: integer("math_eligible_count"),
+  math_participation_rate: integer("math_participation_rate"),
   data_source: varchar("data_source"), // Data source (e.g., "NYSED")
   data_source_release: varchar("data_source_release"), // NYSED release date, e.g., "2025-12-03"
 }, (table) => ({
@@ -597,21 +609,70 @@ export function calculateOverallScore(school: School): number {
     return -1;
   }
   
-  // Elementary/Middle schools use test proficiency
+  // Elementary/Middle Academics is the mean of ELA and Math proficiency.
+  // Overall = Academics (40%) + Climate (30%) + Progress (30%).
+  // NYSED's 95% participation expectation is our minimum for a rated result.
   // Check if proficiency data is missing (NULL means no data available)
   if (school.ela_proficiency === null || school.math_proficiency === null) {
     return -1; // Insufficient data
   }
+
+  if (getAssessmentConfidence(school) === "low") {
+    return -1;
+  }
   
-  // Calculate test proficiency as average of ELA and Math
-  const testProficiency = (school.ela_proficiency + school.math_proficiency) / 2;
+  // Use the same rounded Academics value shown to users so the visible
+  // component scores always reproduce Overall exactly.
+  const academicScore = calculateAcademicScore(school)!;
   
   // Overall Score = Test Proficiency (40%) + Climate (30%) + Progress (30%)
   return Math.round(
-    0.4 * testProficiency +
+    0.4 * academicScore +
     0.3 * school.climate_score +
     0.3 * school.progress_score
   );
+}
+
+export const ASSESSMENT_PARTICIPATION_THRESHOLD = 95;
+export const ASSESSMENT_MINIMUM_TESTED_COUNT = 50;
+
+export function calculateAcademicScore(
+  school: Pick<School, "ela_proficiency" | "math_proficiency">,
+): number | null {
+  if (school.ela_proficiency == null || school.math_proficiency == null) return null;
+  return Math.round((school.ela_proficiency + school.math_proficiency) / 2);
+}
+
+export function getAssessmentConfidence(
+  school: Pick<School, "ela_participation_rate" | "math_participation_rate" | "ela_tested_count" | "math_tested_count" | "ela_eligible_count" | "math_eligible_count">,
+): "sufficient" | "low" | "unknown" {
+  const subjects = [
+    {
+      rate: school.ela_participation_rate,
+      tested: school.ela_tested_count,
+      eligible: school.ela_eligible_count,
+    },
+    {
+      rate: school.math_participation_rate,
+      tested: school.math_tested_count,
+      eligible: school.math_eligible_count,
+    },
+  ];
+  if (subjects.some(subject =>
+    subject.tested != null &&
+    subject.eligible != null &&
+    subject.tested * 100 < subject.eligible * ASSESSMENT_PARTICIPATION_THRESHOLD
+  )) return "low";
+  const rates = subjects.map(subject => subject.rate);
+  if (subjects.some(subject =>
+    (subject.tested == null || subject.eligible == null) &&
+    subject.rate != null &&
+    subject.rate < ASSESSMENT_PARTICIPATION_THRESHOLD
+  )) return "low";
+  const testedCounts = [school.ela_tested_count, school.math_tested_count];
+  if (rates.some(rate => rate == null) && testedCounts.some(count => count != null && count < ASSESSMENT_MINIMUM_TESTED_COUNT)) return "low";
+  if (rates.some(rate => rate == null)) return "unknown";
+  return "sufficient";
 }
 
 // Check if a school has insufficient data for proper scoring

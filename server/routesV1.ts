@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { requireApiKey, apiError } from "./apiKeyAuth";
 import { apiRequestLoggerMiddleware } from "./apiObservability";
 import { getCached, setCache, CACHE_TTL_LONG } from "./cache";
+import { calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 
 // Public Developer API (v1). All routes require a valid Bearer API key issued
 // to a Premium subscriber. Requests are rate-limited per key in apiKeyAuth.ts.
@@ -21,13 +22,17 @@ function boroughFromDbn(dbn: string): string | null {
   return BOROUGH_NAMES[c] ?? null;
 }
 
-function calcOverallScore(s: { academics_score: number; climate_score: number; progress_score: number }): number {
-  return Math.round(s.academics_score * 0.4 + s.climate_score * 0.3 + s.progress_score * 0.3);
-}
-
 // Public-facing serialization for a school. Snake_case mirrors the docs we
 // already publish on /developers/docs.
 function serializeSchool(s: any) {
+  const score = calculateOverallScore(s);
+  const assessmentDriven = !isHighSchool(s);
+  const confidence = assessmentDriven ? getAssessmentConfidence(s) : "not_applicable";
+  const ratingStatus = score >= 0
+    ? "rated"
+    : confidence === "low"
+      ? "withheld_limited_participation"
+      : "unavailable";
   return {
     dbn: s.dbn,
     name: s.name,
@@ -35,7 +40,14 @@ function serializeSchool(s: any) {
     borough: boroughFromDbn(s.dbn),
     address: s.address,
     grade_band: s.grade_band,
-    overall_score: calcOverallScore(s),
+    overall_score: score >= 0 ? score : null,
+    rating_status: ratingStatus,
+    rating_confidence: confidence,
+    rating_note: ratingStatus === "withheld_limited_participation"
+      ? "Overall rating withheld because state-test participation was limited."
+      : ratingStatus === "unavailable"
+        ? "Overall rating unavailable because required data was not reported."
+        : null,
     academics_score: s.academics_score,
     climate_score: s.climate_score,
     progress_score: s.progress_score,

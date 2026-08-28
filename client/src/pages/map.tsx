@@ -11,7 +11,7 @@ import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-rea
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { School, calculateOverallScore, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl, type PrivateSchool, getPrivateSchoolUrl, type TwokCenter } from "@shared/schema";
+import { School, calculateOverallScore, getAssessmentConfidence, isHighSchool, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl, type PrivateSchool, getPrivateSchoolUrl, type TwokCenter } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 
@@ -627,6 +627,7 @@ export default function MapPage() {
         case 'green': return '#22c55e';
         case 'yellow': return '#eab308';
         case 'purple': return '#8b5cf6';
+        case 'gray': return '#9ca3af';
         default: return '#ef4444';
       }
     };
@@ -635,6 +636,13 @@ export default function MapPage() {
       // Add markers for filtered schools
       filteredSchools.forEach(school => {
         const scoreColor = getScoreColor(school.overall_score);
+        const hasLowAssessmentConfidence = !isHighSchool(school) && getAssessmentConfidence(school) === "low";
+        const ratingHtml = hasLowAssessmentConfidence
+          ? `<strong>Overall rating:</strong> <span style="color: #b45309; font-weight: 600;">Withheld: limited participation</span>
+             <div style="margin-top: 3px; font-size: 11px; color: #666;">Ratings are withheld below ${ASSESSMENT_PARTICIPATION_THRESHOLD}% participation, or with fewer than ${ASSESSMENT_MINIMUM_TESTED_COUNT} tested students when rates are unavailable. ELA: ${school.ela_participation_rate != null ? `${school.ela_participation_rate}%` : `${school.ela_tested_count ?? "N/A"} tested`}; Math: ${school.math_participation_rate != null ? `${school.math_participation_rate}%` : `${school.math_tested_count ?? "N/A"} tested`}.</div>`
+          : school.overall_score < 0
+          ? `<strong>Overall rating:</strong> <span style="color: #666; font-weight: 600;">Not available</span>`
+          : `<strong>Overall Score:</strong> <span style="color: ${getMarkerColor(scoreColor)}; font-weight: 600;">${school.overall_score}</span>`;
         
         const markerHtml = `
           <div style="
@@ -675,10 +683,7 @@ export default function MapPage() {
             <p style="margin: 0; font-size: 12px; color: #666;">DBN: ${school.dbn}</p>
             <p style="margin: 4px 0; font-size: 12px; color: #666;">District ${school.district} | ${school.grade_band || 'N/A'}</p>
             <p style="margin: 4px 0; font-size: 14px;">
-              <strong>Overall Score:</strong> 
-              <span style="color: ${getMarkerColor(scoreColor)}; font-weight: 600;">
-                ${school.overall_score}
-              </span>
+              ${ratingHtml}
             </p>
             <p style="margin: 4px 0; font-size: 12px;">
               ELA: ${school.ela_proficiency}% | Math: ${school.math_proficiency}%

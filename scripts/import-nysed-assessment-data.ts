@@ -13,6 +13,10 @@ interface AssessmentRecord {
   elaByGrade: { [grade: number]: number | null };
   mathByGrade: { [grade: number]: number | null };
   scienceByGrade: { [grade: number]: number | null };
+  elaTested: number | null;
+  elaEligible: number | null;
+  mathTested: number | null;
+  mathEligible: number | null;
 }
 
 const DATA_SOURCE = "NYSED";
@@ -76,6 +80,8 @@ async function importNYSEDData(csvPath: string, assessmentYear: string) {
   const gradeIdx = findColumn(["grade", "grade_level"]);
   const profIdx = findColumn(["proficient", "l3_l4", "level3_4", "percent_prof", "pct_prof", "%l3+l4"]);
   const subgroupIdx = findColumn(["subgroup", "category", "demographic", "student_group"]);
+  const testedIdx = findColumn(["total_tested", "number_tested", "num_tested", "tested_count"]);
+  const eligibleIdx = findColumn(["total_enrolled", "number_enrolled", "num_enrolled", "eligible_count"]);
   
   console.log(`Column mapping - DBN: ${dbnIdx}, Year: ${yearIdx}, Subject: ${subjectIdx}, Grade: ${gradeIdx}, Proficient: ${profIdx}, Subgroup: ${subgroupIdx}`);
   
@@ -130,22 +136,32 @@ async function importNYSEDData(csvPath: string, assessmentYear: string) {
         elaByGrade: {},
         mathByGrade: {},
         scienceByGrade: {},
+        elaTested: null,
+        elaEligible: null,
+        mathTested: null,
+        mathEligible: null,
       };
       schoolData.set(dbn, record);
     }
     
     const gradeNum = parseInt(gradeStr);
     const isAllGrades = gradeStr.toLowerCase().includes("all") || gradeStr === "" || isNaN(gradeNum);
+    const tested = testedIdx >= 0 ? parseInt(columns[testedIdx], 10) : null;
+    const eligible = eligibleIdx >= 0 ? parseInt(columns[eligibleIdx], 10) : null;
     
     if (subject.includes("ela") || subject.includes("english") || subject.includes("reading")) {
       if (isAllGrades) {
         record.elaProf = profValue;
+        record.elaTested = Number.isFinite(tested) ? tested : null;
+        record.elaEligible = Number.isFinite(eligible) ? eligible : null;
       } else if (gradeNum >= 3 && gradeNum <= 8) {
         record.elaByGrade[gradeNum] = profValue;
       }
     } else if (subject.includes("math")) {
       if (isAllGrades) {
         record.mathProf = profValue;
+        record.mathTested = Number.isFinite(tested) ? tested : null;
+        record.mathEligible = Number.isFinite(eligible) ? eligible : null;
       } else if (gradeNum >= 3 && gradeNum <= 8) {
         record.mathByGrade[gradeNum] = profValue;
       }
@@ -185,6 +201,23 @@ async function importNYSEDData(csvPath: string, assessmentYear: string) {
       
       if (data.elaProf !== null) updateData.ela_proficiency = data.elaProf;
       if (data.mathProf !== null) updateData.math_proficiency = data.mathProf;
+      if (data.elaProf !== null && data.mathProf !== null) {
+        updateData.academics_score = Math.round((data.elaProf + data.mathProf) / 2);
+      }
+      if (testedIdx >= 0) {
+        updateData.ela_tested_count = data.elaTested;
+        updateData.math_tested_count = data.mathTested;
+      }
+      if (eligibleIdx >= 0) {
+        updateData.ela_eligible_count = data.elaEligible;
+        updateData.math_eligible_count = data.mathEligible;
+      }
+      if (testedIdx >= 0 && eligibleIdx >= 0) {
+        updateData.ela_participation_rate = data.elaTested != null && data.elaEligible
+          ? Math.round(100 * data.elaTested / data.elaEligible) : null;
+        updateData.math_participation_rate = data.mathTested != null && data.mathEligible
+          ? Math.round(100 * data.mathTested / data.mathEligible) : null;
+      }
       if (data.scienceProf !== null) updateData.science_proficiency = data.scienceProf;
       
       if (data.elaByGrade[3] !== undefined) updateData.ela_grade3 = data.elaByGrade[3];
@@ -220,17 +253,38 @@ async function importNYSEDData(csvPath: string, assessmentYear: string) {
           ela_proficiency: data.elaProf,
           math_proficiency: data.mathProf,
           science_proficiency: data.scienceProf,
+           ela_tested_count: data.elaTested,
+           ela_eligible_count: data.elaEligible,
+           ela_participation_rate: updateData.ela_participation_rate,
+           math_tested_count: data.mathTested,
+           math_eligible_count: data.mathEligible,
+           math_participation_rate: updateData.math_participation_rate,
           data_source: DATA_SOURCE,
           data_source_release: new Date().toISOString().split("T")[0],
         });
         historicalRecords++;
       } else {
+        const historyParticipationUpdate = {
+          ...(testedIdx >= 0 ? {
+            ela_tested_count: data.elaTested,
+            math_tested_count: data.mathTested,
+          } : {}),
+          ...(eligibleIdx >= 0 ? {
+            ela_eligible_count: data.elaEligible,
+            math_eligible_count: data.mathEligible,
+          } : {}),
+          ...(testedIdx >= 0 && eligibleIdx >= 0 ? {
+            ela_participation_rate: updateData.ela_participation_rate,
+            math_participation_rate: updateData.math_participation_rate,
+          } : {}),
+        };
         await db
           .update(schoolHistoricalScores)
           .set({
             ela_proficiency: data.elaProf,
             math_proficiency: data.mathProf,
             science_proficiency: data.scienceProf,
+            ...historyParticipationUpdate,
             data_source: DATA_SOURCE,
             data_source_release: new Date().toISOString().split("T")[0],
           })
@@ -277,6 +331,7 @@ Expected CSV columns (flexible matching):
   - SUBJECT: ELA, Math, or Science
   - GRADE: Grade level (3-8) or "All Grades"
   - PERCENT_PROFICIENT: Proficiency percentage (0-100 or 0-1)
+  - TOTAL_TESTED and TOTAL_ENROLLED/ELIGIBLE_COUNT: optional participation inputs
   - SUBGROUP: Student group (filters for "All Students")
 
 Data Source: NYSED (New York State Education Department)

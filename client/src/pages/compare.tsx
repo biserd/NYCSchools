@@ -12,7 +12,7 @@ import {
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
   Globe, Percent, Languages, DollarSign, Lock, CheckCircle, Target, Share2, Check, Copy
 } from "lucide-react";
-import { calculateOverallScore, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, School, type SafetyIndexResponse, DEFAULT_SAFETY_RADIUS_METERS } from "@shared/schema";
+import { calculateOverallScore, calculateAcademicScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, isHighSchool as isHighSchoolRating, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, School, type SafetyIndexResponse, DEFAULT_SAFETY_RADIUS_METERS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";
@@ -589,6 +589,9 @@ export default function ComparePage() {
   const schoolsWithScores = validComparedSchools.map(school => ({
     ...school,
     overall_score: calculateOverallScore(school),
+    academic_score: isHighSchoolRating(school) ? null : calculateAcademicScore(school),
+    assessment_confidence: getAssessmentConfidence(school),
+    uses_assessment_rating: !isHighSchoolRating(school),
     scoreColor: getScoreColor(calculateOverallScore(school)),
     borough: getBoroughFromDBN(school.dbn),
     trend: trends?.[school.dbn],
@@ -731,18 +734,39 @@ export default function ComparePage() {
                         {school.overall_score === -1 ? 'N/A' : school.overall_score}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {school.overall_score === -1 ? 'Insufficient Data' : 'Overall Score'}
+                        {school.uses_assessment_rating && school.assessment_confidence === "low"
+                          ? "Withheld: limited participation"
+                          : school.overall_score === -1
+                            ? 'Insufficient Data'
+                            : school.uses_assessment_rating && school.assessment_confidence === "unknown"
+                              ? "Overall · participation unverified"
+                              : 'Overall Score'}
                       </div>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Academics</span>
-                        <span className="font-medium tabular-nums" data-testid={`score-academics-${school.dbn}`}>{school.academics_score}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Climate</span>
-                        <span className="font-medium tabular-nums" data-testid={`score-climate-${school.dbn}`}>{school.climate_score}</span>
-                      </div>
+                      {school.uses_assessment_rating ? (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Academics (ELA + Math)</span>
+                            <span className="font-medium tabular-nums" data-testid={`score-academics-${school.dbn}`}>{school.academic_score ?? "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Climate</span>
+                            <span className="font-medium tabular-nums" data-testid={`score-climate-${school.dbn}`}>{school.climate_score}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Graduation rate</span>
+                            <span className="font-medium tabular-nums">{school.graduation_rate_4yr != null ? `${school.graduation_rate_4yr}%` : "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">College readiness</span>
+                            <span className="font-medium tabular-nums">{school.college_readiness_rate ?? school.progress_score}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Progress</span>
                         <span className="font-medium tabular-nums" data-testid={`score-progress-${school.dbn}`}>{school.progress_score}</span>
@@ -858,6 +882,13 @@ export default function ComparePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+               <div className="mb-4 rounded-md border bg-muted/40 p-3 text-sm" data-testid="academic-formula-explanation">
+                 <p className="font-medium">How these ratings work</p>
+                 <p className="text-muted-foreground">
+                   Academics is the average of ELA and Math proficiency. Overall = 40% Academics + 30% Climate + 30% Progress.
+                   Ratings are withheld when known ELA or Math participation is below {ASSESSMENT_PARTICIPATION_THRESHOLD}%, or when participation is unavailable and fewer than {ASSESSMENT_MINIMUM_TESTED_COUNT} students took either test.
+                 </p>
+               </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -895,6 +926,18 @@ export default function ComparePage() {
                         </TableCell>
                       ))}
                     </TableRow>
+                     <TableRow>
+                       <TableCell className="font-medium">Exam participation</TableCell>
+                       {schoolsWithScores.map((school) => (
+                         <TableCell key={school.dbn} className="text-center text-xs" data-testid={`cell-participation-${school.dbn}`}>
+                           {school.assessment_confidence === "unknown"
+                             ? "Not reported — confidence unverified"
+                             : school.ela_participation_rate != null && school.math_participation_rate != null
+                               ? `ELA ${school.ela_participation_rate}% · Math ${school.math_participation_rate}%${school.assessment_confidence === "low" ? " — rating withheld" : ""}`
+                               : `ELA ${school.ela_tested_count ?? "N/A"} tested · Math ${school.math_tested_count ?? "N/A"} tested${school.assessment_confidence === "low" ? " — rating withheld" : ""}`}
+                         </TableCell>
+                       ))}
+                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Climate Score</TableCell>
                       {schoolsWithScores.map((school) => (
@@ -1766,8 +1809,12 @@ export default function ComparePage() {
           )}
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
-            <p>Data from NYC Department of Education School Survey and public records.</p>
-            <p>Test scores and demographics: 2021-22 to 2022-23 | Climate/Progress: 2023-2024</p>
+            <p>Sources: NYSED Grades 3–8 assessments and NYC Department of Education School Survey.</p>
+            <p>
+              Assessments: {Array.from(new Set(schoolsWithScores.map(s => s.assessment_year).filter(Boolean))).join(", ") || "year not reported"}
+              {" · "}{Array.from(new Set(schoolsWithScores.map(s => s.assessment_source).filter(Boolean))).join(", ") || "source not reported"}
+              {" | "}Climate/Progress: 2024-25 NYC School Survey
+            </p>
           </div>
         </div>
       </div>

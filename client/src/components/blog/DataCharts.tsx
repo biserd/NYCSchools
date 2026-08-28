@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Award, School } from "lucide-react";
+import { calculateOverallScore, getAssessmentConfidence, isHighSchool, type School as SchoolRecord } from "@shared/schema";
 
 const districtPerformanceData = [
   { district: "D26", ela: 70.4, math: 73.1, location: "Queens" },
@@ -1436,29 +1437,7 @@ export function CorrelationContextChart() {
 // (used by Best K / Elementary / Charter posts)
 // ==========================================
 
-interface BlogSchoolRow {
-  dbn: string;
-  name: string;
-  district: number;
-  ela_proficiency: number | null;
-  math_proficiency: number | null;
-  enrollment: number | null;
-  grade_band: string | null;
-  admission_method: string | null;
-  academics_score: number | null;
-  climate_score: number | null;
-  progress_score: number | null;
-  has_gifted_talented?: boolean | null;
-  has_dual_language?: boolean | null;
-}
-
-function calcBlogOverall(s: BlogSchoolRow): number {
-  return Math.round(
-    (s.academics_score ?? 0) * 0.4 +
-    (s.climate_score ?? 0) * 0.3 +
-    (s.progress_score ?? 0) * 0.3
-  );
-}
+type BlogSchoolRow = SchoolRecord;
 
 function blogAdmissionLabel(s: BlogSchoolRow): { label: string; tone: 'default' | 'screened' | 'lottery' } {
   const m = (s.admission_method || '').toLowerCase();
@@ -1492,7 +1471,14 @@ export function BlogSchoolTable({
   const dbnSet = new Set(dbns.map(d => d.toUpperCase()));
   const rows = (schools || [])
     .filter(s => dbnSet.has(s.dbn.toUpperCase()))
-    .sort((a, b) => calcBlogOverall(b) - calcBlogOverall(a));
+    .sort((a, b) => {
+      const aScore = calculateOverallScore(a);
+      const bScore = calculateOverallScore(b);
+      if (aScore < 0 && bScore < 0) return 0;
+      if (aScore < 0) return 1;
+      if (bScore < 0) return -1;
+      return bScore - aScore;
+    });
 
   return (
     <Card className={`my-6 ${ACCENT_BORDER[accentColor]}`}>
@@ -1524,7 +1510,8 @@ export function BlogSchoolTable({
               </thead>
               <tbody>
                 {rows.map(s => {
-                  const overall = calcBlogOverall(s);
+                  const overall = calculateOverallScore(s);
+                  const ratingWithheld = !isHighSchool(s) && getAssessmentConfidence(s) === "low";
                   const adm = blogAdmissionLabel(s);
                   return (
                     <tr key={s.dbn} className="border-b">
@@ -1548,7 +1535,7 @@ export function BlogSchoolTable({
                             : overall >= 80 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
                             : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
                         }`}>
-                          {overall}/100
+                          {ratingWithheld ? "Withheld" : overall < 0 ? "N/A" : `${overall}/100`}
                         </span>
                       </td>
                       <td className="text-center py-2 px-2 font-medium">{s.ela_proficiency ?? '—'}%</td>

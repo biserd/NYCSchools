@@ -1,4 +1,4 @@
-import { calculateOverallScore, type School } from "./schema";
+import { calculateOverallScore, getAssessmentConfidence, type School } from "./schema";
 
 function boroughFromDbn(dbn: string): string {
   switch (dbn.charAt(2).toUpperCase()) {
@@ -21,7 +21,8 @@ export function getSchoolSeoMeta(school: School): { title: string; description: 
   const overall = calculateOverallScore(school);
   const borough = boroughFromDbn(school.dbn);
   const highSchool = isHighSchool(school);
-  const titleParts = [`Rating ${overall}/100`];
+  const lowAssessmentConfidence = !highSchool && getAssessmentConfidence(school) === "low";
+  const titleParts = [overall < 0 ? (lowAssessmentConfidence ? "Rating Withheld" : "Rating Unavailable") : `Rating ${overall}/100`];
 
   if (highSchool) {
     if (school.is_specialized_hs) titleParts.push("Specialized HS");
@@ -31,7 +32,11 @@ export function getSchoolSeoMeta(school: School): { title: string; description: 
     if (school.math_proficiency != null) titleParts.push(`Math ${school.math_proficiency}%`);
   }
 
-  const descriptionParts = [`${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.`];
+  const descriptionParts = [
+    overall < 0
+      ? `${school.name} in ${borough}, District ${school.district}. ${lowAssessmentConfidence ? "Overall rating withheld because state-test participation was limited." : "Overall rating unavailable because required data was not reported."}`
+      : `${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.`,
+  ];
   if (highSchool) {
     if (school.graduation_rate_4yr != null) descriptionParts.push(`${school.graduation_rate_4yr}% 4-year graduation rate.`);
     if (school.college_readiness_rate != null) descriptionParts.push(`${school.college_readiness_rate}% college-ready.`);

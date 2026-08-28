@@ -26,6 +26,10 @@ interface NYSEDRecord {
   year: number;
   elaProficiency: number | null;
   mathProficiency: number | null;
+  elaTested: number | null;
+  elaEligible: number | null;
+  mathTested: number | null;
+  mathEligible: number | null;
 }
 
 // Convert NYSED BEDS code to NYC DOE DBN format
@@ -95,6 +99,9 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
   // Parse ELA data
   const elaContent = fs.readFileSync(elaPath, "utf-8");
   const elaLines = elaContent.split("\n");
+  const elaHeaders = parseCSVLine(elaLines[0]).map(header => header.toUpperCase());
+  const elaTestedIndex = elaHeaders.findIndex(header => ["TOTAL_TESTED", "NUM_TESTED", "NUMBER_TESTED"].includes(header));
+  const elaEligibleIndex = elaHeaders.findIndex(header => ["TOTAL_ENROLLED", "NUM_ENROLLED", "NUMBER_ENROLLED", "ELIGIBLE_COUNT"].includes(header));
   
   console.log(`Parsing ELA data from ${elaPath}...`);
   
@@ -109,6 +116,8 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
     const subgroup = fields[5]?.replace(/"/g, "");
     // ELA columns: ... LEVEL4_%TESTED(18), NUM_PROF(19), PER_PROF(20), ...
     const perProf = fields[20]?.replace(/"/g, "");
+    const tested = elaTestedIndex >= 0 ? parseInt(fields[elaTestedIndex], 10) : NaN;
+    const eligible = elaEligibleIndex >= 0 ? parseInt(fields[elaEligibleIndex], 10) : NaN;
     
     // Only process NYC schools (31*), 2024-2025 data, ELA3_8, All Students
     if (!entityCode?.startsWith("31")) continue;
@@ -129,9 +138,15 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
         year,
         elaProficiency,
         mathProficiency: null,
+        elaTested: Number.isFinite(tested) ? tested : null,
+        elaEligible: Number.isFinite(eligible) ? eligible : null,
+        mathTested: null,
+        mathEligible: null,
       });
     } else {
       records.get(key)!.elaProficiency = elaProficiency;
+      records.get(key)!.elaTested = Number.isFinite(tested) ? tested : null;
+      records.get(key)!.elaEligible = Number.isFinite(eligible) ? eligible : null;
     }
   }
   
@@ -140,6 +155,9 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
   // Parse Math data
   const mathContent = fs.readFileSync(mathPath, "utf-8");
   const mathLines = mathContent.split("\n");
+  const mathHeaders = parseCSVLine(mathLines[0]).map(header => header.toUpperCase());
+  const mathTestedIndex = mathHeaders.findIndex(header => ["TOTAL_TESTED", "NUM_TESTED", "NUMBER_TESTED"].includes(header));
+  const mathEligibleIndex = mathHeaders.findIndex(header => ["TOTAL_ENROLLED", "NUM_ENROLLED", "NUMBER_ENROLLED", "ELIGIBLE_COUNT"].includes(header));
   
   console.log(`Parsing Math data from ${mathPath}...`);
   
@@ -155,6 +173,8 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
     const subgroup = fields[5]?.replace(/"/g, "");
     // Math CSV has 2 extra columns (LEVEL5_COUNT, LEVEL5_%TESTED), so PER_PROF is at index 22
     const perProf = fields[22]?.replace(/"/g, "");
+    const tested = mathTestedIndex >= 0 ? parseInt(fields[mathTestedIndex], 10) : NaN;
+    const eligible = mathEligibleIndex >= 0 ? parseInt(fields[mathEligibleIndex], 10) : NaN;
     
     // Only process NYC schools (31*), 2024-2025 data, MATH3_8, All Students
     if (!entityCode?.startsWith("31")) continue;
@@ -170,6 +190,8 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
     
     if (records.has(key)) {
       records.get(key)!.mathProficiency = mathProficiency;
+      records.get(key)!.mathTested = Number.isFinite(tested) ? tested : null;
+      records.get(key)!.mathEligible = Number.isFinite(eligible) ? eligible : null;
       mathRecordsAdded++;
     } else {
       records.set(key, {
@@ -178,6 +200,10 @@ function parseNYSEDData(elaPath: string, mathPath: string): Map<string, NYSEDRec
         year,
         elaProficiency: null,
         mathProficiency,
+        elaTested: null,
+        elaEligible: null,
+        mathTested: Number.isFinite(tested) ? tested : null,
+        mathEligible: Number.isFinite(eligible) ? eligible : null,
       });
     }
   }
@@ -199,7 +225,7 @@ async function updateHistoricalScores(records: Map<string, NYSEDRecord>) {
   let inserted = 0;
   let skipped = 0;
   
-  for (const [key, record] of records) {
+  for (const [key, record] of Array.from(records.entries())) {
     const dbnUpper = record.dbn.toUpperCase();
     
     // Only process schools that exist in our database
@@ -226,6 +252,12 @@ async function updateHistoricalScores(records: Map<string, NYSEDRecord>) {
         .set({
           ela_proficiency: record.elaProficiency,
           math_proficiency: record.mathProficiency,
+           ela_tested_count: record.elaTested,
+           ela_eligible_count: record.elaEligible,
+           ela_participation_rate: record.elaTested != null && record.elaEligible ? Math.round(100 * record.elaTested / record.elaEligible) : null,
+           math_tested_count: record.mathTested,
+           math_eligible_count: record.mathEligible,
+           math_participation_rate: record.mathTested != null && record.mathEligible ? Math.round(100 * record.mathTested / record.mathEligible) : null,
           data_source_release: DATA_SOURCE_RELEASE,
         })
         .where(
@@ -242,6 +274,12 @@ async function updateHistoricalScores(records: Map<string, NYSEDRecord>) {
         year: record.year,
         ela_proficiency: record.elaProficiency,
         math_proficiency: record.mathProficiency,
+        ela_tested_count: record.elaTested,
+        ela_eligible_count: record.elaEligible,
+        ela_participation_rate: record.elaTested != null && record.elaEligible ? Math.round(100 * record.elaTested / record.elaEligible) : null,
+        math_tested_count: record.mathTested,
+        math_eligible_count: record.mathEligible,
+        math_participation_rate: record.mathTested != null && record.mathEligible ? Math.round(100 * record.mathTested / record.mathEligible) : null,
         data_source_release: DATA_SOURCE_RELEASE,
       });
       inserted++;
@@ -273,6 +311,17 @@ async function updateCurrentSchoolScores() {
         .set({
           ela_proficiency: score.ela_proficiency ?? undefined,
           math_proficiency: score.math_proficiency ?? undefined,
+           ela_tested_count: score.ela_tested_count,
+           ela_eligible_count: score.ela_eligible_count,
+           ela_participation_rate: score.ela_participation_rate,
+           math_tested_count: score.math_tested_count,
+           math_eligible_count: score.math_eligible_count,
+           math_participation_rate: score.math_participation_rate,
+           ...(score.ela_proficiency != null && score.math_proficiency != null
+             ? { academics_score: Math.round((score.ela_proficiency + score.math_proficiency) / 2) }
+             : {}),
+           assessment_year: "2024-25",
+           assessment_source: "NYSED",
           last_updated: new Date(),
         })
         .where(eq(schools.dbn, score.dbn));

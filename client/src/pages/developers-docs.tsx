@@ -38,7 +38,7 @@ const endpoints: EndpointDoc[] = [
   {
     method: "GET",
     path: "/api/v1/schools",
-    description: "Retrieve a list of all NYC schools with optional filtering and pagination.",
+    description: "Retrieve a list of all NYC schools with optional filtering and pagination. overall_score is null when rating_status is withheld_limited_participation or unavailable. rating_status is rated, withheld_limited_participation, or unavailable; rating_confidence is sufficient, low, unknown, or not_applicable.",
     parameters: [
       { name: "district", type: "string", required: false, description: "Filter by school district (e.g., '02', '15')" },
       { name: "grade_band", type: "string", required: false, description: "Filter by grade levels: 'elementary', 'middle', 'high'" },
@@ -58,6 +58,9 @@ const endpoints: EndpointDoc[] = [
       "borough": "Manhattan",
       "grade_band": "Elementary",
       "overall_score": 85,
+      "rating_status": "rated",
+      "rating_confidence": "sufficient",
+      "rating_note": null,
       "academics_score": 78,
       "climate_score": 92,
       "progress_score": 85,
@@ -88,7 +91,7 @@ const endpoints: EndpointDoc[] = [
   {
     method: "GET",
     path: "/api/v1/schools/:dbn",
-    description: "Get detailed information for a specific school by its DBN (District Borough Number). Returns a flat object (no `data` wrapper).",
+    description: "Get detailed information for a specific school by its DBN (District Borough Number). Returns a flat object (no `data` wrapper). overall_score is null when rating_status is withheld_limited_participation or unavailable. rating_status is rated, withheld_limited_participation, or unavailable; rating_confidence is sufficient, low, unknown, or not_applicable.",
     parameters: [
       { name: "dbn", type: "string", required: true, description: "The school's unique DBN identifier (e.g., '02M545')" },
     ],
@@ -100,6 +103,9 @@ const endpoints: EndpointDoc[] = [
   "borough": "Manhattan",
   "grade_band": "Elementary",
   "overall_score": 85,
+  "rating_status": "rated",
+  "rating_confidence": "sufficient",
+  "rating_note": null,
   "academics_score": 78,
   "climate_score": 92,
   "progress_score": 85,

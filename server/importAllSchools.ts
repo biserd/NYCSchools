@@ -255,7 +255,6 @@ async function importSchoolsInBatches(schoolSeeds: SchoolSeed[], batchSize: numb
             district: sql`excluded.district`,
             address: sql`excluded.address`,
             grade_band: sql`excluded.grade_band`,
-            academics_score: sql`excluded.academics_score`,
             climate_score: sql`excluded.climate_score`,
             progress_score: sql`excluded.progress_score`,
             ela_proficiency: sql`excluded.ela_proficiency`,

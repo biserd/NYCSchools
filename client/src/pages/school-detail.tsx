@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { School, SchoolWithOverallScore, calculateOverallScore, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, type HsAdmissionsProgram, REGENTS_EXAMS, getSchoolSlug } from "@shared/schema";
+import { School, SchoolWithOverallScore, calculateOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, Review, getQualityRatingLabel, getQualityRatingBadgeClasses, isHighSchool, isPureHighSchool, getMetricColor, type SchoolTrend, type HsGraduation, type HsRegents, type SchoolAttendance, type SchoolDiscipline, type HsAdmissionsProgram, REGENTS_EXAMS, getSchoolSlug } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { CommuteTime } from "@/components/CommuteTime";
@@ -184,6 +184,7 @@ export default function SchoolDetail() {
   });
 
   const isHS = school ? isHighSchool(school) : false;
+  const assessmentConfidence = school && !isHS ? getAssessmentConfidence(school) : null;
 
   const { data: graduationData } = useQuery<HsGraduation[]>({
     queryKey: ["/api/schools", dbn, "graduation"],
@@ -621,7 +622,7 @@ export default function SchoolDetail() {
                     )}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {getScoreLabel(schoolWithScore.overall_score)}
+                    {assessmentConfidence === "low" ? "Withheld: limited test participation" : getScoreLabel(schoolWithScore.overall_score)}
                   </div>
                 </div>
               </CardContent>
@@ -688,8 +689,13 @@ export default function SchoolDetail() {
                       </div>
                     )}
                     <div className="text-xs text-muted-foreground mt-1">
-                      {getScoreLabel(schoolWithScore.overall_score)}
+                      {assessmentConfidence === "low" ? "Withheld: limited test participation" : getScoreLabel(schoolWithScore.overall_score)}
                     </div>
+                    {assessmentConfidence === "low" && (
+                      <div className="mt-2 text-xs text-amber-700 dark:text-amber-300" data-testid="overall-participation-warning">
+                        ELA: {schoolWithScore.ela_tested_count ?? "N/A"} tested · Math: {schoolWithScore.math_tested_count ?? "N/A"} tested
+                      </div>
+                    )}
                   </div>
 
                   {/* Academics Score Card */}
@@ -862,6 +868,18 @@ export default function SchoolDetail() {
               <p className="text-sm text-muted-foreground">
                 Our Overall Score provides a transparent, data-driven metric combining test proficiency with NYC DOE quality indicators.
               </p>
+              {!isHS && (
+                <div className={`rounded-md border p-3 text-sm ${assessmentConfidence === "low" ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20" : "bg-muted/40"}`} data-testid="assessment-confidence-explanation">
+                  <p className="font-medium">
+                    {assessmentConfidence === "low" ? "Overall rating withheld" : assessmentConfidence === "unknown" ? "Test participation not reported" : "Test participation meets the rating threshold"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    We withhold proficiency-driven ratings below {ASSESSMENT_PARTICIPATION_THRESHOLD}% participation, or when the participation rate is unavailable and fewer than {ASSESSMENT_MINIMUM_TESTED_COUNT} students took either subject.
+                    {" "}ELA: {schoolWithScore.ela_participation_rate != null ? `${schoolWithScore.ela_participation_rate}%` : `${schoolWithScore.ela_tested_count ?? "N/A"} tested`};
+                    {" "}Math: {schoolWithScore.math_participation_rate != null ? `${schoolWithScore.math_participation_rate}%` : `${schoolWithScore.math_tested_count ?? "N/A"} tested`}.
+                  </p>
+                </div>
+              )}
               
               {/* Formula Display */}
               <div className="bg-muted/50 rounded-lg p-4 border" data-testid="formula-display">
@@ -886,7 +904,7 @@ export default function SchoolDetail() {
                     Represents the percentage of students meeting or exceeding state standards.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1 italic">
-                    Note: This differs from the "Academics" subscore shown below, which is a separate NYC DOE quality metric.
+                    This is the Academics score used throughout the site.
                   </p>
                 </div>
                 <div className="border-l-4 border-green-500 pl-3" data-testid="explanation-climate">
@@ -909,8 +927,8 @@ export default function SchoolDetail() {
               <div className="text-xs text-muted-foreground pt-2 border-t">
                 <p className="font-medium mb-1">Data Sources:</p>
                 <ul className="list-disc list-inside space-y-0.5">
-                  <li>ELA/Math proficiency: NYC Open Data (grades 3-8 state test results)</li>
-                  <li>Climate/Progress scores: NYC Department of Education School Survey and Quality Reports</li>
+                  <li>ELA/Math proficiency: {schoolWithScore.assessment_source || "NYSED Grades 3-8 Results"} ({schoolWithScore.assessment_year || "year not reported"})</li>
+                  <li>Climate/Progress scores: 2024-25 NYC Department of Education School Survey and Quality Reports</li>
                 </ul>
               </div>
             </CardContent>
@@ -2780,6 +2798,7 @@ export default function SchoolDetail() {
                   {topDistrictSchools.map((districtSchool, index) => {
                     const schoolSlugForLink = `${districtSchool.dbn.toLowerCase()}-${districtSchool.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
                     const schoolScoreColor = getScoreColor(districtSchool.overall_score);
+                    const districtRatingWithheld = !isHighSchool(districtSchool) && getAssessmentConfidence(districtSchool) === "low";
                     return (
                       <Link 
                         key={districtSchool.dbn} 
@@ -2799,10 +2818,10 @@ export default function SchoolDetail() {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-3">
+                          <div className="flex items-center gap-2 shrink-0 ml-3" title={districtRatingWithheld ? "Rating withheld because test participation was limited" : undefined}>
                             <div className={`w-3 h-3 rounded-full ${colorMap[schoolScoreColor]}`} />
                             <span className="font-bold tabular-nums" data-testid={`text-district-school-score-${index}`}>
-                              {districtSchool.overall_score === -1 ? 'N/A' : districtSchool.overall_score}
+                              {districtRatingWithheld ? 'Withheld' : districtSchool.overall_score === -1 ? 'N/A' : districtSchool.overall_score}
                             </span>
                           </div>
                         </div>

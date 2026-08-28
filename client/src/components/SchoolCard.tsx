@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import { School, calculateOverallScore, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type TrendDirection } from "@shared/schema";
+import { School, calculateOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";
@@ -102,6 +102,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
   const canAddMore = comparedSchools.length < maxCompare;
   
   const isHS = isHighSchool(school);
+  const hasLowAssessmentConfidence = !isHS && getAssessmentConfidence(school) === "low";
   const isPureHS = isPureHighSchool(school);
   const isCombined = isCombinedSchool(school);
   const hasHSData = isHS && school.graduation_rate_4yr !== null;
@@ -402,7 +403,9 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground" data-testid={`text-score-label-${school.dbn}`}>{overallScore < 0 ? "Insufficient Data" : "Overall"}</span>
+              <span className="text-xs text-muted-foreground" data-testid={`text-score-label-${school.dbn}`}>
+                {hasLowAssessmentConfidence ? "Withheld: limited participation" : overallScore < 0 ? "Insufficient Data" : "Overall"}
+              </span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -418,8 +421,10 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs" data-testid={`tooltip-overall-${school.dbn}`}>
                   <p className="text-sm">
-                    {overallScore < 0 
-                      ? "This high school doesn't have sufficient graduation rate data available to calculate a reliable overall score."
+                    {hasLowAssessmentConfidence
+                      ? `This rating is withheld because test participation was below ${ASSESSMENT_PARTICIPATION_THRESHOLD}%, or fewer than ${ASSESSMENT_MINIMUM_TESTED_COUNT} students took ELA or Math when participation rates were unavailable. ELA: ${school.ela_participation_rate != null ? `${school.ela_participation_rate}% participation` : `${school.ela_tested_count ?? "N/A"} tested`}; Math: ${school.math_participation_rate != null ? `${school.math_participation_rate}% participation` : `${school.math_tested_count ?? "N/A"} tested`}.`
+                      : overallScore < 0
+                      ? "This school doesn't have the data needed to calculate a reliable overall score."
                       : METRIC_TOOLTIPS.overallScore.tooltip}
                   </p>
                 </TooltipContent>

@@ -23,7 +23,7 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import { School, calculateOverallScore } from "@shared/schema";
+import { School, calculateOverallScore, getAssessmentConfidence } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -339,6 +339,12 @@ export default function ChancesCalculatorPage() {
                   
                   {/* Selected School */}
                   {selectedSchool && (
+                    (() => {
+                      const score = calculateOverallScore(selectedSchool);
+                      const scoreLabel = score < 0
+                        ? (getAssessmentConfidence(selectedSchool) === "low" ? "Withheld: limited participation" : "N/A")
+                        : String(score);
+                      return (
                     <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                       <div className="flex items-start justify-between">
                         <div>
@@ -348,7 +354,7 @@ export default function ChancesCalculatorPage() {
                           </div>
                           <div className="flex items-center gap-2 mt-2">
                             <Badge variant="outline">
-                              Score: {calculateOverallScore(selectedSchool)}
+                               Score: {scoreLabel}
                             </Badge>
                             {selectedSchool.has_gifted_talented && (
                               <Badge variant="secondary">G&T</Badge>
@@ -370,6 +376,8 @@ export default function ChancesCalculatorPage() {
                         </Button>
                       </div>
                     </div>
+                      );
+                    })()
                   )}
                 </div>
               </CardContent>

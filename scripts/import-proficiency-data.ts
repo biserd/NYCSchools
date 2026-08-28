@@ -87,8 +87,13 @@ async function importProficiencyData() {
       await db
         .update(schools)
         .set({
-          ela_proficiency: data.elaProf ?? 50, // Keep 50 as fallback if null
-          math_proficiency: data.mathProf ?? 50,
+          ela_proficiency: data.elaProf,
+          math_proficiency: data.mathProf,
+          ...(data.elaProf != null && data.mathProf != null
+            ? { academics_score: Math.round((data.elaProf + data.mathProf) / 2) }
+            : {}),
+          assessment_year: data.year,
+          assessment_source: "NYC DOE / NYSED",
         })
         .where(eq(schools.dbn, dbn));
       
