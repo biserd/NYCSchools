@@ -52,8 +52,12 @@ async function initializeExpress(workerEnv: Env): Promise<WorkerHandler> {
   });
 
   registerWorkerStaticRoutes(app);
-  server.listen(3000);
-  return httpServerHandler({ port: 3000 });
+  // Bind the Node server directly using Cloudflare's documented simplified
+  // adapter so it owns the listener lifecycle.
+  // Node's Server.address() also permits null, while the Workers adapter's
+  // structural type omits that pre-listen state. The runtime object is the
+  // supported Node server described by Cloudflare's direct-server overload.
+  return httpServerHandler(server as Parameters<typeof httpServerHandler>[0]);
 }
 
 function getExpressHandler(workerEnv: Env): Promise<WorkerHandler> {
@@ -112,7 +116,27 @@ export default {
     if (!expressHandler.fetch) {
       return Response.json({ error: "Worker handler unavailable" }, { status: 500 });
     }
-    return expressHandler.fetch(request, workerEnv, ctx);
+    const response = await expressHandler.fetch(request, workerEnv, ctx);
+
+    // The experimental Node HTTP bridge can expose a streamed response with a
+    // stale transfer length on HTTP/2 and HTTP/3. Chrome then loses the final
+    // JSON chunk even though Express and the Worker both report 200. Rebuild
+    // API JSON responses from a completed buffer and let Workers calculate the
+    // wire framing instead of forwarding Node's transport headers.
+    const contentType = response.headers.get("content-type") || "";
+    if (response.body && contentType.toLowerCase().includes("application/json")) {
+      const body = await response.arrayBuffer();
+      const headers = new Headers(response.headers);
+      headers.delete("content-length");
+      headers.delete("transfer-encoding");
+      return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    }
+
+    return response;
   },
 
   scheduled(controller, workerEnv, ctx): void {

@@ -57,19 +57,59 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-      // API responses are already cached in React Query. Avoid a browser-level
-      // conditional 304 with an empty body, which cannot be parsed as JSON.
-      cache: "no-store",
-    });
+    const url = queryKey.join("/") as string;
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+        // API responses are already cached in React Query. Avoid a browser-level
+        // conditional 304 with an empty body, which cannot be parsed as JSON.
+        cache: "no-store",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+
+      // Some browser privacy/security tooling interferes with Response.json()
+      // while leaving the response body intact. This previously broke the
+      // magic-link flow and can also make every React Query request look failed
+      // even though Cloudflare returned a valid 200 response. Read the body once
+      // and parse it explicitly so auth and large school payloads use the same
+      // hardened path as the passwordless flow.
+      const responseText = await res.text();
+      if (!responseText) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(responseText);
+      } catch (error) {
+        throw new ApiError(
+          res.status,
+          "The service returned an invalid data response. Please retry.",
+          "INVALID_JSON_RESPONSE",
+          {
+            url: res.url,
+            contentType: res.headers.get("content-type"),
+            responseLength: responseText.length,
+            parseError: error instanceof Error ? error.message : String(error),
+          },
+        );
+      }
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : undefined;
+      console.error("[API_QUERY_FAILED] " + JSON.stringify({
+        url,
+        name: error instanceof Error ? error.name : typeof error,
+        message: error instanceof Error ? error.message : String(error),
+        status: apiError?.status,
+        code: apiError?.code,
+        details: apiError?.details,
+      }));
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

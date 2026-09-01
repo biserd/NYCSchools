@@ -43,7 +43,16 @@ export default function MagicLinkCallbackPage() {
         });
 
         const responseText = await response.text();
-        let data: { success?: boolean; error?: string } = {};
+        let data: {
+          success?: boolean;
+          error?: string;
+          user?: {
+            id: string;
+            email: string;
+            subscriptionStatus?: string | null;
+            subscriptionPlan?: string | null;
+          };
+        } = {};
         if (responseText) {
           try {
             data = JSON.parse(responseText);
@@ -66,6 +75,11 @@ export default function MagicLinkCallbackPage() {
         
         if (data.success) {
           setStatus('success');
+          if (data.user) {
+            // The callback response is authoritative: reflect the new session
+            // immediately instead of waiting for a second auth request.
+            queryClient.setQueryData(['/api/auth/user'], data.user);
+          }
           queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
           
           // Use the sanitized returnTo from state (already validated), not raw query param

@@ -46,9 +46,21 @@ app.use((req, res, next) => {
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
+  const originalResSend = res.send;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+    const serialized = JSON.stringify(bodyJson);
+    if (serialized === undefined) {
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    }
+
+    // Cloudflare's experimental Node HTTP bridge can drop the final byte of a
+    // completed response stream. A trailing newline is valid JSON whitespace
+    // and acts as a transport terminator so the actual closing } or ] remains
+    // intact. The Worker entrypoint buffers and reframes JSON responses before
+    // returning them to the browser.
+    res.type("application/json");
+    return originalResSend.call(res, `${serialized}\n`);
   };
 
   res.on("finish", () => {
