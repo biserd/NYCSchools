@@ -59,6 +59,9 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      // API responses are already cached in React Query. Avoid a browser-level
+      // conditional 304 with an empty body, which cannot be parsed as JSON.
+      cache: "no-store",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

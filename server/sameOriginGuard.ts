@@ -96,11 +96,16 @@ export function sameOriginGuard(
 
   const originHost = hostnameOf(req.get("origin") || undefined);
   const refererHost = hostnameOf(req.get("referer") || undefined);
+  const fetchSite = req.get("sec-fetch-site")?.toLowerCase();
 
-  // Accept the request if EITHER the Origin or the Referer header points
-  // at an allowed host. Browser fetches from the SPA always send at
-  // least Referer (and usually Origin too). Scrapers using curl / Python
-  // requests do not, by default.
+  // Modern browsers provide Fetch Metadata even when privacy settings strip
+  // Origin and Referer. Accept requests the browser identifies as same-origin
+  // or same-site so legitimate navigation from an email sign-in link does not
+  // blank the application. Basic curl/requests scrapers do not send this by
+  // default, preserving the guard's intended friction.
+  if (fetchSite === "same-origin" || fetchSite === "same-site") return next();
+
+  // Older browsers can still prove same-origin through Origin or Referer.
   if (originHost && isAllowedHost(originHost)) return next();
   if (refererHost && isAllowedHost(refererHost)) return next();
 

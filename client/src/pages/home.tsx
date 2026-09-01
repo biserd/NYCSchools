@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock } from "lucide-react";
+import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock, AlertCircle, RefreshCw } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 interface UserZones {
@@ -254,7 +254,7 @@ export default function Home() {
     };
   }, [zipCodeFilter, selectedDistrict, updateURLParams]);
 
-  const { data: rawSchools, isLoading } = useQuery<School[]>({
+  const { data: rawSchools, isLoading, isError: schoolsError, refetch: refetchSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
   });
 
@@ -965,7 +965,9 @@ export default function Home() {
         
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground" data-testid="text-results-count">
-            {isLoading
+            {schoolsError
+              ? 'Unable to load schools'
+              : isLoading
               ? show2K ? 'Loading 2-K programs…' : 'Loading schools…'
               : show2K
               ? `Showing ${filteredAndSortedSchools.length} 2-K programs`
@@ -998,7 +1000,21 @@ export default function Home() {
           )}
         </div>
 
-        {isLoading ? (
+        {schoolsError ? (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 py-16 px-4" data-testid="schools-load-error">
+            <div className="bg-destructive/10 rounded-full p-5 mb-4">
+              <AlertCircle className="w-10 h-10 text-destructive" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Schools could not be loaded</h3>
+            <p className="text-muted-foreground text-center max-w-md mb-5">
+              Please retry. If the problem continues, refresh the page.
+            </p>
+            <Button onClick={() => void refetchSchools()} data-testid="button-retry-schools">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="skeleton-schools">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-[280px]" data-testid={`skeleton-card-${i}`} />
