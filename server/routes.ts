@@ -3080,16 +3080,16 @@ When answering:
         return res.status(400).json({ error: "User not found" });
       }
       
+      // Consume the one-time token while the request-scoped database
+      // connection is still active.
+      await storage.markMagicLinkTokenUsed(magicLink.id);
+
       // Create session for the user (auto-login)
       req.session.userId = user.id;
       // Cloudflare's Node HTTP bridge can finish a response quickly. Persist
       // the database-backed session before returning success so the cookie is
       // never acknowledged before its session row exists.
       await saveSession(req);
-
-      // Only consume the one-time token after the session is safely persisted.
-      // If session storage is unavailable, the user can retry the same link.
-      await storage.markMagicLinkTokenUsed(magicLink.id);
       
       // Return success with redirect URL
       return res

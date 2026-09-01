@@ -47,16 +47,8 @@ export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   class DatabaseSessionStore extends session.Store {
     get(sid: string, callback: (error: unknown, session?: session.SessionData | null) => void): void {
-      // express-session may call store methods while the response is being
-      // finalized, after the route's request-scoped database connection has
-      // begun closing. Give each store operation its own Hyperdrive-scoped
-      // connection so authenticated public API requests cannot fail during
-      // session loading or expiration refresh.
-      void withDatabaseConnection(async () => {
-        const [row] = await db.select().from(sessions).where(eq(sessions.sid, sid)).limit(1);
-        return row;
-      })
-        .then((row) => {
+      void db.select().from(sessions).where(eq(sessions.sid, sid)).limit(1)
+        .then(([row]) => {
           if (!row || row.expire <= new Date()) return callback(null, null);
           callback(null, row.sess as session.SessionData);
         })
@@ -67,21 +59,17 @@ export function getSession() {
       const expire = value.cookie.expires
         ? new Date(value.cookie.expires)
         : new Date(Date.now() + sessionTtl);
-      void withDatabaseConnection(async () => {
-        await db.insert(sessions).values({ sid, sess: value, expire })
-          .onConflictDoUpdate({
-            target: sessions.sid,
-            set: { sess: value, expire },
-          });
-      })
+      void db.insert(sessions).values({ sid, sess: value, expire })
+        .onConflictDoUpdate({
+          target: sessions.sid,
+          set: { sess: value, expire },
+        })
         .then(() => callback?.())
         .catch((error) => callback?.(error));
     }
 
     destroy(sid: string, callback?: (error?: unknown) => void): void {
-      void withDatabaseConnection(async () => {
-        await db.delete(sessions).where(eq(sessions.sid, sid));
-      })
+      void db.delete(sessions).where(eq(sessions.sid, sid))
         .then(() => callback?.())
         .catch((error) => callback?.(error));
     }
@@ -90,6 +78,9 @@ export function getSession() {
       const expire = value.cookie.expires
         ? new Date(value.cookie.expires)
         : new Date(Date.now() + sessionTtl);
+      // Session expiration is refreshed while Express is finalizing the
+      // response. Use an independent connection for this one late operation;
+      // the request-scoped connection may already be closing at that point.
       void withDatabaseConnection(async () => {
         await db.update(sessions).set({ expire }).where(eq(sessions.sid, sid));
       })
