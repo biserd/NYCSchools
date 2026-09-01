@@ -93,8 +93,8 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
   const overallScore = calculateOverallScore(school);
   const trendConfig = trend && trend.direction !== 'insufficient_data' ? getTrendBadgeConfig(trend.direction) : null;
   const scoreColor = getScoreColor(overallScore);
-  const elaColor = getMetricColor(school.ela_proficiency);
-  const mathColor = getMetricColor(school.math_proficiency);
+  const elaColor = getMetricColor(school.ela_proficiency ?? -1);
+  const mathColor = getMetricColor(school.math_proficiency ?? -1);
   const borough = getBoroughFromDBN(school.dbn);
   const { addToComparison, removeFromComparison, isInComparison, comparedSchools, maxCompare } = useComparison();
   const { toast } = useToast();

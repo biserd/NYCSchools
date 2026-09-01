@@ -35,13 +35,13 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
   
   if (!school) return null;
 
-  const scoreColor = getScoreColor(school.overall_score);
-  const scoreLabel = getScoreLabel(school.overall_score);
+  const scoreColor = getScoreColor(school.overall_score ?? -1);
+  const scoreLabel = getScoreLabel(school.overall_score ?? -1);
   const hasLowAssessmentConfidence = !isHighSchool(school) && getAssessmentConfidence(school) === "low";
   const borough = getBoroughFromDBN(school.dbn);
   
-  const elaColor = getMetricColor(school.ela_proficiency);
-  const mathColor = getMetricColor(school.math_proficiency);
+  const elaColor = getMetricColor(school.ela_proficiency ?? -1);
+  const mathColor = getMetricColor(school.math_proficiency ?? -1);
   const climateColor = getMetricColor(school.climate_score);
   const progressColor = getMetricColor(school.progress_score);
 

@@ -34,7 +34,8 @@ Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
 - **Side-by-side comparison** with shareable, SEO-friendly URLs
   (e.g. `/compare/PS006-M-vs-PS290-M`).
 - **District comparison** dashboard.
-- **AI chat assistant** powered by OpenAI's `gpt-5-mini` (Premium).
+- **AI chat assistant** powered by Cloudflare Workers AI with GLM-4.7-Flash
+  (Premium).
 - **Smart Recommendations ("Find My Match")** — a short questionnaire that
   produces personalized school suggestions.
 - **Application Tracker** to manage applications across schools (Premium).
@@ -50,14 +51,17 @@ Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
 
 - **Frontend:** React 18 + TypeScript, Vite, Tailwind CSS, Shadcn UI,
   Wouter, TanStack Query, Recharts, Leaflet, turf.js
-- **Backend:** Node.js + Express + TypeScript, Drizzle ORM, PostgreSQL,
-  in-memory caching layer with webhook-based invalidation, Gzip compression
+- **Backend:** Cloudflare Workers + Express + TypeScript, Drizzle ORM,
+  PostgreSQL through Hyperdrive,
+  in-memory caching layer with webhook-based invalidation
 - **Auth:** Email + password with secure session cookies; password reset
   via signed email tokens; magic-link sign-in
 - **Payments:** Stripe (Checkout + Customer Portal + webhooks) for the
   Freemium / Premium subscription model
-- **AI:** OpenAI `gpt-5-mini` for chat assistant and recommendations
-- **Email:** Resend (welcome emails, password reset, drip campaign)
+- **AI:** Cloudflare Workers AI with `@cf/zai-org/glm-4.7-flash` for chat,
+  recommendations, and early-childhood insights
+- **Email:** Cloudflare Email Service (welcome emails, password reset,
+  magic links, alerts, and drip campaign)
 - **Maps & geo:** Google Maps Geocoding API, Google Distance Matrix API,
   Leaflet for rendering, NYC Open Data point locations and zone polygons
 - **Data:** NYC DOE InfoHub, NYC Open Data, NYSED State Report Card,
@@ -67,16 +71,18 @@ Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
 
 ```bash
 npm install
-npm run dev          # Express + Vite, served on a single port
+cp .dev.vars.example .dev.vars
+npm run dev          # Cloudflare Worker + Vite, served on a single origin
 npm run db:push      # Push Drizzle schema changes to the configured Postgres
 ```
 
-The dev server URL is shown in your Replit webview. Both the API and the
-SPA are served from the same origin — no proxy configuration needed.
+Replace the example values in `.dev.vars` before starting. Both the API and
+the SPA are served from the same origin; local email delivery remains disabled
+until `EMAIL_DELIVERY_ENABLED` is explicitly changed.
 
 ### Environment variables
 
-The app reads the following from environment / Replit Secrets. The ones
+The app reads the following from Worker secrets and variables. The ones
 marked **required** are needed for the app to boot; the rest enable
 specific features.
 
@@ -86,8 +92,8 @@ specific features.
 | `SESSION_SECRET` *(required)*         | Express session signing secret                |
 | `STRIPE_LIVE_SECRET_KEY` / `STRIPE_TEST_SECRET_KEY`           | Stripe server keys (Premium subscriptions)    |
 | `STRIPE_LIVE_PUBLISHABLE_KEY` / `STRIPE_TEST_PUBLISHABLE_KEY` | Stripe publishable keys (frontend Checkout)   |
-| `OPENAI_API_KEY`                      | AI chat assistant + Smart Recommendations     |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`| Transactional email (auth + drip campaign)    |
+| `STRIPE_WEBHOOK_SECRET`               | Stripe webhook signature verification        |
+| `EMAIL_FROM` / `EMAIL_FROM_NAME`      | Cloudflare Email Service sender identity      |
 | `GOOGLE_MAPS_API_KEY`                 | Geocoding + Distance Matrix (commute calc)    |
 | `SOCRATA_APP_TOKEN`                   | NYC Open Data / NYPD complaint dataset access |
 | `CRON_SECRET`                         | Protects `POST /api/cron/*` endpoints         |
@@ -103,6 +109,7 @@ client/src/
 └── lib/               # queryClient, helpers
 
 server/
+├── index-worker.ts    # Cloudflare Worker entrypoint + scheduled handlers
 ├── index-dev.ts       # Dev entrypoint (Vite middleware)
 ├── index-prod.ts      # Production entrypoint (static SPA)
 ├── routes.ts          # Main API routes + auth, Stripe webhooks, etc.
@@ -268,10 +275,23 @@ Common status codes: `400` (validation), `401` (missing/invalid key),
 
 ## Deployment
 
-The app is deployed on Replit. Production uses `server/index-prod.ts`
-which serves the built SPA from `dist/` and the Express API from the same
-origin. Stripe webhooks, the safety-index monthly cron, and the drip
-email scheduler all run on the same instance.
+Production is configured for Cloudflare Workers. Vite builds the Express
+Worker and static SPA together; Worker Assets serves the frontend, Hyperdrive
+connects the current PostgreSQL database, Email Service handles transactional
+messages, and Cron Triggers run observability, drip email, and monthly safety
+jobs.
+
+```bash
+npm run check
+npm run cf-dry-run
+npm run deploy
+```
+
+The Worker is deployed at
+`https://nyc-schools-ratings.biser-d.workers.dev`; Hyperdrive, Workers AI,
+Email Service, cron triggers, Stripe, maps, and the data-source token are
+provisioned. See
+[`CLOUDFLARE_MIGRATION.md`](./CLOUDFLARE_MIGRATION.md) for the cutover checklist.
 
 ## License
 

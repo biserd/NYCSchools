@@ -1051,7 +1051,7 @@ export interface SafetySyncRunResult {
 /**
  * Runs the full monthly pipeline: pull recent NYPD complaints, then
  * recompute every school's safety index. Designed to be called from a
- * scheduler (cron endpoint or Replit Scheduled Deployment). Idempotent —
+ * scheduler (Workers Cron Trigger or the protected cron endpoint). Idempotent —
  * the underlying pull uses upserts so re-running is safe.
  */
 export async function runSafetySync(opts: SyncOptions & { skipPull?: boolean } = {}): Promise<SafetySyncRunResult> {

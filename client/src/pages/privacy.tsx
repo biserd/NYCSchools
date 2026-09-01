@@ -34,11 +34,11 @@ export default function Privacy() {
             <h2 className="text-2xl font-semibold mb-4">Information We Collect</h2>
             <h3 className="text-xl font-semibold mb-2">Account Information</h3>
             <p className="mb-4">
-              When you create an account using Replit Authentication, we collect:
+              When you create an account using your email address, we collect:
             </p>
             <ul className="list-disc pl-6 mb-4">
               <li>Your name and email address</li>
-              <li>Profile information from your authentication provider</li>
+              <li>Your encrypted account credentials and profile information</li>
             </ul>
 
             <h3 className="text-xl font-semibold mb-2">Usage Data</h3>
@@ -95,7 +95,7 @@ export default function Privacy() {
             <h2 className="text-2xl font-semibold mb-4">Third-Party Services</h2>
             <p className="mb-4">We use the following third-party services:</p>
             <ul className="list-disc pl-6 mb-4">
-              <li><strong>Replit Auth:</strong> For user authentication</li>
+              <li><strong>Cloudflare:</strong> For application hosting and transactional email delivery</li>
               <li><strong>Google Maps APIs:</strong> For geocoding and transit time calculations</li>
               <li><strong>OpenAI:</strong> For AI-powered chat assistant and school recommendations</li>
               <li><strong>Stripe:</strong> For payment processing (subscription and one-time purchases)</li>

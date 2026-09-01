@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local Workers development. Never commit real secrets.
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/nycschools
+SESSION_SECRET=replace-with-at-least-32-random-characters
+STRIPE_TEST_PUBLISHABLE_KEY=pk_test_replace_me
+STRIPE_TEST_SECRET_KEY=sk_test_replace_me
+STRIPE_WEBHOOK_SECRET=whsec_replace_me
+GOOGLE_MAPS_API_KEY=replace_me
+SOCRATA_APP_TOKEN=replace_me
+ADMIN_EMAILS=hello@bigappledigital.nyc,biserd@gmail.com
+CRON_SECRET=replace-with-a-random-value-for-manual-cron-endpoints
+EMAIL_DELIVERY_ENABLED=false

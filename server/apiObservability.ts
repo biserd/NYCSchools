@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
+import { waitUntil } from "cloudflare:workers";
 import { storage } from "./storage";
+import { withDatabaseConnection } from "./db";
 import type { InsertApiRequestLog } from "@shared/schema";
 
 // Per-IP throttle for unauthenticated requests to /api/v1/* (i.e. invalid /
@@ -9,7 +11,6 @@ import type { InsertApiRequestLog } from "@shared/schema";
 // map bounded.
 const IP_LIMIT_PER_MINUTE = 30;
 const IP_WINDOW_MS = 60_000;
-const IP_CLEANUP_INTERVAL_MS = 60 * 60_000;
 
 interface IpBucket {
   windowStart: number;
@@ -17,20 +18,16 @@ interface IpBucket {
 }
 const ipBuckets = new Map<string, IpBucket>();
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, bucket] of Array.from(ipBuckets.entries())) {
-    if (now - bucket.windowStart > IP_CLEANUP_INTERVAL_MS) {
-      ipBuckets.delete(ip);
-    }
-  }
-}, IP_CLEANUP_INTERVAL_MS).unref?.();
-
 // Returns the throttle decision for one request. The caller (auth middleware)
 // is responsible for sending the 429 — this function only counts.
 export function checkIpThrottle(ip: string | undefined): { allowed: boolean; retryAfterSeconds: number; remaining: number } {
   if (!ip) return { allowed: true, retryAfterSeconds: 0, remaining: IP_LIMIT_PER_MINUTE };
   const now = Date.now();
+  if (ipBuckets.size > 10_000) {
+    for (const [key, existing] of ipBuckets) {
+      if (now - existing.windowStart >= IP_WINDOW_MS) ipBuckets.delete(key);
+    }
+  }
   let bucket = ipBuckets.get(ip);
   if (!bucket || now - bucket.windowStart >= IP_WINDOW_MS) {
     bucket = { windowStart: now, count: 0 };
@@ -44,8 +41,8 @@ export function checkIpThrottle(ip: string | undefined): { allowed: boolean; ret
   return { allowed: true, retryAfterSeconds: 0, remaining: Math.max(0, IP_LIMIT_PER_MINUTE - bucket.count) };
 }
 
-// Best-effort client IP. Honors x-forwarded-for since we sit behind Replit's
-// proxy. Falls back to req.ip / socket address.
+// Best-effort client IP. Honors x-forwarded-for from Cloudflare's proxy and
+// falls back to req.ip / socket address.
 export function clientIp(req: Request): string | null {
   const xff = req.header("x-forwarded-for");
   if (xff) {
@@ -55,44 +52,12 @@ export function clientIp(req: Request): string | null {
   return req.ip || req.socket?.remoteAddress || null;
 }
 
-// In-memory queue + periodic flush. Each /api/v1/* response enqueues one row;
-// the flusher writes them to api_request_log in batches so we never make the
-// hot request path wait on a DB insert. Flush interval is short enough that
-// the admin dashboard sees near-real-time data.
-const FLUSH_INTERVAL_MS = 2_000;
-const MAX_QUEUE_SIZE = 1_000;
-const buffer: InsertApiRequestLog[] = [];
-
-async function flush(): Promise<void> {
-  if (buffer.length === 0) return;
-  // Snapshot + clear so new requests can keep enqueueing while we write.
-  const batch = buffer.splice(0, buffer.length);
-  try {
-    await storage.insertApiRequestLogs(batch);
-  } catch (err) {
-    // Logger failure is not fatal to the API. Log and drop the batch — better
-    // than blocking memory growth or recursing forever.
-    console.error("[API_LOG] Failed to flush request log batch:", err, { dropped: batch.length });
-  }
-}
-
-setInterval(() => {
-  void flush();
-}, FLUSH_INTERVAL_MS).unref?.();
-
-// Make sure pending logs land before the process exits during a deploy.
-process.on("beforeExit", () => {
-  void flush();
-});
-
 export function enqueueApiLog(entry: InsertApiRequestLog): void {
-  if (buffer.length >= MAX_QUEUE_SIZE) {
-    // Backpressure: drop the oldest rather than the newest so a sudden burst
-    // is still partially observable. This should never happen in practice
-    // unless the DB is down for many seconds.
-    buffer.shift();
-  }
-  buffer.push(entry);
+  waitUntil(withDatabaseConnection(async () => {
+    await storage.insertApiRequestLogs([entry]);
+  }).catch((error) => {
+    console.error("[API_LOG] Failed to persist request log", error);
+  }));
 }
 
 // Express middleware. Mounted on the v1 router so every authenticated request
@@ -116,5 +81,5 @@ export const apiRequestLoggerMiddleware: RequestHandler = (req: Request, res: Re
 
 // Public helper for the cron / shutdown paths.
 export function flushApiLogsNow(): Promise<void> {
-  return flush();
+  return Promise.resolve();
 }

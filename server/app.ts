@@ -8,6 +8,7 @@ import express, {
 } from "express";
 
 import { registerRoutes } from "./routes";
+import { databaseContextMiddleware } from "./db";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -33,6 +34,7 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+app.use(databaseContextMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -73,8 +75,14 @@ export default async function runApp(
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    console.error(JSON.stringify({
+      message: "Unhandled Express error",
+      error: err instanceof Error ? err.message : String(err),
+      status,
+    }));
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
   });
 
   // importantly run the final setup after setting up all the other routes so

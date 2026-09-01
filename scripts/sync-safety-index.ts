@@ -5,8 +5,7 @@
  *   tsx scripts/sync-safety-index.ts --recompute    # only recompute (skip pull)
  *   tsx scripts/sync-safety-index.ts --months=12    # override pull window
  *
- * In production this should be wired to a monthly schedule (Replit
- * scheduled deployment or a cron worker).
+ * Production runs this from the monthly Cloudflare Workers Cron Trigger.
  */
 
 import { runSafetySync } from "../server/services/safetyIndex";

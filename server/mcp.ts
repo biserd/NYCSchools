@@ -1,5 +1,6 @@
 import { storage } from "./storage";
 import { getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
+import { getAppUrl } from "./runtimeConfig";
 
 // MCP (Model Context Protocol) Server for OpenAI ChatGPT Apps SDK
 // This implements the JSON-RPC 2.0 protocol that ChatGPT uses to communicate with apps
@@ -791,11 +792,7 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
         }
         
         // Determine base URL for widget
-        const widgetBaseUrl = process.env.REPLIT_DEPLOYMENT === '1' 
-          ? 'https://nycschoolsratings.com'
-          : process.env.REPL_SLUG 
-            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase()}.repl.co`
-            : 'http://localhost:5000';
+        const widgetBaseUrl = getAppUrl();
         
         // Wrap tool result in content array as per MCP spec with widget metadata
         result = {

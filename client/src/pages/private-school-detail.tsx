@@ -323,7 +323,7 @@ export default function PrivateSchoolDetail() {
             </Card>
 
             {/* Enrollment by Grade - Premium gated */}
-            {school.enrollmentByGrade && typeof school.enrollmentByGrade === 'object' && Object.keys(school.enrollmentByGrade).length > 0 && (
+            {typeof school.enrollmentByGrade === 'object' && school.enrollmentByGrade !== null && Object.keys(school.enrollmentByGrade).length > 0 && (
               <Card data-testid="card-enrollment-by-grade">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">

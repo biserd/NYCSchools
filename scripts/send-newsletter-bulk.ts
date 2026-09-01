@@ -3,7 +3,7 @@ import { users } from '../shared/schema';
 import { eq, isNull, or } from 'drizzle-orm';
 import { sendNewsletterJanuary2025 } from '../server/emailService';
 
-const DELAY_BETWEEN_EMAILS_MS = 1000; // 1 second between emails (Resend allows ~2/sec)
+const DELAY_BETWEEN_EMAILS_MS = 1000; // Pace bulk sends to protect provider limits.
 const BATCH_SIZE = 10; // Process in batches
 const PAUSE_BETWEEN_BATCHES_MS = 5000; // 5 second pause between batches
 

@@ -1,10 +1,14 @@
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
-import connectPg from "connect-pg-simple";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { waitUntil } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { sessions } from "@shared/schema";
 import { storage } from "./storage";
 import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail, sendPasswordResetEmail, sendMagicLinkLoginEmail } from "./emailService";
+import { getAppUrl } from "./runtimeConfig";
 
 // Rate limiting for magic link requests (in-memory, keyed by email)
 const magicLinkRateLimit = new Map<string, number>();
@@ -14,22 +18,22 @@ function canRequestMagicLink(email: string): boolean {
   const key = email.toLowerCase();
   const lastRequest = magicLinkRateLimit.get(key);
   if (!lastRequest) return true;
-  return Date.now() - lastRequest > MAGIC_LINK_COOLDOWN_MS;
+  if (Date.now() - lastRequest > MAGIC_LINK_COOLDOWN_MS) {
+    magicLinkRateLimit.delete(key);
+    return true;
+  }
+  return false;
 }
 
 function recordMagicLinkRequest(email: string): void {
   magicLinkRateLimit.set(email.toLowerCase(), Date.now());
 }
 
-// Clean up old rate limit entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, timestamp] of magicLinkRateLimit.entries()) {
-    if (now - timestamp > MAGIC_LINK_COOLDOWN_MS * 2) {
-      magicLinkRateLimit.delete(key);
-    }
-  }
-}, 5 * 60 * 1000); // Clean up every 5 minutes
+function runInBackground(promise: Promise<unknown>, label: string): void {
+  waitUntil(promise.catch((error) => {
+    console.error(label, error);
+  }));
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -41,16 +45,50 @@ const SALT_ROUNDS = 10;
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+  class DatabaseSessionStore extends session.Store {
+    get(sid: string, callback: (error: unknown, session?: session.SessionData | null) => void): void {
+      void db.select().from(sessions).where(eq(sessions.sid, sid)).limit(1)
+        .then(([row]) => {
+          if (!row || row.expire <= new Date()) return callback(null, null);
+          callback(null, row.sess as session.SessionData);
+        })
+        .catch(callback);
+    }
+
+    set(sid: string, value: session.SessionData, callback?: (error?: unknown) => void): void {
+      const expire = value.cookie.expires
+        ? new Date(value.cookie.expires)
+        : new Date(Date.now() + sessionTtl);
+      void db.insert(sessions).values({ sid, sess: value, expire })
+        .onConflictDoUpdate({
+          target: sessions.sid,
+          set: { sess: value, expire },
+        })
+        .then(() => callback?.())
+        .catch((error) => callback?.(error));
+    }
+
+    destroy(sid: string, callback?: (error?: unknown) => void): void {
+      void db.delete(sessions).where(eq(sessions.sid, sid))
+        .then(() => callback?.())
+        .catch((error) => callback?.(error));
+    }
+
+    touch(sid: string, value: session.SessionData, callback?: () => void): void {
+      const expire = value.cookie.expires
+        ? new Date(value.cookie.expires)
+        : new Date(Date.now() + sessionTtl);
+      void db.update(sessions).set({ expire }).where(eq(sessions.sid, sid))
+        .then(() => callback?.())
+        .catch((error) => {
+          console.error("Failed to refresh session expiration", error);
+          callback?.();
+        });
+    }
+  }
   return session({
     secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
+    store: new DatabaseSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -101,13 +139,10 @@ export function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       
-      // Send emails (don't await to avoid slowing down registration)
-      Promise.all([
+      runInBackground(Promise.all([
         sendAdminNewUserRegistrationNotification(email, firstName, lastName),
         sendNewUserWelcomeEmail(email, firstName)
-      ]).catch((err) => {
-        console.error("Failed to send registration emails:", err);
-      });
+      ]), "Failed to send registration emails");
       
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
@@ -178,21 +213,13 @@ export function setupAuth(app: Express) {
         
         await storage.createPasswordResetToken(user.id, tokenHash, expiresAt);
         
-        // Build reset URL - use production domain or Replit dev domain
-        let baseUrl: string;
-        if (process.env.NODE_ENV === "production") {
-          baseUrl = "https://nycschoolsratings.com";
-        } else if (process.env.REPLIT_DEV_DOMAIN) {
-          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        } else {
-          baseUrl = "http://localhost:5000";
-        }
+        const baseUrl = getAppUrl(req);
         const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
         
-        // Send email (don't await to avoid timing attacks)
-        sendPasswordResetEmail(user.email, resetUrl, user.firstName).catch((err) => {
-          console.error("Failed to send password reset email:", err);
-        });
+        runInBackground(
+          sendPasswordResetEmail(user.email, resetUrl, user.firstName),
+          "Failed to send password reset email",
+        );
       }
 
       // Always return success
@@ -312,15 +339,7 @@ export function setupAuth(app: Express) {
         
         await storage.createMagicLinkToken(user.id, tokenHash, expiresAt);
         
-        // Build magic link URL
-        let baseUrl: string;
-        if (process.env.REPLIT_DEPLOYMENT === "1") {
-          baseUrl = "https://nycschoolsratings.com";
-        } else if (process.env.REPLIT_DEV_DOMAIN) {
-          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        } else {
-          baseUrl = "http://localhost:5000";
-        }
+        const baseUrl = getAppUrl(req);
         
         // Include returnTo in the callback URL if provided
         const sanitizedReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") 
@@ -328,10 +347,10 @@ export function setupAuth(app: Express) {
           : "/account";
         const magicLinkUrl = `${baseUrl}/auth/magic-link/callback?token=${rawToken}&returnTo=${encodeURIComponent(sanitizedReturnTo)}`;
         
-        // Send email (don't await to avoid timing attacks)
-        sendMagicLinkLoginEmail(user.email, magicLinkUrl, user.firstName || undefined).catch((err) => {
-          console.error("Failed to send magic link login email:", err);
-        });
+        runInBackground(
+          sendMagicLinkLoginEmail(user.email, magicLinkUrl, user.firstName || undefined),
+          "Failed to send magic link login email",
+        );
       }
 
       // Always return success

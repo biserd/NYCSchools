@@ -27,6 +27,12 @@ export function getCached<T>(key: string): T | null {
 }
 
 export function setCache<T>(key: string, data: T, ttl: number = CACHE_TTL_DEFAULT): void {
+  if (cache.size > 5_000) {
+    const now = Date.now();
+    for (const [existingKey, entry] of cache) {
+      if (now - entry.timestamp > entry.ttl) cache.delete(existingKey);
+    }
+  }
   // Store a deep clone to prevent external mutation of cached data
   cache.set(key, {
     data: structuredClone(data),
@@ -44,14 +50,3 @@ export function invalidateUserCaches(userId: string): void {
   cache.delete(`premium-user-${userId}`);
   cache.delete(`subscription-status-${userId}`);
 }
-
-// Clean up expired cache entries periodically (every 5 minutes)
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(cache.entries());
-  for (const [key, entry] of entries) {
-    if (now - entry.timestamp > entry.ttl) {
-      cache.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);

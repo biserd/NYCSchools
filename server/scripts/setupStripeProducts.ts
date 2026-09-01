@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { getUncachableStripeClient } from '../stripeClient';
 
 async function setupStripeProducts() {
-  console.log('Getting Stripe client from Replit connector...');
+  console.log('Getting Stripe client...');
   const stripe = await getUncachableStripeClient();
 
   console.log('Setting up Stripe products and prices...\n');
@@ -71,7 +71,7 @@ async function setupStripeProducts() {
     }
 
     console.log('\nStripe products setup complete!');
-    console.log('The stripe-replit-sync will automatically sync these to the database.');
+    console.log('The application reads these products directly from Stripe.');
     
   } catch (error) {
     console.error('Error setting up Stripe products:', error);

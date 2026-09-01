@@ -1490,7 +1490,7 @@ export class DbStorage implements IStorage {
   async createGuestUser(email: string, stripeCustomerId: string, firstName?: string, lastName?: string): Promise<User> {
     const crypto = await import('crypto');
     const randomPassword = crypto.randomBytes(32).toString('hex');
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
     
     const [user] = await db

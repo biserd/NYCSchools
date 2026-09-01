@@ -2350,7 +2350,7 @@ export default function SchoolDetail() {
             const previousYear = disciplineData.length > 1 ? disciplineData[1] : null;
             const total = latestYear.total_suspensions;
             const prevTotal = previousYear?.total_suspensions;
-            const change = total !== null && prevTotal !== null ? total - prevTotal : null;
+            const change = total !== null && prevTotal != null ? total - prevTotal : null;
 
             const disciplineTrend = [...disciplineData]
               .reverse()

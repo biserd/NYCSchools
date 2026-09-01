@@ -1,26 +1,35 @@
-// Email service for NYC School Ratings using custom Resend API
-import { Resend } from 'resend';
+// Transactional email for NYC School Ratings using Cloudflare Email Service.
+import { env } from "cloudflare:workers";
 
-// Use custom Resend credentials from environment variables
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-// Email format: "Display Name <email@domain.com>"
-// The RESEND_FROM_EMAIL env var should contain the full format like "NYC Schools Ratings <hello@nycschoolsratings.com>"
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'NYC Schools Ratings <hello@nycschoolsratings.com>';
+type EmailRecipient = string | EmailAddress | (string | EmailAddress)[];
 
-// Cached Resend client (singleton pattern)
-let cachedClient: Resend | null = null;
+interface OutboundEmail {
+  to: EmailRecipient;
+  subject: string;
+  replyTo?: string | EmailAddress;
+  headers?: Record<string, string>;
+  text?: string;
+  html?: string;
+  attachments?: EmailAttachment[];
+}
 
-function getResendClient(): { client: Resend; fromEmail: string } {
-  if (!RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY environment variable is not set');
+async function sendEmail(message: OutboundEmail): Promise<EmailSendResult> {
+  if (env.EMAIL_DELIVERY_ENABLED !== "true") {
+    logEmail("WARN", "Email delivery disabled", {
+      subject: message.subject,
+      to: message.to,
+    });
+    return { messageId: "delivery-disabled" };
   }
-  if (!cachedClient) {
-    cachedClient = new Resend(RESEND_API_KEY);
-  }
-  return {
-    client: cachedClient,
-    fromEmail: RESEND_FROM_EMAIL
+
+  const builder: EmailMessageBuilder = {
+    ...message,
+    from: {
+      email: env.EMAIL_FROM,
+      name: env.EMAIL_FROM_NAME,
+    },
   };
+  return env.EMAIL.send(builder);
 }
 
 const ADMIN_EMAIL = 'hello@bigappledigital.nyc';
@@ -38,13 +47,11 @@ function logEmail(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any)
 
 export async function sendAdminNewCustomerNotification(customerEmail: string, planType: string, amount?: number): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const formattedAmount = amount ? `$${(amount / 100).toFixed(2)}` : 'N/A';
     const planName = planType === 'season_pass' ? 'Season Pass ($29 for 6 months)' : planType;
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: ADMIN_EMAIL,
       subject: `New Season Pass Customer: ${customerEmail}`,
       html: `
@@ -75,12 +82,10 @@ export async function sendAdminNewCustomerNotification(customerEmail: string, pl
 
 export async function sendWelcomeEmail(customerEmail: string, firstName?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: customerEmail,
       subject: 'Welcome to NYC School Ratings Season Pass!',
       html: `
@@ -178,12 +183,10 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
 
 export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Welcome to NYC School Ratings!',
       html: `
@@ -306,12 +309,10 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
 
 export async function sendAdminNewUserRegistrationNotification(userEmail: string, firstName?: string | null, lastName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Not provided';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: ADMIN_EMAIL,
       subject: `New User Registration: ${userEmail}`,
       html: `
@@ -341,12 +342,10 @@ export async function sendAdminNewUserRegistrationNotification(userEmail: string
 
 export async function sendPasswordResetEmail(userEmail: string, resetUrl: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Reset Your Password - NYC School Ratings',
       html: `
@@ -405,12 +404,10 @@ export async function sendPasswordResetEmail(userEmail: string, resetUrl: string
 
 export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string, firstName?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Your NYC School Ratings Access Link',
       html: `
@@ -500,12 +497,10 @@ export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string
 
 export async function sendMagicLinkLoginEmail(userEmail: string, magicLinkUrl: string, firstName?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Sign in to NYC School Ratings',
       html: `
@@ -590,12 +585,10 @@ function getDripEmailFooter(userId: string): string {
 // Day 1: Welcome tip on using filters and favorites
 export async function sendDripWelcomeTip(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Quick Tip: Find Schools Faster with Filters',
       html: `
@@ -649,12 +642,10 @@ export async function sendDripWelcomeTip(userEmail: string, userId: string, firs
 // Day 3: AI Chat Assistant feature spotlight
 export async function sendDripAiSpotlight(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Meet Your Personal School Search Assistant',
       html: `
@@ -712,12 +703,10 @@ export async function sendDripAiSpotlight(userEmail: string, userId: string, fir
 // Day 7: Data insight about top schools
 export async function sendDripDataInsight(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'NYC School Insight: What the Numbers Tell Us',
       html: `
@@ -771,12 +760,10 @@ export async function sendDripDataInsight(userEmail: string, userId: string, fir
 // Day 14: Soft upgrade nudge with Season Pass benefits
 export async function sendDripUpgradeNudge(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'Get the Full Picture with Season Pass',
       html: `
@@ -849,12 +836,10 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
 // Newsletter email for January 2025 updates
 export async function sendNewsletterJanuary2025(userEmail: string, firstName?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     
     const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
     
-    const result = await client.emails.send({
-      from: fromEmail,
+    const result = await sendEmail({
       to: userEmail,
       subject: 'NYC School Ratings - January 2025 Updates',
       html: `
@@ -959,7 +944,6 @@ export async function sendApiAbuseAlert(params: {
   detail: Record<string, unknown>;
 }): Promise<boolean> {
   try {
-    const { client, fromEmail } = getResendClient();
     const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim()) ||
       [ADMIN_EMAIL, 'biserd@gmail.com'];
     const subjectByType: Record<string, string> = {
@@ -992,8 +976,7 @@ export async function sendApiAbuseAlert(params: {
         </p>
       </div>
     `;
-    await client.emails.send({
-      from: fromEmail,
+    await sendEmail({
       to: adminEmails,
       subject,
       html,

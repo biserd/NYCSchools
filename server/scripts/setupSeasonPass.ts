@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { getUncachableStripeClient } from '../stripeClient';
 
 async function setupSeasonPass() {
-  console.log('Getting Stripe client from Replit connector...');
+  console.log('Getting Stripe client...');
   const stripe = await getUncachableStripeClient();
 
   console.log('Setting up Season Pass and Developer products...\n');
@@ -104,7 +104,7 @@ async function setupSeasonPass() {
     console.log('\nProducts created:');
     console.log(`  - Season Pass: ${seasonPassProduct.id} @ $29 one-time (6 months access)`);
     console.log(`  - Developer API: ${developerProduct.id} @ $19/month`);
-    console.log('\nThe stripe-replit-sync will automatically sync these to the database.');
+    console.log('\nThe application reads these products directly from Stripe.');
     
   } catch (error) {
     console.error('Error setting up Stripe products:', error);

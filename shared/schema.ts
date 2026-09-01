@@ -806,7 +806,7 @@ export function getMetricColor(score: number): "green" | "yellow" | "purple" | "
   return "red";
 }
 
-// Session storage table for Replit Auth
+// Session storage table for standalone email/password authentication
 export const sessions = pgTable(
   "sessions",
   {

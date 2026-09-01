@@ -23,7 +23,7 @@
  *   - `/api/v1/*`              — Developer API; has its own Bearer auth
  *   - `/api/auth/*`            — auth flows (callback URLs, OAuth)
  *   - `/api/stripe/webhook*`   — Stripe → us; Stripe doesn't send Origin
- *   - `/api/cron/*`            — Replit Scheduled Deployments; CRON_SECRET-protected
+ *   - `/api/cron/*`            — optional manual cron hooks; CRON_SECRET-protected
  *   - `/api/health`            — uptime monitors
  */
 
@@ -37,25 +37,14 @@ const STATIC_ALLOWED_HOSTS = new Set<string>([
   "0.0.0.0",
 ]);
 
-// Patterns whose hostname is allowed (Replit dev/preview domains).
-const ALLOWED_HOST_PATTERNS: RegExp[] = [
-  /\.replit\.dev$/i,
-  /\.repl\.co$/i,
-  /\.replit\.app$/i,
-  /\.janeway\.replit\.dev$/i,
-];
-
-// Pull additional hosts from REPLIT_DOMAINS / REPLIT_DEV_DOMAIN env at boot.
 function envAllowedHosts(): string[] {
-  const raw = [
-    process.env.REPLIT_DOMAINS ?? "",
-    process.env.REPLIT_DEV_DOMAIN ?? "",
-  ]
-    .join(",")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return raw;
+  if (!process.env.APP_URL) return [];
+  try {
+    return [new URL(process.env.APP_URL).hostname];
+  } catch {
+    console.warn("Ignoring invalid APP_URL in same-origin guard");
+    return [];
+  }
 }
 
 const ENV_ALLOWED_HOSTS = new Set<string>(envAllowedHosts());
@@ -64,7 +53,7 @@ function isAllowedHost(host: string): boolean {
   const h = host.toLowerCase();
   if (STATIC_ALLOWED_HOSTS.has(h)) return true;
   if (ENV_ALLOWED_HOSTS.has(h)) return true;
-  return ALLOWED_HOST_PATTERNS.some((re) => re.test(h));
+  return h.endsWith(".workers.dev");
 }
 
 function hostnameOf(headerValue: string | undefined): string | null {

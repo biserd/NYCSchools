@@ -1,10 +1,11 @@
 // Stripe webhook handlers for NYC School Ratings
-import { getStripeSync, getUncachableStripeClient } from './stripeClient';
+import { getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
 import { sendAdminNewCustomerNotification, sendWelcomeEmail, sendMagicLinkEmail } from './emailService';
 import { invalidateUserCaches } from './cache';
 import Stripe from 'stripe';
 import crypto from 'crypto';
+import { getAppUrl } from './runtimeConfig';
 
 // Enhanced logging for webhook debugging
 function logWebhook(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any) {
@@ -18,8 +19,8 @@ function logWebhook(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: an
 }
 
 export class WebhookHandlers {
-  static async processWebhook(payload: Buffer, signature: string, uuid: string): Promise<void> {
-    logWebhook('INFO', `Webhook received - UUID: ${uuid}, Payload size: ${payload?.length || 0} bytes`);
+  static async processWebhook(payload: Buffer, signature: string): Promise<void> {
+    logWebhook('INFO', `Webhook received - Payload size: ${payload?.length || 0} bytes`);
     
     if (!Buffer.isBuffer(payload)) {
       logWebhook('ERROR', 'Payload is not a Buffer', { type: typeof payload });
@@ -31,18 +32,13 @@ export class WebhookHandlers {
       );
     }
 
-    const sync = await getStripeSync();
-    
-    // Let stripe-replit-sync process the webhook first (syncs to its tables)
-    logWebhook('INFO', 'Processing webhook with stripe-replit-sync...');
-    await sync.processWebhook(payload, signature, uuid);
-    logWebhook('INFO', 'stripe-replit-sync processing complete');
-    
-    // Now handle custom logic for subscription updates
-    // The webhook was already verified by stripe-replit-sync, so we can safely parse the event
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
+
+    const stripe = await getUncachableStripeClient();
+    const event = await stripe.webhooks.constructEventAsync(payload, signature, webhookSecret);
+
     try {
-      const event = JSON.parse(payload.toString()) as Stripe.Event;
-      
       logWebhook('INFO', `Parsed event for custom handling`, { 
         eventId: event.id, 
         eventType: event.type,
@@ -65,7 +61,7 @@ export class WebhookHandlers {
         error: err.message,
         stack: err.stack 
       });
-      // Don't throw - the sync already processed successfully
+      throw err;
     }
   }
   
@@ -320,11 +316,7 @@ export class WebhookHandlers {
             
             await storage.createMagicLinkToken(user.id, tokenHash, magicLinkExpiry);
             
-            // Build magic link URL
-            const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-            const baseUrl = isProduction 
-              ? 'https://nycschoolsratings.com'
-              : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
+            const baseUrl = getAppUrl();
             const magicLinkUrl = `${baseUrl}/auth/magic-link/${magicToken}`;
             
             logWebhook('INFO', `Generated magic link for guest user`, { 

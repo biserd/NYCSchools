@@ -121,7 +121,7 @@ export default function Terms() {
             <ul className="list-disc pl-6 mb-4">
               <li><strong>Google Maps APIs:</strong> For commute time calculations (subject to Google's Terms of Service)</li>
               <li><strong>OpenAI:</strong> For AI assistant features (subject to OpenAI's Terms of Use)</li>
-              <li><strong>Replit:</strong> For authentication and hosting</li>
+              <li><strong>Cloudflare:</strong> For application hosting and transactional email delivery</li>
               <li><strong>Stripe:</strong> For payment processing (subject to Stripe's Terms of Service)</li>
             </ul>
             <p>

@@ -11,12 +11,9 @@ import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
 import apiV1Router from "./routesV1";
 import { sameOriginGuard } from "./sameOriginGuard";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
-import OpenAI from "openai";
-import compression from "compression";
 import cors from "cors";
 import { updateUserZonedSchools, getUserZonedSchools } from "./services/zoning";
-import { runMigrations } from 'stripe-replit-sync';
-import { getStripeSync, getUncachableStripeClient, getStripePublishableKey, getStripeMode } from "./stripeClient";
+import { getUncachableStripeClient, getStripePublishableKey, getStripeMode } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 import { getCached, setCache, deleteCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
@@ -25,6 +22,9 @@ import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbus
 import { flushApiLogsNow } from "./apiObservability";
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 import { SCHOOL_GUIDES } from "@shared/school-guides";
+import { waitUntil } from "cloudflare:workers";
+import { getAppUrl } from "./runtimeConfig";
+import { generateJson, streamText, type AiMessage } from "./aiService";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -117,6 +117,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // for the full exclusion list and rationale.
   app.use(sameOriginGuard);
 
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    await db.execute(sql`select 1 as ok`);
+    res.json({
+      status: "ok",
+      database: "connected",
+      environment: process.env.ENVIRONMENT || "unknown",
+    });
+  });
+
   // Shared admin guard. The custom auth middleware (server/auth.ts) only
   // populates req.session.userId — it does NOT set req.user — so we must
   // look the user up by their session id and then check the email against
@@ -132,19 +141,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return adminEmails.includes(email);
   }
 
-  // Add compression middleware
-  app.use(compression());
-
   // CORS middleware for ChatGPT/OpenAI integration
   const allowedOrigins = [
     'https://chat.openai.com',
     'https://chatgpt.com',
     'https://platform.openai.com',
     'https://api.openai.com',
+    getAppUrl(),
     // Allow local development
     /^https?:\/\/localhost(:\d+)?$/,
-    /^https?:\/\/.*\.replit\.dev$/,
-    /^https?:\/\/.*\.replit\.app$/,
   ];
 
   app.use(cors({
@@ -154,8 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return callback(null, true);
       }
       
-      // Allow any Replit development domain
-      if (origin.includes('.replit.dev') || origin.includes('.replit.app') || origin.includes('localhost')) {
+      if (origin.includes('localhost')) {
         return callback(null, true);
       }
       
@@ -995,11 +999,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const centerTypeLabel = centerType === "NYCEEC" ? "Community-Based (NYCEEC)" :
                               centerType === "DOE" ? "DOE School" : "Charter";
 
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
-
       const systemPrompt = `You are an expert early childhood education advisor helping NYC parents evaluate preschool and Pre-K programs. You provide helpful, balanced information without making claims about quality ratings (since none exist for these programs).
 
 Your role is to help parents know what questions to ask, what to observe, and how to evaluate if a center is right for their child. Be warm, supportive, and practical.
@@ -1026,22 +1025,13 @@ Please provide a JSON response with the following structure:
 
 Focus on practical, actionable advice. Don't make claims about the center's quality since there are no official ratings.`;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-5-mini",
-        messages: [
+      const responseText = await generateJson(
+        [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        response_format: { type: "json_object" },
-        reasoning_effort: "minimal",
-        verbosity: "low",
-        max_completion_tokens: 1000,
-      } as any);
-
-      const responseText = completion.choices[0]?.message?.content;
-      if (!responseText) {
-        throw new Error("No response from AI");
-      }
+        1000,
+      );
 
       const insights = JSON.parse(responseText);
       
@@ -2158,12 +2148,6 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Initialize OpenAI with Replit AI Integrations
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
-
       // Create or use cached school summary for recommendations
       if (!cachedRecommendationSummary) {
         const schools = await storage.getSchools();
@@ -2232,23 +2216,13 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const messages: any[] = [
+      const messages: AiMessage[] = [
         { role: "system", content: systemMessage },
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI - minimal reasoning + low verbosity for speed
-      const stream: any = await openai.chat.completions.create({
-        model: "gpt-5-mini",
-        messages,
-        stream: true,
-        reasoning_effort: "minimal",
-        verbosity: "low",
-        max_completion_tokens: 600,
-      } as any);
-
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
+      // Stream directly from Cloudflare Workers AI.
+      for await (const content of streamText(messages, 600)) {
         if (content) {
           res.write(`data: ${JSON.stringify({ content })}\n\n`);
         }
@@ -2472,12 +2446,6 @@ Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.stud
         currentSchoolContext += `\nADDITIONAL SCHOOLS MENTIONED BY USER (use this data for accurate responses):${mentionedSchoolsContext}`;
       }
 
-      // Initialize OpenAI with Replit AI Integrations
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
-
       // Create or validate chat session ownership
       let currentSessionId = sessionId;
       if (currentSessionId) {
@@ -2640,25 +2608,29 @@ When answering:
       }
 
       // Build conversation messages
-      const messages: any[] = [
+      const history: AiMessage[] = Array.isArray(conversationHistory)
+        ? conversationHistory
+            .filter((item: unknown): item is AiMessage => {
+              if (!item || typeof item !== "object") return false;
+              const candidate = item as Partial<AiMessage>;
+              return (candidate.role === "user" || candidate.role === "assistant") &&
+                typeof candidate.content === "string";
+            })
+            .slice(-20)
+            .map((item: AiMessage) => ({
+              role: item.role,
+              content: item.content.slice(0, 4000),
+            }))
+        : [];
+
+      const messages: AiMessage[] = [
         { role: "system", content: systemMessage },
-        ...(conversationHistory || []),
+        ...history,
         { role: "user", content: message },
       ];
 
-      // Stream response from OpenAI - minimal reasoning + low verbosity for speed
-      const stream: any = await openai.chat.completions.create({
-        model: "gpt-5-mini",
-        messages,
-        stream: true,
-        reasoning_effort: "minimal",
-        verbosity: "low",
-        max_completion_tokens: 600,
-      } as any);
-
       let fullResponse = "";
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
+      for await (const content of streamText(messages, 600)) {
         if (content) {
           fullResponse += content;
           res.write(`data: ${JSON.stringify({ content })}\n\n`);
@@ -2745,40 +2717,8 @@ When answering:
 
   // ============ STRIPE INTEGRATION ============
   
-  // Initialize Stripe schema and sync (runs once on startup)
-  try {
-    const databaseUrl = process.env.DATABASE_URL;
-    if (databaseUrl) {
-      console.log('Initializing Stripe schema...');
-      await runMigrations({ databaseUrl });
-      console.log('Stripe schema ready');
-
-      const stripeSync = await getStripeSync();
-      
-      // Set up managed webhook
-      const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
-      if (webhookBaseUrl && webhookBaseUrl !== 'https://undefined') {
-        const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
-          `${webhookBaseUrl}/api/stripe/webhook`,
-          { enabled_events: ['*'], description: 'NYC School Ratings webhook' }
-        );
-        console.log(`Stripe webhook configured: ${webhook.url}`);
-        
-        // Store UUID for webhook validation
-        (app as any).stripeWebhookUuid = uuid;
-      }
-
-      // Sync existing Stripe data in background
-      stripeSync.syncBackfill()
-        .then(() => console.log('Stripe data synced'))
-        .catch((err: any) => console.error('Error syncing Stripe data:', err));
-    }
-  } catch (error) {
-    console.error('Failed to initialize Stripe:', error);
-  }
-
   // Stripe webhook endpoint (uses rawBody from express.json verify)
-  app.post("/api/stripe/webhook/:uuid?", async (req: any, res: Response) => {
+  app.post("/api/stripe/webhook", async (req: any, res: Response) => {
     try {
       const signature = req.headers['stripe-signature'];
       if (!signature) {
@@ -2786,15 +2726,13 @@ When answering:
       }
 
       const sig = Array.isArray(signature) ? signature[0] : signature;
-      const uuid = req.params.uuid || (app as any).stripeWebhookUuid;
-      
       // Use rawBody captured by express.json verify callback
       const payload = req.rawBody as Buffer;
       if (!payload || !Buffer.isBuffer(payload)) {
         return res.status(400).json({ error: 'Invalid payload' });
       }
 
-      await WebhookHandlers.processWebhook(payload, sig, uuid);
+      await WebhookHandlers.processWebhook(payload, sig);
       res.status(200).json({ received: true });
     } catch (error: any) {
       console.error('Stripe webhook error:', error.message);
@@ -2917,13 +2855,19 @@ When answering:
   app.post("/api/checkout", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.session.userId;
-      const { priceId, mode = 'subscription' } = req.body;
+      const { priceId, mode = 'payment' } = req.body;
       
       console.log("Checkout request:", { userId, priceId, mode });
 
       if (!priceId) {
         console.error("Checkout failed: Missing priceId");
         return res.status(400).json({ error: "Price ID is required" });
+      }
+
+      const seasonPassPriceId = stripeService.getSeasonPassPriceId();
+      if (priceId !== seasonPassPriceId || mode !== 'payment') {
+        console.warn("Checkout rejected: Invalid NYC Schools offer", { userId, priceId, mode });
+        return res.status(400).json({ error: "Only the NYC Schools Season Pass is available" });
       }
 
       const user = await storage.getUser(userId);
@@ -2948,27 +2892,19 @@ When answering:
         await storage.updateUserStripeInfo(userId, { stripeCustomerId: customerId });
       }
 
-      // Create checkout session
-      // In production, use custom domain; in development, use Replit domains
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const baseUrl = isProduction 
-        ? 'https://nycschoolsratings.com'
-        : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
+      const baseUrl = getAppUrl(req);
       console.log("Creating checkout session with baseUrl:", baseUrl);
-      
-      // Support both subscription and one-time payment (Season Pass) modes
-      const checkoutMode = mode === 'payment' ? 'payment' : 'subscription';
       
       const session = await stripeService.createCheckoutSession(
         customerId,
-        priceId,
+        seasonPassPriceId,
         `${baseUrl}/pricing?success=true`,
         `${baseUrl}/pricing?canceled=true`,
         userId,
-        checkoutMode
+        'payment'
       );
 
-      console.log("Checkout session created:", session.id, "mode:", checkoutMode);
+      console.log("Checkout session created:", session.id, "mode: payment");
       res.json({ url: session.url });
     } catch (error: any) {
       console.error("Error creating checkout session:", error?.message || error);
@@ -2989,21 +2925,23 @@ When answering:
         return res.status(400).json({ error: "Price ID is required" });
       }
 
+
+      const seasonPassPriceId = stripeService.getSeasonPassPriceId();
+      if (priceId !== seasonPassPriceId || mode !== 'payment') {
+        console.warn("Guest checkout rejected: Invalid NYC Schools offer", { priceId, mode });
+        return res.status(400).json({ error: "Only the NYC Schools Season Pass is available" });
+      }
+
       const stripe = await getUncachableStripeClient();
       
       // Create checkout session without a customer (Stripe will create one)
       // Email collection is required so we can create/link the user account after payment
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const baseUrl = isProduction 
-        ? 'https://nycschoolsratings.com'
-        : `https://${(process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '').split(',')[0]}`;
-      
-      const checkoutMode = mode === 'payment' ? 'payment' : 'subscription';
+      const baseUrl = getAppUrl(req);
       
       const sessionParams: any = {
         payment_method_types: ['card'],
-        line_items: [{ price: priceId, quantity: 1 }],
-        mode: checkoutMode,
+        line_items: [{ price: seasonPassPriceId, quantity: 1 }],
+        mode: 'payment',
         success_url: `${baseUrl}/thanks?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/pricing?canceled=true`,
         customer_creation: 'always', // Always create a Stripe customer
@@ -3016,7 +2954,7 @@ When answering:
 
       const session = await stripe.checkout.sessions.create(sessionParams);
 
-      console.log("Guest checkout session created:", session.id, "mode:", checkoutMode);
+      console.log("Guest checkout session created:", session.id, "mode: payment");
       res.json({ url: session.url, sessionId: session.id });
     } catch (error: any) {
       console.error("Error creating guest checkout session:", error?.message || error);
@@ -3044,7 +2982,9 @@ When answering:
       
       // Get customer email from session
       const customerEmail = session.customer_details?.email || 
-        (typeof session.customer === 'object' ? session.customer?.email : null);
+        (typeof session.customer === 'object' && session.customer && 'email' in session.customer
+          ? session.customer.email
+          : null);
       
       if (!customerEmail) {
         return res.status(400).json({ error: "Customer email not found" });
@@ -3270,11 +3210,7 @@ When answering:
         return res.status(400).json({ error: "No subscription found" });
       }
 
-      // In production, use custom domain; in development, use Replit domains
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const baseUrl = isProduction 
-        ? 'https://nycschoolsratings.com'
-        : `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const baseUrl = getAppUrl(req);
       const session = await stripeService.createCustomerPortalSession(
         user.stripeCustomerId,
         `${baseUrl}/settings`
@@ -3290,74 +3226,24 @@ When answering:
   // Get available products and prices (public)
   app.get("/api/products", async (req: Request, res: Response) => {
     try {
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      
-      // In production, return hardcoded Live product data since Stripe sync only has Sandbox data
-      if (isProduction) {
-        const liveProducts = [
-          {
-            id: 'prod_Tc0wGwu3FOifBE',
-            name: 'Season Pass',
-            description: 'Full access for 6 months. Unlimited comparisons, detailed score breakdowns, commute calculator, AI assistant, and smart recommendations. Built by a NYC Parent for NYC Parents.',
-            active: true,
-            metadata: { plan: 'season_pass', duration_months: '6' },
-            prices: [{
-              id: 'price_1SemubRwvWaTf8xfAYvh2qJl',
-              unit_amount: 2900,
-              currency: 'usd',
-              recurring: null,
-              active: true,
-              metadata: { plan: 'season_pass', duration_months: '6' },
-            }]
-          },
-          {
-            id: 'prod_TYaCOkKkQ3j6Ah',
-            name: 'Premium',
-            description: 'Premium subscription with unlimited AI questions, commute calculator, and all features',
-            active: true,
-            metadata: { plan: 'premium' },
-            prices: [{
-              id: 'price_1SbT2LRwvWaTf8xf5VAvCHPq',
-              unit_amount: 499,
-              currency: 'usd',
-              recurring: { interval: 'month' },
-              active: true,
-              metadata: {},
-            }]
-          }
-        ];
-        return res.json({ data: liveProducts });
-      }
-      
-      // In development, use Stripe sync database (Sandbox products)
-      const products = await stripeService.listProductsWithPrices();
-      
-      // Group prices by product
-      const productsMap = new Map();
-      for (const row of products) {
-        if (!productsMap.has(row.product_id)) {
-          productsMap.set(row.product_id, {
-            id: row.product_id,
-            name: row.product_name,
-            description: row.product_description,
-            active: row.product_active,
-            metadata: row.product_metadata,
-            prices: []
-          });
-        }
-        if (row.price_id) {
-          productsMap.get(row.product_id).prices.push({
-            id: row.price_id,
-            unit_amount: row.unit_amount,
-            currency: row.currency,
-            recurring: row.recurring,
-            active: row.price_active,
-            metadata: row.price_metadata,
-          });
-        }
-      }
-
-      res.json({ data: Array.from(productsMap.values()) });
+      const { product, price } = await stripeService.getSeasonPassOffer();
+      res.json({
+        data: [{
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          active: product.active,
+          metadata: { ...product.metadata, plan: 'season_pass' },
+          prices: [{
+            id: price.id,
+            unit_amount: price.unit_amount,
+            currency: price.currency,
+            recurring: price.recurring,
+            active: price.active,
+            metadata: price.metadata,
+          }],
+        }],
+      });
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });
@@ -3503,7 +3389,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // Google cached URLs like /school/06M314/muscota from the previous URL scheme.
   // Express handles this server-side so Googlebot gets a real 301 (not a soft 404).
   // Pattern: /school/{UPPERCASE-DBN}/{anything…}
-  app.get("/school/:dbn/*", async (req: Request, res: Response) => {
+  app.get("/school/:dbn/*splat", async (req: Request, res: Response) => {
     const rawDbn = req.params.dbn;
     // Only intercept when the segment looks like a DBN (6 chars: 2 digits + letter + 3 chars)
     // e.g. "06M314", "04M497". Current slugs start with lowercase like "06m314-…"
@@ -3526,9 +3412,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // OAuth 2.0 Protected Resource Metadata (RFC 9728)
   // This tells ChatGPT where to find our authorization server
   app.get("/.well-known/oauth-protected-resource", (req: Request, res: Response) => {
-    const baseUrl = process.env.REPLIT_DEPLOYMENT === '1' 
-      ? 'https://nycschoolsratings.com'
-      : `https://${process.env.REPLIT_DEV_DOMAIN || req.headers.host}`;
+    const baseUrl = getAppUrl(req);
     
     res.json({
       resource: `${baseUrl}/mcp`,
@@ -3541,9 +3425,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // OAuth 2.0 Authorization Server Metadata (RFC 8414)
   // This tells ChatGPT our OAuth endpoints and capabilities
   app.get("/.well-known/oauth-authorization-server", (req: Request, res: Response) => {
-    const baseUrl = process.env.REPLIT_DEPLOYMENT === '1' 
-      ? 'https://nycschoolsratings.com'
-      : `https://${process.env.REPLIT_DEV_DOMAIN || req.headers.host}`;
+    const baseUrl = getAppUrl(req);
     
     res.json({
       issuer: baseUrl,
@@ -3842,8 +3724,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     }
   });
 
-  // Replit Scheduled Deployment (`curl -X POST $URL/api/cron/safety-sync \
-  // -H "x-cron-secret: $CRON_SECRET"`) or any external scheduler.
+  // Optional manual trigger; production scheduling uses a Workers Cron Trigger.
   // The job is fire-and-forget: returns 202 immediately so HTTP clients
   // don't time out, and writes the final result to `app_settings`.
   app.post("/api/cron/safety-sync", async (req: Request, res: Response) => {
@@ -3870,8 +3751,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       };
 
       console.log('[SAFETY_CRON] starting background safety sync', opts);
-      // Fire-and-forget — full sync can run for several minutes
-      void runSafetySync(opts)
+      waitUntil(runSafetySync(opts)
         .then((result) => {
           console.log('[SAFETY_CRON] sync finished', {
             success: result.success,
@@ -3884,7 +3764,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         })
         .catch((err) => {
           console.error('[SAFETY_CRON] sync threw uncaught error:', err);
-        });
+        }));
 
       res.status(202).json({
         accepted: true,
@@ -4046,9 +3926,9 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       
       res.json({ success, message: success ? 'Newsletter sent successfully' : 'Failed to send newsletter' });
     } catch (error: any) {
-      // Handle Resend rate limit errors (429)
+      // Handle provider rate limit errors (429)
       if (error.statusCode === 429 || error.message?.includes('rate limit')) {
-        console.error('Resend rate limit hit:', error);
+        console.error('Email provider rate limit hit:', error);
         return res.status(429).json({ 
           error: 'Email provider rate limit reached. Please try again in a few minutes.' 
         });
@@ -4066,9 +3946,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // data to the admin UI at /admin/api-usage and run the abuse-detection job.
 
   // Cron endpoint that performs the daily prune AND the abuse-detection sweep.
-  // Trigger every 15 minutes from a Replit Scheduled Deployment with:
-  //   curl -X POST $URL/api/cron/api-observability \
-  //        -H "x-cron-secret: $CRON_SECRET"
+  // Production invokes this work from a Workers Cron Trigger every 15 minutes.
   // Both jobs are idempotent: prune deletes only old rows, abuse detection
   // de-dupes via api_abuse_alerts so re-running within the day won't re-email.
   app.post("/api/cron/api-observability", async (req: Request, res: Response) => {

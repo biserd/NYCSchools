@@ -101,7 +101,7 @@ export async function serveStatic(app: Express, _server: Server) {
   // page-specific titles, meta, JSON-LD, and noscript content.
   const indexHtmlPath = path.resolve(distPath, "index.html");
   const indexHtmlTemplate = fs.readFileSync(indexHtmlPath, "utf-8");
-  app.use("*", async (req, res) => {
+  app.use("/{*splat}", async (req, res) => {
     const pathname = normalizePath(req.originalUrl);
 
     try {
