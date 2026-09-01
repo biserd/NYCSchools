@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { waitUntil } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
-import { db } from "./db";
+import { db, withDatabaseConnection } from "./db";
 import { sessions } from "@shared/schema";
 import { storage } from "./storage";
 import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail, sendPasswordResetEmail, sendMagicLinkLoginEmail } from "./emailService";
@@ -47,8 +47,16 @@ export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   class DatabaseSessionStore extends session.Store {
     get(sid: string, callback: (error: unknown, session?: session.SessionData | null) => void): void {
-      void db.select().from(sessions).where(eq(sessions.sid, sid)).limit(1)
-        .then(([row]) => {
+      // express-session may call store methods while the response is being
+      // finalized, after the route's request-scoped database connection has
+      // begun closing. Give each store operation its own Hyperdrive-scoped
+      // connection so authenticated public API requests cannot fail during
+      // session loading or expiration refresh.
+      void withDatabaseConnection(async () => {
+        const [row] = await db.select().from(sessions).where(eq(sessions.sid, sid)).limit(1);
+        return row;
+      })
+        .then((row) => {
           if (!row || row.expire <= new Date()) return callback(null, null);
           callback(null, row.sess as session.SessionData);
         })
@@ -59,17 +67,21 @@ export function getSession() {
       const expire = value.cookie.expires
         ? new Date(value.cookie.expires)
         : new Date(Date.now() + sessionTtl);
-      void db.insert(sessions).values({ sid, sess: value, expire })
-        .onConflictDoUpdate({
-          target: sessions.sid,
-          set: { sess: value, expire },
-        })
+      void withDatabaseConnection(async () => {
+        await db.insert(sessions).values({ sid, sess: value, expire })
+          .onConflictDoUpdate({
+            target: sessions.sid,
+            set: { sess: value, expire },
+          });
+      })
         .then(() => callback?.())
         .catch((error) => callback?.(error));
     }
 
     destroy(sid: string, callback?: (error?: unknown) => void): void {
-      void db.delete(sessions).where(eq(sessions.sid, sid))
+      void withDatabaseConnection(async () => {
+        await db.delete(sessions).where(eq(sessions.sid, sid));
+      })
         .then(() => callback?.())
         .catch((error) => callback?.(error));
     }
@@ -78,10 +90,19 @@ export function getSession() {
       const expire = value.cookie.expires
         ? new Date(value.cookie.expires)
         : new Date(Date.now() + sessionTtl);
-      void db.update(sessions).set({ expire }).where(eq(sessions.sid, sid))
+      void withDatabaseConnection(async () => {
+        await db.update(sessions).set({ expire }).where(eq(sessions.sid, sid));
+      })
         .then(() => callback?.())
         .catch((error) => {
-          console.error("Failed to refresh session expiration", error);
+          const cause = error instanceof Error && error.cause instanceof Error
+            ? error.cause.message
+            : undefined;
+          console.error(JSON.stringify({
+            message: "Failed to refresh session expiration",
+            error: error instanceof Error ? error.message : String(error),
+            cause,
+          }));
           callback?.();
         });
     }
