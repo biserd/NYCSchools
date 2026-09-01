@@ -33,10 +33,11 @@ export default function MagicLinkCallbackPage() {
       }
       
       try {
+        const body = new URLSearchParams({ token });
         const response = await fetch('/api/auth/magic-link/verify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: body.toString(),
           credentials: 'include',
           cache: 'no-store',
         });

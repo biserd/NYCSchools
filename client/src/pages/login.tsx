@@ -80,11 +80,34 @@ export default function LoginPage() {
 
   const magicLinkMutation = useMutation({
     mutationFn: async (data: MagicLinkForm) => {
-      const response = await apiRequest("POST", "/api/auth/magic-link/request", {
+      // Use form encoding for the passwordless flow. It avoids JSON body
+      // transformations by browser/privacy tooling while remaining safely
+      // parsed by Express's urlencoded middleware.
+      const body = new URLSearchParams({
         email: data.email,
         returnTo: redirectUrl,
       });
-      return response.json();
+      const response = await fetch("/api/auth/magic-link/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: body.toString(),
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const responseText = await response.text();
+      let result: { message?: string } = {};
+      if (responseText) {
+        try {
+          result = JSON.parse(responseText);
+        } catch {
+          throw new Error("The sign-in service returned an unexpected response.");
+        }
+      }
+      if (!response.ok) {
+        throw new Error(result.message || "Unable to request a sign-in link.");
+      }
+      return result;
     },
     onSuccess: () => {
       setMagicLinkSent(true);
