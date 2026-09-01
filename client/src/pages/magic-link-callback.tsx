@@ -17,6 +17,10 @@ export default function MagicLinkCallbackPage() {
       const params = new URLSearchParams(window.location.search);
       const token = params.get('token');
       const returnToParam = params.get('returnTo');
+
+      // Remove the one-time credential from the address bar and browser
+      // history before making any network requests from this page.
+      window.history.replaceState({}, document.title, window.location.pathname);
       
       if (returnToParam && returnToParam.startsWith('/') && !returnToParam.startsWith('//')) {
         setReturnTo(returnToParam);
@@ -29,11 +33,23 @@ export default function MagicLinkCallbackPage() {
       }
       
       try {
-        const response = await fetch(`/api/auth/magic-link/${token}`, {
+        const response = await fetch('/api/auth/magic-link/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
           credentials: 'include',
+          cache: 'no-store',
         });
-        
-        const data = await response.json();
+
+        const responseText = await response.text();
+        let data: { success?: boolean; error?: string } = {};
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText);
+          } catch {
+            throw new Error(`Unexpected sign-in response (${response.status})`);
+          }
+        }
         
         if (!response.ok) {
           if (data.error?.includes('expired')) {
@@ -62,8 +78,30 @@ export default function MagicLinkCallbackPage() {
         }
       } catch (error: any) {
         console.error('Magic link verification error:', error);
+
+        // A Worker or network interruption can happen after the server has
+        // saved the session. Recover instead of showing a false failure.
+        try {
+          const sessionResponse = await fetch('/api/auth/user', {
+            credentials: 'include',
+            cache: 'no-store',
+          });
+          const currentUser = sessionResponse.ok ? await sessionResponse.json() : null;
+          if (currentUser?.id) {
+            setStatus('success');
+            queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+            const safeRedirect = returnToParam && returnToParam.startsWith('/') && !returnToParam.startsWith('//')
+              ? returnToParam
+              : '/account';
+            setTimeout(() => navigate(safeRedirect), 1500);
+            return;
+          }
+        } catch (sessionError) {
+          console.error('Magic link session recovery error:', sessionError);
+        }
+
         setStatus('error');
-        setErrorMessage('Something went wrong. Please try again.');
+        setErrorMessage('We could not complete sign-in. Please request a fresh link and try again.');
       }
     };
     

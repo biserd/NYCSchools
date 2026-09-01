@@ -38,7 +38,11 @@ app.use(databaseContextMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  // Never write one-time authentication credentials to application logs.
+  const path = req.path.replace(
+    /^\/api\/auth\/magic-link\/[a-f0-9]{64}$/i,
+    "/api/auth/magic-link/[REDACTED]",
+  );
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;

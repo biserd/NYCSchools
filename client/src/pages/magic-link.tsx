@@ -15,6 +15,10 @@ export default function MagicLinkPage() {
   useEffect(() => {
     const verifyMagicLink = async () => {
       const token = params.token;
+
+      // Remove the one-time credential from the address bar and browser
+      // history before making any network requests from this page.
+      window.history.replaceState({}, document.title, '/auth/magic-link/callback');
       
       if (!token) {
         setStatus('error');
@@ -23,11 +27,23 @@ export default function MagicLinkPage() {
       }
       
       try {
-        const response = await fetch(`/api/auth/magic-link/${token}`, {
+        const response = await fetch('/api/auth/magic-link/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
           credentials: 'include',
+          cache: 'no-store',
         });
-        
-        const data = await response.json();
+
+        const responseText = await response.text();
+        let data: { success?: boolean; error?: string; redirectUrl?: string } = {};
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText);
+          } catch {
+            throw new Error(`Unexpected sign-in response (${response.status})`);
+          }
+        }
         
         if (!response.ok) {
           if (data.error?.includes('expired')) {
@@ -51,8 +67,25 @@ export default function MagicLinkPage() {
         }
       } catch (error: any) {
         console.error('Magic link verification error:', error);
+
+        try {
+          const sessionResponse = await fetch('/api/auth/user', {
+            credentials: 'include',
+            cache: 'no-store',
+          });
+          const currentUser = sessionResponse.ok ? await sessionResponse.json() : null;
+          if (currentUser?.id) {
+            setStatus('success');
+            queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+            setTimeout(() => navigate('/'), 1500);
+            return;
+          }
+        } catch (sessionError) {
+          console.error('Magic link session recovery error:', sessionError);
+        }
+
         setStatus('error');
-        setErrorMessage('Something went wrong. Please try again.');
+        setErrorMessage('We could not complete sign-in. Please request a fresh link and try again.');
       }
     };
     
