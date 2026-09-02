@@ -14,6 +14,7 @@ import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
 import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock, AlertCircle, RefreshCw } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { FEATURED_SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
 
 interface UserZones {
   elementary: string | null;
@@ -1031,6 +1032,26 @@ export default function Home() {
         onOpenChange={setDetailOpen}
         isPremium={isPremium}
       />
+
+      <section className="border-t bg-card" data-testid="section-explore-school-guides">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-7">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold">Explore schools by place and program</h2>
+              <p className="text-muted-foreground mt-2">Move between district, neighborhood, and program collections built from the same school data.</p>
+            </div>
+            <Button variant="outline" asChild><Link href="/explore-schools">View all school guides</Link></Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {FEATURED_SEO_LANDINGS.map((landing) => (
+              <Link key={`${landing.kind}-${landing.slug}`} href={getSeoLandingPath(landing)} className="rounded-lg border bg-background p-4 hover-elevate">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">{landing.kind}</span>
+                <h3 className="font-semibold mt-1">{landing.name}</h3>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* School Guides Section - SEO Internal Links */}
       <section className="bg-muted/50 border-t" data-testid="section-school-guides">

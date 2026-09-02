@@ -8,6 +8,7 @@ import { StructuredData } from "@/components/StructuredData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import NotFound from "@/pages/not-found";
+import { getSeoLandingPath, getSeoLandingsForSchoolGuide } from "@shared/seo-landings";
 
 export default function SchoolGuidePage() {
   const [, params] = useRoute("/nyc-schools/:slug");
@@ -16,6 +17,7 @@ export default function SchoolGuidePage() {
   if (!guide) return <NotFound />;
 
   const canonicalPath = `/nyc-schools/${guide.slug}`;
+  const relatedGuides = getSeoLandingsForSchoolGuide(guide.slug);
   const schema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -75,6 +77,14 @@ export default function SchoolGuidePage() {
               See how the data is evaluated <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
+          {relatedGuides.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-2xl font-semibold">Explore related districts, neighborhoods, and programs</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {relatedGuides.map((related) => <Button key={`${related.kind}-${related.slug}`} variant="outline" asChild><Link href={getSeoLandingPath(related)}>{related.name}</Link></Button>)}
+              </div>
+            </section>
+          )}
         </section>
       </main>
       <Footer />

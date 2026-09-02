@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 import { blogPosts } from "@shared/blog-data";
-import { SCHOOL_GUIDES } from "@shared/school-guides";
+import { CANONICAL_SCHOOL_GUIDES } from "@shared/school-guides";
 import { SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
 import { getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug } from "@shared/schema";
 
@@ -30,7 +30,7 @@ export async function sitemapByName(name: string): Promise<string | null> {
     "/", "/map", "/compare", "/recommendations", "/early-childhood", "/private-schools", "/lottery-simulator", "/chances-calculator", "/safe-and-strong", "/blog", "/pricing", "/features", "/benefits", "/faq", "/contact", "/methodology", "/about", "/explore-schools", "/safety-methodology", "/developers", "/developers/docs", "/privacy", "/terms",
   ].map((path) => ({ path, changefreq: path === "/" ? "daily" : "monthly", priority: path === "/" ? "1.0" : "0.7" })));
   if (name === "guides") return urlset([
-    ...SCHOOL_GUIDES.map((guide) => ({ path: `/nyc-schools/${guide.slug}`, changefreq: "monthly", priority: "0.8" })),
+    ...CANONICAL_SCHOOL_GUIDES.map((guide) => ({ path: `/nyc-schools/${guide.slug}`, changefreq: "monthly", priority: "0.8" })),
     ...SEO_LANDINGS.map((landing) => ({ path: getSeoLandingPath(landing), changefreq: "monthly", priority: "0.8" })),
   ]);
   if (name === "blog") return urlset(blogPosts.map((post) => ({ path: `/blog/${post.slug}`, lastmod: post.publishedAt, changefreq: "monthly", priority: "0.8" })));

@@ -14,6 +14,7 @@ import { Footer } from "@/components/Footer";
 import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SEOHead } from "@/components/SEOHead";
 import { getSchoolSeoMeta } from "@shared/school-seo";
+import { getSeoLandingPath, getSeoLandingsForSchool } from "@shared/seo-landings";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -232,6 +233,8 @@ export default function SchoolDetail() {
       .slice(0, 3);
   }, [allSchools, school?.district, dbn]);
 
+  const relatedLandingGuides = useMemo(() => school ? getSeoLandingsForSchool(school) : [], [school]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -406,7 +409,7 @@ export default function SchoolDetail() {
                   </Badge>
                 )}
                 <Link 
-                  href={`/?district=${schoolWithScore.district}`}
+                  href={`/district/${schoolWithScore.district}`}
                   data-testid="link-district"
                 >
                   <Badge variant="outline" className="text-xs text-primary hover:bg-primary/10 cursor-pointer">
@@ -2831,11 +2834,27 @@ export default function SchoolDetail() {
                   })}
                 </div>
                 <div className="mt-4 text-center">
-                  <Link href={`/?district=${schoolWithScore.district}`}>
+                  <Link href={`/district/${schoolWithScore.district}`}>
                     <Button variant="outline" size="sm" data-testid="button-view-all-district-schools">
                       View All District {schoolWithScore.district} Schools
                     </Button>
                   </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {relatedLandingGuides.length > 0 && (
+            <Card data-testid="card-related-school-guides">
+              <CardHeader><CardTitle>Explore guides related to this school</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Continue exploring this school’s district, nearby area, and reported programs.</p>
+                <div className="flex flex-wrap gap-2">
+                  {relatedLandingGuides.map((guide) => (
+                    <Button asChild variant="outline" size="sm" key={`${guide.kind}-${guide.slug}`}>
+                      <Link href={getSeoLandingPath(guide)}>{guide.name}</Link>
+                    </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>

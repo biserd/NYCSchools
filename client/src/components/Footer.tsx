@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { FEATURED_SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
 
 export function Footer() {
   return (
@@ -140,40 +141,19 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/nyc-schools/dual-language" className="hover:text-foreground transition-colors">
+                <Link href="/program/dual-language" className="hover:text-foreground transition-colors">
                   Dual-Language Schools
                 </Link>
               </li>
               <li>
-                <Link href="/nyc-schools/gifted-and-talented" className="hover:text-foreground transition-colors">
+                <Link href="/program/gifted-talented" className="hover:text-foreground transition-colors">
                   Gifted &amp; Talented Programs
                 </Link>
               </li>
-              <li>
-                <Link href="/blog/best-nyc-kindergartens-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-kindergartens">
-                  Best Kindergartens 2026
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog/best-nyc-elementary-schools-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-elementary">
-                  Best Elementary Schools
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog/best-nyc-middle-schools-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-middle">
-                  Best Middle Schools
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog/best-nyc-charter-schools-2026" className="hover:text-foreground transition-colors" data-testid="footer-link-blog-charter">
-                  Best Charter Schools
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="hover:text-foreground transition-colors" data-testid="footer-link-all-blog">
-                  All Blog Posts
-                </Link>
-              </li>
+              {FEATURED_SEO_LANDINGS.slice(0, 5).map((landing) => (
+                <li key={`${landing.kind}-${landing.slug}`}><Link href={getSeoLandingPath(landing)} className="hover:text-foreground transition-colors">{landing.name} Schools</Link></li>
+              ))}
+              <li><Link href="/explore-schools" className="font-medium text-foreground hover:text-primary transition-colors">All school guides →</Link></li>
             </ul>
           </div>
           

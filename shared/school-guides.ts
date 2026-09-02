@@ -124,3 +124,10 @@ export const SCHOOL_GUIDES: SchoolGuide[] = [
 ];
 
 export const SCHOOL_GUIDE_BY_SLUG = new Map(SCHOOL_GUIDES.map((guide) => [guide.slug, guide]));
+
+// These legacy program-guide URLs permanently redirect to the richer,
+// data-backed program collections. Keep their definitions only so old links
+// remain understandable while excluding them from discovery feeds.
+export const CANONICAL_SCHOOL_GUIDES = SCHOOL_GUIDES.filter(
+  (guide) => guide.slug !== "dual-language" && guide.slug !== "gifted-and-talented",
+);

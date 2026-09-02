@@ -1520,22 +1520,22 @@ function BestCharterSchoolsPost() {
 
       <h3>Brooklyn Charters</h3>
       <p>
-        Brooklyn has the highest concentration of charter schools (~95), with strong options in Bed-Stuy, Crown Heights, and Brownsville. Top networks here include <strong>Uncommon Schools North Star</strong>, <strong>Achievement First Brownsville</strong>, and <strong>Success Academy Cobble Hill</strong>. Browse all Brooklyn district schools: <Link href="/?district=15" className="text-primary hover:underline">D15 (Park Slope)</Link>, <Link href="/?district=14" className="text-primary hover:underline">D14 (Williamsburg)</Link>, <Link href="/?district=22" className="text-primary hover:underline">D22 (Midwood)</Link>.
+        Brooklyn has the highest concentration of charter schools (~95), with strong options in Bed-Stuy, Crown Heights, and Brownsville. Top networks here include <strong>Uncommon Schools North Star</strong>, <strong>Achievement First Brownsville</strong>, and <strong>Success Academy Cobble Hill</strong>. Browse all Brooklyn district schools: <Link href="/district/15" className="text-primary hover:underline">D15 (Park Slope)</Link>, <Link href="/district/14" className="text-primary hover:underline">D14 (Williamsburg)</Link>, <Link href="/district/22" className="text-primary hover:underline">D22 (Midwood)</Link>.
       </p>
 
       <h3>Bronx Charters</h3>
       <p>
-        The South Bronx has many high-performing charters (~87), particularly from <strong>Success Academy</strong>, <strong>KIPP</strong>, and <strong>Uncommon Schools</strong> networks. Browse all Bronx district schools: <Link href="/?district=7" className="text-primary hover:underline">D7</Link>, <Link href="/?district=8" className="text-primary hover:underline">D8</Link>, <Link href="/?district=10" className="text-primary hover:underline">D10 (Riverdale)</Link>, <Link href="/?district=11" className="text-primary hover:underline">D11 (Pelham)</Link>.
+        The South Bronx has many high-performing charters (~87), particularly from <strong>Success Academy</strong>, <strong>KIPP</strong>, and <strong>Uncommon Schools</strong> networks. Browse all Bronx district schools: <Link href="/district/7" className="text-primary hover:underline">D7</Link>, <Link href="/district/8" className="text-primary hover:underline">D8</Link>, <Link href="/district/10" className="text-primary hover:underline">D10 (Riverdale)</Link>, <Link href="/district/11" className="text-primary hover:underline">D11 (Pelham)</Link>.
       </p>
 
       <h3>Manhattan Charters</h3>
       <p>
-        Harlem is home to numerous charter options (~62), including several <strong>Success Academy</strong> and <strong>Democracy Prep</strong> campuses. Manhattan charters post the highest average proficiency citywide. Browse Manhattan district schools: <Link href="/?district=5" className="text-primary hover:underline">D5 (Harlem)</Link>, <Link href="/?district=6" className="text-primary hover:underline">D6 (Washington Heights)</Link>, <Link href="/?district=2" className="text-primary hover:underline">D2 (UES/Tribeca)</Link>.
+        Harlem is home to numerous charter options (~62), including several <strong>Success Academy</strong> and <strong>Democracy Prep</strong> campuses. Manhattan charters post the highest average proficiency citywide. Browse Manhattan district schools: <Link href="/district/5" className="text-primary hover:underline">D5 (Harlem)</Link>, <Link href="/district/6" className="text-primary hover:underline">D6 (Washington Heights)</Link>, <Link href="/district/2" className="text-primary hover:underline">D2 (UES/Tribeca)</Link>.
       </p>
 
       <h3>Queens & Staten Island</h3>
       <p>
-        Queens has fewer charter options (~28) but they're growing, with KIPP NYC College Prep and several Success Academy campuses. Staten Island has limited charter presence (~8). Browse: <Link href="/?district=27" className="text-primary hover:underline">Queens D27</Link>, <Link href="/?district=28" className="text-primary hover:underline">Queens D28</Link>, <Link href="/?district=31" className="text-primary hover:underline">SI D31</Link>.
+        Queens has fewer charter options (~28) but they're growing, with KIPP NYC College Prep and several Success Academy campuses. Staten Island has limited charter presence (~8). Browse: <Link href="/district/27" className="text-primary hover:underline">Queens D27</Link>, <Link href="/district/28" className="text-primary hover:underline">Queens D28</Link>, <Link href="/district/31" className="text-primary hover:underline">SI D31</Link>.
       </p>
 
       <p className="text-sm text-muted-foreground mt-4">

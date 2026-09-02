@@ -7,7 +7,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateOverallScore, type School } from "@shared/schema";
-import { getSeoLanding, getSeoLandingPath, matchesSeoLanding, SEO_LANDINGS, type SeoLandingKind } from "@shared/seo-landings";
+import { getRelatedSeoLandings, getSeoLanding, getSeoLandingPath, matchesSeoLanding, type SeoLandingKind } from "@shared/seo-landings";
 
 export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
   const { slug = "" } = useParams<{ slug: string }>();
@@ -16,7 +16,7 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
   const matches = landing
     ? schools.filter((school) => matchesSeoLanding(school, landing)).sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a))
     : [];
-  const related = landing ? SEO_LANDINGS.filter((item) => item.kind === landing.kind && item.slug !== landing.slug).slice(0, 8) : [];
+  const related = landing ? getRelatedSeoLandings(landing, schools) : [];
 
   if (!landing) return <div className="p-10">Guide not found.</div>;
 
@@ -42,7 +42,8 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
         {isError && <p className="rounded-lg border border-destructive p-6">Schools could not be loaded. Please try again.</p>}
         {!isLoading && !isError && <div className="grid md:grid-cols-2 gap-4">{matches.map((school) => <SchoolCard key={school.dbn} school={school} />)}</div>}
         <section className="mt-12 border-t pt-8">
-          <h2 className="text-xl font-semibold mb-4">Related school guides</h2>
+          <h2 className="text-xl font-semibold mb-2">Explore related NYC school guides</h2>
+          <p className="text-sm text-muted-foreground mb-4">These guides share districts, neighborhoods, programs, or schools with this collection.</p>
           <div className="flex flex-wrap gap-2">{related.map((item) => <Button asChild key={`${item.kind}-${item.slug}`} variant="outline" size="sm"><Link href={getSeoLandingPath(item)}>{item.name}</Link></Button>)}</div>
         </section>
       </main>

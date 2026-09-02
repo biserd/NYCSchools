@@ -37,7 +37,7 @@ import {
 import { getBlogPost } from "@shared/blog-data";
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { getSchoolSeoMeta } from "@shared/school-seo";
-import { getSeoLanding, getSeoLandingPath, matchesSeoLanding, SEO_LANDINGS } from "@shared/seo-landings";
+import { FEATURED_SEO_LANDINGS, LEGACY_SEO_GUIDE_REDIRECTS, getRelatedSeoLandings, getSeoLanding, getSeoLandingPath, getSeoLandingsForSchool, getSeoLandingsForSchoolGuide, matchesSeoLanding, SEO_LANDINGS } from "@shared/seo-landings";
 import type { School, PrivateSchool, NyceecCenter } from "@shared/schema";
 
 const SITE_ORIGIN = "https://nycschoolsratings.com";
@@ -501,6 +501,9 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
       return `<li><a href="${SITE_ORIGIN}/school/${sSlug}">${escapeHtml(s.name)} (${escapeHtml(s.dbn)}) — ${escapeHtml(sBorough)}</a></li>`;
     })
     .join("");
+  const guideLinks = getSeoLandingsForSchool(school)
+    .map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)} school guide</a></li>`)
+    .join("");
 
   const noscriptHtml = `
       <article>
@@ -519,6 +522,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
           ${school.address ? `<li>Address: ${escapeHtml(school.address)}</li>` : ""}
         </ul>
         ${relatedLinks ? `<h2>Other schools in District ${school.district}</h2><ul>${relatedLinks}</ul>` : ""}
+        ${guideLinks ? `<h2>Explore guides related to ${escapeHtml(school.name)}</h2><ul>${guideLinks}</ul>` : ""}
         <p><a href="${SITE_ORIGIN}/">Browse all NYC schools</a> · <a href="${SITE_ORIGIN}/compare">Compare schools</a> · <a href="${SITE_ORIGIN}/map">Map view</a></p>
       </article>`;
 
@@ -941,8 +945,8 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
         <li><a href="/nyc-schools/elementary-schools">NYC elementary schools</a></li>
         <li><a href="/nyc-schools/middle-schools">NYC middle schools</a></li>
         <li><a href="/nyc-schools/high-schools">NYC high schools</a></li>
-        <li><a href="/nyc-schools/dual-language">NYC dual-language schools</a></li>
-        <li><a href="/nyc-schools/gifted-and-talented">NYC Gifted and Talented programs</a></li>
+        <li><a href="/program/dual-language">NYC dual-language schools</a></li>
+        <li><a href="/program/gifted-talented">NYC Gifted and Talented programs</a></li>
       </ul>
     </section>
     <section>
@@ -954,7 +958,8 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
         <a href="/nyc-schools/bronx">The Bronx</a>
         <a href="/nyc-schools/staten-island">Staten Island</a>
       </nav>
-    </section>` : "";
+    </section>
+    <section><h2>Explore by district, neighborhood, and program</h2><ul>${FEATURED_SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><p><a href="/explore-schools">View all NYC school guides</a></p></section>` : "";
   const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul></section>` : "";
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
   const crawlerHtml = `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}</main>`;
@@ -989,7 +994,8 @@ function renderSchoolGuide(slug: string, baseHtml: string): string | null {
     description: guide.description,
     url: canonical,
   };
-  const content = `<main data-server-rendered="true"><p>${escapeHtml(guide.eyebrow)}</p><h1>${escapeHtml(guide.heading)}</h1><p>${escapeHtml(guide.intro)}</p><h2>What you can compare</h2><ul>${guide.highlights.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul><a href="${escapeAttr(guide.searchHref)}">${escapeHtml(guide.searchLabel)}</a></main>`;
+  const relatedGuides = getSeoLandingsForSchoolGuide(slug);
+  const content = `<main data-server-rendered="true"><p>${escapeHtml(guide.eyebrow)}</p><h1>${escapeHtml(guide.heading)}</h1><p>${escapeHtml(guide.intro)}</p><h2>What you can compare</h2><ul>${guide.highlights.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul><p><a href="${escapeAttr(guide.searchHref)}">${escapeHtml(guide.searchLabel)}</a></p>${relatedGuides.length ? `<h2>Related school guides</h2><ul>${relatedGuides.map((related) => `<li><a href="${escapeAttr(getSeoLandingPath(related))}">${escapeHtml(related.name)}</a></li>`).join("")}</ul>` : ""}</main>`;
   return applyMeta(baseHtml, {
     title: guide.title,
     description: guide.description,
@@ -1002,9 +1008,11 @@ function renderSchoolGuide(slug: string, baseHtml: string): string | null {
 async function renderSeoLanding(kind: string, slug: string, baseHtml: string): Promise<string | null> {
   const landing = getSeoLanding(kind, slug);
   if (!landing) return null;
-  const schools = ((await storage.getSchools()) as School[])
+  const allSchools = (await storage.getSchools()) as School[];
+  const schools = allSchools
     .filter((school) => matchesSeoLanding(school, landing))
     .sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a));
+  const relatedGuides = getRelatedSeoLandings(landing, allSchools);
   const canonical = `${SITE_ORIGIN}${getSeoLandingPath(landing)}`;
   const items = schools.slice(0, 30).map((school, index) => ({
     "@type": "ListItem",
@@ -1020,7 +1028,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
       { "@type": "ListItem", position: 3, name: landing.name, item: canonical },
     ] },
   ];
-  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(school.name)}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><p><a href="/methodology">Rating methodology and data sources</a></p></main>`;
+  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(school.name)}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
   return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, serverHtml });
 }
 
@@ -1031,6 +1039,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
  */
 export async function getCanonicalRedirectPath(rawUrl: string): Promise<string | null> {
   const path = rawUrl.split("?")[0].split("#")[0];
+  if (LEGACY_SEO_GUIDE_REDIRECTS[path]) return LEGACY_SEO_GUIDE_REDIRECTS[path];
   let match: RegExpMatchArray | null;
 
   if ((match = path.match(/^\/school\/([^/]+)$/))) {

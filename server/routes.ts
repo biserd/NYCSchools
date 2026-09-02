@@ -20,7 +20,7 @@ import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/s
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
 import { flushApiLogsNow } from "./apiObservability";
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
-import { SCHOOL_GUIDES } from "@shared/school-guides";
+import { CANONICAL_SCHOOL_GUIDES } from "@shared/school-guides";
 import { waitUntil } from "cloudflare:workers";
 import { getAppUrl } from "./runtimeConfig";
 import { generateJson, streamText, type AiMessage } from "./aiService";
@@ -3340,7 +3340,7 @@ When answering:
         { url: '/developers/docs', changefreq: 'monthly', priority: '0.6' },
         { url: '/privacy', changefreq: 'monthly', priority: '0.3' },
         { url: '/terms', changefreq: 'monthly', priority: '0.3' },
-        ...SCHOOL_GUIDES.map((guide) => ({
+        ...CANONICAL_SCHOOL_GUIDES.map((guide) => ({
           url: `/nyc-schools/${guide.slug}`,
           changefreq: 'monthly',
           priority: '0.8',
