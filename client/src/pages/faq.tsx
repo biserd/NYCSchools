@@ -93,7 +93,7 @@ export default function FAQ() {
     },
     {
       question: "What is the AI Assistant?",
-      answer: "Our AI Assistant is powered by OpenAI and can answer questions about schools, help you understand metrics, provide recommendations, and guide you through the school selection process. You can access it via the chat button on any page."
+      answer: "Our AI Assistant runs on Cloudflare Workers AI and can answer questions about schools, help you understand metrics, provide recommendations, and guide you through the school selection process. You can access it via the chat button on any page."
     },
     {
       question: "How do I get personalized school recommendations?",
@@ -105,9 +105,9 @@ export default function FAQ() {
         <div>
           <p className="mb-2">We use official NYC Department of Education data from multiple sources:</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Test Scores:</strong> NYC Open Data, grades 3-8 state test results (2021-22 to 2022-23 academic years)</li>
+            <li><strong>Test Scores:</strong> NYSED and NYC Public Schools, grades 3-8 state test results (the reporting year is shown on each school page)</li>
             <li><strong>Climate & Progress:</strong> NYC DOE School Survey and Quality Reports (2023-2024)</li>
-            <li><strong>Demographics:</strong> NYC Open Data Portal, student demographics dataset c7ru-d68s (2021-22 to 2022-23 academic years)</li>
+            <li><strong>Demographics:</strong> NYC Public Schools and NYC Open Data (latest available reporting cycle)</li>
             <li><strong>School Locations:</strong> NYC Open Data School Point Locations</li>
           </ul>
           <p className="mt-2 text-sm">All data represents the most recent information available from official NYC DOE sources.</p>
@@ -116,7 +116,7 @@ export default function FAQ() {
     },
     {
       question: "How often is the data updated?",
-      answer: "We update our school data when new information is released by the NYC Department of Education, typically annually. Our current data includes test scores and demographics from the 2021-22 to 2022-23 academic years, and school quality metrics (climate and progress scores) from 2023-2024."
+      answer: "We update school data when NYSED and NYC Public Schools publish new releases, typically annually. Because datasets are released on different schedules, each school page shows the relevant reporting year and latest database update where available."
     },
     {
       question: "Can I write reviews for schools?",

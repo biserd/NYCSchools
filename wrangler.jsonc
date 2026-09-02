@@ -46,7 +46,8 @@
     "STRIPE_SEASON_PASS_PRICE_ID": "price_1SemubRwvWaTf8xfAYvh2qJl",
     "EMAIL_FROM": "hello@nycschoolsratings.com",
     "EMAIL_FROM_NAME": "NYC School Ratings",
-    "EMAIL_DELIVERY_ENABLED": "true"
+    "EMAIL_DELIVERY_ENABLED": "true",
+    "INDEXNOW_KEY": "a4c2f27e06d54a0fa8bd43b93fe6bc72"
   },
   "triggers": {
     "crons": [

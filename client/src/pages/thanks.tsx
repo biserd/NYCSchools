@@ -6,6 +6,7 @@ import { CheckCircle2, Mail, Loader2, ArrowRight, Sparkles, Shield, MessageSquar
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOHead } from "@/components/SEOHead";
+import { trackEvent } from "@/lib/analytics";
 
 export default function ThanksPage() {
   const [, navigate] = useLocation();
@@ -47,6 +48,11 @@ export default function ThanksPage() {
         }
         
         if (data.success) {
+          const purchaseKey = `nycsr_purchase_${sessionId}`;
+          if (!sessionStorage.getItem(purchaseKey)) {
+            trackEvent("purchase", { transaction_id: sessionId, currency: "USD", value: 29 });
+            sessionStorage.setItem(purchaseKey, "1");
+          }
           setVerificationStatus('success');
           setVerifiedEmail(data.user?.email);
           queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });

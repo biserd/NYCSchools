@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthPageHeader } from "@/components/AuthPageHeader";
 import { SEOHead } from "@/components/SEOHead";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -62,6 +63,7 @@ export default function LoginPage() {
       return response.json();
     },
     onSuccess: () => {
+      trackEvent("login", { method: "password" });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome back!",
@@ -110,6 +112,7 @@ export default function LoginPage() {
       return result;
     },
     onSuccess: () => {
+      trackEvent("magic_link_requested");
       setMagicLinkSent(true);
       toast({
         title: "Check your email",

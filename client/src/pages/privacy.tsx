@@ -97,7 +97,7 @@ export default function Privacy() {
             <ul className="list-disc pl-6 mb-4">
               <li><strong>Cloudflare:</strong> For application hosting and transactional email delivery</li>
               <li><strong>Google Maps APIs:</strong> For geocoding and transit time calculations</li>
-              <li><strong>OpenAI:</strong> For AI-powered chat assistant and school recommendations</li>
+              <li><strong>Cloudflare:</strong> For hosting, security, and AI-powered chat and school recommendations</li>
               <li><strong>Stripe:</strong> For payment processing (subscription and one-time purchases)</li>
             </ul>
             <p>
@@ -125,9 +125,9 @@ export default function Privacy() {
               <li>ChatGPT cannot modify your account, add favorites, or access your payment information</li>
               <li>You can revoke this access at any time by logging into your account</li>
             </ul>
-            <h3 className="text-xl font-semibold mb-2">Data Sent to OpenAI</h3>
+            <h3 className="text-xl font-semibold mb-2">AI feature processing</h3>
             <p>
-              When you use our ChatGPT app, your queries and the school data returned are processed by OpenAI according to their privacy policy. We do not control how OpenAI handles data within ChatGPT conversations.
+              When you use our on-site AI features, your query and relevant school data are processed through Cloudflare Workers AI. If you connect this service through a third-party AI client, that client may process the conversation under its own privacy terms.
             </p>
           </section>
 

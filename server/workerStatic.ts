@@ -10,10 +10,11 @@ const KNOWN_STATIC_ROUTES = new Set([
   "/features", "/benefits", "/release-notes", "/blog", "/pricing",
   "/developers", "/developers/docs", "/contact", "/safety-methodology",
   "/safe-and-strong", "/admin/api-usage", "/thanks",
+  "/explore-schools", "/methodology", "/about",
   "/auth/magic-link/callback",
 ]);
 
-const ENTITY_ROUTE = /^\/(?:school|private-school|early-childhood|blog|compare|nyc-schools)\/[^/]+$/;
+const ENTITY_ROUTE = /^\/(?:school|private-school|early-childhood|blog|compare|nyc-schools|district|neighborhood|program)\/[^/]+$/;
 const MAGIC_LINK_ROUTE = /^\/auth\/magic-link\/[^/]+$/;
 
 function normalizePath(rawUrl: string): string {

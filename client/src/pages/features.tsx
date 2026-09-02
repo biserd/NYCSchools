@@ -93,7 +93,7 @@ export default function FeaturesPage() {
               icon={<MessageCircle className="w-5 h-5" />}
               title="AI Chat Assistant"
               description="Get instant answers about schools, understand metrics, and receive personalized guidance. Ask anything about NYC schools and get detailed, helpful responses."
-              badge="GPT-4"
+              badge="Workers AI"
             />
             <FeatureCard
               icon={<Sparkles className="w-5 h-5" />}

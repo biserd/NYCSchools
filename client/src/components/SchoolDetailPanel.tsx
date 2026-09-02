@@ -1440,8 +1440,8 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
           </Card>
 
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
-            <p>Data from NYC Department of Education School Survey and public records.</p>
-            <p>Test scores and demographics: 2021-22 to 2022-23 | Climate/Progress: 2023-2024</p>
+            <p>Independent analysis of NYSED and NYC Public Schools data.</p>
+            <p>Reporting year: {school.assessment_year || "varies by metric"} | <Link href="/methodology" className="text-primary underline">Methodology and sources</Link></p>
           </div>
         </div>
       </SheetContent>

@@ -163,9 +163,9 @@ WHEN TO USE:
 - User wants to see test score history
 - User asks about COVID recovery or year-over-year changes
 
-DATA RETURNED: Year-by-year ELA and Math proficiency percentages from 2019-2024, showing pre-COVID, during-COVID, and recovery trajectory. Includes trend direction (improving/stable/declining).
+DATA RETURNED: Available year-by-year ELA and Math proficiency percentages, with the source year preserved. Includes trend direction (improving/stable/declining).
 
-INSIGHT: Schools that recovered well from COVID learning loss (2021-2024) often have strong leadership and support systems.`,
+INSIGHT: Use the complete available series and avoid attributing changes to a cause unless the data supports it.`,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -250,13 +250,30 @@ DATA RETURNED: List of favorited schools with full details including scores, pro
 // Server capabilities
 const SERVER_INFO = {
   name: "nyc-school-ratings",
-  version: "1.0.0",
-  protocolVersion: "2024-11-05"
+  title: "NYC School Ratings",
+  version: "2.0.0",
+  protocolVersion: "2026-07-28",
+  websiteUrl: "https://nycschoolsratings.com",
+  description: "Independent NYC school discovery and comparison using public NYSED and NYC Public Schools data."
 };
 
 const SERVER_CAPABILITIES = {
   tools: {}
 };
+
+function sourceMetadata() {
+  return {
+    publisher: "NYC School Ratings",
+    canonical_url: "https://nycschoolsratings.com/methodology",
+    methodology: "40% academics, 30% school climate, 30% student progress where sufficient inputs are available",
+    primary_sources: [
+      "https://infohub.nyced.org/reports/academics/test-results",
+      "https://infohub.nyced.org/reports/school-quality",
+      "https://schoolsearch.schools.nyc/",
+    ],
+    caveat: "Verify current zones, programs, and admissions rules with NYC Public Schools.",
+  };
+}
 
 function getRatingState(school: any) {
   const score = calculateOverallScore(school);
@@ -600,9 +617,9 @@ async function handleGetSchoolHistory(params: Record<string, any>) {
   return {
     _formatting_hint: {
       format: "trend_chart",
-      presentation: `Present as a timeline showing year-over-year changes. Lead with the trend direction (${trend.direction}) and percentage change. Show ELA and Math scores side by side for each year. Note any significant jumps or drops, especially around 2020-2021 (COVID impact) and 2022-2024 (recovery).`,
+      presentation: `Present as a timeline showing year-over-year changes. Lead with the trend direction (${trend.direction}) and percentage change. Show ELA and Math scores side by side for each available year and do not invent causes for changes.`,
       visualization: "line_chart",
-      highlight_years: ["2019 (pre-COVID)", "2021 (COVID impact)", "2024 (current)"],
+      highlight_years: scoresByYear.map((item) => String(item.year)),
       next_actions: ["Get full school details", "Compare with another school's trends", "Search for improving schools"]
     },
     dbn: params.dbn,
@@ -612,7 +629,7 @@ async function handleGetSchoolHistory(params: Record<string, any>) {
     years_analyzed: trend.yearsAnalyzed,
     scores_by_year: scoresByYear,
     trend_summary: `Overall trend: ${trend.direction} (${trend.changePercent > 0 ? '+' : ''}${Math.round(trend.changePercent)}% change)`,
-    covid_context: "Note: 2020-2021 saw widespread score drops due to COVID disruptions. Schools showing strong 2022-2024 recovery demonstrate resilience."
+    interpretation_note: "Changes can reflect cohort composition, participation, reporting, or school conditions; the series alone does not establish causation."
   };
 }
 
@@ -749,6 +766,15 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
     let result: any;
 
     switch (method) {
+      case "server/discover":
+        result = {
+          protocolVersion: SERVER_INFO.protocolVersion,
+          serverInfo: SERVER_INFO,
+          capabilities: SERVER_CAPABILITIES,
+          instructions: "Use the canonical URLs and reporting years returned by tools. Treat ratings as independent comparison aids, not official NYC Public Schools ratings.",
+        };
+        break;
+
       case "initialize":
         result = {
           protocolVersion: SERVER_INFO.protocolVersion,
@@ -758,7 +784,7 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
         break;
 
       case "tools/list":
-        result = { tools: TOOLS };
+        result = { tools: TOOLS, _meta: { source: sourceMetadata() } };
         break;
 
       case "tools/call":
@@ -802,7 +828,9 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
               text: JSON.stringify(result, null, 2)
             }
           ],
+          structuredContent: result,
           _meta: {
+            source: sourceMetadata(),
             "openai/widgetDomain": widgetBaseUrl,
             "openai/widgetPath": "/widget/index.html",
             "openai/widgetCSP": {

@@ -16,10 +16,9 @@
  *   - All Open Graph + Twitter Card tags
  *   - <link rel="canonical">
  *   - Inserts JSON-LD structured data (schema.org)
- *   - Inserts a <noscript> content stub so crawlers see real text
+ *   - Inserts semantic server-rendered content so non-JS clients see real text
  *
- * React still hydrates over the result normally — the noscript block is
- * removed by browsers that run JS, and the meta tags get re-set by the
+ * React replaces the fallback children for browsers that run JS, and the meta tags get re-set by the
  * existing client-side SEOHead component (idempotent, no conflict).
  *
  * In-memory LRU-ish cache keyed by URL avoids re-fetching the same entity
@@ -38,6 +37,7 @@ import {
 import { getBlogPost } from "@shared/blog-data";
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { getSchoolSeoMeta } from "@shared/school-seo";
+import { getSeoLanding, getSeoLandingPath, matchesSeoLanding, SEO_LANDINGS } from "@shared/seo-landings";
 import type { School, PrivateSchool, NyceecCenter } from "@shared/schema";
 
 const SITE_ORIGIN = "https://nycschoolsratings.com";
@@ -115,7 +115,7 @@ interface Meta {
   canonical: string;
   ogImage?: string;
   jsonLd?: object | object[];
-  noscriptHtml?: string;
+  serverHtml?: string;
   noindex?: boolean;
 }
 
@@ -212,12 +212,12 @@ function applyMeta(baseHtml: string, meta: Meta): string {
     html = html.replace(/<\/head>/i, `${jsonLdHtml}\n  </head>`);
   }
 
-  // <noscript> content stub — placed at the top of <body> so crawlers find
-  // it immediately; browsers that run JS will simply ignore the tag.
-  if (meta.noscriptHtml) {
+  // Real semantic fallback content. React createRoot replaces these children
+  // for JS-capable browsers; crawlers and readers without JS receive the same facts.
+  if (meta.serverHtml) {
     html = html.replace(
       /<div id="root"><\/div>/i,
-      `<div id="root"></div>\n    <noscript>${meta.noscriptHtml}</noscript>`,
+      `<div id="root" data-server-rendered="true">${meta.serverHtml}</div>`,
     );
   }
 
@@ -292,7 +292,8 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
 
   const educationalOrg = {
     "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
+    "@type": "School",
+    identifier: school.dbn,
     name: school.name,
     url: canonical,
     address: {
@@ -306,6 +307,8 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     educationalLevel: school.grade_band,
     numberOfStudents: school.enrollment,
     telephone: school.phone || undefined,
+    sameAs: school.website && /^https?:\/\//i.test(school.website) ? school.website : undefined,
+    dateModified: school.last_updated ? new Date(school.last_updated).toISOString() : undefined,
     ...(school.latitude && school.longitude
       ? {
           geo: {
@@ -524,7 +527,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     description,
     canonical,
     jsonLd: [educationalOrg, breadcrumb, faq],
-    noscriptHtml,
+    serverHtml: noscriptHtml,
   });
 }
 
@@ -585,7 +588,7 @@ async function renderPrivateSchool(slug: string, baseHtml: string): Promise<stri
     description,
     canonical,
     jsonLd: [schoolSchema, breadcrumb],
-    noscriptHtml,
+    serverHtml: noscriptHtml,
   });
 }
 
@@ -639,7 +642,7 @@ async function renderNyceec(slug: string, baseHtml: string): Promise<string | nu
     description,
     canonical,
     jsonLd: [childcareSchema, breadcrumb],
-    noscriptHtml,
+    serverHtml: noscriptHtml,
   });
 }
 
@@ -696,7 +699,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     canonical,
     ogImage,
     jsonLd: [article, breadcrumb],
-    noscriptHtml,
+    serverHtml: noscriptHtml,
   });
 }
 
@@ -747,7 +750,7 @@ async function renderCompare(slug: string, baseHtml: string): Promise<string | n
     description,
     canonical,
     jsonLd: breadcrumb,
-    noscriptHtml,
+    serverHtml: noscriptHtml,
   });
 }
 
@@ -885,6 +888,22 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     description: "See what's new in NYC School Ratings. Track new features, improvements, and updates to help you find the perfect NYC school.",
     heading: "Release Notes",
   },
+  "/explore-schools": {
+    title: "Explore NYC Schools by District, Neighborhood and Program",
+    description: "Browse focused NYC school guides for all 32 districts, popular neighborhoods, and programs including dual language, Gifted & Talented, 3-K and Pre-K.",
+    heading: "Explore NYC School Guides",
+  },
+  "/methodology": {
+    title: "NYC School Ratings Methodology and Data Sources",
+    description: "See how NYC School Ratings calculates scores, which official data sources we use, when data is updated, and the limitations families should know.",
+    heading: "Rating Methodology and Data Sources",
+    jsonLd: { "@context": "https://schema.org", "@type": "Dataset", name: "NYC School Ratings", creator: { "@type": "Organization", name: "NYC School Ratings" }, isBasedOn: ["https://infohub.nyced.org/reports/academics/test-results", "https://infohub.nyced.org/reports/school-quality"] },
+  },
+  "/about": {
+    title: "About NYC School Ratings",
+    description: "Why NYC School Ratings exists, how it helps families compare schools, and our commitment to transparent public data.",
+    heading: "About NYC School Ratings",
+  },
   "/login": { title: "Log In | NYC School Ratings", description: "Log in to access your saved NYC school research and personalized tools.", heading: "Log In", noindex: true },
   "/register": { title: "Create Account | NYC School Ratings", description: "Create an account for NYC School Ratings.", heading: "Create Account", noindex: true },
   "/forgot-password": { title: "Forgot Password | NYC School Ratings", description: "Reset your NYC School Ratings password.", heading: "Forgot Password", noindex: true },
@@ -936,7 +955,9 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
         <a href="/nyc-schools/staten-island">Staten Island</a>
       </nav>
     </section>` : "";
-  const crawlerHtml = `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}</main>`;
+  const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul></section>` : "";
+  const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
+  const crawlerHtml = `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}</main>`;
 
   return applyMeta(baseHtml, {
     title: meta.title,
@@ -944,7 +965,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
     canonical,
     jsonLd,
     noindex: meta.noindex,
-    noscriptHtml: crawlerHtml,
+    serverHtml: crawlerHtml,
   });
 }
 
@@ -974,8 +995,33 @@ function renderSchoolGuide(slug: string, baseHtml: string): string | null {
     description: guide.description,
     canonical,
     jsonLd: [collectionPage, breadcrumb],
-    noscriptHtml: content,
+    serverHtml: content,
   });
+}
+
+async function renderSeoLanding(kind: string, slug: string, baseHtml: string): Promise<string | null> {
+  const landing = getSeoLanding(kind, slug);
+  if (!landing) return null;
+  const schools = ((await storage.getSchools()) as School[])
+    .filter((school) => matchesSeoLanding(school, landing))
+    .sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a));
+  const canonical = `${SITE_ORIGIN}${getSeoLandingPath(landing)}`;
+  const items = schools.slice(0, 30).map((school, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: school.name,
+    url: `${SITE_ORIGIN}/school/${getSchoolSlug(school)}`,
+  }));
+  const jsonLd = [
+    { "@context": "https://schema.org", "@type": "CollectionPage", name: landing.title, description: landing.description, url: canonical, mainEntity: { "@type": "ItemList", numberOfItems: schools.length, itemListElement: items } },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_ORIGIN}/` },
+      { "@type": "ListItem", position: 2, name: "School guides", item: `${SITE_ORIGIN}/explore-schools` },
+      { "@type": "ListItem", position: 3, name: landing.name, item: canonical },
+    ] },
+  ];
+  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(school.name)}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><p><a href="/methodology">Rating methodology and data sources</a></p></main>`;
+  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, serverHtml });
 }
 
 /**
@@ -1057,6 +1103,8 @@ export async function renderSeoHtml(
       result = await renderCompare(m[1], baseHtml);
     } else if ((m = path.match(/^\/nyc-schools\/([^/]+)$/))) {
       result = renderSchoolGuide(m[1], baseHtml);
+    } else if ((m = path.match(/^\/(district|neighborhood|program)\/([^/]+)$/))) {
+      result = await renderSeoLanding(m[1], m[2], baseHtml);
     }
     if (result) cacheSet(cacheKey, result);
     return result;

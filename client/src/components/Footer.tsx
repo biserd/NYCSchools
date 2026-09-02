@@ -33,6 +33,7 @@ export function Footer() {
                   Early Childhood Centers
                 </Link>
               </li>
+              <li><Link href="/explore-schools" className="hover:text-foreground transition-colors">District &amp; Program Guides</Link></li>
             </ul>
           </div>
           
@@ -90,6 +91,8 @@ export function Footer() {
                   Release Notes
                 </Link>
               </li>
+              <li><Link href="/about" className="hover:text-foreground transition-colors">About</Link></li>
+              <li><Link href="/methodology" className="hover:text-foreground transition-colors">Methodology &amp; Sources</Link></li>
             </ul>
           </div>
 

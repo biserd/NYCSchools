@@ -24,6 +24,7 @@ import { SCHOOL_GUIDES } from "@shared/school-guides";
 import { waitUntil } from "cloudflare:workers";
 import { getAppUrl } from "./runtimeConfig";
 import { generateJson, streamText, type AiMessage } from "./aiService";
+import { llmsText, sitemapByName, sitemapIndex, submitIndexNow } from "./seoFeeds";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -3282,8 +3283,39 @@ When answering:
 
   // ============ END STRIPE INTEGRATION ============
 
-  // SEO: Sitemap.xml endpoint
-  app.get("/sitemap.xml", async (req: Request, res: Response) => {
+  // SEO and AI discovery feeds. Split entity sitemaps keep each feed focused
+  // and let crawlers observe record-level freshness through lastmod.
+  app.get("/sitemap.xml", (_req: Request, res: Response) => {
+    res.set({ "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600, s-maxage=3600" }).send(sitemapIndex());
+  });
+
+  app.get("/sitemaps/:name.xml", async (req: Request, res: Response) => {
+    const xml = await sitemapByName(req.params.name);
+    if (!xml) return res.status(404).send("Sitemap not found");
+    return res.set({ "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600, s-maxage=3600" }).send(xml);
+  });
+
+  app.get("/llms.txt", (_req: Request, res: Response) => res.set({ "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" }).send(llmsText(false)));
+  app.get("/llms-full.txt", (_req: Request, res: Response) => res.set({ "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" }).send(llmsText(true)));
+
+  app.get(/^\/([a-f0-9]{32})\.txt$/, (req: Request, res: Response, next) => {
+    const key = process.env.INDEXNOW_KEY;
+    if (!key || req.params[0] !== key) return next();
+    return res.type("text/plain").send(key);
+  });
+
+  app.post("/api/admin/indexnow", isAuthenticated, async (req: any, res: Response) => {
+    if (!(await isRequestFromAdmin(req))) return res.status(403).json({ error: "Admin access required" });
+    const key = process.env.INDEXNOW_KEY;
+    if (!key) return res.status(503).json({ error: "IndexNow is not configured" });
+    const requested = Array.isArray(req.body?.urls) ? req.body.urls.filter((url: unknown): url is string => typeof url === "string") : [];
+    const urls = requested.length ? requested : [getAppUrl(req), `${getAppUrl(req)}/explore-schools`, `${getAppUrl(req)}/methodology`, `${getAppUrl(req)}/sitemap.xml`];
+    const result = await submitIndexNow(urls, key);
+    return res.status(result.status >= 200 && result.status < 300 ? 200 : 502).json({ submitted: urls.length, upstreamStatus: result.status });
+  });
+
+  // Kept temporarily for comparing output during rollout; not linked to crawlers.
+  app.get("/sitemap-legacy.xml", async (req: Request, res: Response) => {
     try {
       const schools = await storage.getSchools();
       // Static pages
@@ -3484,7 +3516,8 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       terms_of_service_url: "https://nycschoolsratings.com/terms",
       mcp_server: {
         url: "https://nycschoolsratings.com/mcp",
-        protocol_version: "2024-11-05"
+        protocol_version: "2026-07-28",
+        transport: "streamable-http"
       },
       oauth: {
         client_id: "chatgpt-nycschoolratings",
@@ -3514,6 +3547,20 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     res.json(manifest);
   });
 
+  app.get("/.well-known/mcp.json", (req: Request, res: Response) => {
+    const baseUrl = getAppUrl(req);
+    res.json({
+      name: "nyc-school-ratings",
+      title: "NYC School Ratings",
+      description: "Search and compare NYC schools using transparent public data.",
+      protocol_version: "2026-07-28",
+      transport: { type: "streamable-http", url: `${baseUrl}/mcp` },
+      authorization_servers: [baseUrl],
+      documentation: `${baseUrl}/developers/docs`,
+      privacy_policy: `${baseUrl}/privacy`,
+    });
+  });
+
   // MCP (Model Context Protocol) endpoint for OpenAI ChatGPT Apps SDK
   const { handleMCPRequest } = await import("./mcp");
   
@@ -3521,7 +3568,8 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   app.get("/mcp", (req: Request, res: Response) => {
     res.json({
       name: "NYC School Ratings MCP Server",
-      description: "Model Context Protocol server for ChatGPT integration. This endpoint accepts JSON-RPC 2.0 POST requests only.",
+      description: "Stateless Streamable HTTP Model Context Protocol server for AI clients.",
+      protocolVersion: "2026-07-28",
       documentation: "https://nycschoolsratings.com/.well-known/openai-apps.json",
       tools: [
         "search_schools - Search NYC schools by criteria",
@@ -3538,6 +3586,10 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   app.post("/mcp", async (req: Request, res: Response) => {
     try {
       const request = req.body;
+      const requestedProtocol = req.header("MCP-Protocol-Version");
+      if (requestedProtocol && !["2026-07-28", "2024-11-05"].includes(requestedProtocol)) {
+        return res.status(400).json({ jsonrpc: "2.0", id: request?.id ?? null, error: { code: -32600, message: "Unsupported MCP protocol version" } });
+      }
       
       // Validate JSON-RPC format
       if (!request.jsonrpc || request.jsonrpc !== "2.0" || !request.method) {
@@ -3563,7 +3615,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       }
 
       const response = await handleMCPRequest(request, context);
-      res.json(response);
+      res.set({ "MCP-Protocol-Version": "2026-07-28", "Mcp-Method": request.method, "Cache-Control": "no-store" }).json(response);
     } catch (error: any) {
       console.error("MCP request error:", error);
       res.status(500).json({

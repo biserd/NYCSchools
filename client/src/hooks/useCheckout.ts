@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/analytics";
 
 interface ProductData {
   data: Array<{
@@ -113,6 +114,12 @@ export function useCheckout() {
     }
 
     const mode = 'payment' as const;
+    trackEvent("begin_checkout", {
+      currency: "USD",
+      value: currentPrice.unit_amount / 100,
+      price_id: currentPrice.id,
+      checkout_type: user ? "authenticated" : "guest",
+    });
 
     // If authenticated, check premium status and use authenticated checkout
     if (user) {

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthPageHeader } from "@/components/AuthPageHeader";
 import { SEOHead } from "@/components/SEOHead";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 
 const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -53,6 +54,7 @@ export default function RegisterPage() {
       return response.json();
     },
     onSuccess: () => {
+      trackEvent("sign_up", { method: "password" });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Account created!",

@@ -120,7 +120,7 @@ export default function Terms() {
             <p className="mb-4">Our service integrates with:</p>
             <ul className="list-disc pl-6 mb-4">
               <li><strong>Google Maps APIs:</strong> For commute time calculations (subject to Google's Terms of Service)</li>
-              <li><strong>OpenAI:</strong> For AI assistant features (subject to OpenAI's Terms of Use)</li>
+              <li><strong>Cloudflare:</strong> For hosting, security, and on-site AI assistant features</li>
               <li><strong>Cloudflare:</strong> For application hosting and transactional email delivery</li>
               <li><strong>Stripe:</strong> For payment processing (subject to Stripe's Terms of Service)</li>
             </ul>

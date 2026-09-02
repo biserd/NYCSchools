@@ -11,6 +11,7 @@ import { ChatBot } from "@/components/ChatBot";
 import { Skeleton } from "@/components/ui/skeleton";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
+import { initializeAttribution, trackEvent } from "@/lib/analytics";
 
 // Lazy-load every non-Home route so its JS + CSS split into separate chunks.
 // Home stays eager so its LCP element ships in the initial bundle.
@@ -50,6 +51,10 @@ const SafetyMethodologyPage = lazy(() => import("@/pages/safety-methodology"));
 const SafeAndStrongPage = lazy(() => import("@/pages/safe-and-strong"));
 const AdminApiUsagePage = lazy(() => import("@/pages/admin-api-usage"));
 const SchoolGuidePage = lazy(() => import("@/pages/school-guide"));
+const ExploreSchoolsPage = lazy(() => import("@/pages/explore-schools"));
+const SeoLandingPage = lazy(() => import("@/pages/seo-landing"));
+const MethodologyPage = lazy(() => import("@/pages/methodology"));
+const AboutPage = lazy(() => import("@/pages/about"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -71,8 +76,8 @@ function AnalyticsPageView() {
   const [location] = useLocation();
 
   useEffect(() => {
-    const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
-    gtag?.('event', 'page_view', {
+    initializeAttribution();
+    trackEvent('page_view', {
       page_location: window.location.href,
       page_path: location,
       page_title: document.title,
@@ -159,6 +164,12 @@ function Router() {
         <Route path="/nyc-schools/:slug">
           <SchoolGuidePage />
         </Route>
+        <Route path="/explore-schools"><ExploreSchoolsPage /></Route>
+        <Route path="/district/:slug"><SeoLandingPage kind="district" /></Route>
+        <Route path="/neighborhood/:slug"><SeoLandingPage kind="neighborhood" /></Route>
+        <Route path="/program/:slug"><SeoLandingPage kind="program" /></Route>
+        <Route path="/methodology"><MethodologyPage /></Route>
+        <Route path="/about"><AboutPage /></Route>
         <Route path="/admin/api-usage">
           <AdminApiUsagePage />
         </Route>

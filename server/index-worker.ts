@@ -23,6 +23,7 @@ function initializeProcessEnvironment(workerEnv: Env): void {
     STRIPE_SEASON_PASS_PRODUCT_ID: workerEnv.STRIPE_SEASON_PASS_PRODUCT_ID,
     STRIPE_SEASON_PASS_PRICE_ID: workerEnv.STRIPE_SEASON_PASS_PRICE_ID,
     STRIPE_WEBHOOK_SECRET: runtimeEnv.STRIPE_WEBHOOK_SECRET,
+    INDEXNOW_KEY: runtimeEnv.INDEXNOW_KEY,
   };
 
   for (const [name, value] of Object.entries(values)) {
@@ -69,7 +70,8 @@ function getExpressHandler(workerEnv: Env): Promise<WorkerHandler> {
 }
 
 function shouldServeAsset(pathname: string): boolean {
-  if (pathname === "/robots.txt" || pathname === "/sitemap.xml") return false;
+  if (pathname === "/robots.txt" || pathname === "/sitemap.xml" || pathname === "/llms.txt" || pathname === "/llms-full.txt" || pathname.startsWith("/sitemaps/")) return false;
+  if (/^\/[a-f0-9]{32}\.txt$/.test(pathname)) return false;
   return pathname.startsWith("/assets/") ||
     pathname === "/favicon.ico" ||
     /\.(?:avif|css|csv|gif|ico|jpe?g|json|map|png|svg|txt|webmanifest|webp|woff2?)$/i.test(pathname);

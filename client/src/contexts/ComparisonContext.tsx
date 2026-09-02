@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { School } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
+import { trackEvent } from "@/lib/analytics";
 
 // Premium tier limits
 const FREE_MAX_COMPARE = 2;
@@ -61,15 +62,18 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
       return { success: false, error: "School is already in comparison" };
     }
     setComparedSchools(prev => [...prev, school]);
+    trackEvent("comparison_school_added", { school_dbn: school.dbn, comparison_size: comparedSchools.length + 1 });
     return { success: true };
   }, [comparedSchools, maxCompare, isPremium]);
 
   const removeFromComparison = useCallback((dbn: string) => {
     setComparedSchools(prev => prev.filter(s => s.dbn !== dbn));
+    trackEvent("comparison_school_removed", { school_dbn: dbn });
   }, []);
 
   const clearComparison = useCallback(() => {
     setComparedSchools([]);
+    trackEvent("comparison_cleared");
   }, []);
 
   const setSchools = useCallback((schools: School[]) => {

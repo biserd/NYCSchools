@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import {
   Check,
   X,
@@ -222,6 +223,7 @@ export default function PricingPage() {
       });
       return;
     }
+    trackEvent("begin_checkout", { currency: "USD", value: 29, price_id: currentPriceId, checkout_type: "guest" });
     guestCheckoutMutation.mutate({ priceId: currentPriceId });
   };
 
@@ -245,6 +247,7 @@ export default function PricingPage() {
   
   const handleCheckout = () => {
     if (currentPriceId) {
+      trackEvent("begin_checkout", { currency: "USD", value: 29, price_id: currentPriceId, checkout_type: "authenticated" });
       checkoutMutation.mutate({ priceId: currentPriceId, mode: 'payment' });
     }
   };

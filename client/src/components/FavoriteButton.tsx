@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
+import { trackEvent } from "@/lib/analytics";
 
 interface FavoriteButtonProps {
   schoolDbn: string;
@@ -48,6 +49,7 @@ export function FavoriteButton({
       }
     },
     onSuccess: () => {
+      trackEvent("favorite_school", { school_dbn: schoolDbn, action: currentIsFavorite ? "remove" : "add" });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites/check", schoolDbn] });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites/batch"] });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
