@@ -71,6 +71,7 @@ function getExpressHandler(workerEnv: Env): Promise<WorkerHandler> {
 
 function shouldServeAsset(pathname: string): boolean {
   if (pathname === "/robots.txt" || pathname === "/sitemap.xml" || pathname === "/llms.txt" || pathname === "/llms-full.txt" || pathname.startsWith("/sitemaps/")) return false;
+  if (pathname.startsWith("/.well-known/")) return false;
   if (/^\/[a-f0-9]{32}\.txt$/.test(pathname)) return false;
   return pathname.startsWith("/assets/") ||
     pathname === "/favicon.ico" ||
