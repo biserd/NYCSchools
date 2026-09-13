@@ -50,6 +50,7 @@ const PrivateSchoolDetailPage = lazy(() => import("@/pages/private-school-detail
 const SafetyMethodologyPage = lazy(() => import("@/pages/safety-methodology"));
 const SafeAndStrongPage = lazy(() => import("@/pages/safe-and-strong"));
 const AdminApiUsagePage = lazy(() => import("@/pages/admin-api-usage"));
+const AdminEarlyChildhoodPage = lazy(() => import("@/pages/admin-early-childhood"));
 const SchoolGuidePage = lazy(() => import("@/pages/school-guide"));
 const ExploreSchoolsPage = lazy(() => import("@/pages/explore-schools"));
 const SeoLandingPage = lazy(() => import("@/pages/seo-landing"));
@@ -185,6 +186,7 @@ function Router() {
         <Route path="/school/:slug">
           <SchoolDetail />
         </Route>
+        <Route path="/admin/early-childhood"><AdminEarlyChildhoodPage /></Route>
         <Route component={NotFound} />
       </Switch>
     </Suspense>

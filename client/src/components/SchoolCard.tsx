@@ -1,3 +1,6 @@
+import { schoolDisplayName } from "@shared/early-childhood";
+import { isEarlyChildhoodOnly } from "@shared/schema";
+import { schoolBorough } from "@shared/early-childhood";
 import { useState, memo } from "react";
 import { School, calculateOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type TrendDirection } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
@@ -95,7 +98,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
   const scoreColor = getScoreColor(overallScore);
   const elaColor = getMetricColor(school.ela_proficiency ?? -1);
   const mathColor = getMetricColor(school.math_proficiency ?? -1);
-  const borough = getBoroughFromDBN(school.dbn);
+  const borough = schoolBorough(school);
   const { addToComparison, removeFromComparison, isInComparison, comparedSchools, maxCompare } = useComparison();
   const { toast } = useToast();
   const inComparison = isInComparison(school.dbn);
@@ -115,7 +118,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
   // For cards: Show ELA/Math if school has valid scores AND is not a pure high school
   // For pure high schools (9-12 only): Show Graduation Rate and SAT/College Readiness
   // For combined schools (K-12, 6-12) with valid ELA/Math: Show ELA/Math on card (detail panel shows both)
-  const showELAMathOnCard = !isPureHS && hasValidELAMath;
+  const showELAMathOnCard = !isEarlyChildhoodOnly(school) && !isPureHS && hasValidELAMath;
   const showHSMetricsOnCard = isPureHS || (!hasValidELAMath && isHS);
 
   const colorMap: Record<string, string> = {
@@ -182,7 +185,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2 mb-1">
               <h3 className="text-lg font-semibold text-foreground line-clamp-2 flex-1" data-testid={`text-school-name-${school.dbn}`}>
-                {school.name}
+                {schoolDisplayName(school)}
               </h3>
               <FavoriteButton schoolDbn={school.dbn} variant="ghost" size="icon" />
             </div>
@@ -190,6 +193,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
               <Badge variant="secondary" className="text-xs" data-testid={`badge-dbn-${school.dbn}`}>
                 {school.dbn}
               </Badge>
+              {school.has_2k && <Badge variant="secondary">2-K</Badge>}
               {school.has_3k && (
                 <Badge variant="outline" className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700" data-testid={`badge-3k-${school.dbn}`}>
                   3-K
@@ -404,7 +408,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
             </div>
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground" data-testid={`text-score-label-${school.dbn}`}>
-                {hasLowAssessmentConfidence ? "Withheld: limited participation" : overallScore < 0 ? "Insufficient Data" : "Overall"}
+                {hasLowAssessmentConfidence ? "Withheld: limited participation" : overallScore < 0 ? (isEarlyChildhoodOnly(school) ? "Not applicable" : "Not available") : "Overall"}
               </span>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -433,7 +437,9 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {isEarlyChildhoodOnly(school) ? (
+          <p className="text-sm text-muted-foreground">K–12 academic metrics are not applicable to this provider.</p>
+        ) : <div className="grid grid-cols-2 gap-3">
           {showHSMetricsOnCard && hasHSData ? (
             <>
               <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-gradrate-${school.dbn}`}>
@@ -522,7 +528,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                 <div className={`w-2 h-2 rounded-full ${colorMap[elaColor]} shrink-0`} data-testid={`indicator-ela-${school.dbn}`} />
                 <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-ela-${school.dbn}`} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency}%</div>
+                  <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency == null ? "N/A" : `${school.ela_proficiency}%`}</div>
                   <div className="text-xs text-muted-foreground truncate" data-testid={`label-ela-${school.dbn}`}>ELA</div>
                 </div>
                 <Tooltip>
@@ -548,7 +554,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                 <div className={`w-2 h-2 rounded-full ${colorMap[mathColor]} shrink-0`} data-testid={`indicator-math-${school.dbn}`} />
                 <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-math-${school.dbn}`} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency}%</div>
+                  <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency == null ? "N/A" : `${school.math_proficiency}%`}</div>
                   <div className="text-xs text-muted-foreground truncate" data-testid={`label-math-${school.dbn}`}>Math</div>
                 </div>
                 <Tooltip>
@@ -573,6 +579,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
           )}
         </div>
 
+        }
         <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
           <div className="flex items-center gap-4 flex-wrap">
             {borough && (
@@ -584,7 +591,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
             <span data-testid={`text-district-${school.dbn}`}>District {school.district}</span>
             <span className="flex items-center gap-1" data-testid={`text-ratio-${school.dbn}`}>
               <Users className="w-3 h-3" data-testid={`icon-ratio-${school.dbn}`} />
-              {school.student_teacher_ratio}:1
+              {school.student_teacher_ratio == null ? "Not available" : `${school.student_teacher_ratio}:1`}
             </span>
             <CommuteTime schoolDbn={school.dbn} compact data-testid={`commute-${school.dbn}`} />
           </div>

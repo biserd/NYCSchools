@@ -1,0 +1,139 @@
+{
+  "at": "2026-09-13T22:31:40.141Z",
+  "base": "https://nyc-schools-ratings-staging.biser-d.workers.dev",
+  "results": [
+    {
+      "path": "/favicon.png",
+      "status": 200,
+      "bytes": 361358,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/auth/user",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/profile",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/admin/early-childhood",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/checkout/verify-session",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/email/unsubscribe",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/schools/10XAPN/reviews",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/unknown",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/mcp",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/account",
+      "status": 403
+    },
+    {
+      "test": "Anonymous mutation denied",
+      "status": 403
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 5617,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/api/schools",
+      "status": 200,
+      "bytes": 6118446,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/api/schools?has_2k=true",
+      "status": 200,
+      "bytes": 1819213,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/api/schools?has_3k=true",
+      "status": 200,
+      "bytes": 2610985,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/api/schools?has_prek=true",
+      "status": 200,
+      "bytes": 1830643,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/api/twok-centers",
+      "status": 200,
+      "bytes": 1923584,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/api/twok-centers-stats",
+      "status": 200,
+      "bytes": 21,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/school/06g262-1-sickles-st-day-care-family-group-corp-at-1-sickles-street-06g262",
+      "status": 200,
+      "bytes": 8537,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/school/10xapn-1199seiuemployer-child-care-corporation-10xapn",
+      "status": 200,
+      "bytes": 8376,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/school/27h581-3-little-penguins-daycare",
+      "status": 200,
+      "bytes": 7648,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/school/06g009-mercedes-a-batista-daycare-at-534-west-153-street-06g009",
+      "status": 200,
+      "bytes": 8467,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/school/31r005-ps-005-huguenot",
+      "status": 200,
+      "bytes": 7811,
+      "noindex": "noindex, nofollow, noarchive"
+    },
+    {
+      "path": "/robots.txt",
+      "status": 200,
+      "bytes": 26,
+      "noindex": "noindex, nofollow, noarchive"
+    }
+  ]
+}

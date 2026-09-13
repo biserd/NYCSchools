@@ -1,0 +1,13 @@
+{
+  "at": "2026-09-13T22:37:56.335Z",
+  "host": "ep-purple-math-ayg3v5sl.c-5.us-east-2.aws.neon.tech",
+  "committed": true,
+  "counts": {
+    "inserted": 26,
+    "updated": 589
+  },
+  "totalSchools": 2408,
+  "has2k": 615,
+  "existingIdsNamesGradesPreserved": true,
+  "non2kRowsUnchanged": true
+}

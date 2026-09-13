@@ -1,3 +1,5 @@
+import { schoolBorough, programLabels } from "../shared/early-childhood";
+import { isEarlyChildhoodOnly } from "@shared/schema";
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { storage } from "./storage";
@@ -26,9 +28,9 @@ function boroughFromDbn(dbn: string): string | null {
 // already publish on /developers/docs.
 function serializeSchool(s: any) {
   const score = calculateOverallScore(s);
-  const assessmentDriven = !isHighSchool(s);
+  const assessmentDriven = !isHighSchool(s) && !isEarlyChildhoodOnly(s);
   const confidence = assessmentDriven ? getAssessmentConfidence(s) : "not_applicable";
-  const ratingStatus = score >= 0
+  const ratingStatus = isEarlyChildhoodOnly(s) ? "not_applicable" : score >= 0
     ? "rated"
     : confidence === "low"
       ? "withheld_limited_participation"
@@ -36,14 +38,16 @@ function serializeSchool(s: any) {
   return {
     dbn: s.dbn,
     name: s.name,
+    display_name: s.early_childhood_source?.providerName || s.name,
+    program_source: s.early_childhood_source ?? null,
     district: s.district,
-    borough: boroughFromDbn(s.dbn),
+    borough: schoolBorough(s),
     address: s.address,
     grade_band: s.grade_band,
     overall_score: score >= 0 ? score : null,
     rating_status: ratingStatus,
     rating_confidence: confidence,
-    rating_note: ratingStatus === "withheld_limited_participation"
+    rating_note: ratingStatus === "not_applicable" ? "K–12 academic ratings are not applicable to this provider." : ratingStatus === "withheld_limited_participation"
       ? "Overall rating withheld because state-test participation was limited."
       : ratingStatus === "unavailable"
         ? "Overall rating unavailable because required data was not reported."
@@ -57,8 +61,9 @@ function serializeSchool(s: any) {
     enrollment: s.enrollment ?? null,
     student_teacher_ratio: s.student_teacher_ratio ?? null,
     economic_need_index: s.economic_need_index ?? null,
-    has_3k: s.has_3k ?? false,
-    has_prek: s.has_prek ?? false,
+    has_2k: s.has_2k ?? null,
+    has_3k: s.has_3k ?? null,
+    has_prek: s.has_prek ?? null,
     has_gifted_talented: s.has_gifted_talented ?? false,
     latitude: s.latitude ?? null,
     longitude: s.longitude ?? null,
@@ -70,6 +75,7 @@ function serializeSchool(s: any) {
 const schoolsQuerySchema = z.object({
   district: z.string().optional(),
   grade_band: z.enum(["elementary", "middle", "high", "k-8", "k-12"]).optional(),
+  has_2k: z.enum(["true", "false"]).optional(),
   has_3k: z.enum(["true", "false"]).optional(),
   has_prek: z.enum(["true", "false"]).optional(),
   has_gifted: z.enum(["true", "false"]).optional(),
@@ -85,7 +91,7 @@ const earlyChildhoodQuerySchema = z.object({
   // childhood services — so the parameter is accepted and reserved for when
   // we ingest program-level breakdowns. `center_type` is an additional, more
   // discriminating filter we expose today.
-  program_type: z.enum(["3k", "prek", "both"]).optional(),
+  program_type: z.enum(["2k", "3k", "prek", "both"]).optional(),
   center_type: z.enum(["NYCEEC", "DOE", "Charter"]).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
@@ -115,7 +121,7 @@ function normalizeBorough(input: string | undefined): string | null {
 function flagMatches(filter: string | undefined, value: unknown): boolean {
   if (!filter) return true;
   const want = filter === "true";
-  return Boolean(value) === want;
+  return value === want;
 }
 
 function gradeBandMatches(filter: string | undefined, schoolBand: string): boolean {
@@ -184,6 +190,7 @@ router.get("/schools", async (req: Request, res: Response) => {
     if (q.grade_band) {
       filtered = filtered.filter((s) => gradeBandMatches(q.grade_band, s.grade_band));
     }
+    filtered = filtered.filter((s) => flagMatches(q.has_2k, s.has_2k));
     filtered = filtered.filter((s) => flagMatches(q.has_3k, s.has_3k));
     filtered = filtered.filter((s) => flagMatches(q.has_prek, s.has_prek));
     filtered = filtered.filter((s) => flagMatches(q.has_gifted, s.has_gifted_talented));
@@ -204,7 +211,7 @@ router.get("/schools", async (req: Request, res: Response) => {
 // GET /api/v1/schools/:dbn — single school
 router.get("/schools/:dbn", async (req: Request, res: Response) => {
   const dbn = String(req.params.dbn || "").toUpperCase();
-  if (!/^\d{2}[MXKQR]\d{3}$/.test(dbn)) {
+  if (!/^\d{2}[A-Z0-9]{4}$/.test(dbn)) {
     return apiError(res, 400, "INVALID_PARAMETER", "Invalid DBN. Expected format: e.g. '02M545'.", {
       parameter: "dbn",
       provided: req.params.dbn,
@@ -277,12 +284,10 @@ router.get("/early-childhood", async (req: Request, res: Response) => {
       filters.borough = letter;
     }
     if (q.center_type) filters.centerType = q.center_type;
-    const centers = await storage.getNyceecCenters(filters);
+    const allCenters = await storage.getNyceecCenters(filters);
+    const centers = allCenters.filter(c => q.program_type === "2k" ? c.has_2k === true : q.program_type === "3k" ? c.has_3k === true : q.program_type === "prek" ? c.has_prek === true : q.program_type === "both" ? c.has_3k === true && c.has_prek === true : true);
 
-    // Every center in this dataset offers both 3-K and Pre-K programs, so
-    // `program_type` currently matches every record. We still surface
-    // `programs` on each row so callers can render program offerings.
-    const programsForCenter = ["3-K", "Pre-K"];
+    // Availability is inherited from the exact canonical school match.
 
     const total = centers.length;
     const page = centers.slice(q.offset, q.offset + q.limit).map((c: any) => ({
@@ -294,7 +299,9 @@ router.get("/early-childhood", async (req: Request, res: Response) => {
       district: c.district ?? null,
       address: c.address,
       zip_code: c.zipCode ?? null,
-      programs: programsForCenter,
+      programs: programLabels(c),
+      canonical_school_url: c.canonicalSchoolUrl,
+      has_2k: c.has_2k, has_3k: c.has_3k, has_prek: c.has_prek,
       seats: c.seats ?? null,
       day_length: c.dayLength ?? null,
       extended_day: Boolean(c.extendedDay),
@@ -318,7 +325,7 @@ router.get("/early-childhood", async (req: Request, res: Response) => {
 // GET /api/v1/trends/:dbn — historical performance for one school
 router.get("/trends/:dbn", async (req: Request, res: Response) => {
   const dbn = String(req.params.dbn || "").toUpperCase();
-  if (!/^\d{2}[MXKQR]\d{3}$/.test(dbn)) {
+  if (!/^\d{2}[A-Z0-9]{4}$/.test(dbn)) {
     return apiError(res, 400, "INVALID_PARAMETER", "Invalid DBN. Expected format: e.g. '02M545'.");
   }
   try {

@@ -1,3 +1,5 @@
+import { schoolBorough } from "../shared/early-childhood";
+import { isEarlyChildhoodOnly } from "@shared/schema";
 import { storage } from "./storage";
 import { getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 import { getAppUrl } from "./runtimeConfig";
@@ -74,6 +76,7 @@ EXAMPLE QUERIES THIS HANDLES:
           type: "boolean",
           description: "Filter for dual language programs - instruction in English plus Spanish, Mandarin, or other languages"
         },
+        has_2k: { type: "boolean", description: "Filter to providers offering 2-K" },
         has_3k: {
           type: "boolean",
           description: "Filter for 3-K for All programs - free early childhood education for 3-year-olds"
@@ -277,9 +280,9 @@ function sourceMetadata() {
 
 function getRatingState(school: any) {
   const score = calculateOverallScore(school);
-  const assessmentDriven = !isHighSchool(school);
+  const assessmentDriven = !isHighSchool(school) && !isEarlyChildhoodOnly(school);
   const confidence = assessmentDriven ? getAssessmentConfidence(school) : "not_applicable";
-  const status = score >= 0
+  const status = isEarlyChildhoodOnly(school) ? "not_applicable" : score >= 0
     ? "rated"
     : confidence === "low"
       ? "withheld_limited_participation"
@@ -288,7 +291,7 @@ function getRatingState(school: any) {
     overall_score: score >= 0 ? score : null,
     rating_status: status,
     rating_confidence: confidence,
-    rating_note: status === "withheld_limited_participation"
+    rating_note: status === "not_applicable" ? "K–12 academic ratings are not applicable to this provider." : status === "withheld_limited_participation"
       ? "Overall rating withheld because state-test participation was limited."
       : status === "unavailable"
         ? "Overall rating unavailable because required data was not reported."
@@ -345,7 +348,7 @@ async function handleSearchSchools(params: Record<string, any>) {
   }
 
   if (params.borough) {
-    filtered = filtered.filter(s => getBoroughFromDbn(s.dbn) === params.borough);
+    filtered = filtered.filter(s => schoolBorough(s) === params.borough);
   }
 
   if (params.grade_band) {
@@ -371,6 +374,7 @@ async function handleSearchSchools(params: Record<string, any>) {
     filtered = filtered.filter(s => s.has_dual_language);
   }
 
+  if (params.has_2k === true) filtered = filtered.filter(s => s.has_2k === true);
   if (params.has_3k === true) {
     filtered = filtered.filter(s => s.has_3k);
   }
@@ -389,7 +393,7 @@ async function handleSearchSchools(params: Record<string, any>) {
   // Check if this is a vague/discovery query (no specific filters)
   const isDiscoveryQuery = !params.query && !params.district && !params.borough && 
     !params.grade_band && !params.min_overall_score && !params.has_gifted_talented &&
-    !params.has_dual_language && !params.has_3k && !params.has_prek;
+    !params.has_dual_language && !params.has_2k && !params.has_3k && !params.has_prek;
 
   // If discovery query, return guidance to help narrow down
   if (isDiscoveryQuery) {
@@ -425,7 +429,7 @@ async function handleSearchSchools(params: Record<string, any>) {
     dbn: s.dbn,
     name: s.name,
     district: s.district,
-    borough: getBoroughFromDbn(s.dbn),
+    borough: schoolBorough(s),
     grade_band: s.grade_band,
     ...getRatingState(s),
     academics_score: s.academics_score,
@@ -435,6 +439,7 @@ async function handleSearchSchools(params: Record<string, any>) {
     math_proficiency: s.math_proficiency,
     has_gifted_talented: s.has_gifted_talented,
     has_dual_language: s.has_dual_language,
+    has_2k: s.has_2k,
     has_3k: s.has_3k,
     has_prek: s.has_prek,
     address: s.address,
@@ -488,7 +493,7 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     dbn: school.dbn,
     name: school.name,
     district: school.district,
-    borough: getBoroughFromDbn(school.dbn),
+    borough: schoolBorough(school),
     grade_band: school.grade_band,
     address: school.address,
     latitude: school.latitude,
@@ -513,6 +518,7 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     gt_program_type: school.gt_program_type,
     has_dual_language: school.has_dual_language,
     dual_language_languages: school.dual_language_languages,
+    has_2k: school.has_2k,
     has_3k: school.has_3k,
     has_prek: school.has_prek,
     
@@ -553,7 +559,7 @@ async function handleCompareSchools(params: Record<string, any>) {
         dbn: school.dbn,
         name: school.name,
         district: school.district,
-        borough: getBoroughFromDbn(school.dbn),
+        borough: schoolBorough(school),
         grade_band: school.grade_band,
         address: school.address,
         latitude: school.latitude,
@@ -568,7 +574,8 @@ async function handleCompareSchools(params: Record<string, any>) {
         student_teacher_ratio: school.student_teacher_ratio,
         has_gifted_talented: school.has_gifted_talented,
         has_dual_language: school.has_dual_language,
-        has_3k: school.has_3k,
+        has_2k: school.has_2k,
+    has_3k: school.has_3k,
         has_prek: school.has_prek
       };
     })
@@ -638,7 +645,7 @@ async function handleGetTopSchools(params: Record<string, any>) {
   let filtered = schools;
 
   if (params.borough) {
-    filtered = filtered.filter(s => getBoroughFromDbn(s.dbn) === params.borough);
+    filtered = filtered.filter(s => schoolBorough(s) === params.borough);
   }
 
   if (params.district) {
@@ -683,7 +690,7 @@ async function handleGetTopSchools(params: Record<string, any>) {
       dbn: s.dbn,
       name: s.name,
       district: s.district,
-      borough: getBoroughFromDbn(s.dbn),
+      borough: schoolBorough(s),
       grade_band: s.grade_band,
       address: s.address,
       latitude: s.latitude,
@@ -715,7 +722,7 @@ async function handleGetFavorites(userId: string) {
       dbn: school.dbn,
       name: school.name,
       district: school.district,
-      borough: getBoroughFromDbn(school.dbn),
+      borough: schoolBorough(school),
       grade_band: school.grade_band,
       address: school.address,
       latitude: school.latitude,

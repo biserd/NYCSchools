@@ -1,3 +1,5 @@
+import { schoolBorough, programLabels, schoolDisplayName } from "./early-childhood";
+import { isEarlyChildhoodOnly } from "./schema";
 import { calculateOverallScore, getAssessmentConfidence, type School } from "./schema";
 
 function boroughFromDbn(dbn: string): string {
@@ -18,8 +20,12 @@ function isHighSchool(school: School): boolean {
 }
 
 export function getSchoolSeoMeta(school: School): { title: string; description: string } {
+  if (isEarlyChildhoodOnly(school)) return {
+    title: `${schoolDisplayName(school)} | ${programLabels(school).join(", ") || "Early Childhood"} Programs | NYC School Ratings`,
+    description: `${school.early_childhood_source?.providerName || school.name} in ${schoolBorough(school) || "New York"}. ${programLabels(school).join(", ")} program information, location and contact details. K–12 academic ratings are not applicable. Contact the provider to confirm availability.`,
+  };
   const overall = calculateOverallScore(school);
-  const borough = boroughFromDbn(school.dbn);
+  const borough = schoolBorough(school) || "New York";
   const highSchool = isHighSchool(school);
   const lowAssessmentConfidence = !highSchool && getAssessmentConfidence(school) === "low";
   const titleParts = [overall < 0 ? (lowAssessmentConfidence ? "Rating Withheld" : "Rating Unavailable") : `Rating ${overall}/100`];
@@ -34,8 +40,8 @@ export function getSchoolSeoMeta(school: School): { title: string; description: 
 
   const descriptionParts = [
     overall < 0
-      ? `${school.name} in ${borough}, District ${school.district}. ${lowAssessmentConfidence ? "Overall rating withheld because state-test participation was limited." : "Overall rating unavailable because required data was not reported."}`
-      : `${school.name} rated ${overall}/100 in ${borough}, District ${school.district}.`,
+      ? `${schoolDisplayName(school)} in ${borough}, District ${school.district}. ${lowAssessmentConfidence ? "Overall rating withheld because state-test participation was limited." : "Overall rating unavailable because required data was not reported."}`
+      : `${schoolDisplayName(school)} rated ${overall}/100 in ${borough}, District ${school.district}.`,
   ];
   if (highSchool) {
     if (school.graduation_rate_4yr != null) descriptionParts.push(`${school.graduation_rate_4yr}% 4-year graduation rate.`);
@@ -49,7 +55,7 @@ export function getSchoolSeoMeta(school: School): { title: string; description: 
   if (!highSchool) descriptionParts.push("View ratings, test scores, parent reviews, and commute times.");
 
   return {
-    title: `${school.name} - ${titleParts.join(" | ")} | NYC School Ratings`,
+    title: `${schoolDisplayName(school)} - ${titleParts.join(" | ")} | NYC School Ratings`,
     description: descriptionParts.join(" "),
   };
 }

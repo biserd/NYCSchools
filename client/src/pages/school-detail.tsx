@@ -1,3 +1,7 @@
+import { schoolDisplayName } from "@shared/early-childhood";
+import { isEarlyChildhoodOnly } from "@shared/schema";
+import { programLabels } from "@shared/early-childhood";
+import { schoolBorough } from "@shared/early-childhood";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -263,7 +267,7 @@ export default function SchoolDetail() {
   }
 
   const scoreColor = getScoreColor(schoolWithScore.overall_score);
-  const borough = getBoroughFromDBN(schoolWithScore.dbn);
+  const borough = schoolBorough(schoolWithScore);
   
   const colorMap = {
     green: "bg-emerald-500",
@@ -286,8 +290,8 @@ export default function SchoolDetail() {
 
   const educationalOrgSchema = {
     "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
-    "name": schoolWithScore.name,
+    "@type": "School",
+    "name": schoolDisplayName(schoolWithScore),
     "url": `https://nycschoolsratings.com/school/${schoolSlug}`,
     "address": {
       "@type": "PostalAddress",
@@ -304,7 +308,7 @@ export default function SchoolDetail() {
       }
     } : {}),
     "educationalLevel": schoolWithScore.grade_band,
-    "numberOfStudents": schoolWithScore.enrollment,
+    "numberOfStudents": schoolWithScore.enrollment ?? undefined,
     "telephone": schoolWithScore.phone || undefined,
   };
 
@@ -313,7 +317,7 @@ export default function SchoolDetail() {
       <SEOHead 
         title={schoolTitle}
         description={schoolDescription}
-        keywords={`${schoolWithScore.name}, NYC school, District ${schoolWithScore.district}, ${borough} schools, kindergarten, elementary school, school ratings`}
+        keywords={`${schoolDisplayName(schoolWithScore)}, NYC school, District ${schoolWithScore.district}, ${borough} schools, kindergarten, elementary school, school ratings`}
         canonicalPath={`/school/${schoolSlug}`}
         appendSiteName={false}
       />
@@ -351,7 +355,7 @@ export default function SchoolDetail() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2" data-testid="text-school-name">
-                {schoolWithScore.name}
+                {schoolDisplayName(schoolWithScore)}
               </h1>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" data-testid="badge-dbn">{schoolWithScore.dbn}</Badge>
@@ -434,37 +438,42 @@ export default function SchoolDetail() {
             </div>
           </div>
 
+          {schoolWithScore.has_2k && <section className="rounded-lg border p-4 space-y-2" aria-label="Early childhood programs">
+            <h2 className="font-semibold">{programLabels(schoolWithScore).join(" · ")}</h2>
+            <p>{schoolWithScore.early_childhood_source?.providerName || schoolWithScore.name}</p>
+            {isEarlyChildhoodOnly(schoolWithScore) && <p>K–12 academic ratings are not applicable to this provider.</p>}
+            {schoolWithScore.early_childhood_source?.registrationInstructions && <p>Registration: {schoolWithScore.early_childhood_source.registrationInstructions}</p>}
+            {schoolWithScore.early_childhood_source?.status === "needs_verification" && <p>Program listing needs verification. This does not indicate closure.</p>}
+            {schoolWithScore.early_childhood_source?.legacyCenterCode && <a className="underline" href={`/early-childhood/${schoolWithScore.early_childhood_source.legacyCenterCode}`}>Early childhood reviews and details</a>}
+            <a className="block underline" href="https://www.myschools.nyc/en/schools/2-k/">Verify availability with MySchools</a>
+          </section>}
           {/* School Prose Introduction — applies to all schools */}
           {schoolWithScore && (() => {
-            const boroughLabel =
-              schoolWithScore.dbn?.charAt(2) === 'M' ? 'Manhattan' :
-              schoolWithScore.dbn?.charAt(2) === 'X' ? 'the Bronx' :
-              schoolWithScore.dbn?.charAt(2) === 'K' ? 'Brooklyn' :
-              schoolWithScore.dbn?.charAt(2) === 'Q' ? 'Queens' : 'Staten Island';
+            const boroughLabel = schoolBorough(schoolWithScore) || "New York";
             const gradeBand = schoolWithScore.grade_band ?? 'K-5';
             const enrollmentText = schoolWithScore.enrollment != null
-              ? ` and serves approximately ${schoolWithScore.enrollment.toLocaleString()} students`
+              ? ` and serves approximately ${schoolWithScore.enrollment?.toLocaleString() ?? "Not available"} students`
               : '';
-            const programs: string[] = [];
+            const programs: string[] = schoolWithScore.has_2k ? ["2-K"] : [];
             if (schoolWithScore.has_gifted_talented) {
               programs.push(`a ${schoolWithScore.gt_program_type === 'citywide' ? 'Citywide' : 'District'} Gifted & Talented program`);
             }
             if (schoolWithScore.has_dual_language) programs.push('a Dual Language program');
             if (schoolWithScore.has_3k) programs.push('3-K');
-            if (schoolWithScore.has_prek && !schoolWithScore.has_3k) programs.push('Pre-K');
+            if (schoolWithScore.has_prek) programs.push('Pre-K');
 
             return (
               <div className="text-muted-foreground leading-relaxed" data-testid="text-school-intro">
                 {gradeBand === '2K' ? (
                   <p>
-                    {schoolWithScore.name} is a 2-K program site in District {schoolWithScore.district}, part of New York City&apos;s
+                    {schoolDisplayName(schoolWithScore)} is a 2-K program site in District {schoolWithScore.district}, part of New York City&apos;s
                     early childhood education expansion offering care and learning for 2-year-olds.
                     2-K programs are run by community-based providers and family childcare organizations;
                     contact the provider directly for enrollment details and seat availability.
                   </p>
                 ) : isHS && schoolWithScore.is_specialized_hs ? (
                   <p>
-                    {schoolWithScore.name} is one of NYC&apos;s nine specialized high schools,
+                    {schoolDisplayName(schoolWithScore)} is one of NYC&apos;s nine specialized high schools,
                     consistently ranked among the top public high schools in the United States.
                     Admission requires passing the Specialized High Schools Admissions Test (SHSAT) —
                     cutoff scores vary each year based on test difficulty and the applicant pool.
@@ -474,8 +483,8 @@ export default function SchoolDetail() {
                   </p>
                 ) : isHS ? (
                   <p>
-                    {schoolWithScore.name} is a public high school in {boroughLabel}, District {schoolWithScore.district}, serving grades {gradeBand}
-                    {schoolWithScore.enrollment != null && ` with approximately ${schoolWithScore.enrollment.toLocaleString()} students`}.
+                    {schoolDisplayName(schoolWithScore)} is a public high school in {boroughLabel}, District {schoolWithScore.district}, serving grades {gradeBand}
+                    {schoolWithScore.enrollment != null && ` with approximately ${schoolWithScore.enrollment?.toLocaleString() ?? "Not available"} students`}.
                     {schoolWithScore.graduation_rate_4yr != null && ` It has a ${schoolWithScore.graduation_rate_4yr}% 4-year graduation rate`}
                     {schoolWithScore.college_readiness_rate != null && ` and ${schoolWithScore.college_readiness_rate}% of graduates meet college-readiness benchmarks`}
                     {(schoolWithScore.graduation_rate_4yr != null || schoolWithScore.college_readiness_rate != null) && '.'}
@@ -484,7 +493,7 @@ export default function SchoolDetail() {
                   </p>
                 ) : (
                   <p>
-                    {schoolWithScore.name} is a public {gradeBand.toLowerCase().includes('6') && !gradeBand.toLowerCase().includes('k') ? 'middle' : gradeBand.toLowerCase().includes('k') ? 'elementary' : ''} school in {boroughLabel}, District {schoolWithScore.district}, offering grades {gradeBand}{enrollmentText}.
+                    {schoolDisplayName(schoolWithScore)} is a public {gradeBand.toLowerCase().includes('6') && !gradeBand.toLowerCase().includes('k') ? 'middle' : gradeBand.toLowerCase().includes('k') ? 'elementary' : ''} school in {boroughLabel}, District {schoolWithScore.district}, offering grades {gradeBand}{enrollmentText}.
                     {schoolWithScore.ela_proficiency != null && ` Students achieve ${schoolWithScore.ela_proficiency}% proficiency in ELA`}
                     {schoolWithScore.ela_proficiency != null && schoolWithScore.math_proficiency != null && ' and'}
                     {schoolWithScore.math_proficiency != null && ` ${schoolWithScore.math_proficiency}% in Math`}
@@ -502,7 +511,7 @@ export default function SchoolDetail() {
             <div className="lg:col-span-2" data-testid="card-location">
               <SchoolZoneMap
                 schoolDbn={schoolWithScore.dbn}
-                schoolName={schoolWithScore.name}
+                schoolName={schoolDisplayName(schoolWithScore)}
                 latitude={schoolWithScore.latitude}
                 longitude={schoolWithScore.longitude}
                 address={schoolWithScore.address}
@@ -513,7 +522,7 @@ export default function SchoolDetail() {
                 <SafetyIndexCard
                   schoolType="public"
                   schoolKey={schoolWithScore.dbn}
-                  schoolName={schoolWithScore.name}
+                  schoolName={schoolDisplayName(schoolWithScore)}
                 />
               </div>
             </div>
@@ -656,7 +665,7 @@ export default function SchoolDetail() {
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
-                  <span>N/A Insufficient Data</span>
+                  <span>{isEarlyChildhoodOnly(schoolWithScore) ? "Not applicable" : "Not available"}</span>
                 </div>
               </div>
             </CardHeader>
@@ -846,7 +855,7 @@ export default function SchoolDetail() {
                       </div>
                       <h4 className="font-semibold text-lg mb-2">Unlock Detailed Scores</h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        See how {schoolWithScore.name} compares to District {schoolWithScore.district} across all key metrics
+                        See how {schoolDisplayName(schoolWithScore)} compares to District {schoolWithScore.district} across all key metrics
                       </p>
                         <Button data-testid="button-unlock-snapshot" onClick={startCheckout} disabled={checkoutPending}>
                           {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
@@ -1189,7 +1198,7 @@ export default function SchoolDetail() {
           {/* Admissions & Demand Section - for K/Pre-K/3K schools */}
           <AdmissionsSection 
             dbn={schoolWithScore.dbn}
-            schoolName={schoolWithScore.name}
+            schoolName={schoolDisplayName(schoolWithScore)}
             has3k={schoolWithScore.has_3k ?? false}
             hasPrek={schoolWithScore.has_prek ?? false}
             gradeBand={schoolWithScore.grade_band}
@@ -2643,7 +2652,7 @@ export default function SchoolDetail() {
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <dt className="text-sm text-muted-foreground">Total Enrollment</dt>
-                  <dd className="text-lg font-semibold" data-testid="text-enrollment">{schoolWithScore.enrollment.toLocaleString()}</dd>
+                  <dd className="text-lg font-semibold" data-testid="text-enrollment">{schoolWithScore.enrollment?.toLocaleString() ?? "Not available"}</dd>
                   {/* Enrollment Breakdown by Grade Level */}
                   {(schoolWithScore.elementary_enrollment || schoolWithScore.middle_enrollment || schoolWithScore.high_school_enrollment) && (
                     <div className="mt-2 space-y-1 text-sm" data-testid="enrollment-breakdown">
@@ -2674,7 +2683,7 @@ export default function SchoolDetail() {
                 </div>
                 <div>
                   <dt className="text-sm text-muted-foreground">Student-Teacher Ratio</dt>
-                  <dd className="text-lg font-semibold" data-testid="text-ratio">{schoolWithScore.student_teacher_ratio}:1</dd>
+                  <dd className="text-lg font-semibold" data-testid="text-ratio">{schoolWithScore.student_teacher_ratio == null ? "Not available" : `${schoolWithScore.student_teacher_ratio}:1`}</dd>
                 </div>
               </dl>
             </CardContent>
@@ -2864,7 +2873,7 @@ export default function SchoolDetail() {
           <SchoolFAQ school={schoolWithScore} />
 
           {/* Reviews Section */}
-          <ReviewsSection schoolName={schoolWithScore.name} schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
+          <ReviewsSection schoolName={schoolDisplayName(schoolWithScore)} schoolDbn={schoolWithScore.dbn} userId={user?.id} isAuthenticated={isAuthenticated} />
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
             <p>Independent analysis of NYSED and NYC Public Schools data.</p>
@@ -2959,16 +2968,16 @@ function ReviewsSection({ schoolName, schoolDbn, userId, isAuthenticated }: { sc
   );
 }
 
-function ScoreBar({ label, score, tooltip, testId }: { label: string; score: number; tooltip: string; testId: string }) {
+function ScoreBar({ label, score, tooltip, testId }: { label: string; score: number | null; tooltip: string; testId: string }) {
   return (
     <Card data-testid={`card-${testId}`}>
       <CardContent className="pt-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium" data-testid={`label-${testId}`}>{label}</span>
-            <span className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{score}</span>
+            <span className="text-2xl font-bold tabular-nums" data-testid={`score-${testId}`}>{score ?? "Not applicable"}</span>
           </div>
-          <Progress value={score} className="h-2" data-testid={`progress-${testId}`} />
+          {score != null && score >= 0 && <Progress value={score} className="h-2" data-testid={`progress-${testId}`} />}
           <p className="text-xs text-muted-foreground leading-relaxed" data-testid={`description-${testId}`}>{tooltip}</p>
         </div>
       </CardContent>

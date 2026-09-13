@@ -1,10 +1,7 @@
----
-name: 2-K centers data model
-description: How 2-K programs are integrated into the schools table despite being standalone daycares
----
+# Canonical 2-K programs
 
-**Rule:** NYC 2-K sites (589, source table `twok_centers`) are standalone daycares with their own code format (06G262, 10XAPN) — zero natural overlap with real school DBNs. Per explicit user decision they are ALSO mirrored into the `schools` table as rows with `grade_band='2K'`, `has_2k=true`, scores `-1` (renders "Insufficient Data"/N/A), enrollment/ratio 0. They render with the standard SchoolCard and school detail page.
+The schools table is the source of truth. Reuse has_2k, has_3k and has_prek independently. Match normalized official DBNs (NYCEEC semsCode is the full official identifier). Preserve canonical names, IDs and URLs; source display names live in early_childhood_source. Name/address matches are review candidates only.
 
-**Why:** User rejected a separate card/list twice — required identical cards, a `has_2k` flag, and click-through to detail pages, not the map.
+Do not write twok_centers or mirror provider datasets. Its legacy API projects schools where has_2k=true. All-school listings include 2-K-only providers. K–12 academic scores do not apply to early-childhood-only grade bands. Missing data is null; never invent enrollment or ratios.
 
-**How to apply:** Keep `grade_band='2K'` rows excluded from school stats and from every list/filter except the 2-K grade-band filter (see home.tsx filteredAndSortedSchools/schoolCounts). The seed cron endpoint upserts both `twok_centers` and the mirror rows in `schools` and invalidates `all-schools` cache — prod gets rows by republishing and re-running that endpoint. Detail page has a 2K-specific intro prose branch (borough-from-DBN logic is wrong for 2-K codes; avoid it).
+Imports default to validated dry runs. Never deploy or apply production migrations without a separate explicit request. See reports/twok and docs/canonical-2k.md.

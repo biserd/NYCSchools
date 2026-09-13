@@ -1,9 +1,10 @@
+import { filterPrograms } from "../shared/early-childhood";
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, twokCenters, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
@@ -381,12 +382,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cachedData = getCached(cacheKey);
       
       if (cachedData) {
-        return res.json(cachedData);
+        return res.json(filterPrograms(cachedData as any[], req.query));
       }
 
       const schools = await storage.getSchools();
       setCache(cacheKey, schools);
-      res.json(schools);
+      res.json(filterPrograms(schools, req.query));
     } catch (error) {
       console.error("Error fetching schools:", error);
       res.status(500).json({ error: "Failed to fetch schools" });
@@ -782,6 +783,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/early-childhood", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      if (!(await isRequestFromAdmin(req))) return res.status(403).json({ error: "Forbidden" });
+      return res.json((await storage.getSchools()).filter(s => s.has_2k === true));
+    } catch { return res.status(500).json({ error: "Unable to load providers" }); }
+  });
+
   // 2-K Centers API (public)
   app.get("/api/twok-centers", async (req: Request, res: Response) => {
     try {
@@ -892,7 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cachedData = getCached<{ totalCenters: number }>(cacheKey);
       if (cachedData) return res.json(cachedData);
       const centers = await storage.getTwokCenters();
-      const result = { totalCenters: centers.length };
+      const result = { totalCenters: new Set(centers.map(c => c.dbn)).size };
       setCache(cacheKey, result, CACHE_TTL_LONG);
       return res.json(result);
     } catch (error) {
@@ -3710,99 +3718,19 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   // Cron job endpoint to refresh the Neighborhood Safety Index.
   // Pulls the last 24 months of NYPD complaints (5uac-w243 + qgea-i56i) and
   // recomputes per-school scores. Designed for monthly invocation via a
-  // One-time 2-K center seeder — seeds the CSV data into whatever database
-  // the running server is connected to (works in both dev and production).
+  // Existing scheduler entrypoint produces a validated dry run.
   app.post("/api/cron/seed-twok-centers", async (req: Request, res: Response) => {
+    const secret = process.env.CRON_SECRET;
+    if (!secret) return res.status(503).json({ error: "CRON_SECRET not configured" });
+    if (req.headers["x-cron-secret"] !== secret) return res.status(401).json({ error: "Unauthorized" });
     try {
-      const expectedSecret = process.env.CRON_SECRET;
-      if (!expectedSecret) return res.status(503).json({ error: "CRON_SECRET not configured" });
-      const cronSecret = req.headers["x-cron-secret"];
-      if (cronSecret !== expectedSecret) return res.status(401).json({ error: "Unauthorized" });
-
-      const fs = await import("fs");
-      const { parse } = await import("csv-parse/sync");
-
-      const BOROUGH_MAP: Record<string, string> = {
-        bronx: "Bronx", brooklyn: "Brooklyn", manhattan: "Manhattan",
-        queens: "Queens", "staten island": "Staten Island",
-      };
-      const normBorough = (raw: string) => BOROUGH_MAP[(raw || "").toLowerCase().trim()] ?? raw;
-      const progType = (n: string) => n.toLowerCase().includes("expanded day") ? "EDFY" : "SDY";
-
-      const csvPath = "attached_assets/nyc-2k-schools_1786231670808.csv";
-      const rows: Record<string, string>[] = parse(
-        fs.readFileSync(csvPath, "utf-8"),
-        { columns: true, skip_empty_lines: true }
-      );
-
-      const records = rows.map((r) => {
-        const dbn = (r["school.dbn"] || "").trim();
-        if (!dbn) return null;
-        const lat = parseFloat((r["school.address.latitude"] || "").replace(/['"]/g, "").trim());
-        const lon = parseFloat((r["school.address.longitude"] || "").replace(/['"]/g, "").trim());
-        return {
-          dbn,
-          name: (r["school.name"] || r["name"] || dbn).trim(),
-          borough: normBorough(r["school.district.borough"] || ""),
-          district: r["school.district.code"] ? parseInt(r["school.district.code"], 10) || null : null,
-          address: (r["school.address.address_1"] || r["school.full_address"] || "").trim() || "N/A",
-          zipCode: (r["school.address.zip_code"] || "").trim() || null,
-          latitude: isNaN(lat) ? null : lat,
-          longitude: isNaN(lon) ? null : lon,
-          phone: (r["telephone"] || r["program.provider_phone_number"] || "").trim() || null,
-          email: (r["email"] || r["program.provider_email"] || "").trim() || null,
-          website: (r["independent_website"] || r["program.provider_website"] || "").trim() || null,
-          programName: (r["program.name"] || "2-K").trim(),
-          programType: progType(r["program.name"] || ""),
-          schoolType: (r["school.school_type.name"] || "PUBLIC").trim(),
-        };
-      }).filter(Boolean) as any[];
-
-      let inserted = 0;
-      for (let i = 0; i < records.length; i += 100) {
-        const batch = records.slice(i, i + 100);
-        await db.insert(twokCenters).values(batch).onConflictDoUpdate({
-          target: twokCenters.dbn,
-          set: {
-            name: sql`EXCLUDED.name`, borough: sql`EXCLUDED.borough`,
-            district: sql`EXCLUDED.district`, address: sql`EXCLUDED.address`,
-            zipCode: sql`EXCLUDED.zip_code`, latitude: sql`EXCLUDED.latitude`,
-            longitude: sql`EXCLUDED.longitude`, phone: sql`EXCLUDED.phone`,
-            email: sql`EXCLUDED.email`, website: sql`EXCLUDED.website`,
-            programName: sql`EXCLUDED.program_name`, programType: sql`EXCLUDED.program_type`,
-            schoolType: sql`EXCLUDED.school_type`, lastUpdated: sql`NOW()`,
-          },
-        });
-        inserted += batch.length;
-      }
-
-      // Mirror 2-K sites into the schools table so they render with standard
-      // school cards and detail pages (grade_band '2K', has_2k = true)
-      await db.execute(sql`
-        INSERT INTO schools (dbn, name, district, address, grade_band, academics_score, climate_score, progress_score, enrollment, student_teacher_ratio, latitude, longitude, zip_code, phone, website, has_2k)
-        SELECT dbn,
-               regexp_replace(name, '\\s*\\([0-9A-Z]{6}\\)\\s*$', ''),
-               COALESCE(district, 0),
-               address,
-               '2K', -1, -1, -1, 0, 0,
-               latitude, longitude, zip_code, phone, website, true
-        FROM twok_centers
-        ON CONFLICT (dbn) DO UPDATE SET
-          has_2k = true,
-          name = CASE WHEN schools.grade_band = '2K' THEN EXCLUDED.name ELSE schools.name END,
-          address = CASE WHEN schools.grade_band = '2K' THEN EXCLUDED.address ELSE schools.address END,
-          phone = CASE WHEN schools.grade_band = '2K' THEN EXCLUDED.phone ELSE schools.phone END
-      `);
-
-      deleteCache("all-twok-centers");
-      deleteCache("twok-centers-stats");
-      deleteCache("all-schools");
-
-      console.log(`[TWOK_SEED] Seeded ${inserted} 2-K centers`);
-      res.json({ success: true, inserted });
+      const { fetchTwok, planTwok } = await import("./twokImport");
+      const snapshot = await fetchTwok();
+      const changes = planTwok(snapshot, await storage.getSchools(), await storage.getNyceecCenters());
+      return res.json({ dryRun: true, sourceCount: snapshot.count, cycle: snapshot.cycle, changes,
+        message: "Review and apply with scripts/reconcile-twok.ts; this endpoint never writes data." });
     } catch (error) {
-      console.error("[TWOK_SEED] Error:", error);
-      res.status(500).json({ error: "Seed failed", detail: String(error) });
+      return res.status(502).json({ error: "Source validation failed; no data changed", detail: String(error) });
     }
   });
 

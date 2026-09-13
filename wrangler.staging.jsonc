@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nyc-schools-ratings-staging",
+  "main": "./server/index-staging.ts",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [],
+  "compatibility_date": "2026-08-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {"directory": "./dist/public", "binding": "ASSETS", "run_worker_first": true},
+  "hyperdrive": [{"binding": "HYPERDRIVE", "id": "be7e2a5021cc4e5f9873f2194f509062"}],
+  "triggers": {"crons": []},
+  "vars": {
+    "ENVIRONMENT": "staging",
+    "NODE_ENV": "production",
+    "APP_URL": "https://nyc-schools-ratings-staging.biser-d.workers.dev",
+    "ADMIN_EMAILS": "",
+    "EMAIL_DELIVERY_ENABLED": "false",
+    "EMAIL_FROM": "hello@nycschoolsratings.com",
+    "EMAIL_FROM_NAME": "NYC Schools staging",
+    "STRIPE_SEASON_PASS_PRODUCT_ID": "",
+    "STRIPE_SEASON_PASS_PRICE_ID": "",
+    "STAGING_EXPIRES_AT": "2026-09-14T21:59:42Z"
+  },
+  "observability": {"enabled": true}
+}

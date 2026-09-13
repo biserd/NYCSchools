@@ -44,6 +44,7 @@ const endpoints: EndpointDoc[] = [
       { name: "grade_band", type: "string", required: false, description: "Filter by grade levels: 'elementary', 'middle', 'high'" },
       { name: "has_3k", type: "boolean", required: false, description: "Filter schools with 3-K programs" },
       { name: "has_prek", type: "boolean", required: false, description: "Filter schools with Pre-K programs" },
+      { name: "has_2k", type: "boolean", required: false, description: "Filter canonical school records offering 2-K; availability flags are independent and may be unknown (null)." },
       { name: "has_gifted", type: "boolean", required: false, description: "Filter schools with G&T programs" },
       { name: "limit", type: "number", required: false, description: "Number of results per page (default: 50, max: 200)" },
       { name: "offset", type: "number", required: false, description: "Pagination offset" },
