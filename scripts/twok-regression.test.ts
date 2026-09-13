@@ -5,6 +5,14 @@ import { normalizeSchool, filterPrograms, schoolBorough } from "../shared/early-
 import { getSchoolSeoMeta } from "../shared/school-seo";
 import { measurement, planTwok, validateSnapshot, repairEncoding, fetchTwok, type Snapshot } from "../server/twokImport";
 
+// Map popup must navigate to the canonical school, not initiate a phone call.
+const mapSource = readFileSync(new URL("../client/src/pages/map.tsx", import.meta.url), "utf8");
+const twokPopup = mapSource.slice(mapSource.indexOf('// Add markers for 2-K centers'));
+assert.match(twokPopup, /center\.canonicalSchoolUrl/);
+assert.match(twokPopup, /View school page/);
+assert(!twokPopup.includes('href="tel:'));
+assert.match(readFileSync(new URL("../server/storage.ts", import.meta.url), "utf8"), /canonicalSchoolUrl: getSchoolUrl\(s\), name: s\.early_childhood_source/);
+
 const record = (dbn: string) => ({ school: { dbn, name: "José’s Daycare", school_year: "2025-26 School Year", district: { code: "06", borough: "Manhattan" }, address: { address_1: "123 Shared Street", latitude: "40.8", longitude: "-73.9" } }, admission_process: "2K", programs: [{ name: "2-K - School Day", program: { admission_process: "2-K" } }], other_features: [{ name: "Offers 3-K" }, { name: "Offers pre-K" }], total_enrollment: "" });
 const snapshot: Snapshot = { processId: 48, cycle: "2025-26 School Year", verifiedAt: "2026-09-13T00:00:00Z", count: 2, records: [record("06G123"), record("06H123")] };
 const k12 = { dbn: "06G123", name: "Existing URL Name", district: 6, address: "Preserve", grade_band: "PK-5", has_2k: false, has_3k: true, has_prek: false, ela_proficiency: 80, math_proficiency: 80, climate_score: 80, progress_score: 80, academics_score: 80, enrollment: 0, student_teacher_ratio: 0 } as School;

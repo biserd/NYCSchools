@@ -1246,6 +1246,7 @@ export interface AiChatSessionWithMessages extends AiChatSession {
 // NYCEEC Centers - NYC Early Education Centers (community-based Pre-K/3-K providers)
 // Legacy map API shape, projected from canonical schools.
 export type TwokCenter = {
+  canonicalSchoolUrl?: string;
   id: string; dbn: string; name: string; borough: string; district: number | null;
   address: string; zipCode: string | null; latitude: number | null; longitude: number | null;
   phone: string | null; email: string | null; website: string | null;

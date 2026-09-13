@@ -932,7 +932,7 @@ export class DbStorage implements IStorage {
     if (filters?.zipCode) conditions.push(eq(schools.zip_code, filters.zipCode));
     const rows = await db.select().from(schools).where(and(...conditions)).orderBy(schools.name);
     return rows.map(normalizeSchool).map(s => ({
-      ...s, id: s.dbn, name: s.early_childhood_source?.providerName || s.name,
+      ...s, id: s.dbn, canonicalSchoolUrl: getSchoolUrl(s), name: s.early_childhood_source?.providerName || s.name,
       borough: schoolBorough(s) || "", zipCode: s.zip_code,
       email: s.early_childhood_source?.email ?? null,
       programName: s.early_childhood_source?.programs?.join("; ") ?? null,

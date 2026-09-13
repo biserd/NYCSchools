@@ -996,18 +996,23 @@ export default function MapPage() {
 
         const seatLabel = isEDFY ? "Expanded Day & Full Year" : "School Day";
         const boroughDisplay = center.borough || "";
+        // Prefer the server's canonical name-based URL; DBN-only links also
+        // resolve correctly while an older API response is still cached.
+        const schoolPageUrl = center.canonicalSchoolUrl || `/school/${encodeURIComponent(center.dbn.toLowerCase())}`;
+        const escapePopup = (value: string) => value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 
         marker.bindPopup(`
           <div style="min-width: 220px;">
-            <h3 style="margin: 0 0 6px 0; font-weight: 600; font-size: 14px;">${center.name}</h3>
+            <h3 style="margin: 0 0 6px 0; font-weight: 600; font-size: 14px;"><a href="${escapePopup(schoolPageUrl)}" style="color: #2563eb;">${escapePopup(center.name)}</a></h3>
             <div style="margin-bottom: 8px;">
               <span style="background: ${markerColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">2-K</span>
               <span style="background: #6b7280; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px;">${seatLabel}</span>
             </div>
-            <p style="margin: 0; font-size: 12px; color: #666;">${center.address}</p>
-            <p style="margin: 4px 0; font-size: 12px; color: #666;">${boroughDisplay}${center.zipCode ? " " + center.zipCode : ""}</p>
+            <p style="margin: 0; font-size: 12px; color: #666;">${escapePopup(center.address)}</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #666;">${escapePopup(boroughDisplay)}${center.zipCode ? " " + escapePopup(center.zipCode) : ""}</p>
             ${center.district ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">District ${center.district}</p>` : ""}
-            ${center.phone ? `<p style="margin: 4px 0; font-size: 12px;"><a href="tel:${center.phone}" style="color: #2563eb;">${center.phone}</a></p>` : ""}
+            ${center.phone ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">${escapePopup(center.phone)}</p>` : ""}
+            <a href="${escapePopup(schoolPageUrl)}" style="display: inline-flex; align-items: center; min-height: 44px; color: #2563eb; font-weight: 600;">View school page →</a>
           </div>
         `);
 
