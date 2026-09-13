@@ -5,7 +5,7 @@ Created September 13, 2026 with explicit approval to copy the production databas
 ## Access and lifetime
 
 - Preview: https://nyc-schools-ratings-staging.biser-d.workers.dev
-- HTTP Basic username: preview. Random password is local only in the gitignored `.wrangler/staging-access.json`; never put it in a PR.
+- Public read-only preview, explicitly requested September 13. No username or password required.
 - Neon project: little-hill-53993129; branch: br-rough-mud-aykmkgu5 (nycschools-2k-staging).
 - Neon auto-delete: September 14, 2026, 5:59 p.m. EDT. Worker access also expires at that time.
 - Staging Hyperdrive: be7e2a5021cc4e5f9873f2194f509062. It points only to ep-lingering-sound-ay0yfu7q.c-5.us-east-2.aws.neon.tech and has caching disabled.
@@ -15,7 +15,7 @@ The staging Worker and Hyperdrive configuration do not automatically delete when
 
 ## Isolation
 
-All routes, including assets, require the staging password. The gate fails closed without secrets or a valid expiry. Responses are noindex/noarchive and no-store. There are no production custom-domain routes, no cron triggers, no Email/AI binding and no Stripe/API secrets. Email delivery is explicitly false. All non-GET/HEAD requests and cron, Stripe, auth and admin API routes are denied. Account/admin login, payments and external integrations are intentionally outside this read-only preview's acceptance scope. Browser-side external connections and frames are restricted by a staging CSP.
+The preview fails closed without a valid staging environment and expiry. Only audited school-directory APIs are allowed; all other APIs, account routes, reviews and MCP are blocked. Cookies and authorization are stripped before dispatch, and response session cookies are removed. Responses are noindex/noarchive and no-store. There are no production custom-domain routes, no cron triggers, no Email/AI binding and no Stripe/API secrets. Email delivery is explicitly false. All non-GET/HEAD requests are denied. Account/admin login, payments and external integrations are intentionally outside this read-only preview's acceptance scope. Browser-side external connections and frames are restricted by a staging CSP.
 
 ## Actual database tests
 
@@ -36,7 +36,7 @@ The database test implementation is scripts/staging-db-test.mjs. It is intention
 
 ## Live checks
 
-scripts/staging-http-test.mjs reads the local staging access file. It verifies anonymous denial, mutation denial, homepage, canonical school counts/filters, legacy 2-K APIs and four server-rendered profiles including new and unconfirmed providers. Results: reports/twok/staging-http-test.json.
+scripts/staging-http-test.mjs verifies anonymous public access, private endpoint and mutation denial, homepage, canonical school counts/filters, legacy 2-K APIs and four server-rendered profiles including new and unconfirmed providers. Results: reports/twok/staging-http-test.json.
 
 Browser verification confirmed the hydrated homepage shows 2,408 schools and 615 2-K providers, and searching 10XAPN yields one canonical record with 2-K, 3-K and pre-K badges. Staging-only disabled auth and product endpoints are expected, not production failures.
 

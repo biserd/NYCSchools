@@ -1,18 +1,18 @@
-import {readFile,writeFile} from 'node:fs/promises';
+import {writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
-const access=JSON.parse(await readFile('.wrangler/staging-access.json','utf8'));
 const base='https://nyc-schools-ratings-staging.biser-d.workers.dev';
-const authorization='Basic '+Buffer.from(access.username+':'+access.password).toString('base64');
 const results=[];
 async function get(path,options={}) {
- const r=await fetch(base+path,{headers:{Authorization:authorization},signal:AbortSignal.timeout(60000),...options});
+ const r=await fetch(base+path,{signal:AbortSignal.timeout(60000),...options});
  const body=await r.text();results.push({path,status:r.status,bytes:body.length,noindex:r.headers.get('x-robots-tag')});
  assert.equal(r.status,200,path+' '+body.slice(0,200));assert.match(r.headers.get('x-robots-tag'),/noindex/);return body;
 }
-const denied=await fetch(base);assert.equal(denied.status,401);results.push({test:'Anonymous homepage denied',status:denied.status});
-const noAsset=await fetch(base+'/favicon.png');assert.equal(noAsset.status,401);results.push({test:'Anonymous assets denied',status:noAsset.status});
-const mutation=await fetch(base+'/api/cron/seed-twok-centers',{method:'POST',headers:{Authorization:authorization}});assert.equal(mutation.status,403);
-results.push({test:'Authenticated mutation denied',status:mutation.status});
+await get('/favicon.png');
+for (const path of ['/api/auth/user','/api/profile','/api/admin/early-childhood','/api/checkout/verify-session','/api/email/unsubscribe','/api/schools/10XAPN/reviews','/api/unknown','/mcp','/account']) {
+ const denied=await fetch(base+path);assert.equal(denied.status,403,path);results.push({test:'Private or unaudited endpoint denied',path,status:denied.status});
+}
+const mutation=await fetch(base+'/api/cron/seed-twok-centers',{method:'POST'});assert.equal(mutation.status,403);
+results.push({test:'Anonymous mutation denied',status:mutation.status});
 await get('/');
 const schools=JSON.parse(await get('/api/schools'));
 assert.equal(schools.length,2408);

@@ -24,7 +24,7 @@ The existing authenticated `/api/cron/seed-twok-centers` job now returns a valid
 
 General school listings/counts include 2-K providers. K–12 district **rating averages** exclude early-childhood-only grade bands and negative score placeholders. The district-average schoolCount describes that K–12 comparison population, not the directory total. A K–12 school with has_2k=true remains academically rated when sufficient data exists. Internal scoring retains -1 as a compatibility return value; public rating APIs return null plus not_applicable and displayed component measurements are null.
 
-## Reviewed deployment sequence (not executed)
+## Reviewed deployment sequence
 
 1. Back up the target database and confirm the source cycle. Test against an isolated staging copy first.
 2. Run `migrations/20260913_canonical_2k.sql` explicitly. It only adds source/borough fields, a partial index, and permits null measurements; it reuses existing has_2k.
@@ -40,4 +40,14 @@ Keep the additive schema and nullable-compatible application during rollback. Do
 
 ## Validation
 
-`npm run test:twok`, `npm run test:ratings`, `npm run test:seo-linking`, `npm run check`, and `npm run build`. The 2-K suite tests real server HTML with isolated storage fixtures; it never connects to production. On September 13, the SQL was tested on an explicitly authorized one-day Neon staging branch copied from production. See `reports/twok/staging-test.json` and the staging documentation. No SQL was executed against production.
+`npm run test:twok`, `npm run test:ratings`, `npm run test:seo-linking`, `npm run check`, and `npm run build`. The 2-K suite tests real server HTML with isolated storage fixtures; it never connects to production. On September 13, the SQL was tested on an explicitly authorized one-day Neon staging branch copied from production. See `reports/twok/staging-test.json` and the staging documentation.
+
+## Production promotion — September 13, 2026
+
+User approved promotion after reviewing staging. A fresh production transaction tested the migration and backfill, verified exact counts and preservation, and rolled back cleanly. The subsequent apply saved a local gitignored before-image of the schools table and column schema, then committed the migration and backfill atomically at 22:37:56 UTC. See `reports/twok/production-preflight.json` and `production-apply.json`.
+
+Result: 26 inserts, 589 updates, 2,408 schools and 615 canonical 2-K records (614 official plus one needs verification). Existing IDs, names and grades and every non-2K row were preserved. Only the schools table was changed; staging was not substituted for the production database.
+
+Production Worker version: `af0c3bbd-6210-496a-b3e8-3a9ce010d3bc`. Previous version: `a8f84552-11d3-4c66-9b7e-5dac778b45bb` (do not blindly restore an older renderer against nullable data; follow rollback guidance above). Production bindings, variables, secrets, authentication and cron schedules were retained. Staging-only access settings are not part of the production entrypoint.
+
+Live smoke checks passed for canonical counts, all three program filters, legacy 2-K APIs, four early-childhood profiles, a K–12 profile, private endpoint authentication, public Stripe configuration and robots indexing. See `scripts/production-2k-smoke.mjs` and `reports/twok/production-http-test.json`. No payment, email or authenticated user-account mutation was performed as a smoke test.

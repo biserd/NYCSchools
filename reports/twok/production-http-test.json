@@ -1,0 +1,102 @@
+{
+  "at": "2026-09-13T22:38:42.948Z",
+  "base": "https://nycschoolsratings.com",
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "noindex": null,
+      "bytes": 6555
+    },
+    {
+      "path": "/api/schools",
+      "status": 200,
+      "noindex": null,
+      "bytes": 6118446
+    },
+    {
+      "path": "/api/schools?has_2k=true",
+      "status": 200,
+      "noindex": null,
+      "bytes": 1819213
+    },
+    {
+      "path": "/api/schools?has_3k=true",
+      "status": 200,
+      "noindex": null,
+      "bytes": 2610985
+    },
+    {
+      "path": "/api/schools?has_prek=true",
+      "status": 200,
+      "noindex": null,
+      "bytes": 1830643
+    },
+    {
+      "path": "/api/twok-centers",
+      "status": 200,
+      "noindex": null,
+      "bytes": 1923584
+    },
+    {
+      "path": "/api/twok-centers-stats",
+      "status": 200,
+      "noindex": null,
+      "bytes": 21
+    },
+    {
+      "path": "/school/06g262-1-sickles-st-day-care-family-group-corp-at-1-sickles-street-06g262",
+      "status": 200,
+      "noindex": null,
+      "bytes": 9475
+    },
+    {
+      "path": "/school/10xapn-1199seiuemployer-child-care-corporation-10xapn",
+      "status": 200,
+      "noindex": null,
+      "bytes": 9314
+    },
+    {
+      "path": "/school/27h581-3-little-penguins-daycare",
+      "status": 200,
+      "noindex": null,
+      "bytes": 8586
+    },
+    {
+      "path": "/school/06g009-mercedes-a-batista-daycare-at-534-west-153-street-06g009",
+      "status": 200,
+      "noindex": null,
+      "bytes": 9405
+    },
+    {
+      "path": "/school/31r005-ps-005-huguenot",
+      "status": 200,
+      "noindex": null,
+      "bytes": 8749
+    },
+    {
+      "path": "/api/profile",
+      "status": 401,
+      "noindex": null,
+      "bytes": 27
+    },
+    {
+      "path": "/api/admin/early-childhood",
+      "status": 401,
+      "noindex": null,
+      "bytes": 27
+    },
+    {
+      "path": "/api/stripe/config",
+      "status": 200,
+      "noindex": null,
+      "bytes": 143
+    },
+    {
+      "path": "/robots.txt",
+      "status": 200,
+      "noindex": null,
+      "bytes": 130
+    }
+  ]
+}

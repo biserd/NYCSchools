@@ -1,17 +1,60 @@
 {
-  "at": "2026-09-13T22:19:03.485Z",
+  "at": "2026-09-13T22:31:40.141Z",
   "base": "https://nyc-schools-ratings-staging.biser-d.workers.dev",
   "results": [
     {
-      "test": "Anonymous homepage denied",
-      "status": 401
+      "path": "/favicon.png",
+      "status": 200,
+      "bytes": 361358,
+      "noindex": "noindex, nofollow, noarchive"
     },
     {
-      "test": "Anonymous assets denied",
-      "status": 401
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/auth/user",
+      "status": 403
     },
     {
-      "test": "Authenticated mutation denied",
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/profile",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/admin/early-childhood",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/checkout/verify-session",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/email/unsubscribe",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/schools/10XAPN/reviews",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/api/unknown",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/mcp",
+      "status": 403
+    },
+    {
+      "test": "Private or unaudited endpoint denied",
+      "path": "/account",
+      "status": 403
+    },
+    {
+      "test": "Anonymous mutation denied",
       "status": 403
     },
     {
