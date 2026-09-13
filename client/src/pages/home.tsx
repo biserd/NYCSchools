@@ -297,8 +297,8 @@ export default function Home() {
   // Calculate school counts by type for stats display
   const schoolCounts = useMemo(() => {
     if (!schools.length) return null;
-    // Exclude 2-K daycare sites from school stats
-    const regularSchools = schools.filter(s => s.grade_band !== "2K");
+    // Directory inclusion is independent of rating applicability.
+    const regularSchools = schools;
     
     const elementary = regularSchools.filter(s => 
       s.grade_band?.includes("K-5") || 
@@ -344,11 +344,7 @@ export default function Home() {
   }, [schools, trends, nyceecStats, privateSchoolsStats, twokStats]);
 
   const filteredAndSortedSchools = useMemo(() => {
-    // 2-K program sites live in the schools table with has_2k=true and grade_band '2K'.
-    // They only appear when the 2-K grade filter is selected; otherwise they're excluded.
-    let filtered = show2K
-      ? schools.filter((school) => school.has_2k === true)
-      : schools.filter((school) => school.grade_band !== "2K");
+    let filtered = show2K ? schools.filter(school => school.has_2k === true) : schools;
 
     if (debouncedSearchQuery) {
       const normalizeBasic = (str: string) => 
@@ -370,6 +366,7 @@ export default function Home() {
       filtered = filtered.filter(
         (school) =>
           normalizeSchoolSearch(school.name).includes(normalizedQuery) ||
+          normalizeSchoolSearch(school.early_childhood_source?.providerName || "").includes(normalizedQuery) ||
           normalizeBasic(school.dbn).includes(normalizeBasic(debouncedSearchQuery))
       );
     }
@@ -580,11 +577,11 @@ export default function Home() {
         case "overall":
           return b.overall_score - a.overall_score;
         case "academics":
-          return b.academics_score - a.academics_score;
+          return (b.academics_score ?? -1) - (a.academics_score ?? -1);
         case "climate":
-          return b.climate_score - a.climate_score;
+          return (b.climate_score ?? -1) - (a.climate_score ?? -1);
         case "progress":
-          return b.progress_score - a.progress_score;
+          return (b.progress_score ?? -1) - (a.progress_score ?? -1);
         case "name":
           return a.name.localeCompare(b.name);
         case "pta":

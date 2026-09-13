@@ -226,6 +226,8 @@ export default function NyceecDetail() {
 
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
+              {center.canonicalSchoolUrl && <a className="block underline mb-2" href={center.canonicalSchoolUrl}>View this provider’s canonical school and programs</a>}
+              {center.has_2k && <Badge>2-K available</Badge>}
               <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-center-name">
                 {center.name}
               </h1>

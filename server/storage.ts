@@ -1,5 +1,7 @@
 import { db } from "./db";
-import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, twokCenters, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert, type TwokCenter, type InsertTwokCenter } from "@shared/schema";
+import { normalizeSchool, schoolBorough } from "../shared/early-childhood";
+import { getSchoolUrl } from "../shared/schema";
+import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert, type TwokCenter } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray, lt } from "drizzle-orm";
 
 export interface IStorage {
@@ -59,9 +61,8 @@ export interface IStorage {
   getSchoolTrend(dbn: string): Promise<SchoolTrend>;
   getAllSchoolTrends(): Promise<Map<string, SchoolTrend>>;
   
-  // 2-K Center operations
+  // 2-K compatibility directory backed by canonical schools.
   getTwokCenters(filters?: { borough?: string; district?: number; zipCode?: string }): Promise<TwokCenter[]>;
-  upsertTwokCenters(centers: InsertTwokCenter[]): Promise<void>;
 
   // NYCEEC Center operations
   getNyceecCenters(filters?: NyceecFilters): Promise<NyceecCenter[]>;
@@ -352,15 +353,28 @@ export class DbStorage implements IStorage {
   }
 
   async getSchools(): Promise<School[]> {
-    return db.select().from(schools);
+    return (await db.select().from(schools)).map(normalizeSchool);
   }
 
   async getSchool(dbn: string): Promise<School | undefined> {
     const [school] = await db.select().from(schools).where(eq(schools.dbn, dbn)).limit(1);
-    return school;
+    return school ? normalizeSchool(school) : undefined;
   }
 
   async upsertSchool(school: School): Promise<School> {
+    if (school.grade_band === "2K") {
+      const existing = await this.getSchool(school.dbn);
+      if (existing && existing.grade_band !== "2K") {
+        const [updated] = await db.update(schools).set({
+          has_2k: true,
+          has_3k: existing.has_3k === true || school.has_3k === true ? true : existing.has_3k,
+          has_prek: existing.has_prek === true || school.has_prek === true ? true : existing.has_prek,
+          borough: school.borough ?? existing.borough,
+          early_childhood_source: school.early_childhood_source ?? existing.early_childhood_source,
+        }).where(eq(schools.dbn, existing.dbn)).returning();
+        return updated;
+      }
+    }
     const [upserted] = await db.insert(schools)
       .values(school)
       .onConflictDoUpdate({
@@ -369,7 +383,10 @@ export class DbStorage implements IStorage {
           name: school.name,
           district: school.district,
           address: school.address,
-          grade_band: school.grade_band,
+          grade_band: sql`CASE WHEN EXCLUDED.grade_band = '2K' AND schools.grade_band <> '2K' THEN schools.grade_band ELSE EXCLUDED.grade_band END`,
+          has_2k: sql`CASE WHEN EXCLUDED.has_2k = true THEN true ELSE schools.has_2k END`,
+          has_3k: sql`CASE WHEN EXCLUDED.has_3k = true THEN true ELSE schools.has_3k END`,
+          has_prek: sql`CASE WHEN EXCLUDED.has_prek = true THEN true ELSE schools.has_prek END`,
           academics_score: school.academics_score,
           climate_score: school.climate_score,
           progress_score: school.progress_score,
@@ -553,8 +570,8 @@ export class DbStorage implements IStorage {
         schoolCount: sql<number>`COUNT(*)`,
         elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
         mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
-        climateScore: sql<number>`ROUND(AVG(${schools.climate_score}), 1)`,
-        progressScore: sql<number>`ROUND(AVG(${schools.progress_score}), 1)`,
+        climateScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END), 1)`,
+        progressScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END), 1)`,
         studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
         economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
@@ -580,12 +597,12 @@ export class DbStorage implements IStorage {
         guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
       })
       .from(schools)
-      .where(eq(schools.district, district));
+      .where(and(eq(schools.district, district), sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`));
     
-    const avgEla = Number(stats?.elaProficiency || 50);
-    const avgMath = Number(stats?.mathProficiency || 50);
-    const avgClimate = Number(stats?.climateScore || 50);
-    const avgProgress = Number(stats?.progressScore || 50);
+    const avgEla = Number(stats?.elaProficiency ?? 50);
+    const avgMath = Number(stats?.mathProficiency ?? 50);
+    const avgClimate = Number(stats?.climateScore ?? 50);
+    const avgProgress = Number(stats?.progressScore ?? 50);
     
     const testProficiency = (avgEla + avgMath) / 2;
     const academicsScore = Math.round(testProficiency);
@@ -600,7 +617,7 @@ export class DbStorage implements IStorage {
       mathProficiency: avgMath,
       climateScore: avgClimate,
       progressScore: avgProgress,
-      studentTeacherRatio: Number(stats?.studentTeacherRatio || 15),
+      studentTeacherRatio: Number(stats?.studentTeacherRatio ?? 15),
       economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
       enrollment: Number(stats?.enrollment || 0),
       // Demographics
@@ -633,8 +650,8 @@ export class DbStorage implements IStorage {
         schoolCount: sql<number>`COUNT(*)`,
         elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
         mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
-        climateScore: sql<number>`ROUND(AVG(${schools.climate_score}), 1)`,
-        progressScore: sql<number>`ROUND(AVG(${schools.progress_score}), 1)`,
+        climateScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END), 1)`,
+        progressScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END), 1)`,
         studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
         economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
@@ -660,15 +677,16 @@ export class DbStorage implements IStorage {
         guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
       })
       .from(schools)
+      .where(sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`)
       .groupBy(schools.district);
     
     const averagesMap = new Map<number, DistrictAverages>();
     
     for (const row of results) {
-      const avgEla = Number(row.elaProficiency || 50);
-      const avgMath = Number(row.mathProficiency || 50);
-      const avgClimate = Number(row.climateScore || 50);
-      const avgProgress = Number(row.progressScore || 50);
+      const avgEla = Number(row.elaProficiency ?? 50);
+      const avgMath = Number(row.mathProficiency ?? 50);
+      const avgClimate = Number(row.climateScore ?? 50);
+      const avgProgress = Number(row.progressScore ?? 50);
       
       const testProficiency = (avgEla + avgMath) / 2;
       const academicsScore = Math.round(testProficiency);
@@ -683,7 +701,7 @@ export class DbStorage implements IStorage {
         mathProficiency: avgMath,
         climateScore: avgClimate,
         progressScore: avgProgress,
-        studentTeacherRatio: Number(row.studentTeacherRatio || 15),
+        studentTeacherRatio: Number(row.studentTeacherRatio ?? 15),
         economicNeedIndex: row.economicNeedIndex ? Number(row.economicNeedIndex) : null,
         enrollment: Number(row.enrollment || 0),
         // Demographics
@@ -718,8 +736,8 @@ export class DbStorage implements IStorage {
         schoolCount: sql<number>`COUNT(*)`,
         elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
         mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
-        climateScore: sql<number>`ROUND(AVG(${schools.climate_score}), 1)`,
-        progressScore: sql<number>`ROUND(AVG(${schools.progress_score}), 1)`,
+        climateScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END), 1)`,
+        progressScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END), 1)`,
         studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
         economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
@@ -744,12 +762,13 @@ export class DbStorage implements IStorage {
         guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
         guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
       })
-      .from(schools);
+      .from(schools)
+      .where(sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`);
     
-    const avgEla = Number(stats?.elaProficiency || 50);
-    const avgMath = Number(stats?.mathProficiency || 50);
-    const avgClimate = Number(stats?.climateScore || 50);
-    const avgProgress = Number(stats?.progressScore || 50);
+    const avgEla = Number(stats?.elaProficiency ?? 50);
+    const avgMath = Number(stats?.mathProficiency ?? 50);
+    const avgClimate = Number(stats?.climateScore ?? 50);
+    const avgProgress = Number(stats?.progressScore ?? 50);
     
     const testProficiency = (avgEla + avgMath) / 2;
     const academicsScore = Math.round(testProficiency);
@@ -764,7 +783,7 @@ export class DbStorage implements IStorage {
       mathProficiency: avgMath,
       climateScore: avgClimate,
       progressScore: avgProgress,
-      studentTeacherRatio: Number(stats?.studentTeacherRatio || 15),
+      studentTeacherRatio: Number(stats?.studentTeacherRatio ?? 15),
       economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
       enrollment: Number(stats?.enrollment || 0),
       // Demographics
@@ -905,53 +924,21 @@ export class DbStorage implements IStorage {
     return trends;
   }
 
-  // 2-K Center operations
+  // Legacy response shape; every provider is read from the canonical schools table.
   async getTwokCenters(filters?: { borough?: string; district?: number; zipCode?: string }): Promise<TwokCenter[]> {
-    const conditions = [];
-
-    if (filters?.borough) {
-      conditions.push(eq(twokCenters.borough, filters.borough));
-    }
-    if (filters?.district) {
-      conditions.push(eq(twokCenters.district, filters.district));
-    }
-    if (filters?.zipCode) {
-      conditions.push(eq(twokCenters.zipCode, filters.zipCode));
-    }
-
-    if (conditions.length > 0) {
-      return db.select().from(twokCenters).where(and(...conditions)).orderBy(twokCenters.name);
-    }
-    return db.select().from(twokCenters).orderBy(twokCenters.name);
-  }
-
-  async upsertTwokCenters(centers: InsertTwokCenter[]): Promise<void> {
-    if (centers.length === 0) return;
-    for (let i = 0; i < centers.length; i += 100) {
-      const batch = centers.slice(i, i + 100);
-      await db
-        .insert(twokCenters)
-        .values(batch)
-        .onConflictDoUpdate({
-          target: twokCenters.dbn,
-          set: {
-            name: sql`EXCLUDED.name`,
-            borough: sql`EXCLUDED.borough`,
-            district: sql`EXCLUDED.district`,
-            address: sql`EXCLUDED.address`,
-            zipCode: sql`EXCLUDED.zip_code`,
-            latitude: sql`EXCLUDED.latitude`,
-            longitude: sql`EXCLUDED.longitude`,
-            phone: sql`EXCLUDED.phone`,
-            email: sql`EXCLUDED.email`,
-            website: sql`EXCLUDED.website`,
-            programName: sql`EXCLUDED.program_name`,
-            programType: sql`EXCLUDED.program_type`,
-            schoolType: sql`EXCLUDED.school_type`,
-            lastUpdated: sql`NOW()`,
-          },
-        });
-    }
+    const conditions = [eq(schools.has_2k, true)];
+    if (filters?.borough) conditions.push(sql`lower(${schools.borough}) = lower(${filters.borough})`);
+    if (filters?.district) conditions.push(eq(schools.district, filters.district));
+    if (filters?.zipCode) conditions.push(eq(schools.zip_code, filters.zipCode));
+    const rows = await db.select().from(schools).where(and(...conditions)).orderBy(schools.name);
+    return rows.map(normalizeSchool).map(s => ({
+      ...s, id: s.dbn, name: s.early_childhood_source?.providerName || s.name,
+      borough: schoolBorough(s) || "", zipCode: s.zip_code,
+      email: s.early_childhood_source?.email ?? null,
+      programName: s.early_childhood_source?.programs.join("; ") ?? null,
+      programType: s.early_childhood_source?.programs.some(p => p.includes("Expanded")) ? "EDFY" : s.early_childhood_source?.programs.some(p => p.includes("School Day")) ? "SDY" : null,
+      schoolType: s.early_childhood_source?.schoolType ?? null, lastUpdated: s.last_updated,
+    }));
   }
 
   // NYCEEC Center operations
@@ -986,10 +973,23 @@ export class DbStorage implements IStorage {
     }
     
     if (conditions.length > 0) {
-      return db.select().from(nyceecCenters).where(and(...conditions)).orderBy(nyceecCenters.name);
+      return this.linkCanonicalCenters(await db.select().from(nyceecCenters).where(and(...conditions)).orderBy(nyceecCenters.name));
     }
     
-    return db.select().from(nyceecCenters).orderBy(nyceecCenters.name);
+    return this.linkCanonicalCenters(await db.select().from(nyceecCenters).orderBy(nyceecCenters.name));
+  }
+
+  private async linkCanonicalCenters(centers: NyceecCenter[]): Promise<NyceecCenter[]> {
+    const identifiers = centers.map(c => c.semsCode?.trim().toUpperCase()).filter(Boolean) as string[];
+    if (!identifiers.length) return centers;
+    const linked = await db.select({ dbn: schools.dbn, name: schools.name, has_2k: schools.has_2k,
+      has_3k: schools.has_3k, has_prek: schools.has_prek }).from(schools).where(inArray(schools.dbn, identifiers));
+    const byId = new Map(linked.map(s => [s.dbn, s]));
+    return centers.map(c => {
+      const s = byId.get(c.semsCode?.trim().toUpperCase() || "");
+      return { ...c, canonicalSchoolUrl: s ? getSchoolUrl(s) : null,
+        has_2k: s?.has_2k ?? null, has_3k: s?.has_3k ?? null, has_prek: s?.has_prek ?? null };
+    });
   }
 
   async getNyceecCenter(locCode: string): Promise<NyceecCenter | undefined> {
@@ -998,7 +998,7 @@ export class DbStorage implements IStorage {
       .from(nyceecCenters)
       .where(eq(nyceecCenters.locCode, locCode.toUpperCase()))
       .limit(1);
-    return center;
+    return center ? (await this.linkCanonicalCenters([center]))[0] : undefined;
   }
 
   async upsertNyceecCenter(center: InsertNyceecCenter): Promise<NyceecCenter> {

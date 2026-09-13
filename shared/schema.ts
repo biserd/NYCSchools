@@ -11,9 +11,9 @@ export const schools = pgTable("schools", {
   grade_band: varchar("grade_band").notNull(),
   
   // Academic Performance
-  academics_score: integer("academics_score").notNull(),
-  climate_score: integer("climate_score").notNull(),
-  progress_score: integer("progress_score").notNull(),
+  academics_score: integer("academics_score"),
+  climate_score: integer("climate_score"),
+  progress_score: integer("progress_score"),
   ela_proficiency: integer("ela_proficiency"), // Nullable - NULL means no data available
   math_proficiency: integer("math_proficiency"), // Nullable - NULL means no data available
   science_proficiency: integer("science_proficiency"), // Science % Level 3+4 (Grades 5 & 8)
@@ -45,8 +45,8 @@ export const schools = pgTable("schools", {
   assessment_source: varchar("assessment_source"), // Data source (e.g., "NYSED")
   
   // School Info
-  enrollment: integer("enrollment").notNull(),
-  student_teacher_ratio: real("student_teacher_ratio").notNull(),
+  enrollment: integer("enrollment"),
+  student_teacher_ratio: real("student_teacher_ratio"),
   
   // Enrollment by Grade Level
   elementary_enrollment: integer("elementary_enrollment"), // K-5 students
@@ -101,6 +101,15 @@ export const schools = pgTable("schools", {
   has_3k: boolean("has_3k").default(false),
   has_prek: boolean("has_prek").default(false),
   has_2k: boolean("has_2k").default(false),
+  borough: varchar("borough"),
+  // Provenance and program details belong to the canonical school, not a mirror table.
+  early_childhood_source: jsonb("early_childhood_source").$type<{
+    sourceUrl: string; processId: number; cycle: string; verifiedAt: string;
+    status: "verified" | "needs_verification"; providerName: string;
+    registrationInstructions: string | null; childcareLocation?: string; rawProviderName?: string; programs: string[];
+    has3k: boolean | null; hasPrek: boolean | null;
+    email: string | null; schoolType: string | null; legacyCenterCode?: string | null;
+  }>(),
   
   // Gifted & Talented Programs
   has_gifted_talented: boolean("has_gifted_talented").default(false),
@@ -589,14 +598,16 @@ export function hasGrades3to8(school: Pick<School, 'grade_band'>): boolean {
 }
 
 export function calculateOverallScore(school: School): number {
+  if (isEarlyChildhoodOnly(school)) return -1;
+  if (!validScore(school.progress_score)) return -1;
   // High schools use different metrics
   if (isHighSchool(school)) {
     // High schools need graduation rate data for proper scoring
     if (school.graduation_rate_4yr !== null && school.graduation_rate_4yr !== undefined) {
       // High School Score = Graduation Rate (40%) + College Readiness (30%) + Progress (30%)
       const gradRate = school.graduation_rate_4yr;
-      const collegeReadiness = school.college_readiness_rate ?? school.progress_score;
-      const progressScore = school.progress_score;
+      const collegeReadiness = school.college_readiness_rate ?? school.progress_score!;
+      const progressScore = school.progress_score!;
       
       return Math.round(
         0.4 * gradRate +
@@ -613,7 +624,7 @@ export function calculateOverallScore(school: School): number {
   // Overall = Academics (40%) + Climate (30%) + Progress (30%).
   // NYSED's 95% participation expectation is our minimum for a rated result.
   // Check if proficiency data is missing (NULL means no data available)
-  if (school.ela_proficiency === null || school.math_proficiency === null) {
+  if (!validScore(school.ela_proficiency) || !validScore(school.math_proficiency) || !validScore(school.climate_score)) {
     return -1; // Insufficient data
   }
 
@@ -628,8 +639,8 @@ export function calculateOverallScore(school: School): number {
   // Overall Score = Test Proficiency (40%) + Climate (30%) + Progress (30%)
   return Math.round(
     0.4 * academicScore +
-    0.3 * school.climate_score +
-    0.3 * school.progress_score
+    0.3 * school.climate_score! +
+    0.3 * school.progress_score!
   );
 }
 
@@ -637,10 +648,18 @@ export const ASSESSMENT_PARTICIPATION_THRESHOLD = 95;
 export const ASSESSMENT_MINIMUM_TESTED_COUNT = 50;
 
 export function calculateAcademicScore(
-  school: Pick<School, "ela_proficiency" | "math_proficiency">,
+  school: Pick<School, "ela_proficiency" | "math_proficiency"> & Partial<Pick<School, "grade_band">>,
 ): number | null {
-  if (school.ela_proficiency == null || school.math_proficiency == null) return null;
-  return Math.round((school.ela_proficiency + school.math_proficiency) / 2);
+  if (isEarlyChildhoodOnly(school) || !validScore(school.ela_proficiency) || !validScore(school.math_proficiency)) return null;
+  return Math.round((school.ela_proficiency! + school.math_proficiency!) / 2);
+}
+
+export function isEarlyChildhoodOnly(school: { grade_band?: string | null }): boolean {
+  return /^(2K|3K|PK|PREK|PRE-K|2-K|3-K|EARLY CHILDHOOD)$/i.test(school.grade_band?.trim() ?? "");
+}
+
+function validScore(value: number | null | undefined): boolean {
+  return value != null && Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
 export function getAssessmentConfidence(
@@ -1225,47 +1244,14 @@ export interface AiChatSessionWithMessages extends AiChatSession {
 }
 
 // NYCEEC Centers - NYC Early Education Centers (community-based Pre-K/3-K providers)
-// ─── 2-K Early Childhood Centers ────────────────────────────────────────────
-export const twokCenters = pgTable("twok_centers", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").unique().notNull(),       // NYC school DBN code
-
-  // Basic info
-  name: text("name").notNull(),
-  borough: varchar("borough").notNull(),         // Bronx, Brooklyn, Manhattan, Queens, Staten Island
-  district: integer("district"),
-
-  // Location
-  address: text("address").notNull(),
-  zipCode: varchar("zip_code"),
-  latitude: real("latitude"),
-  longitude: real("longitude"),
-
-  // Contact
-  phone: varchar("phone"),
-  email: varchar("email"),
-  website: varchar("website"),
-
-  // Program details
-  programName: varchar("program_name"),          // '2-K - Expanded Day and Full Year' | '2-K - School Day'
-  programType: varchar("program_type"),          // 'EDFY' | 'SDY'
-  schoolType: varchar("school_type"),            // 'PUBLIC' | 'PRIVATE'
-
-  // Metadata
-  lastUpdated: timestamp("last_updated").defaultNow(),
-}, (table) => [
-  index("idx_twok_borough").on(table.borough),
-  index("idx_twok_district").on(table.district),
-  index("idx_twok_zip").on(table.zipCode),
-]);
-
-export const insertTwokCenterSchema = createInsertSchema(twokCenters).omit({
-  id: true,
-  lastUpdated: true,
-});
-
-export type InsertTwokCenter = z.infer<typeof insertTwokCenterSchema>;
-export type TwokCenter = typeof twokCenters.$inferSelect;
+// Legacy map API shape, projected from canonical schools.
+export type TwokCenter = {
+  id: string; dbn: string; name: string; borough: string; district: number | null;
+  address: string; zipCode: string | null; latitude: number | null; longitude: number | null;
+  phone: string | null; email: string | null; website: string | null;
+  programName: string | null; programType: string | null; schoolType: string | null;
+  lastUpdated: Date | null;
+};
 
 // ─── NYCEEC Early Childhood Centers ─────────────────────────────────────────
 export const nyceecCenters = pgTable("nyceec_centers", {
@@ -1317,7 +1303,10 @@ export const insertNyceecCenterSchema = createInsertSchema(nyceecCenters).omit({
 });
 
 export type InsertNyceecCenter = z.infer<typeof insertNyceecCenterSchema>;
-export type NyceecCenter = typeof nyceecCenters.$inferSelect;
+export type NyceecCenter = typeof nyceecCenters.$inferSelect & {
+  canonicalSchoolUrl?: string | null;
+  has_2k?: boolean | null; has_3k?: boolean | null; has_prek?: boolean | null;
+};
 
 // NYCEEC Reviews - Parent reviews for early childhood centers
 export const nyceecReviews = pgTable("nyceec_reviews", {

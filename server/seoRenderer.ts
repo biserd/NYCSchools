@@ -1,3 +1,5 @@
+import { schoolBorough, programLabels, schoolDisplayName } from "../shared/early-childhood";
+import { isEarlyChildhoodOnly } from "@shared/schema";
 /**
  * Server-side SEO HTML enrichment for the SPA.
  *
@@ -241,14 +243,14 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
   const school = await storage.getSchool(dbn);
   if (!school) return null;
 
-  const borough = boroughName(school.dbn?.charAt(2));
+  const borough = schoolBorough(school) || "New York";
   // Use the same shared scoring function as the client so visible scores,
   // metadata, FAQs, and structured data cannot disagree.
   const overall = calculateOverallScore(school);
 
   const isHS = schoolIsHS(school);
   const lowAssessmentConfidence = !isHS && getAssessmentConfidence(school) === "low";
-  const ratingSentence = overall < 0
+  const ratingSentence = isEarlyChildhoodOnly(school) ? "K–12 academic ratings are not applicable to this early-childhood provider." : overall < 0
     ? (lowAssessmentConfidence
       ? "Overall rating withheld because state-test participation was limited."
       : "Overall rating unavailable because required data was not reported.")
@@ -294,7 +296,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     "@context": "https://schema.org",
     "@type": "School",
     identifier: school.dbn,
-    name: school.name,
+    name: schoolDisplayName(school),
     url: canonical,
     address: {
       "@type": "PostalAddress",
@@ -305,7 +307,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     },
     description: ldDescription,
     educationalLevel: school.grade_band,
-    numberOfStudents: school.enrollment,
+    numberOfStudents: school.enrollment ?? undefined,
     telephone: school.phone || undefined,
     sameAs: school.website && /^https?:\/\//i.test(school.website) ? school.website : undefined,
     dateModified: school.last_updated ? new Date(school.last_updated).toISOString() : undefined,
@@ -433,7 +435,9 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     // Admissions question — uses admission_method when present, otherwise generic NYC zoned guidance
     const admissionMethod = (school as any).admission_method as string | null | undefined;
     let admissionText: string;
-    if (admissionMethod) {
+    if (isEarlyChildhoodOnly(school)) {
+      admissionText = "Contact the provider and check MySchools for current eligibility, program schedules and seat availability.";
+    } else if (admissionMethod) {
       const m = admissionMethod.toLowerCase();
       if (m.includes("zoned")) {
         admissionText = `${school.name} is a zoned school. Families living within the school's attendance zone are guaranteed a seat. Apply through MySchools.nyc during the NYC enrollment window.`;
@@ -454,8 +458,8 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     });
 
     // Programs question — only when at least one program flag is set
-    if (school.has_gifted_talented || school.has_dual_language || school.has_3k || school.has_prek) {
-      const progs: string[] = [];
+    if (school.has_2k || school.has_gifted_talented || school.has_dual_language || school.has_3k || school.has_prek) {
+      const progs: string[] = school.has_2k ? ["2-K"] : [];
       if (school.has_gifted_talented) {
         const gtType = school.gt_program_type === "citywide" ? "Citywide" : "District";
         progs.push(`a ${gtType} Gifted & Talented program`);
@@ -507,7 +511,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
 
   const noscriptHtml = `
       <article>
-        <h1>${escapeHtml(school.name)}</h1>
+        <h1>${escapeHtml(schoolDisplayName(school))}</h1>
         <p>${escapeHtml(description)}</p>
         <h2>Key statistics</h2>
         <ul>
@@ -522,7 +526,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
           ${school.address ? `<li>Address: ${escapeHtml(school.address)}</li>` : ""}
         </ul>
         ${relatedLinks ? `<h2>Other schools in District ${school.district}</h2><ul>${relatedLinks}</ul>` : ""}
-        ${guideLinks ? `<h2>Explore guides related to ${escapeHtml(school.name)}</h2><ul>${guideLinks}</ul>` : ""}
+        ${guideLinks ? `<h2>Explore guides related to ${escapeHtml(schoolDisplayName(school))}</h2><ul>${guideLinks}</ul>` : ""}
         <p><a href="${SITE_ORIGIN}/">Browse all NYC schools</a> · <a href="${SITE_ORIGIN}/compare">Compare schools</a> · <a href="${SITE_ORIGIN}/map">Map view</a></p>
       </article>`;
 
@@ -582,7 +586,7 @@ async function renderPrivateSchool(slug: string, baseHtml: string): Promise<stri
 
   const noscriptHtml = `
       <article>
-        <h1>${escapeHtml(school.name)}</h1>
+        <h1>${escapeHtml(schoolDisplayName(school))}</h1>
         <p>${escapeHtml(description)}</p>
         <p><a href="${SITE_ORIGIN}/private-schools">Browse all NYC private schools</a></p>
       </article>`;
@@ -916,6 +920,7 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
   "/application-tracker": { title: "Application Tracker | NYC School Ratings", description: "Manage your private school application checklist.", heading: "Application Tracker", noindex: true },
   "/settings": { title: "Settings | NYC School Ratings", description: "Configure your private NYC School Ratings account settings.", heading: "Settings", noindex: true },
   "/admin/api-usage": { title: "API Usage Admin | NYC School Ratings", description: "Private administration page.", heading: "API Usage Admin", noindex: true },
+  "/admin/early-childhood": { title: "Early Childhood Data Review | NYC School Ratings", description: "Private administration page.", heading: "Early Childhood Data Review", noindex: true },
   "/thanks": { title: "Thank You | NYC School Ratings", description: "Payment confirmation.", heading: "Thank You", noindex: true },
   "/auth/magic-link/callback": { title: "Signing In | NYC School Ratings", description: "Secure sign-in callback.", heading: "Signing In", noindex: true },
 };
@@ -1028,7 +1033,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
       { "@type": "ListItem", position: 3, name: landing.name, item: canonical },
     ] },
   ];
-  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(school.name)}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
+  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
   return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, serverHtml });
 }
 

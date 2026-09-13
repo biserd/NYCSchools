@@ -1,3 +1,5 @@
+import { schoolDisplayName } from "@shared/early-childhood";
+import { schoolBorough } from "@shared/early-childhood";
 import { SchoolWithOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/schema";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
@@ -38,12 +40,12 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
   const scoreColor = getScoreColor(school.overall_score ?? -1);
   const scoreLabel = getScoreLabel(school.overall_score ?? -1);
   const hasLowAssessmentConfidence = !isHighSchool(school) && getAssessmentConfidence(school) === "low";
-  const borough = getBoroughFromDBN(school.dbn);
+  const borough = schoolBorough(school);
   
   const elaColor = getMetricColor(school.ela_proficiency ?? -1);
   const mathColor = getMetricColor(school.math_proficiency ?? -1);
-  const climateColor = getMetricColor(school.climate_score);
-  const progressColor = getMetricColor(school.progress_score);
+  const climateColor = getMetricColor(school.climate_score ?? -1);
+  const progressColor = getMetricColor(school.progress_score ?? -1);
 
   const colorMap: Record<string, string> = {
     green: "bg-emerald-500",
@@ -71,9 +73,9 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
         </SheetClose>
 
         <SheetHeader className="pb-6 space-y-3" data-testid="header-detail">
-          <SheetTitle className="text-2xl font-bold text-left pr-8" data-testid="text-detail-school-name">{school.name}</SheetTitle>
+          <SheetTitle className="text-2xl font-bold text-left pr-8" data-testid="text-detail-school-name">{schoolDisplayName(school)}</SheetTitle>
           <SheetDescription className="text-sm text-left text-muted-foreground">
-            Detailed information and metrics for {school.name}
+            Detailed information and metrics for {schoolDisplayName(school)}
           </SheetDescription>
           <div className="flex flex-col gap-2 text-left">
             <p className="text-sm text-muted-foreground" data-testid="text-detail-address">{school.address}</p>
@@ -231,28 +233,28 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm font-medium">Academics</span>
-                      <span className="text-sm font-bold tabular-nums">{school.academics_score}</span>
+                      <span className="text-sm font-bold tabular-nums">{school.academics_score ?? "Not applicable"}</span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-chart-1 rounded-full" style={{ width: getBarWidth(school.academics_score) }} />
+                      <div className="h-full bg-chart-1 rounded-full" style={{ width: getBarWidth(school.academics_score ?? -1) }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm font-medium">Climate</span>
-                      <span className="text-sm font-bold tabular-nums">{school.climate_score}</span>
+                      <span className="text-sm font-bold tabular-nums">{school.climate_score ?? "Not applicable"}</span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-chart-2 rounded-full" style={{ width: getBarWidth(school.climate_score) }} />
+                      <div className="h-full bg-chart-2 rounded-full" style={{ width: getBarWidth(school.climate_score ?? -1) }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm font-medium">Progress</span>
-                      <span className="text-sm font-bold tabular-nums">{school.progress_score}</span>
+                      <span className="text-sm font-bold tabular-nums">{school.progress_score ?? "Not applicable"}</span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-chart-3 rounded-full" style={{ width: getBarWidth(school.progress_score) }} />
+                      <div className="h-full bg-chart-3 rounded-full" style={{ width: getBarWidth(school.progress_score ?? -1) }} />
                     </div>
                   </div>
                 </div>
@@ -291,14 +293,14 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-academics">{school.academics_score}</span>
+                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-academics">{school.academics_score ?? "Not applicable"}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-academics">
                   <div
                     className="h-full bg-chart-1 rounded-full transition-all"
-                    style={{ width: getBarWidth(school.academics_score) }}
+                    style={{ width: getBarWidth(school.academics_score ?? -1) }}
                     data-testid="fill-bar-academics"
-                    aria-label={`Academics score: ${school.academics_score}`}
+                    aria-label={`Academics score: ${school.academics_score ?? "Not applicable"}`}
                   />
                 </div>
               </div>
@@ -319,14 +321,14 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-climate">{school.climate_score}</span>
+                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-climate">{school.climate_score ?? "Not applicable"}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-climate">
                   <div
                     className="h-full bg-chart-2 rounded-full transition-all"
-                    style={{ width: getBarWidth(school.climate_score) }}
+                    style={{ width: getBarWidth(school.climate_score ?? -1) }}
                     data-testid="fill-bar-climate"
-                    aria-label={`Climate score: ${school.climate_score}`}
+                    aria-label={`Climate score: ${school.climate_score ?? "Not applicable"}`}
                   />
                 </div>
               </div>
@@ -347,14 +349,14 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-progress">{school.progress_score}</span>
+                  <span className="text-sm font-bold tabular-nums" data-testid="score-bar-progress">{school.progress_score ?? "Not applicable"}</span>
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden" data-testid="track-progress">
                   <div
                     className="h-full bg-chart-3 rounded-full transition-all"
-                    style={{ width: getBarWidth(school.progress_score) }}
+                    style={{ width: getBarWidth(school.progress_score ?? -1) }}
                     data-testid="fill-bar-progress"
-                    aria-label={`Progress score: ${school.progress_score}`}
+                    aria-label={`Progress score: ${school.progress_score ?? "Not applicable"}`}
                   />
                 </div>
               </div>
@@ -552,7 +554,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
           {/* Admissions & Demand Section - for K/Pre-K/3K schools */}
           <AdmissionsSection 
             dbn={school.dbn}
-            schoolName={school.name}
+            schoolName={schoolDisplayName(school)}
             has3k={school.has_3k ?? false}
             hasPrek={school.has_prek ?? false}
             gradeBand={school.grade_band}
@@ -711,7 +713,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
             <div data-testid="container-climate-score">
               <div className="flex items-center gap-2 mb-1">
                 <div className={`w-3 h-3 rounded-full ${colorMap[climateColor]}`} data-testid="indicator-climate-detail" />
-                <p className="text-3xl font-bold tabular-nums" data-testid="score-detail-climate">{school.climate_score}</p>
+                <p className="text-3xl font-bold tabular-nums" data-testid="score-detail-climate">{school.climate_score ?? "Not applicable"}</p>
               </div>
               <p className="text-sm text-muted-foreground" data-testid="text-climate-description">
                 Climate score reflects school safety, family engagement, and student support
@@ -1400,7 +1402,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
             <div className="grid grid-cols-2 gap-4" data-testid="grid-details">
               <div data-testid="container-enrollment">
                 <p className="text-sm text-muted-foreground mb-1" data-testid="label-enrollment">Total Enrollment</p>
-                <p className="text-xl font-bold tabular-nums" data-testid="text-detail-enrollment">{school.enrollment.toLocaleString()}</p>
+                <p className="text-xl font-bold tabular-nums" data-testid="text-detail-enrollment">{school.enrollment?.toLocaleString() ?? "Not available"}</p>
                 {/* Enrollment Breakdown by Grade Level */}
                 {(school.elementary_enrollment || school.middle_enrollment || school.high_school_enrollment) && (
                   <div className="mt-2 space-y-1 text-sm" data-testid="enrollment-breakdown">
@@ -1433,7 +1435,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                 <p className="text-sm text-muted-foreground mb-1" data-testid="label-ratio">Student-Teacher Ratio</p>
                 <p className="text-xl font-bold flex items-center gap-2" data-testid="text-detail-student-teacher-ratio">
                   <Users className="w-5 h-5 text-muted-foreground" data-testid="icon-users" />
-                  {school.student_teacher_ratio}:1
+                  {school.student_teacher_ratio == null ? "Not available" : `${school.student_teacher_ratio}:1`}
                 </p>
               </div>
             </div>

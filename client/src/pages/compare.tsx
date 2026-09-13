@@ -1,3 +1,5 @@
+import { schoolDisplayName } from "@shared/early-childhood";
+import { schoolBorough } from "@shared/early-childhood";
 import { useComparison } from "@/contexts/ComparisonContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -385,7 +387,7 @@ export default function ComparePage() {
     setSchoolSearch("");
     toast({
       title: "School added",
-      description: `${school.name} is ready to compare.`,
+      description: `${schoolDisplayName(school)} is ready to compare.`,
     });
   };
   
@@ -555,7 +557,7 @@ export default function ComparePage() {
                   schoolSearchResults.map((school) => (
                     <div key={school.dbn} className="flex items-center justify-between gap-3 p-3">
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{school.name}</p>
+                        <p className="font-medium truncate">{schoolDisplayName(school)}</p>
                         <p className="text-xs text-muted-foreground">
                           {school.dbn} · District {school.district} · {school.grade_band || "Grades not listed"}
                         </p>
@@ -593,7 +595,7 @@ export default function ComparePage() {
     assessment_confidence: getAssessmentConfidence(school),
     uses_assessment_rating: !isHighSchoolRating(school),
     scoreColor: getScoreColor(calculateOverallScore(school)),
-    borough: getBoroughFromDBN(school.dbn),
+    borough: schoolBorough(school),
     trend: trends?.[school.dbn],
   }));
 
@@ -704,13 +706,13 @@ export default function ComparePage() {
                     className="absolute top-2 right-2 h-6 w-6"
                     onClick={() => removeFromComparison(school.dbn)}
                     data-testid={`button-remove-${school.dbn}`}
-                    aria-label={`Remove ${school.name}`}
+                    aria-label={`Remove ${schoolDisplayName(school)}`}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm line-clamp-2 pr-8" data-testid={`text-school-name-${school.dbn}`}>
-                      {school.name}
+                      {schoolDisplayName(school)}
                     </CardTitle>
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary" className="text-xs" data-testid={`badge-dbn-${school.dbn}`}>
@@ -752,7 +754,7 @@ export default function ComparePage() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Climate</span>
-                            <span className="font-medium tabular-nums" data-testid={`score-climate-${school.dbn}`}>{school.climate_score}</span>
+                            <span className="font-medium tabular-nums" data-testid={`score-climate-${school.dbn}`}>{school.climate_score ?? "Not applicable"}</span>
                           </div>
                         </>
                       ) : (
@@ -769,7 +771,7 @@ export default function ComparePage() {
                       )}
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium tabular-nums" data-testid={`score-progress-${school.dbn}`}>{school.progress_score}</span>
+                        <span className="font-medium tabular-nums" data-testid={`score-progress-${school.dbn}`}>{school.progress_score ?? "Not applicable"}</span>
                       </div>
                       {(() => {
                         const safety = safetyDataMap[school.dbn];
@@ -896,7 +898,7 @@ export default function ComparePage() {
                       <TableHead className="w-48">Metric</TableHead>
                       {schoolsWithScores.map((school) => (
                         <TableHead key={school.dbn} className="text-center" data-testid={`th-academic-${school.dbn}`}>
-                          <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                          <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                         </TableHead>
                       ))}
                     </TableRow>
@@ -1027,7 +1029,7 @@ export default function ComparePage() {
                         <TableHead className="w-48">Metric</TableHead>
                         {schoolsWithScores.map((school) => (
                           <TableHead key={school.dbn} className="text-center" data-testid={`th-safety-${school.dbn}`}>
-                            <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                            <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                           </TableHead>
                         ))}
                       </TableRow>
@@ -1197,7 +1199,7 @@ export default function ComparePage() {
                       <TableHead className="w-48">Program</TableHead>
                       {schoolsWithScores.map((school) => (
                         <TableHead key={school.dbn} className="text-center">
-                          <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                          <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                         </TableHead>
                       ))}
                     </TableRow>
@@ -1297,7 +1299,7 @@ export default function ComparePage() {
                         <TableHead className="w-48">Grade</TableHead>
                         {schoolsWithScores.map((school) => (
                           <TableHead key={school.dbn} className="text-center">
-                            <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                            <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                           </TableHead>
                         ))}
                       </TableRow>
@@ -1384,7 +1386,7 @@ export default function ComparePage() {
                         <TableHead className="w-48">Metric</TableHead>
                         {schoolsWithScores.map((school) => (
                           <TableHead key={school.dbn} className="text-center">
-                            <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                            <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                           </TableHead>
                         ))}
                       </TableRow>
@@ -1481,7 +1483,7 @@ export default function ComparePage() {
                       <TableHead className="w-48">Metric</TableHead>
                       {schoolsWithScores.map((school) => (
                         <TableHead key={school.dbn} className="text-center">
-                          <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                          <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                         </TableHead>
                       ))}
                     </TableRow>
@@ -1499,7 +1501,7 @@ export default function ComparePage() {
                       <TableCell className="font-medium">Student:Teacher Ratio</TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-ratio-${school.dbn}`}>
-                          {school.student_teacher_ratio}:1
+                          {school.student_teacher_ratio == null ? "Not available" : `${school.student_teacher_ratio}:1`}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -1601,7 +1603,7 @@ export default function ComparePage() {
                       <TableHead className="w-48">Group</TableHead>
                       {schoolsWithScores.map((school) => (
                         <TableHead key={school.dbn} className="text-center">
-                          <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                          <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                         </TableHead>
                       ))}
                     </TableRow>
@@ -1670,7 +1672,7 @@ export default function ComparePage() {
                         <TableHead className="w-48">Metric</TableHead>
                         {schoolsWithScores.map((school) => (
                           <TableHead key={school.dbn} className="text-center">
-                            <div className="text-xs truncate max-w-[150px]">{school.name}</div>
+                            <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
                           </TableHead>
                         ))}
                       </TableRow>
