@@ -935,8 +935,8 @@ export class DbStorage implements IStorage {
       ...s, id: s.dbn, name: s.early_childhood_source?.providerName || s.name,
       borough: schoolBorough(s) || "", zipCode: s.zip_code,
       email: s.early_childhood_source?.email ?? null,
-      programName: s.early_childhood_source?.programs.join("; ") ?? null,
-      programType: s.early_childhood_source?.programs.some(p => p.includes("Expanded")) ? "EDFY" : s.early_childhood_source?.programs.some(p => p.includes("School Day")) ? "SDY" : null,
+      programName: s.early_childhood_source?.programs?.join("; ") ?? null,
+      programType: s.early_childhood_source?.programs?.some(p => p.includes("Expanded")) ? "EDFY" : s.early_childhood_source?.programs?.some(p => p.includes("School Day")) ? "SDY" : null,
       schoolType: s.early_childhood_source?.schoolType ?? null, lastUpdated: s.last_updated,
     }));
   }

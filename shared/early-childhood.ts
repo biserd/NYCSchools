@@ -18,7 +18,8 @@ export function schoolDisplayName(school: Partial<School>): string {
 export function normalizeSchool<T extends Partial<School>>(school: T): T {
   const legacySeed = school.grade_band === "2K" && school.academics_score === -1 &&
     school.climate_score === -1 && school.progress_score === -1 &&
-    school.enrollment === 0 && school.student_teacher_ratio === 0 && !school.early_childhood_source;
+    school.enrollment === 0 && school.student_teacher_ratio === 0 &&
+    (!school.early_childhood_source || school.early_childhood_source.status === "needs_verification");
   const result = { ...school };
   if (isEarlyChildhoodOnly(school)) {
     result.ela_proficiency = null; result.math_proficiency = null; result.science_proficiency = null;

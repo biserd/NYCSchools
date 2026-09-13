@@ -29,7 +29,7 @@ for (const r of snapshot.records) {
 const report = {
   verifiedAt: snapshot.verifiedAt, sourceUrl: "https://www.myschools.nyc/en/schools/2-k/",
   processId: snapshot.processId, sourceCycle: snapshot.cycle,
-  cycleCaveat: "MySchools currently returns this year; confirm with NYCPS before applying. Do not relabel as 2026-27.",
+  cycleCaveat: "NYCPS official 2-K guidance confirms a fall 2026 launch for children born in 2024. The active directory API still labels school.school_year as 2025-26 School Year. Preserve that raw provenance; do not display it as the verified admissions year or silently relabel source records.",
   sourceCount: snapshot.count, canonicalBaselineCount: schools.length,
   officialProgramCount: snapshot.records.reduce((sum, r) => sum + r.programs.length, 0),
   current2kCount: schools.filter(s => s.has_2k).length,
@@ -46,10 +46,13 @@ const report = {
 const quote = (s: string) => "'" + s.replace(/'/g, "''") + "'";
 const literal = (v: any) => v == null ? "NULL" : typeof v === "object" ? quote(JSON.stringify(v)) + "::jsonb" : typeof v === "string" ? quote(v) : String(v);
 const col = (s: string) => '"' + s + '"';
+// PostgreSQL real columns must compare against real-typed literals; otherwise
+// decimal JSON round-trips promote comparison precision and skip unchanged rows.
+const comparison = (k: string, v: any) => `${col(k)} IS NOT DISTINCT FROM ${literal(v)}${["latitude", "longitude", "student_teacher_ratio"].includes(k) ? "::real" : ""}`;
 const sql = changes.map(c => c.action === "insert"
   ? `INSERT INTO schools (${Object.keys(c.after).map(col).join(",")}) VALUES (${Object.values(c.after).map(literal).join(",")}) ON CONFLICT (dbn) DO NOTHING;`
-  : `UPDATE schools SET ${Object.entries(c.after).map(([k,v]) => `${col(k)}=${literal(v)}`).join(",")} WHERE dbn=${quote(c.dbn)} AND (${Object.entries(c.before).map(([k,v]) => `${col(k)} IS NOT DISTINCT FROM ${literal(v)}`).join(" AND ")});`).join("\n");
-const rollback = changes.filter(c => c.before).map(c => `UPDATE schools SET ${Object.entries(c.before).map(([k,v]) => `${col(k)}=${literal(v)}`).join(",")} WHERE dbn=${quote(c.dbn)} AND (${Object.entries(c.after).map(([k,v]) => `${col(k)} IS NOT DISTINCT FROM ${literal(v)}`).join(" AND ")});`).join("\n");
+  : `UPDATE schools SET ${Object.entries(c.after).map(([k,v]) => `${col(k)}=${literal(v)}`).join(",")} WHERE dbn=${quote(c.dbn)} AND (${Object.entries(c.before).map(([k,v]) => comparison(k,v)).join(" AND ")});`).join("\n");
+const rollback = changes.filter(c => c.before).map(c => `UPDATE schools SET ${Object.entries(c.before).map(([k,v]) => `${col(k)}=${literal(v)}`).join(",")} WHERE dbn=${quote(c.dbn)} AND (${Object.entries(c.after).map(([k,v]) => comparison(k,v)).join(" AND ")});`).join("\n");
 const out = "reports/twok";
 await mkdir(out, { recursive: true });
 await writeFile(`${out}/reconciliation.json`, JSON.stringify(report, null, 2));

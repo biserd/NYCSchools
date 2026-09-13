@@ -437,7 +437,9 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {isEarlyChildhoodOnly(school) ? (
+          <p className="text-sm text-muted-foreground">K–12 academic metrics are not applicable to this provider.</p>
+        ) : <div className="grid grid-cols-2 gap-3">
           {showHSMetricsOnCard && hasHSData ? (
             <>
               <div className="flex items-center gap-2 bg-muted/50 rounded-md p-3" data-testid={`container-gradrate-${school.dbn}`}>
@@ -526,7 +528,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                 <div className={`w-2 h-2 rounded-full ${colorMap[elaColor]} shrink-0`} data-testid={`indicator-ela-${school.dbn}`} />
                 <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-ela-${school.dbn}`} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency}%</div>
+                  <div className="text-sm font-medium tabular-nums" data-testid={`score-ela-${school.dbn}`}>{school.ela_proficiency == null ? "N/A" : `${school.ela_proficiency}%`}</div>
                   <div className="text-xs text-muted-foreground truncate" data-testid={`label-ela-${school.dbn}`}>ELA</div>
                 </div>
                 <Tooltip>
@@ -552,7 +554,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
                 <div className={`w-2 h-2 rounded-full ${colorMap[mathColor]} shrink-0`} data-testid={`indicator-math-${school.dbn}`} />
                 <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" data-testid={`icon-math-${school.dbn}`} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency}%</div>
+                  <div className="text-sm font-medium tabular-nums" data-testid={`score-math-${school.dbn}`}>{school.math_proficiency == null ? "N/A" : `${school.math_proficiency}%`}</div>
                   <div className="text-xs text-muted-foreground truncate" data-testid={`label-math-${school.dbn}`}>Math</div>
                 </div>
                 <Tooltip>
@@ -577,6 +579,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
           )}
         </div>
 
+        }
         <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
           <div className="flex items-center gap-4 flex-wrap">
             {borough && (

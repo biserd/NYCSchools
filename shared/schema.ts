@@ -104,11 +104,11 @@ export const schools = pgTable("schools", {
   borough: varchar("borough"),
   // Provenance and program details belong to the canonical school, not a mirror table.
   early_childhood_source: jsonb("early_childhood_source").$type<{
-    sourceUrl: string; processId: number; cycle: string; verifiedAt: string;
-    status: "verified" | "needs_verification"; providerName: string;
-    registrationInstructions: string | null; childcareLocation?: string; rawProviderName?: string; programs: string[];
-    has3k: boolean | null; hasPrek: boolean | null;
-    email: string | null; schoolType: string | null; legacyCenterCode?: string | null;
+    sourceUrl: string; processId: number; cycle: string; verifiedAt: string | null;
+    status: "verified" | "needs_verification"; providerName?: string;
+    registrationInstructions?: string | null; childcareLocation?: string; rawProviderName?: string; programs?: string[];
+    has3k?: boolean | null; hasPrek?: boolean | null;
+    email?: string | null; schoolType?: string | null; legacyCenterCode?: string | null;
   }>(),
   
   // Gifted & Talented Programs

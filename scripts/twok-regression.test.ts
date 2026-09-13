@@ -42,6 +42,7 @@ assert.throws(() => validateSnapshot({ ...snapshot, cycle: "2026-27" }), /cycle/
 const absent = planTwok(snapshot, [{ ...k12, dbn: "06G009", has_2k: true }]).find(c => c.dbn === "06G009")!;
 assert.equal(absent.action, "needs_verification");
 assert.equal(absent.after.has_2k, undefined, "absence must not remove programs");
+assert.equal(normalizeSchool({ ...legacy, ...absent.after }).enrollment, null, "verification status must not turn legacy defaults into measured zeros");
 assert.equal(repairEncoding("José’s Daycare"), "José’s Daycare");
 assert.equal(repairEncoding("JosÃ©"), "José");
 assert.equal(repairEncoding("ADAÃ¢Â\u0080Â\u0099S"), "ADA’S");

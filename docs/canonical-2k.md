@@ -8,7 +8,7 @@ Official directory: https://www.myschools.nyc/en/schools/2-k/
 
 Official enrollment guidance: https://www.schools.nyc.gov/enrollment/enroll-grade-by-grade/2-k
 
-The directory currently maps 2-K to process 48 and its complete paginated API returns 614 providers. Source records say **2025-26 School Year**. This is preserved as source provenance, not silently relabeled 2026-27. Confirm the cycle with NYCPS before applying this backfill.
+The directory currently maps 2-K to process 48 and its complete paginated API returns 614 providers. Source records say **2025-26 School Year**. On September 13 we independently checked the NYCPS enrollment guidance linked above: it explicitly confirms a **fall 2026 launch for children born in 2024**, with August 4, 2026 offer release. The API label conflicts with that authoritative guidance. Preserve it as raw provenance, not the verified admissions year; do not silently relabel source records. The raw-cycle SQL acknowledgement remains intentional.
 
 The dry run proposes 26 additions, 588 updates and retaining 06G009 (Mercedes A Batista Daycare) as needs verification. Consequently 615 canonical rows would have has_2k=true, of which 614 are verified in the fetched inventory. Never describe the unconfirmed record as closed. Official features confirm 543 3-K offerings and 62 pre-K offerings; omission means unknown, not false.
 
@@ -40,4 +40,4 @@ Keep the additive schema and nullable-compatible application during rollback. Do
 
 ## Validation
 
-`npm run test:twok`, `npm run test:ratings`, `npm run test:seo-linking`, `npm run check`, and `npm run build`. The 2-K suite tests real server HTML with isolated storage fixtures; it never connects to production. No staging database was configured, and the SQL has not been executed against production.
+`npm run test:twok`, `npm run test:ratings`, `npm run test:seo-linking`, `npm run check`, and `npm run build`. The 2-K suite tests real server HTML with isolated storage fixtures; it never connects to production. On September 13, the SQL was tested on an explicitly authorized one-day Neon staging branch copied from production. See `reports/twok/staging-test.json` and the staging documentation. No SQL was executed against production.

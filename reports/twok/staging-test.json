@@ -1,0 +1,96 @@
+{
+  "host": "ep-lingering-sound-ay0yfu7q.c-5.us-east-2.aws.neon.tech",
+  "events": [
+    {
+      "connected": "neondb"
+    },
+    {
+      "at": "2026-09-13T22:04:28.392Z",
+      "tests": [
+        "Schema migration applies and reruns successfully",
+        "Unacknowledged source cycle is rejected",
+        "Backfill ROLLBACK restores complete schools fingerprint"
+      ],
+      "before": {
+        "count": 2382,
+        "hash": "3ccd9a5136515530323158c2f0527d57"
+      },
+      "dryRun": {
+        "inserted": 26,
+        "updated": 1
+      },
+      "sample": {
+        "dbn": "10XAPN",
+        "latitude": 40.862965,
+        "longitude": -73.89745,
+        "has_2k": true,
+        "has_3k": false,
+        "has_prek": false,
+        "academics_score": -1,
+        "enrollment": 0
+      }
+    },
+    {
+      "at": "2026-09-13T22:05:27.247Z",
+      "tests": [
+        "Schema migration applies and reruns successfully",
+        "Unacknowledged source cycle is rejected",
+        "Backfill ROLLBACK restores complete schools fingerprint"
+      ],
+      "before": {
+        "count": 2382,
+        "hash": "68451808593314006503717294357fd0"
+      },
+      "dryRun": {
+        "inserted": 26,
+        "updated": 589
+      },
+      "sample": {
+        "dbn": "10XAPN",
+        "latitude": 40.862965,
+        "longitude": -73.89745,
+        "has_2k": true,
+        "has_3k": false,
+        "has_prek": false,
+        "academics_score": -1,
+        "enrollment": 0
+      }
+    },
+    {
+      "at": "2026-09-13T22:07:22.084Z",
+      "tests": [
+        "Schema migration applies and reruns successfully",
+        "Unacknowledged source cycle is rejected",
+        "Backfill ROLLBACK restores complete schools fingerprint",
+        "Committed backfill: 26 inserts, 589 updates, 615 flagged providers",
+        "All existing IDs, names, grades and K–12 rows unchanged",
+        "Multi-program flags, verification status and missing measurements correct",
+        "Replaying backfill changes zero rows",
+        "Conservative rollback restores every original school row; retains 26 new IDs",
+        "Reapplication after rollback restores the identical applied fingerprint"
+      ],
+      "before": {
+        "count": 2382,
+        "hash": "68451808593314006503717294357fd0"
+      },
+      "dryRun": {
+        "inserted": 26,
+        "updated": 589
+      },
+      "final": {
+        "count": 2408,
+        "hash": "4f758208dc2bb41b8bc2e44438800816"
+      },
+      "sample": {
+        "dbn": "10XAPN",
+        "latitude": 40.862965,
+        "longitude": -73.89745,
+        "has_2k": true,
+        "has_3k": true,
+        "has_prek": true,
+        "academics_score": null,
+        "enrollment": null
+      }
+    }
+  ]
+}
