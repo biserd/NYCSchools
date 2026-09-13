@@ -445,7 +445,6 @@ export default function SchoolDetail() {
             {schoolWithScore.early_childhood_source?.registrationInstructions && <p>Registration: {schoolWithScore.early_childhood_source.registrationInstructions}</p>}
             {schoolWithScore.early_childhood_source?.status === "needs_verification" && <p>Program listing needs verification. This does not indicate closure.</p>}
             {schoolWithScore.early_childhood_source?.legacyCenterCode && <a className="underline" href={`/early-childhood/${schoolWithScore.early_childhood_source.legacyCenterCode}`}>Early childhood reviews and details</a>}
-            <a className="block underline" href="https://www.myschools.nyc/en/schools/2-k/">Verify availability with MySchools</a>
           </section>}
           {/* School Prose Introduction — applies to all schools */}
           {schoolWithScore && (() => {
