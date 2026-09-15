@@ -1,0 +1,237 @@
+{
+  "checkedAt": "2026-09-15T22:44:28.310Z",
+  "deployedVersion": "52c79772-dd26-47f8-82c4-ec7c28621c8a",
+  "productionChanged": false,
+  "accounts": {
+    "source": "Existing read-only production-derived Neon staging clone",
+    "privateDataPersistedToLocalFiles": false,
+    "tables": [
+      {
+        "table": "schools",
+        "count": 2408,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "nyceec_centers",
+        "count": 1885,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "users",
+        "count": 159,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "sessions",
+        "count": 29,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "oauth_clients",
+        "count": 1,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "api_keys",
+        "count": 3,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "ai_chat_sessions",
+        "count": 40,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "favorites",
+        "count": 229,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "reviews",
+        "count": 3,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "user_profiles",
+        "count": 32,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "tracked_schools",
+        "count": 31,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "ai_chat_messages",
+        "count": 168,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "password_reset_tokens",
+        "count": 2,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "magic_link_tokens",
+        "count": 77,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "processed_webhook_events",
+        "count": 2023,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "oauth_authorization_codes",
+        "count": 0,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "oauth_access_tokens",
+        "count": 0,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "oauth_refresh_tokens",
+        "count": 0,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "api_key_rate_state",
+        "count": 2,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "api_request_log",
+        "count": 162,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "api_abuse_alerts",
+        "count": 0,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "nyceec_reviews",
+        "count": 1,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "contact_submissions",
+        "count": 10,
+        "everyColumnSha256Matched": true
+      },
+      {
+        "table": "app_settings",
+        "count": 3,
+        "everyColumnSha256Matched": true
+      }
+    ],
+    "foreignKeyViolations": 0,
+    "temporaryHelpersStopped": true
+  },
+  "webhooks": {
+    "testedAt": "2026-09-15T22:36:20.401Z",
+    "simulated": true,
+    "stripeApiCalls": 0,
+    "realPayments": 0,
+    "passed": [
+      "invalid signature rejected without granting access",
+      "expired signature rejected",
+      "signed checkout persists season-pass access and expiry",
+      "duplicate event does not extend access",
+      "subscription status update persisted",
+      "subscription deletion persisted",
+      "guest account and magic-link token created with email delivery disabled"
+    ]
+  },
+  "queueFixture": {
+    "passed": [
+      "source failure retries without advancing checkpoint",
+      "month-bounded deterministic source pagination",
+      "two-dataset complaint deduplication",
+      "queued phase transitions",
+      "all four safety radii",
+      "current/prior date boundaries",
+      "violent felony classification",
+      "percentile finalization",
+      "completed-job duplicate ignored",
+      "retry after finalization does not restart computation"
+    ],
+    "requests": 51,
+    "queueMessages": 52
+  },
+  "refresh": {
+    "completed": false,
+    "deliveryPaused": true,
+    "reason": "Full-size safety recomputation affects concurrent read latency",
+    "queueExecutionsObserved": 342,
+    "maxCpuMs": 132,
+    "maxWallMs": 45078,
+    "failedExecutionsObserved": 6,
+    "lastSample": {
+      "at": "2026-09-15T22:43:47.910Z",
+      "job": {
+        "id": "087ffe83-0aa5-4364-8ba2-fd82e5b44546",
+        "phase": "compute",
+        "dataset": 2,
+        "offset": 0,
+        "cutoff": "2024-09-15T22:10:06.753Z",
+        "received": 1020893,
+        "startedAt": "2026-09-15T22:10:06.753Z",
+        "updatedAt": "2026-09-15T22:42:02.597Z",
+        "windowStart": "2024-09-15T22:10:06.753Z"
+      },
+      "run": {
+        "runStartedAt": "2026-09-15T22:10:06.753Z",
+        "periodStart": "2025-09-15T22:10:06.753Z",
+        "periodEnd": "2026-09-15T22:10:06.753Z",
+        "priorStart": "2024-09-15T22:10:06.753Z",
+        "totalSchools": 4856
+      }
+    }
+  },
+  "latencies": {
+    "compute": {
+      "testedAt": "2026-09-15T22:37:54.747Z",
+      "concurrency": 4,
+      "requests": 64,
+      "errorCount": 0,
+      "medianMs": 48,
+      "p95Ms": 4397,
+      "maxMs": 9428
+    },
+    "indexed-compute": {
+      "testedAt": "2026-09-15T22:40:48.713Z",
+      "concurrency": 4,
+      "requests": 64,
+      "errorCount": 0,
+      "medianMs": 35,
+      "p95Ms": 2878,
+      "maxMs": 6452
+    },
+    "paused": {
+      "testedAt": "2026-09-15T22:43:46.618Z",
+      "concurrency": 4,
+      "requests": 64,
+      "errorCount": 0,
+      "medianMs": 31,
+      "p95Ms": 151,
+      "maxMs": 684
+    }
+  },
+  "queryBenchmark": {
+    "checkedAt": "2026-09-15T22:42:25.348Z",
+    "oldMs": 982,
+    "improvedMs": 692,
+    "allAggregateGroupsMatch": true,
+    "groups": 317
+  },
+  "remainingGates": [
+    "Resolve background computation contention and finish full refresh",
+    "Real Stripe test-mode checkout and delivery",
+    "Staging email and transit integration checks",
+    "Legacy one-off imports review",
+    "Fresh production snapshot, delta/cutover/rollback rehearsal and explicit approval"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name":"nyc-d1-account-rehearsal-preview",
+  "main":"scripts/d1/account-rehearsal-worker.ts",
+  "account_id":"73d71a2bef58f7469ecb48e2b8e84c0e",
+  "compatibility_date":"2026-09-15",
+  "compatibility_flags":["nodejs_compat"],
+  "workers_dev":false,
+  "preview_urls":false,
+  "routes":[],
+  "d1_databases":[{"binding":"DB","database_name":"nyc-schools-d1-account-rehearsal","database_id":"a8bfb062-404e-46a6-8a92-fe54e55201db","migrations_dir":"migrations-d1"}],
+  "vars":{"REHEARSAL_DATABASE_ID":"a8bfb062-404e-46a6-8a92-fe54e55201db","REHEARSAL_EXPIRES_AT":"2026-09-22T16:58:00Z"}
+}

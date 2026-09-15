@@ -1,0 +1,1 @@
+CREATE INDEX `nypd_safety_cover_idx` ON `nypd_complaints` (`latitude`,`longitude`,`complaint_date`,`law_cat_cd`,`ofns_desc`);

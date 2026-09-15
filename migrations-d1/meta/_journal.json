@@ -15,6 +15,20 @@
       "when": 1789505977374,
       "tag": "0001_sturdy_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789511210656,
+      "tag": "0002_solid_hobgoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789511931105,
+      "tag": "0003_loud_patch",
+      "breakpoints": true
     }
   ]
 }

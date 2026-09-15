@@ -3,6 +3,7 @@ import { storage } from '../../server/storage';
 import * as s from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core';
+import type { StagingMaintenance } from '../../server/index-d1-staging';
 
 const tables = new Map(Object.values(s).filter(v=>v instanceof SQLiteTable).map(t=>{const c=getTableConfig(t);return [c.name,c];}));
 function assert(value:unknown,message:string):asserts value {if(!value)throw new Error(message);}
@@ -72,6 +73,16 @@ export default {async fetch(request:Request,env:Env){
   if(env.ENVIRONMENT!=='staging')return new Response('Staging only',{status:403});
   try{return await withDatabaseConnection(async()=>{
     const url=new URL(request.url);
+    if(url.pathname==='/webhook-rehearsal'&&request.method==='POST'){
+      const {rehearseWebhooks}=await import('./webhook-rehearsal');
+      return Response.json(await rehearseWebhooks());
+    }
+    if(url.pathname==='/safety-refresh'&&request.method==='POST'){
+      const input=await request.json() as {expectedDatabase?:string};
+      if(input.expectedDatabase!=='e48a9ae9-4948-4dae-863a-06f6b026b436')return new Response('Explicit staging database confirmation required',{status:400});
+      const maintenance: Service<StagingMaintenance> = Reflect.get(env,'STAGING_MAINTENANCE');
+      return Response.json(await maintenance.refreshSafety(input.expectedDatabase));
+    }
     if(url.pathname==='/query'&&request.method==='POST'){
       const input=await request.json() as {sql:string;params:unknown[];method:string};
       if(typeof input.sql!=='string'||!/^\s*(select|insert|update|delete|with)\b/i.test(input.sql)||input.sql.length>100000||!Array.isArray(input.params)||input.params.length>100)return new Response('Invalid query',{status:400});

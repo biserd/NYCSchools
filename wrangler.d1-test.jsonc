@@ -6,6 +6,7 @@
   "compatibility_flags":["nodejs_compat"],
   "workers_dev":false,
   "preview_urls":false,
+  "services":[{"binding":"STAGING_MAINTENANCE","service":"nyc-schools-ratings-d1-staging","entrypoint":"StagingMaintenance"}],
   "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-d1-staging","database_id":"e48a9ae9-4948-4dae-863a-06f6b026b436"}],
   "vars":{"ENVIRONMENT":"staging"}
 }

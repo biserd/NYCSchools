@@ -23,6 +23,7 @@ import { sql, and, eq, between, gte, lte } from "drizzle-orm";
 import {
   nypdComplaints,
   schoolSafetyIndex,
+  schoolSafetyRecomputeRows,
   schools,
   privateSchools,
   nyceecCenters,
@@ -294,7 +295,7 @@ export async function computeSafetyRows(school: SchoolPoint, priorStart: Date, p
           + cos(radians(${school.lat})) * cos(radians(latitude))
           * pow(sin(radians(longitude - ${school.lng}) / 2), 2)
         ))) AS distance
-      FROM nypd_complaints
+      FROM nypd_complaints INDEXED BY nypd_safety_cover_idx
       WHERE latitude >= ${school.lat-latDelta} AND latitude < ${school.lat+latDelta}
         AND longitude >= ${school.lng-lngDelta} AND longitude <= ${school.lng+lngDelta}
         AND complaint_date >= ${priorStart.getTime()} AND complaint_date <= ${periodEnd.getTime()}
@@ -362,34 +363,47 @@ async function writeRunState(state: RecomputeRunState): Promise<void> {
 }
 
 /**
- * Compute the citywide safety_index + percentile_citywide via a single SQL
- * UPDATE that ranks every school per radius. Called at the end of a run
- * once all schools have per-row weighted_risk_score persisted.
+ * Publish all completed rows and their citywide ranks in one atomic statement.
+ * Readers retain the previous snapshot until every school's work is complete.
  */
 async function finalizeSafetyPercentiles(runStartedAt: Date): Promise<number> {
   const result = await db.execute<{ updated: string }>(sql`
     WITH ranked AS (
-      SELECT id,
+      SELECT school_type,school_key,radius_meters,payload,
              percent_rank() OVER (
                PARTITION BY radius_meters
-               ORDER BY weighted_risk_score
+               ORDER BY json_extract(payload,'$.weightedRiskScore')
              ) AS rp
-      FROM school_safety_index
-      WHERE last_calculated_at >= ${runStartedAt.getTime()}
+      FROM school_safety_recompute_rows
+      WHERE run_id = ${runStartedAt.toISOString()}
     )
-    UPDATE school_safety_index AS s
-    SET safety_index = MAX(0, MIN(100, 100 - ROUND(ranked.rp * 100))),
-        percentile_citywide = MAX(0, MIN(100, 100 - ROUND(ranked.rp * 100)))
-    FROM ranked
-    WHERE s.id = ranked.id
+    INSERT INTO school_safety_index(school_type,school_key,radius_meters,period_start,period_end,total_reports,felony_reports,violent_felony_reports,misdemeanor_reports,violation_reports,top_categories,weighted_risk_score,safety_index,percentile_citywide,trend,trend_delta,prior_period_total,last_calculated_at)
+    SELECT school_type,school_key,radius_meters,
+      json_extract(payload,'$.periodStart'),json_extract(payload,'$.periodEnd'),
+      json_extract(payload,'$.totalReports'),json_extract(payload,'$.felonyReports'),
+      json_extract(payload,'$.violentFelonyReports'),json_extract(payload,'$.misdemeanorReports'),
+      json_extract(payload,'$.violationReports'),json_extract(payload,'$.topCategories'),
+      json_extract(payload,'$.weightedRiskScore'),
+      MAX(0,MIN(100,100-ROUND(rp*100))),MAX(0,MIN(100,100-ROUND(rp*100))),
+      json_extract(payload,'$.trend'),json_extract(payload,'$.trendDelta'),
+      json_extract(payload,'$.priorPeriodTotal'),json_extract(payload,'$.lastCalculatedAt')
+    FROM ranked WHERE 1
+    ON CONFLICT(school_type,school_key,radius_meters) DO UPDATE SET
+      period_start=excluded.period_start,period_end=excluded.period_end,
+      total_reports=excluded.total_reports,felony_reports=excluded.felony_reports,
+      violent_felony_reports=excluded.violent_felony_reports,misdemeanor_reports=excluded.misdemeanor_reports,
+      violation_reports=excluded.violation_reports,top_categories=excluded.top_categories,
+      weighted_risk_score=excluded.weighted_risk_score,safety_index=excluded.safety_index,
+      percentile_citywide=excluded.percentile_citywide,trend=excluded.trend,
+      trend_delta=excluded.trend_delta,prior_period_total=excluded.prior_period_total,
+      last_calculated_at=excluded.last_calculated_at
     RETURNING (1) AS updated
   `);
-  // Drizzle's neon driver returns either `.rows` or array-shape — handle both.
   const rows = (result as any).rows ?? (result as any);
   return Array.isArray(rows) ? rows.length : 0;
 }
 
-export async function recomputeSafetyIndex(): Promise<{
+export async function recomputeSafetyIndex(referenceDate: Date = new Date()): Promise<{
   rowsWritten: number;
   schoolCount: number;
   resumed: boolean;
@@ -399,7 +413,7 @@ export async function recomputeSafetyIndex(): Promise<{
   // ---- Determine current run window (resume or start fresh) ---------------
   const existing = await readRunState();
   const isResume = !!(existing && !existing.finalizedAt);
-  const now = new Date();
+  const now = referenceDate;
 
   const runStartedAt = isResume ? new Date(existing!.runStartedAt) : now;
   const periodEnd = isResume ? new Date(existing!.periodEnd) : now;
@@ -434,8 +448,8 @@ export async function recomputeSafetyIndex(): Promise<{
     school_key: string;
   }>(sql`
     SELECT DISTINCT school_type, school_key
-    FROM school_safety_index
-    WHERE last_calculated_at >= ${runStartedAt.getTime()}
+    FROM school_safety_recompute_rows
+    WHERE run_id = ${runStartedAt.toISOString()}
   `);
   const doneRowsArr = (doneRows as any).rows ?? (doneRows as any);
   const doneSet = new Set<string>();
@@ -505,8 +519,8 @@ export async function recomputeSafetyIndex(): Promise<{
         schoolType: row.schoolType,
         schoolKey: row.schoolKey,
         radiusMeters: row.radiusMeters,
-        periodStart,
-        periodEnd,
+        periodStart:periodStart.getTime(),
+        periodEnd:periodEnd.getTime(),
         totalReports: row.current.total,
         felonyReports: row.current.felony,
         violentFelonyReports: row.current.violentFelony,
@@ -514,43 +528,25 @@ export async function recomputeSafetyIndex(): Promise<{
         violationReports: row.current.violation,
         topCategories: topCategories(row.current.byCategory),
         weightedRiskScore: row.weightedRiskScore,
-        // safety_index/percentile_citywide are placeholders here; the final
-        // SQL pass after the last batch overwrites them with citywide ranks.
-        safetyIndex: 50,
-        percentileCitywide: 50,
         trend,
         trendDelta: delta,
         priorPeriodTotal: priorTotal,
-        lastCalculatedAt: stamp,
+        lastCalculatedAt: stamp.getTime(),
       };
     });
 
-    for (const chunk of d1Chunks(values, 25)) await db
-      .insert(schoolSafetyIndex)
+    const pending=values.map(value=>({runId:runStartedAt.toISOString(),schoolType:value.schoolType,schoolKey:value.schoolKey,radiusMeters:value.radiusMeters,payload:value}));
+    for (const chunk of d1Chunks(pending, 5)) await db
+      .insert(schoolSafetyRecomputeRows)
       .values(chunk)
       .onConflictDoUpdate({
         target: [
-          schoolSafetyIndex.schoolType,
-          schoolSafetyIndex.schoolKey,
-          schoolSafetyIndex.radiusMeters,
+          schoolSafetyRecomputeRows.runId,
+          schoolSafetyRecomputeRows.schoolType,
+          schoolSafetyRecomputeRows.schoolKey,
+          schoolSafetyRecomputeRows.radiusMeters,
         ],
-        set: {
-          periodStart: sql`excluded.period_start`,
-          periodEnd: sql`excluded.period_end`,
-          totalReports: sql`excluded.total_reports`,
-          felonyReports: sql`excluded.felony_reports`,
-          violentFelonyReports: sql`excluded.violent_felony_reports`,
-          misdemeanorReports: sql`excluded.misdemeanor_reports`,
-          violationReports: sql`excluded.violation_reports`,
-          topCategories: sql`excluded.top_categories`,
-          weightedRiskScore: sql`excluded.weighted_risk_score`,
-          safetyIndex: sql`excluded.safety_index`,
-          percentileCitywide: sql`excluded.percentile_citywide`,
-          trend: sql`excluded.trend`,
-          trendDelta: sql`excluded.trend_delta`,
-          priorPeriodTotal: sql`excluded.prior_period_total`,
-          lastCalculatedAt: sql`excluded.last_calculated_at`,
-        },
+        set: {payload:sql`excluded.payload`},
       });
     writtenTotal += values.length;
     pendingRows = [];
@@ -584,8 +580,8 @@ export async function recomputeSafetyIndex(): Promise<{
   // ---- If every school is now done, finalize percentiles ------------------
   const remaining = await db.execute<{ remaining: string }>(sql`
     SELECT (${allPoints.length} - COUNT(DISTINCT (school_type || '|' || school_key))) AS remaining
-    FROM school_safety_index
-    WHERE last_calculated_at >= ${runStartedAt.getTime()}
+    FROM school_safety_recompute_rows
+    WHERE run_id = ${runStartedAt.toISOString()}
   `);
   const remRows = (remaining as any).rows ?? (remaining as any);
   const remainingSchools = Number(remRows[0]?.remaining ?? 0);

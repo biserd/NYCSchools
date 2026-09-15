@@ -5,7 +5,7 @@ import type { NypdComplaintRow } from './socrataClient';
 const STATE_KEY='d1_safety_refresh_job';
 const datasets=['5uac-w243','qgea-i56i'];
 const PAGE_SIZE=3000;
-type State={id:string;phase:'pull'|'compute'|'complete';dataset:number;offset:number;cutoff:string;received:number;startedAt:string;updatedAt:string};
+type State={id:string;phase:'pull'|'compute'|'complete';dataset:number;offset:number;windowStart?:string;cutoff:string;received:number;startedAt:string;updatedAt:string};
 async function read(env:Env):Promise<State|null>{
   const value=await env.DB.prepare('SELECT value FROM app_settings WHERE key=?').bind(STATE_KEY).first<string>('value');
   return value?JSON.parse(value) as State:null;
@@ -31,10 +31,21 @@ export async function consumeSafetyRefresh(batch:MessageBatch<unknown>,env:Env){
     const state=await read(env);
     if(!state||state.id!==body.id||state.phase==='complete'){message.ack();continue;}
     if(state.phase==='pull'){
+      // Bound source work to one calendar month. Broad 24-month archive sorts
+      // returned 503/timeouts; real monthly probes complete in ~1-2 seconds.
+      // Older checkpoints restart this dataset safely (complaint IDs dedupe).
+      if(!state.windowStart){state.windowStart=state.cutoff;state.offset=0;}
+      const from=new Date(state.windowStart);
+      const endMs=Math.min(Date.UTC(from.getUTCFullYear(),from.getUTCMonth()+1,1),Date.parse(state.startedAt));
+      if(!(endMs>from.getTime()))throw new Error('Invalid safety source date window');
+      const windowEnd=new Date(endMs).toISOString();
       const url=new URL(`https://data.cityofnewyork.us/resource/${datasets[state.dataset]}.json`);
       url.searchParams.set('$select','cmplnt_num,cmplnt_fr_dt,law_cat_cd,ofns_desc,pd_desc,boro_nm,latitude,longitude');
-      url.searchParams.set('$where',`cmplnt_fr_dt >= '${state.cutoff.slice(0,19)}' AND latitude IS NOT NULL AND longitude IS NOT NULL`);
-      url.searchParams.set('$order',':id');url.searchParams.set('$limit',String(PAGE_SIZE));url.searchParams.set('$offset',String(state.offset));
+      url.searchParams.set('$where',`cmplnt_fr_dt >= '${state.windowStart.slice(0,19)}' AND cmplnt_fr_dt < '${windowEnd.slice(0,19)}' AND latitude IS NOT NULL AND longitude IS NOT NULL`);
+      // Historic :id ordering scans/sorts the entire archive and timed out even
+      // at offset zero. Date + complaint ID is deterministic and uses the date
+      // selection efficiently (verified against the real historic endpoint).
+      url.searchParams.set('$order','cmplnt_fr_dt,cmplnt_num');url.searchParams.set('$limit',String(PAGE_SIZE));url.searchParams.set('$offset',String(state.offset));
       const token: string|undefined=Reflect.get(env,'SOCRATA_APP_TOKEN');
       const response=await fetch(url,{headers:token?{'X-App-Token':token}:{},signal:AbortSignal.timeout(45000)});
       if(!response.ok)throw new Error(`Socrata page failed (${response.status}); queue will retry without advancing the cursor`);
@@ -48,7 +59,11 @@ export async function consumeSafetyRefresh(batch:MessageBatch<unknown>,env:Env){
       }
       for(let i=0;i<statements.length;i+=50)await env.DB.batch(statements.slice(i,i+50));
       state.received+=raw.length;state.offset+=raw.length;
-      if(raw.length<PAGE_SIZE){state.dataset++;state.offset=0;}
+      if(raw.length<PAGE_SIZE){
+        state.offset=0;
+        if(endMs>=Date.parse(state.startedAt)){state.dataset++;state.windowStart=state.cutoff;}
+        else state.windowStart=windowEnd;
+      }
       if(state.dataset>=datasets.length){
         await env.DB.prepare('DELETE FROM nypd_complaints WHERE complaint_date < ?').bind(Date.parse(state.cutoff)).run();state.phase='compute';
       }
@@ -59,7 +74,7 @@ export async function consumeSafetyRefresh(batch:MessageBatch<unknown>,env:Env){
       const finalizedAt=runValue?(JSON.parse(runValue) as {finalizedAt?:string}).finalizedAt:undefined;
       if(finalizedAt&&Date.parse(finalizedAt)>=Date.parse(state.startedAt))state.phase='complete';
       else {
-        const result=await withDatabaseConnection(()=>recomputeSafetyIndex());
+        const result=await withDatabaseConnection(()=>recomputeSafetyIndex(new Date(state.startedAt)));
         if(result.finalized)state.phase='complete';
       }
     }
@@ -68,6 +83,6 @@ export async function consumeSafetyRefresh(batch:MessageBatch<unknown>,env:Env){
     await save(env,state);
     if(state.phase!=='complete')await env.SAFETY_QUEUE.send({kind:'safety-refresh',id:state.id});
     message.ack();
-    console.log(JSON.stringify({message:'D1 safety refresh progress',jobId:state.id,phase:state.phase,dataset:state.dataset,offset:state.offset,received:state.received}));
+    console.log(JSON.stringify({message:'D1 safety refresh progress',jobId:state.id,phase:state.phase,dataset:state.dataset,windowStart:state.windowStart,offset:state.offset,received:state.received}));
   }
 }

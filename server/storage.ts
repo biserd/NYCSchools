@@ -1650,12 +1650,18 @@ export class DbStorage implements IStorage {
   }
   
   async upsertPrivateSchoolHistory(history: InsertPrivateSchoolHistory): Promise<PrivateSchoolHistory> {
-    const [result] = await db
-      .insert(privateSchoolHistory)
-      .values(history)
-      .onConflictDoUpdate({
-        target: [privateSchoolHistory.ncesId, privateSchoolHistory.schoolYear],
-        set: {
+    // The legacy source has duplicate school/year pairs and no unique index.
+    // Do not silently choose/delete a duplicate or target a nonexistent unique
+    // constraint. Conditional INSERT is atomic and prevents new duplicate pairs
+    // through this maintenance path, even when two callers start together.
+    await db.execute(sql`
+      INSERT INTO private_school_history(nces_id,school_year,enrollment,teachers_fte,student_teacher_ratio,tuition_elementary,tuition_middle,tuition_high,school_day_minutes,school_year_days,data_source_version)
+      SELECT ${history.ncesId},${history.schoolYear},${history.enrollment??null},${history.teachersFte??null},${history.studentTeacherRatio??null},${history.tuitionElementary??null},${history.tuitionMiddle??null},${history.tuitionHigh??null},${history.schoolDayMinutes??null},${history.schoolYearDays??null},${history.dataSourceVersion??null}
+      WHERE NOT EXISTS (SELECT 1 FROM private_school_history WHERE nces_id=${history.ncesId} AND school_year=${history.schoolYear})
+    `);
+    const matches=await db.select().from(privateSchoolHistory).where(and(eq(privateSchoolHistory.ncesId,history.ncesId),eq(privateSchoolHistory.schoolYear,history.schoolYear))).limit(2);
+    if(matches.length!==1)throw new Error('Ambiguous private-school history: review duplicate school/year records before importing');
+    const [result] = await db.update(privateSchoolHistory).set({
           enrollment: history.enrollment,
           teachersFte: history.teachersFte,
           studentTeacherRatio: history.studentTeacherRatio,
@@ -1665,8 +1671,8 @@ export class DbStorage implements IStorage {
           schoolDayMinutes: history.schoolDayMinutes,
           schoolYearDays: history.schoolYearDays,
           dataSourceVersion: history.dataSourceVersion,
-        },
-      })
+        })
+      .where(eq(privateSchoolHistory.id,matches[0].id))
       .returning();
     return result;
   }

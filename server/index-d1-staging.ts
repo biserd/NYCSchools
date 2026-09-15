@@ -1,4 +1,17 @@
 import application from './index-worker';
+import { WorkerEntrypoint } from 'cloudflare:workers';
+import { startSafetyRefresh } from './services/safetyQueue';
+
+// Private RPC only: this entrypoint has no HTTP route and can only be reached
+// through an explicitly configured same-account service binding.
+export class StagingMaintenance extends WorkerEntrypoint<Env> {
+  async refreshSafety(expectedDatabase: string) {
+    if (expectedDatabase !== 'e48a9ae9-4948-4dae-863a-06f6b026b436' || this.env.ENVIRONMENT !== 'staging' || !(Date.now() < Date.parse(this.env.STAGING_EXPIRES_AT))) {
+      throw new Error('Staging maintenance target or expiry check failed');
+    }
+    return startSafetyRefresh(this.env);
+  }
+}
 
 // Isolated D1: no real accounts, production credentials or outbound bindings.
 // User-owned writes are enabled for testing sessions and saved schools.

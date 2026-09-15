@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {writeFile} from 'node:fs/promises';
+const webhook=await fetch('http://127.0.0.1:8793/webhook-rehearsal',{method:'POST'});
+assert.equal(webhook.status,200);const result=await webhook.json();
+await writeFile('.wrangler/d1-webhook-verification.json',JSON.stringify({testedAt:new Date().toISOString(),...result},null,2));
+console.log(JSON.stringify(result));
+const inventory=await fetch('http://127.0.0.1:8794/inventory');assert.equal(inventory.status,200);
+const data=await inventory.json();assert.equal(data.foreignKeys.length,0);
+await writeFile('.wrangler/d1-account-inventory-verification.json',JSON.stringify({testedAt:new Date().toISOString(),...data},null,2));
+console.log(JSON.stringify({privateAccountCount:data.counts.users,foreignKeyViolations:data.foreignKeys.length,tableCount:Object.keys(data.counts).length}));

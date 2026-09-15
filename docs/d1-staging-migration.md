@@ -4,7 +4,7 @@
 
 - URL: https://nyc-schools-ratings-d1-staging.biser-d.workers.dev
 - Worker: `nyc-schools-ratings-d1-staging`
-- Deployed version: `e9932e00-97d1-45fc-9a12-ff7bd0a5cf63`
+- Deployed version: `52c79772-dd26-47f8-82c4-ec7c28621c8a`
 - D1: `e48a9ae9-4948-4dae-863a-06f6b026b436`, ENAM, approximately 257 MB.
 - Branch: `migration/d1-staging`, based on `c8b224a`.
 - Preview expires September 22, 2026 at 16:58 UTC. It returns 410 after expiry; resources are not automatically deleted.
@@ -14,7 +14,7 @@ This is a D1-only application runtime: no Hyperdrive binding, PostgreSQL connect
 
 ## Migrated data and privacy
 
-All 41 application tables have SQLite schemas, indexes and foreign keys. Both migrations in `migrations-d1` were applied. D1's own migration table is additional.
+All 41 original application tables have SQLite schemas, indexes and foreign keys. A 42nd internal table holds unfinished safety computation, keeping published scores stable. Migrations 0000–0003 were applied to public D1 staging. D1's own migration table is additional.
 
 The public dataset came from the existing production-derived Neon staging branch, using an authenticated, read-only export helper. All rows in all 19 public tables were compared by SHA-256 after explicit boolean, timestamp and JSON conversion. Foreign-key checks passed. This includes:
 
@@ -32,7 +32,9 @@ The public dataset came from the existing production-derived Neon staging branch
 
 The 615 2-K providers remain canonical school records, not a separate dataset. IDs, URLs, programs and relationships are preserved.
 
-Real users, sessions, password hashes/reset tokens, API/OAuth credentials, private favorites/chats, payment identifiers and operational settings were deliberately not copied into this public preview. Their tables are implemented and tested with disposable synthetic records. Those records were cleaned up; all 22 non-public application tables were empty at final verification. Do not use production login credentials on staging; create a separate test account.
+Real users, sessions, password hashes/reset tokens, API/OAuth credentials, private favorites/chats, payment identifiers and operational settings were deliberately not copied into this public preview. Their tables are implemented and tested with disposable synthetic records, which are cleaned up after testing. Operational settings now contain the staging safety job checkpoints. Do not use production login credentials on staging; create a separate test account.
+
+A separate, nonpublic D1 database (`nyc-schools-d1-account-rehearsal`, `a8bfb062-404e-46a6-8a92-fe54e55201db`) rehearsed all 22 private tables from the existing read-only Neon staging clone. All converted values and row counts matched, including 159 accounts, 29 sessions, 229 favorites, 168 chat messages and 2,023 processed webhook events. Foreign keys passed. Private values were streamed in memory, not saved to local export files. Its authenticated temporary source/target preview helpers were stopped after verification. The database remains restricted to the Cloudflare account: no public application, route, domain, Stripe or email bindings. The September 22 helper expiry does not delete retained data; explicitly remove the rehearsal database after review/retention approval.
 
 ## Verified
 
@@ -46,6 +48,10 @@ Real users, sessions, password hashes/reset tokens, API/OAuth credentials, priva
 - Safety SQL aggregation matched an independent implementation of the original bounding-box/haversine algorithm for 06G262, 02M475 and 31R005 across all four radii, current/prior periods, categories and weights.
 - Queue lifecycle/retry/finalization tests passed against local D1 with synthetic Socrata responses, including a failed source request and retry after finalization.
 - Browser review verified the homepage counts/cards, Stuyvesant profile with survey/safety content, and survey Blog article.
+- Signed simulated Stripe events passed seven checks against actual D1: invalid/expired signatures, paid access persistence, duplicate handling, subscription update/deletion, and guest account/token creation. No Stripe API calls, payments or emails occurred. This does **not** replace a real test-mode checkout/webhook delivery test.
+- Concurrent private-history upserts preserve IDs and prevent new duplicate school/year pairs through this path; existing ambiguous pairs fail without modification. The 600 pre-existing duplicate pairs remain intact.
+- The 21-school queue fixture proves intermediate work leaves published scores unchanged, then publishes all 84 radius rows atomically. Source failure/retry, monthly pagination, completed-job duplicates and finalized retry also pass.
+- A 64-request, concurrency-four read test during source import had zero errors, 435 ms p95. During full-size computation it had zero errors but 4,397 ms p95; after the covering index, a repeat had 2,878 ms p95. These are small diagnostic samples, not a capacity certification. Background computation performance remains a cutover gate.
 
 Detailed machine-readable reports are local in `.wrangler/d1-*-verification.json` and `.wrangler/d1-public-parity.json`. Raw exports are intentionally ignored by Git.
 
@@ -54,7 +60,8 @@ Detailed machine-readable reports are local in `.wrangler/d1-*-verification.json
 - PostgreSQL schema/types and SQL were ported to SQLite/D1; milliseconds are used for timestamps and JSON text for arrays/objects.
 - Query batching respects D1's 100-bound-parameter limit. The schools table has 98 columns: future schema additions need particular care around D1's 100-column limit.
 - Monthly safety refresh uses `nyc-schools-d1-stage-safety` and its failure queue, with one consumer, resumable source pagination and 20-school recomputation steps. It no longer loads the million-row complaint dataset into Worker memory.
-- The queue consumer is deployed, but no real bulk refresh was started and staging has no cron triggers. A complete million-row remote refresh/load test remains a production-cutover gate; the existing dataset was retained for visual/data parity review.
+- A real refresh was started after a verified local backup of complaints, safety rows and settings. Broad archive queries timed out/returned 503; month-bounded deterministic pagination recovered and completed ingestion (1,020,893 received rows, including retries/overlap—not a distinct-record count). Computation started for 4,856 school/center points. A covering geographic index avoids the inappropriate date-index scan. However full-size computation still noticeably affects read latency, so staging queue delivery is **paused** pending further isolation/performance work. Existing published scores remain unchanged until all new rows can be atomically published. Staging has no cron triggers. The end-to-end refresh gate is **not passed**.
+- Refresh job: `087ffe83-0aa5-4364-8ba2-fd82e5b44546`, window ending `2026-09-15T22:10:06.753Z`. Resume the existing checkpoint; do not start another job. The complaint cache has been refreshed/pruned, while published safety data still uses its previous window. After completion, safety endpoints will intentionally differ from production and must be reviewed as a data refresh, not silently treated as parity matches.
 - Email, checkout, webhooks and administrative HTTP jobs are blocked/disabled on this public preview. Live Stripe/Google Maps secrets were not copied. There are no real charges or outgoing emails.
 - Staging is noindex/nofollow/noarchive, no-store, with analytics scripts blocked by CSP. A distinct session secret is configured.
 
@@ -95,9 +102,9 @@ For an initial copy into a NEW/EMPTY D1 staging database only: start `wrangler.d
 
 1. Obtain user approval after staging review; do not merge/deploy this branch to production automatically.
 2. Complete Stripe test-mode checkout/webhook and provider integration tests with staging-only credentials; email delivery and Google transit calls have not been tested on this preview.
-3. Run a controlled full remote safety refresh/load test, inspect queue retries/dead letters and resource usage. Automatic jobs are currently intentionally off.
-4. Review remaining legacy one-off import scripts. Source private-school history already contains 600 duplicate school/year pairs; preserved without deduplication. Its pre-existing `upsertPrivateSchoolHistory` conflict target lacks a unique constraint and needs a separate identity/deduplication decision before that maintenance path is used.
-5. Take a fresh consistent production snapshot; migrate all private/account tables under restricted access, preserving identifiers, hashes, subscriptions and relationships. The synthetic preview is not a replacement for that final account-data rehearsal.
+3. Resolve background-computation read contention, resume and finish the controlled remote safety refresh, inspect retries/dead letters and resource usage. Re-run `verify-refresh.mjs` and concurrent-read checks. Automatic jobs are off and staging queue delivery is paused.
+4. Review remaining legacy one-off import scripts. Source private-school history has 600 duplicate school/year pairs, preserved without deduplication. The runtime upsert now rejects ambiguous pairs; a separate identity/deduplication decision is still required for those records.
+5. Take a fresh consistent production snapshot; migrate all private/account tables under restricted access, preserving identifiers, hashes, subscriptions and relationships. The successful rehearsal used the existing staging clone, not a fresh production snapshot.
 6. Freeze writes briefly or implement/test a change-capture strategy; copy the final delta, validate every table and rehearse rollback. Repointing to Neon alone after new D1 writes would lose those writes unless reconciled.
 7. Create/configure a separate production D1 database and queues, production bindings/secrets and cron schedule. Keep Neon intact through the rollback window.
 

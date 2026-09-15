@@ -1864,6 +1864,7 @@ export const nypdComplaints = sqliteTable("nypd_complaints", {
   longitude: real("longitude").notNull(),
 }, (t) => [
   index("nypd_lat_idx").on(t.latitude),
+  index("nypd_safety_cover_idx").on(t.latitude, t.longitude, t.complaintDate, t.lawCatCd, t.ofnsDesc),
   index("nypd_lng_idx").on(t.longitude),
   index("nypd_date_idx").on(t.complaintDate),
 ]);
@@ -1874,6 +1875,16 @@ export type InsertNypdComplaint = typeof nypdComplaints.$inferInsert;
 // Per-school, per-radius safety snapshot. School identity is encoded as
 // (school_type, school_key) so the same table covers public, private, and
 // NYCEEC sources. One row per (school, radius); upserted on each sync.
+// Internal resumable work, not a second school directory or public dataset.
+// Completed runs are published atomically into school_safety_index.
+export const schoolSafetyRecomputeRows = sqliteTable('school_safety_recompute_rows', {
+  runId:text('run_id').notNull(),
+  schoolType:text('school_type').notNull(),
+  schoolKey:text('school_key').notNull(),
+  radiusMeters:integer('radius_meters').notNull(),
+  payload:text('payload', {mode:'json'}).$type<Record<string,unknown>>().notNull(),
+}, table=>[primaryKey({columns:[table.runId,table.schoolType,table.schoolKey,table.radiusMeters]})]);
+
 export const schoolSafetyIndex = sqliteTable("school_safety_index", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   schoolType: text("school_type").notNull(), // 'public' | 'private' | 'nyceec'
