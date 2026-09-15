@@ -1,6 +1,6 @@
 # 2026 survey release implementation
 
-Status: staging approved for production on 2026-09-15. Production survey import completed; application promotion and smoke tests recorded below.
+Status: merged to main and deployed to production on 2026-09-15 after staging approval. Production survey import and application smoke tests passed.
 
 Preview: https://nyc-schools-ratings-staging.biser-d.workers.dev/blog/nyc-school-survey-2026
 
@@ -77,3 +77,7 @@ Rollback: revert application changes to hide the survey surfaces. Leave additive
 - Imported 7,039 observations. Per-instrument counts and exact matches equal staging. Replaying all five releases produced no duplicates.
 - Complete-row fingerprints stayed unchanged before/after every transaction: schools 2,408 / `a8d726f3ce17e6793a04e2083a6befd8`; centers 1,885 / `1f51f8ba0c3747d5649662dfda9e4399`. Existing academic inputs, programs, IDs and relationships were not modified.
 - Source-workbook validation, survey, rating and SEO-linking regressions and TypeScript checks passed before promotion.
+- Application commit `f6ca29a` fast-forward merged to main and pushed. Production Worker version: `3cd2248f-e583-4ce8-963f-6ec2fd95c804`.
+- Live checks: all seven Blog articles return 200 with correct canonical URLs, all seven legacy Insights URLs return 301, unknown Blog slugs return 404, and the sitemap index references the Blog sitemap containing every new article. Production robots permit crawling; article metadata is `index, follow`.
+- Production K–12, Birth-to-5 and unmatched sample survey API responses equal staging (excluding import timestamps). P.S. 015 has family and teacher results, not a student result; no missing respondent group is manufactured. Unmatched 27G006 returns an empty result.
+- Browser confirmed the Blog listing, authenticated navigation, Birth-to-5 article's four charts and two tables, contextual links and external-link attributes. P.S. 015 displays Historical Trends, then community survey feedback, then Attendance & Chronic Absenteeism. Home, login, pricing and sample school pages returned 200. No payment transaction or email was triggered for verification.
