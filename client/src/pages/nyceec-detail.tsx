@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SafetyIndexCard } from "@/components/SafetyIndexCard";
+import { SchoolSurveySection } from "@/components/SchoolSurveySection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -127,7 +128,7 @@ export default function NyceecDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader />
+        <AppHeader stackOnMobile />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-4 w-48 mb-8" />
@@ -143,7 +144,7 @@ export default function NyceecDetail() {
   if (!center) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader />
+        <AppHeader stackOnMobile />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">Center with code {locCode} not found.</p>
@@ -213,7 +214,7 @@ export default function NyceecDetail() {
         canonicalPath={centerUrl}
       />
       <StructuredData data={organizationSchema} />
-      <AppHeader />
+      <AppHeader stackOnMobile />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl flex-1">
         <div className="space-y-6">
@@ -336,6 +337,7 @@ export default function NyceecDetail() {
             schoolName={center.name}
           />
 
+          <SchoolSurveySection schoolKey={center.locCode} kind="center" />
           <Card data-testid="card-program">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

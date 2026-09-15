@@ -94,6 +94,7 @@ export function Footer() {
               </li>
               <li><Link href="/about" className="hover:text-foreground transition-colors">About</Link></li>
               <li><Link href="/methodology" className="hover:text-foreground transition-colors">Methodology &amp; Sources</Link></li>
+              <li><Link href="/blog/nyc-school-survey-2026" className="hover:text-foreground transition-colors">2026 School Survey Analysis</Link></li>
             </ul>
           </div>
 

@@ -103,6 +103,17 @@ async function getUserLimits(userId: string | undefined): Promise<typeof FREE_TI
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get('/api/surveys/:kind/:key', async (req, res) => {
+    if (!['school','center'].includes(req.params.kind) || !/^[a-z0-9]{4,12}$/i.test(req.params.key)) return res.status(400).json({error:'Invalid survey profile identifier'});
+    try {
+      const { getSchoolSurveys } = await import('./schoolSurveys');
+      const results = await getSchoolSurveys(req.params.key, req.params.kind as 'school'|'center');
+      return res.set('Cache-Control','public, max-age=300').json(results);
+    } catch (error) {
+      console.error('Survey retrieval failed', error);
+      return res.status(503).json({error:'Survey data temporarily unavailable'});
+    }
+  });
   // Wire the apiKey middleware's premium check (avoids circular import).
   // The Developer API at /api/v1 doesn't use Express sessions — it
   // authenticates per-request via Bearer token — so it's safe to mount here,

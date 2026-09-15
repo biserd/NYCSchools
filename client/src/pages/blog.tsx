@@ -11,6 +11,7 @@ import { Calendar, Clock, ArrowRight, BarChart3, Home, ChevronRight } from "luci
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: 'numeric'

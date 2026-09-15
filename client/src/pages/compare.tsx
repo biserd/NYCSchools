@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Footer } from "@/components/Footer";
+import { SurveyComparison } from '@/components/SurveyComparison';
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { Link, useLocation, useRoute } from "wouter";
@@ -689,6 +690,7 @@ export default function ComparePage() {
         </div>
 
         {/* Comparison Summary - shown for 2+ schools */}
+        <SurveyComparison schools={schoolsWithScores} />
         {comparisonSummary && schoolsWithScores.length >= 2 && (
           <ComparisonSummaryCard summary={comparisonSummary} />
         )}

@@ -1,3 +1,5 @@
+import { SURVEY_INSIGHTS } from './survey-insights';
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -11,6 +13,12 @@ export interface BlogPost {
 }
 
 export const blogPosts: BlogPost[] = [
+  ...SURVEY_INSIGHTS.map(page => ({
+    slug: page.slug, title: page.title, description: page.description,
+    author: 'NYC School Ratings Team', publishedAt: '2026-09-15',
+    readTime: ['survey-methodology', 'nys-test-results-2026'].includes(page.slug) ? '4 min read' : '7 min read',
+    category: 'Data Analysis', tags: ['2026', 'School Survey', 'Parent Guide'],
+  })),
   {
     slug: "does-crime-predict-nyc-school-quality-data-analysis-2026",
     title: "Does Neighborhood Crime Predict NYC School Quality? We Analyzed 1,500 Schools",

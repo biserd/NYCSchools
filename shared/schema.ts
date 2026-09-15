@@ -1,7 +1,22 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, serial, timestamp, index, uniqueIndex, jsonb, boolean, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, serial, timestamp, index, uniqueIndex, primaryKey, jsonb, boolean, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import type { SurveyMetric } from './surveys';
+
+export const schoolSurveyReleases = pgTable('school_survey_releases', {
+  id: text('id').primaryKey(), year: integer('year').notNull(), instrument: text('instrument').notNull(),
+  sourceUrl: text('source_url').notNull(), sourceHash: text('source_hash').notNull(),
+  importedAt: timestamp('imported_at', {withTimezone:true}).defaultNow().notNull(),
+}, table => [uniqueIndex('school_survey_releases_year_instrument_key').on(table.year, table.instrument)]);
+export const schoolSurveyResults = pgTable('school_survey_results', {
+  releaseId: text('release_id').notNull().references(()=>schoolSurveyReleases.id),
+  sourceId: text('source_id').notNull(), sourceName:text('source_name').notNull(),
+  schoolDbn: varchar('school_dbn').references(()=>schools.dbn),
+  centerId:integer('center_id').references(()=>nyceecCenters.id),
+  responseCount:integer('response_count'), responseRate:real('response_rate'),
+  metrics:jsonb('metrics').$type<SurveyMetric[]>().notNull(), matchMethod:text('match_method').notNull(),
+}, table => [primaryKey({columns:[table.releaseId,table.sourceId]}), index('school_survey_results_school_idx').on(table.schoolDbn), index('school_survey_results_center_idx').on(table.centerId)]);
 
 export const schools = pgTable("schools", {
   dbn: varchar("dbn").primaryKey(),

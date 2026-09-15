@@ -17,7 +17,7 @@ export default {
     catch { return new Response("Invalid path.", { status: 400, headers }); }
     const publicApi = /^\/api\/(?:schools|schools\/by-slugs|schools\/by-dbns|schools\/[a-z0-9-]+(?:\/(?:history|admissions|graduation|regents|attendance|discipline|admissions-programs|zone))?|twok-centers|twok-centers-stats|nyceec-centers|nyceec-centers-stats|nyceec-centers\/[a-z0-9-]+|private-schools|private-schools-stats|private-schools\/[a-z0-9-]+(?:\/history)?|districts\/(?:averages|citywide|[0-9]+\/averages)|schools-trends|schools-trends-summary|safe-and-strong)\/?$/;
     if (!["GET", "HEAD"].includes(request.method) ||
-        (path.startsWith("/api") && !publicApi.test(path)) ||
+        (path.startsWith("/api") && !publicApi.test(path) && !/^\/api\/surveys\/(?:school|center)\/[a-z0-9]{4,12}$/.test(path)) ||
         /^\/(?:admin|account|profile|login|signup|auth|oauth|mcp|\.well-known)(?:\/|$)/.test(path)) {
       return new Response("This action is disabled in staging.", { status: 403, headers });
     }

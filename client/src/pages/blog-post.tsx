@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { RelatedBlogReading } from '@shared/RelatedBlogReading';
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -48,6 +49,7 @@ import { HelpCircle } from "lucide-react";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -2316,6 +2318,7 @@ export default function BlogPostPage() {
         {post.slug === "nyc-schools-2025-covid-recovery" && <CovidRecoveryPost />}
         {post.slug === "nyc-prek-3k-kindergarten-admissions-demand-2025" && <AdmissionsDemandPost />}
 
+        <RelatedBlogReading slug={post.slug} />
         <div className="border-t mt-12 pt-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">

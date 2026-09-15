@@ -28,6 +28,23 @@ import { isEarlyChildhoodOnly } from "@shared/schema";
  */
 
 import { storage } from "./storage";
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
+import { SurveyInsightContent } from '../shared/SurveyInsightContent';
+import { SurveyResultsContent } from '../shared/SurveyResultsContent';
+import { getSchoolSurveys } from './schoolSurveys';
+
+async function surveyServerHtml(key: string, kind: 'school' | 'center' = 'school'): Promise<string> {
+  try {
+    const results = await getSchoolSurveys(key, kind);
+    if (results.length === 0) return '';
+    return `<section id="school-community-survey"><h2>What the school community says</h2><p>2026 NYC School Survey · Separate from academic ratings and neighborhood safety</p>${renderToStaticMarkup(React.createElement(SurveyResultsContent,{results}))}<p><a href="/blog/nyc-school-survey-2026">Citywide findings</a> · <a href="/blog/survey-methodology">Sources and methodology</a></p></section>`;
+  } catch (error) {
+    console.error('[SURVEY_SSR] unavailable', error);
+    return '<section><h2>What the school community says</h2><p>Survey feedback is temporarily unavailable.</p></section>';
+  }
+}
 import {
   calculateOverallScore,
   getAssessmentConfidence,
@@ -36,7 +53,8 @@ import {
   getPrivateSchoolSlug,
   getSchoolSlug,
 } from "@shared/schema";
-import { getBlogPost } from "@shared/blog-data";
+import { getBlogPost, blogPosts } from "@shared/blog-data";
+import { RelatedBlogReading } from '../shared/RelatedBlogReading';
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { getSchoolSeoMeta } from "@shared/school-seo";
 import { FEATURED_SEO_LANDINGS, LEGACY_SEO_GUIDE_REDIRECTS, getRelatedSeoLandings, getSeoLanding, getSeoLandingPath, getSeoLandingsForSchool, getSeoLandingsForSchoolGuide, matchesSeoLanding, SEO_LANDINGS } from "@shared/seo-landings";
@@ -535,7 +553,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     description,
     canonical,
     jsonLd: [educationalOrg, breadcrumb, faq],
-    serverHtml: noscriptHtml,
+    serverHtml: noscriptHtml + await surveyServerHtml(school.dbn),
   });
 }
 
@@ -650,7 +668,7 @@ async function renderNyceec(slug: string, baseHtml: string): Promise<string | nu
     description,
     canonical,
     jsonLd: [childcareSchema, breadcrumb],
-    serverHtml: noscriptHtml,
+    serverHtml: noscriptHtml + await surveyServerHtml(center.locCode, 'center'),
   });
 }
 
@@ -707,7 +725,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     canonical,
     ogImage,
     jsonLd: [article, breadcrumb],
-    serverHtml: noscriptHtml,
+    serverHtml: noscriptHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
   });
 }
 
@@ -967,7 +985,8 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
     <section><h2>Explore by district, neighborhood, and program</h2><ul>${FEATURED_SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><p><a href="/explore-schools">View all NYC school guides</a></p></section>` : "";
   const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul></section>` : "";
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
-  const crawlerHtml = `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}</main>`;
+  const blogSections = path === '/blog' ? `<section><h2>All articles</h2><ul>${blogPosts.map(post => `<li><h3><a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a></h3><p>${escapeHtml(post.description)}</p></li>`).join('')}</ul></section>` : '';
+  const crawlerHtml = `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}</main>`;
 
   return applyMeta(baseHtml, {
     title: meta.title,
@@ -1044,6 +1063,8 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
  */
 export async function getCanonicalRedirectPath(rawUrl: string): Promise<string | null> {
   const path = rawUrl.split("?")[0].split("#")[0];
+  const legacySurvey = path.match(/^\/insights\/([^/]+)\/?$/);
+  if (legacySurvey && getSurveyInsight(legacySurvey[1])) return `/blog/${legacySurvey[1]}`;
   if (LEGACY_SEO_GUIDE_REDIRECTS[path]) return LEGACY_SEO_GUIDE_REDIRECTS[path];
   let match: RegExpMatchArray | null;
 
@@ -1105,6 +1126,15 @@ export async function renderSeoHtml(
     let m: RegExpMatchArray | null;
     if (result) {
       // Static landing page metadata is complete.
+    } else if ((m = path.match(/^\/blog\/([^/]+)$/)) && getSurveyInsight(m[1])) {
+      const page = getSurveyInsight(m[1]);
+      if (!page) return null;
+      const canonical = `${SITE_ORIGIN}/blog/${page.slug}`;
+      result = applyMeta(baseHtml, {
+        title: `${page.title} | NYC School Ratings`, description: page.description, canonical,
+        serverHtml: renderToStaticMarkup(React.createElement(SurveyInsightContent, {page})),
+        jsonLd: surveyBlogSchema(page),
+      }).replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:type" content="article" />');
     } else if ((m = path.match(/^\/school\/([^/]+)$/))) {
       result = await renderSchool(m[1], baseHtml);
     } else if ((m = path.match(/^\/private-school\/([^/]+)$/))) {

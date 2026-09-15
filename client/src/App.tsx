@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
+import { getSurveyInsight } from '@shared/survey-insights';
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -56,6 +57,7 @@ const ExploreSchoolsPage = lazy(() => import("@/pages/explore-schools"));
 const SeoLandingPage = lazy(() => import("@/pages/seo-landing"));
 const MethodologyPage = lazy(() => import("@/pages/methodology"));
 const AboutPage = lazy(() => import("@/pages/about"));
+const SurveyInsightPage = lazy(() => import("@/pages/survey-insight"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -92,6 +94,7 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
+        <Route path="/insights/:slug">{params => getSurveyInsight(params.slug) ? <Redirect to={`/blog/${params.slug}`} replace /> : <NotFound />}</Route>
         <Route path="/">
           <Home />
         </Route>
@@ -146,7 +149,7 @@ function Router() {
           <BlogPage />
         </Route>
         <Route path="/blog/:slug">
-          <BlogPostPage />
+          {params => getSurveyInsight(params.slug) ? <SurveyInsightPage /> : <BlogPostPage />}
         </Route>
         <Route path="/pricing">
           <PricingPage />

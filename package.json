@@ -18,6 +18,8 @@
     "cf-typegen": "wrangler types",
     "cf-dry-run": "vite build && wrangler deploy --dry-run --outdir dist/worker-dry-run",
     "test:ratings": "tsx scripts/rating-regression.test.ts",
+    "test:surveys": "tsx scripts/survey-regression.test.ts",
+    "import:surveys": "tsx scripts/import-surveys.ts",
     "test:twok": "tsx scripts/twok-regression.test.ts",
     "import:twok:dry-run": "tsx scripts/reconcile-twok.ts",
     "test:seo-linking": "tsx scripts/seo-linking.test.ts",

@@ -20,7 +20,7 @@ import {
   Shield
 } from "lucide-react";
 
-export function AppHeader() {
+export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean } = {}) {
   const { user, isAuthenticated } = useAuth();
   const { startCheckout, isPending, isPremium } = useCheckout();
 
@@ -39,7 +39,7 @@ export function AppHeader() {
   return (
     <header className="bg-background border-b" data-testid="header-main">
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4">
-        <div className="flex min-h-11 items-center justify-between gap-4 flex-nowrap">
+        <div className={`flex min-h-11 items-center justify-between gap-4 ${stackOnMobile ? 'flex-col lg:flex-row' : 'flex-nowrap'}`}>
           <div className="flex shrink-0 items-center gap-3">
             <Link href="/">
               <div className="flex min-h-11 items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
@@ -57,7 +57,7 @@ export function AppHeader() {
             )}
           </div>
           
-          <div className="flex shrink-0 items-center gap-2 flex-nowrap [&_button]:min-h-11 [&_button]:min-w-11">
+          <div className={`flex items-center gap-2 flex-nowrap [&_button]:min-h-11 [&_button]:min-w-11 ${stackOnMobile ? 'max-w-full overflow-x-auto' : 'shrink-0'}`}>
             {isAuthenticated ? (
               <>
                 <Link href="/recommendations">

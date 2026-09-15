@@ -1,0 +1,3054 @@
+{
+  "year": 2026,
+  "asOf": "2026-09-15",
+  "method": "Unweighted summary-sheet record medians; published values only; nulls excluded per topic; R-7 interpolated quartiles. Not respondent-weighted citywide percentages.",
+  "releases": [
+    {
+      "instrument": "k12-family",
+      "sourceUrl": "https://infohub.nyced.org/docs/default-source/default-document-library/2026-public-data-file-guardian.xlsx",
+      "sourceHash": "a53cfece9c20be0123c592679e8a5b3985b4e5ec10f03575d1911bf528b37885",
+      "rows": 1846,
+      "withScores": 1792,
+      "belowTen": 75,
+      "medianResponses": 183,
+      "topics": [
+        {
+          "key": "Building Families' Capacity as their Child's Primary Advocate Score",
+          "label": "Building Families' Capacity as their Child's Primary Advocate",
+          "n": 661,
+          "median": 89,
+          "q1": 80,
+          "q3": 98,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 11
+            },
+            {
+              "label": "50–69",
+              "count": 67
+            },
+            {
+              "label": "70–79",
+              "count": 82
+            },
+            {
+              "label": "80–89",
+              "count": 178
+            },
+            {
+              "label": "90–99",
+              "count": 162
+            },
+            {
+              "label": "100",
+              "count": 161
+            }
+          ]
+        },
+        {
+          "key": "Building Families' Capacity as their Child's Primary Teacher Score",
+          "label": "Building Families' Capacity as their Child's Primary Teacher",
+          "n": 662,
+          "median": 98,
+          "q1": 94,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 3
+            },
+            {
+              "label": "70–79",
+              "count": 8
+            },
+            {
+              "label": "80–89",
+              "count": 46
+            },
+            {
+              "label": "90–99",
+              "count": 341
+            },
+            {
+              "label": "100",
+              "count": 263
+            }
+          ]
+        },
+        {
+          "key": "Conflict Resolution Score",
+          "label": "Conflict Resolution",
+          "n": 994,
+          "median": 94,
+          "q1": 91,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 20
+            },
+            {
+              "label": "80–89",
+              "count": 142
+            },
+            {
+              "label": "90–99",
+              "count": 792
+            },
+            {
+              "label": "100",
+              "count": 38
+            }
+          ]
+        },
+        {
+          "key": "Family Satisfaction with Child's Education Score",
+          "label": "Family Satisfaction with Child's Education",
+          "n": 1792,
+          "median": 94,
+          "q1": 92,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 8
+            },
+            {
+              "label": "80–89",
+              "count": 160
+            },
+            {
+              "label": "90–99",
+              "count": 1575
+            },
+            {
+              "label": "100",
+              "count": 47
+            }
+          ]
+        },
+        {
+          "key": "IEP Service Satisfaction Score",
+          "label": "IEP Service Satisfaction",
+          "n": 1713,
+          "median": 93,
+          "q1": 88,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 4
+            },
+            {
+              "label": "50–69",
+              "count": 18
+            },
+            {
+              "label": "70–79",
+              "count": 81
+            },
+            {
+              "label": "80–89",
+              "count": 426
+            },
+            {
+              "label": "90–99",
+              "count": 1043
+            },
+            {
+              "label": "100",
+              "count": 141
+            }
+          ]
+        },
+        {
+          "key": "Inclusive Leadership Score",
+          "label": "Inclusive Leadership",
+          "n": 1792,
+          "median": 97,
+          "q1": 95,
+          "q3": 98,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 7
+            },
+            {
+              "label": "80–89",
+              "count": 50
+            },
+            {
+              "label": "90–99",
+              "count": 1601
+            },
+            {
+              "label": "100",
+              "count": 131
+            }
+          ]
+        },
+        {
+          "key": "Outreach to Parents Score",
+          "label": "Outreach to Parents",
+          "n": 1792,
+          "median": 95,
+          "q1": 92,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 5
+            },
+            {
+              "label": "80–89",
+              "count": 144
+            },
+            {
+              "label": "90–99",
+              "count": 1582
+            },
+            {
+              "label": "100",
+              "count": 59
+            }
+          ]
+        },
+        {
+          "key": "Parent Involvement in School Score",
+          "label": "Parent Involvement in School",
+          "n": 1792,
+          "median": 92,
+          "q1": 87,
+          "q3": 95,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 7
+            },
+            {
+              "label": "70–79",
+              "count": 81
+            },
+            {
+              "label": "80–89",
+              "count": 530
+            },
+            {
+              "label": "90–99",
+              "count": 1158
+            },
+            {
+              "label": "100",
+              "count": 16
+            }
+          ]
+        },
+        {
+          "key": "Parent-Principal Trust Score",
+          "label": "Parent-Principal Trust",
+          "n": 1792,
+          "median": 97,
+          "q1": 95,
+          "q3": 98,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 3
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 19
+            },
+            {
+              "label": "80–89",
+              "count": 92
+            },
+            {
+              "label": "90–99",
+              "count": 1543
+            },
+            {
+              "label": "100",
+              "count": 134
+            }
+          ]
+        },
+        {
+          "key": "Parent-Teacher Trust Score",
+          "label": "Parent-Teacher Trust",
+          "n": 1792,
+          "median": 97,
+          "q1": 95,
+          "q3": 98,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 7
+            },
+            {
+              "label": "80–89",
+              "count": 46
+            },
+            {
+              "label": "90–99",
+              "count": 1637
+            },
+            {
+              "label": "100",
+              "count": 101
+            }
+          ]
+        },
+        {
+          "key": "School Facilities and Services Score",
+          "label": "School Facilities and Services",
+          "n": 1792,
+          "median": 91,
+          "q1": 88,
+          "q3": 93,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 40
+            },
+            {
+              "label": "80–89",
+              "count": 636
+            },
+            {
+              "label": "90–99",
+              "count": 1083
+            },
+            {
+              "label": "100",
+              "count": 31
+            }
+          ]
+        },
+        {
+          "key": "Strong Relationships Score",
+          "label": "Strong Relationships",
+          "n": 664,
+          "median": 100,
+          "q1": 96,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 3
+            },
+            {
+              "label": "80–89",
+              "count": 29
+            },
+            {
+              "label": "90–99",
+              "count": 249
+            },
+            {
+              "label": "100",
+              "count": 382
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "instrument": "k12-teacher",
+      "sourceUrl": "https://infohub.nyced.org/docs/default-source/default-document-library/2026-public-data-file-teacher.xlsx",
+      "sourceHash": "205cdbbcff8c323f2b07345fea70a4740b58a10d1a0fc2f390b42eea35808a29",
+      "rows": 1770,
+      "withScores": 1763,
+      "belowTen": 71,
+      "medianResponses": 31,
+      "topics": [
+        {
+          "key": "Academic Press Score",
+          "label": "Academic Press",
+          "n": 1762,
+          "median": 89,
+          "q1": 85,
+          "q3": 93,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 24
+            },
+            {
+              "label": "70–79",
+              "count": 110
+            },
+            {
+              "label": "80–89",
+              "count": 752
+            },
+            {
+              "label": "90–99",
+              "count": 851
+            },
+            {
+              "label": "100",
+              "count": 24
+            }
+          ]
+        },
+        {
+          "key": "Building Families' Capacity as their Child's Primary Advocate Score",
+          "label": "Building Families' Capacity as their Child's Primary Advocate",
+          "n": 157,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 3
+            },
+            {
+              "label": "80–89",
+              "count": 13
+            },
+            {
+              "label": "90–99",
+              "count": 11
+            },
+            {
+              "label": "100",
+              "count": 130
+            }
+          ]
+        },
+        {
+          "key": "Building Families' Capacity as their Child's Primary Teacher Score",
+          "label": "Building Families' Capacity as their Child's Primary Teacher",
+          "n": 155,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 10
+            },
+            {
+              "label": "90–99",
+              "count": 1
+            },
+            {
+              "label": "100",
+              "count": 144
+            }
+          ]
+        },
+        {
+          "key": "Classroom Behavior Score",
+          "label": "Classroom Behavior",
+          "n": 1762,
+          "median": 68,
+          "q1": 59,
+          "q3": 78,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 170
+            },
+            {
+              "label": "50–69",
+              "count": 757
+            },
+            {
+              "label": "70–79",
+              "count": 472
+            },
+            {
+              "label": "80–89",
+              "count": 265
+            },
+            {
+              "label": "90–99",
+              "count": 92
+            },
+            {
+              "label": "100",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "key": "Conflict Resolution Score",
+          "label": "Conflict Resolution",
+          "n": 1761,
+          "median": 89,
+          "q1": 80,
+          "q3": 95,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 20
+            },
+            {
+              "label": "50–69",
+              "count": 154
+            },
+            {
+              "label": "70–79",
+              "count": 236
+            },
+            {
+              "label": "80–89",
+              "count": 492
+            },
+            {
+              "label": "90–99",
+              "count": 617
+            },
+            {
+              "label": "100",
+              "count": 242
+            }
+          ]
+        },
+        {
+          "key": "Cultural Awareness and Inclusive Classroom Instruction Score",
+          "label": "Cultural Awareness and Inclusive Classroom Instruction",
+          "n": 1763,
+          "median": 93,
+          "q1": 90,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 10
+            },
+            {
+              "label": "70–79",
+              "count": 38
+            },
+            {
+              "label": "80–89",
+              "count": 386
+            },
+            {
+              "label": "90–99",
+              "count": 1295
+            },
+            {
+              "label": "100",
+              "count": 34
+            }
+          ]
+        },
+        {
+          "key": "Early Childhood Instruction Score",
+          "label": "Early Childhood Instruction",
+          "n": 423,
+          "median": 97,
+          "q1": 89,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 9
+            },
+            {
+              "label": "70–79",
+              "count": 17
+            },
+            {
+              "label": "80–89",
+              "count": 82
+            },
+            {
+              "label": "90–99",
+              "count": 107
+            },
+            {
+              "label": "100",
+              "count": 208
+            }
+          ]
+        },
+        {
+          "key": "Guidance Score",
+          "label": "Guidance",
+          "n": 1756,
+          "median": 95,
+          "q1": 89,
+          "q3": 99,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 9
+            },
+            {
+              "label": "50–69",
+              "count": 63
+            },
+            {
+              "label": "70–79",
+              "count": 103
+            },
+            {
+              "label": "80–89",
+              "count": 292
+            },
+            {
+              "label": "90–99",
+              "count": 885
+            },
+            {
+              "label": "100",
+              "count": 404
+            }
+          ]
+        },
+        {
+          "key": "Inclusive Learning Environment Score",
+          "label": "Inclusive Learning Environment",
+          "n": 1761,
+          "median": 97,
+          "q1": 95,
+          "q3": 99,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 9
+            },
+            {
+              "label": "80–89",
+              "count": 93
+            },
+            {
+              "label": "90–99",
+              "count": 1335
+            },
+            {
+              "label": "100",
+              "count": 322
+            }
+          ]
+        },
+        {
+          "key": "Innovation and Collective Responsibility Score",
+          "label": "Innovation and Collective Responsibility",
+          "n": 1763,
+          "median": 83,
+          "q1": 74,
+          "q3": 90,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 32
+            },
+            {
+              "label": "50–69",
+              "count": 254
+            },
+            {
+              "label": "70–79",
+              "count": 418
+            },
+            {
+              "label": "80–89",
+              "count": 584
+            },
+            {
+              "label": "90–99",
+              "count": 440
+            },
+            {
+              "label": "100",
+              "count": 35
+            }
+          ]
+        },
+        {
+          "key": "Instructional Leadership Score",
+          "label": "Instructional Leadership",
+          "n": 1762,
+          "median": 92,
+          "q1": 85,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 8
+            },
+            {
+              "label": "50–69",
+              "count": 77
+            },
+            {
+              "label": "70–79",
+              "count": 162
+            },
+            {
+              "label": "80–89",
+              "count": 453
+            },
+            {
+              "label": "90–99",
+              "count": 965
+            },
+            {
+              "label": "100",
+              "count": 97
+            }
+          ]
+        },
+        {
+          "key": "Outreach to Parents Score",
+          "label": "Outreach to Parents",
+          "n": 1762,
+          "median": 98,
+          "q1": 94,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 11
+            },
+            {
+              "label": "80–89",
+              "count": 138
+            },
+            {
+              "label": "90–99",
+              "count": 1162
+            },
+            {
+              "label": "100",
+              "count": 450
+            }
+          ]
+        },
+        {
+          "key": "Peer Collaboration Score",
+          "label": "Peer Collaboration",
+          "n": 1762,
+          "median": 90,
+          "q1": 82,
+          "q3": 95,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 12
+            },
+            {
+              "label": "50–69",
+              "count": 87
+            },
+            {
+              "label": "70–79",
+              "count": 238
+            },
+            {
+              "label": "80–89",
+              "count": 523
+            },
+            {
+              "label": "90–99",
+              "count": 800
+            },
+            {
+              "label": "100",
+              "count": 102
+            }
+          ]
+        },
+        {
+          "key": "Preventing Bullying Score",
+          "label": "Preventing Bullying",
+          "n": 1761,
+          "median": 67,
+          "q1": 50,
+          "q3": 81,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 405
+            },
+            {
+              "label": "50–69",
+              "count": 550
+            },
+            {
+              "label": "70–79",
+              "count": 316
+            },
+            {
+              "label": "80–89",
+              "count": 289
+            },
+            {
+              "label": "90–99",
+              "count": 152
+            },
+            {
+              "label": "100",
+              "count": 49
+            }
+          ]
+        },
+        {
+          "key": "Program Coherence Score",
+          "label": "Program Coherence",
+          "n": 1762,
+          "median": 88,
+          "q1": 79,
+          "q3": 94,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 28
+            },
+            {
+              "label": "50–69",
+              "count": 145
+            },
+            {
+              "label": "70–79",
+              "count": 286
+            },
+            {
+              "label": "80–89",
+              "count": 520
+            },
+            {
+              "label": "90–99",
+              "count": 695
+            },
+            {
+              "label": "100",
+              "count": 88
+            }
+          ]
+        },
+        {
+          "key": "Quality of Professional Development Score",
+          "label": "Quality of Professional Development",
+          "n": 1762,
+          "median": 87,
+          "q1": 79,
+          "q3": 93,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 19
+            },
+            {
+              "label": "50–69",
+              "count": 138
+            },
+            {
+              "label": "70–79",
+              "count": 318
+            },
+            {
+              "label": "80–89",
+              "count": 608
+            },
+            {
+              "label": "90–99",
+              "count": 623
+            },
+            {
+              "label": "100",
+              "count": 56
+            }
+          ]
+        },
+        {
+          "key": "Quality of Student Discussion Score",
+          "label": "Quality of Student Discussion",
+          "n": 1762,
+          "median": 68,
+          "q1": 60,
+          "q3": 77,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 146
+            },
+            {
+              "label": "50–69",
+              "count": 788
+            },
+            {
+              "label": "70–79",
+              "count": 477
+            },
+            {
+              "label": "80–89",
+              "count": 271
+            },
+            {
+              "label": "90–99",
+              "count": 74
+            },
+            {
+              "label": "100",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "key": "Safety Score",
+          "label": "Safety",
+          "n": 941,
+          "median": 96,
+          "q1": 90,
+          "q3": 99,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 16
+            },
+            {
+              "label": "70–79",
+              "count": 45
+            },
+            {
+              "label": "80–89",
+              "count": 156
+            },
+            {
+              "label": "90–99",
+              "count": 505
+            },
+            {
+              "label": "100",
+              "count": 218
+            }
+          ]
+        },
+        {
+          "key": "School Commitment Score",
+          "label": "School Commitment",
+          "n": 1763,
+          "median": 89,
+          "q1": 79,
+          "q3": 95,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 38
+            },
+            {
+              "label": "50–69",
+              "count": 162
+            },
+            {
+              "label": "70–79",
+              "count": 243
+            },
+            {
+              "label": "80–89",
+              "count": 498
+            },
+            {
+              "label": "90–99",
+              "count": 701
+            },
+            {
+              "label": "100",
+              "count": 121
+            }
+          ]
+        },
+        {
+          "key": "School Facilities and Services Score",
+          "label": "School Facilities and Services",
+          "n": 1761,
+          "median": 86,
+          "q1": 74,
+          "q3": 94,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 70
+            },
+            {
+              "label": "50–69",
+              "count": 235
+            },
+            {
+              "label": "70–79",
+              "count": 279
+            },
+            {
+              "label": "80–89",
+              "count": 467
+            },
+            {
+              "label": "90–99",
+              "count": 616
+            },
+            {
+              "label": "100",
+              "count": 94
+            }
+          ]
+        },
+        {
+          "key": "Social-Emotional Score",
+          "label": "Social-Emotional",
+          "n": 1762,
+          "median": 85,
+          "q1": 78,
+          "q3": 92,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 9
+            },
+            {
+              "label": "50–69",
+              "count": 147
+            },
+            {
+              "label": "70–79",
+              "count": 370
+            },
+            {
+              "label": "80–89",
+              "count": 640
+            },
+            {
+              "label": "90–99",
+              "count": 561
+            },
+            {
+              "label": "100",
+              "count": 35
+            }
+          ]
+        },
+        {
+          "key": "Strong Core Instruction Score",
+          "label": "Strong Core Instruction",
+          "n": 1592,
+          "median": 94,
+          "q1": 89,
+          "q3": 98,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 2
+            },
+            {
+              "label": "50–69",
+              "count": 24
+            },
+            {
+              "label": "70–79",
+              "count": 59
+            },
+            {
+              "label": "80–89",
+              "count": 355
+            },
+            {
+              "label": "90–99",
+              "count": 971
+            },
+            {
+              "label": "100",
+              "count": 181
+            }
+          ]
+        },
+        {
+          "key": "Strong Relationships Score",
+          "label": "Strong Relationships",
+          "n": 157,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 1
+            },
+            {
+              "label": "80–89",
+              "count": 5
+            },
+            {
+              "label": "90–99",
+              "count": 18
+            },
+            {
+              "label": "100",
+              "count": 131
+            }
+          ]
+        },
+        {
+          "key": "Teacher Influence Score",
+          "label": "Teacher Influence",
+          "n": 1762,
+          "median": 68,
+          "q1": 58,
+          "q3": 79,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 200
+            },
+            {
+              "label": "50–69",
+              "count": 743
+            },
+            {
+              "label": "70–79",
+              "count": 418
+            },
+            {
+              "label": "80–89",
+              "count": 276
+            },
+            {
+              "label": "90–99",
+              "count": 116
+            },
+            {
+              "label": "100",
+              "count": 9
+            }
+          ]
+        },
+        {
+          "key": "Teacher-Principal Trust Score",
+          "label": "Teacher-Principal Trust",
+          "n": 1763,
+          "median": 90,
+          "q1": 81,
+          "q3": 96,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 52
+            },
+            {
+              "label": "50–69",
+              "count": 139
+            },
+            {
+              "label": "70–79",
+              "count": 209
+            },
+            {
+              "label": "80–89",
+              "count": 448
+            },
+            {
+              "label": "90–99",
+              "count": 806
+            },
+            {
+              "label": "100",
+              "count": 109
+            }
+          ]
+        },
+        {
+          "key": "Teacher-Teacher Trust Score",
+          "label": "Teacher-Teacher Trust",
+          "n": 1763,
+          "median": 89,
+          "q1": 83,
+          "q3": 95,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 2
+            },
+            {
+              "label": "50–69",
+              "count": 87
+            },
+            {
+              "label": "70–79",
+              "count": 237
+            },
+            {
+              "label": "80–89",
+              "count": 580
+            },
+            {
+              "label": "90–99",
+              "count": 756
+            },
+            {
+              "label": "100",
+              "count": 101
+            }
+          ]
+        },
+        {
+          "key": "Two-Way Communication Score",
+          "label": "Two-Way Communication",
+          "n": 154,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 18
+            },
+            {
+              "label": "90–99",
+              "count": 0
+            },
+            {
+              "label": "100",
+              "count": 136
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "instrument": "k12-student",
+      "sourceUrl": "https://infohub.nyced.org/docs/default-source/default-document-library/2026-public-data-file-student.xlsx",
+      "sourceHash": "3185e1e7e4ba9c0de4fd7b7c9e91b7c11f15f6f8ecaac14cd199a582efdadf8e",
+      "rows": 1123,
+      "withScores": 1062,
+      "belowTen": 88,
+      "medianResponses": 215,
+      "topics": [
+        {
+          "key": "Academic Press Score",
+          "label": "Academic Press",
+          "n": 1062,
+          "median": 57,
+          "q1": 52,
+          "q3": 62,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 149
+            },
+            {
+              "label": "50–69",
+              "count": 807
+            },
+            {
+              "label": "70–79",
+              "count": 73
+            },
+            {
+              "label": "80–89",
+              "count": 15
+            },
+            {
+              "label": "90–99",
+              "count": 14
+            },
+            {
+              "label": "100",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "key": "Course Clarity Score",
+          "label": "Course Clarity",
+          "n": 1062,
+          "median": 66,
+          "q1": 62,
+          "q3": 70,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 12
+            },
+            {
+              "label": "50–69",
+              "count": 735
+            },
+            {
+              "label": "70–79",
+              "count": 253
+            },
+            {
+              "label": "80–89",
+              "count": 40
+            },
+            {
+              "label": "90–99",
+              "count": 18
+            },
+            {
+              "label": "100",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "key": "Cultural Awareness and Inclusive Classroom Instruction Score",
+          "label": "Cultural Awareness and Inclusive Classroom Instruction",
+          "n": 1062,
+          "median": 67,
+          "q1": 62,
+          "q3": 73,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 11
+            },
+            {
+              "label": "50–69",
+              "count": 643
+            },
+            {
+              "label": "70–79",
+              "count": 304
+            },
+            {
+              "label": "80–89",
+              "count": 76
+            },
+            {
+              "label": "90–99",
+              "count": 25
+            },
+            {
+              "label": "100",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "key": "Guidance Score",
+          "label": "Guidance",
+          "n": 1062,
+          "median": 70,
+          "q1": 65,
+          "q3": 76,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 7
+            },
+            {
+              "label": "50–69",
+              "count": 473
+            },
+            {
+              "label": "70–79",
+              "count": 429
+            },
+            {
+              "label": "80–89",
+              "count": 117
+            },
+            {
+              "label": "90–99",
+              "count": 30
+            },
+            {
+              "label": "100",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "key": "Inclusive Learning Environment Score",
+          "label": "Inclusive Learning Environment",
+          "n": 1062,
+          "median": 68,
+          "q1": 63,
+          "q3": 74,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 4
+            },
+            {
+              "label": "50–69",
+              "count": 609
+            },
+            {
+              "label": "70–79",
+              "count": 329
+            },
+            {
+              "label": "80–89",
+              "count": 88
+            },
+            {
+              "label": "90–99",
+              "count": 27
+            },
+            {
+              "label": "100",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "key": "Personal Attention and Support Score",
+          "label": "Personal Attention and Support",
+          "n": 1062,
+          "median": 61,
+          "q1": 56,
+          "q3": 67,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 72
+            },
+            {
+              "label": "50–69",
+              "count": 787
+            },
+            {
+              "label": "70–79",
+              "count": 147
+            },
+            {
+              "label": "80–89",
+              "count": 32
+            },
+            {
+              "label": "90–99",
+              "count": 20
+            },
+            {
+              "label": "100",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "key": "Preventing Bullying Score",
+          "label": "Preventing Bullying",
+          "n": 1062,
+          "median": 80,
+          "q1": 74,
+          "q3": 86,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 2
+            },
+            {
+              "label": "50–69",
+              "count": 132
+            },
+            {
+              "label": "70–79",
+              "count": 365
+            },
+            {
+              "label": "80–89",
+              "count": 397
+            },
+            {
+              "label": "90–99",
+              "count": 153
+            },
+            {
+              "label": "100",
+              "count": 13
+            }
+          ]
+        },
+        {
+          "key": "Safety Score",
+          "label": "Safety",
+          "n": 1062,
+          "median": 82,
+          "q1": 77,
+          "q3": 88,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 59
+            },
+            {
+              "label": "70–79",
+              "count": 326
+            },
+            {
+              "label": "80–89",
+              "count": 478
+            },
+            {
+              "label": "90–99",
+              "count": 191
+            },
+            {
+              "label": "100",
+              "count": 7
+            }
+          ]
+        },
+        {
+          "key": "School Facilities and Services",
+          "label": "School Facilities and Services",
+          "n": 1062,
+          "median": 69,
+          "q1": 58,
+          "q3": 79,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 124
+            },
+            {
+              "label": "50–69",
+              "count": 414
+            },
+            {
+              "label": "70–79",
+              "count": 264
+            },
+            {
+              "label": "80–89",
+              "count": 184
+            },
+            {
+              "label": "90–99",
+              "count": 65
+            },
+            {
+              "label": "100",
+              "count": 11
+            }
+          ]
+        },
+        {
+          "key": "Social-Emotional Score",
+          "label": "Social-Emotional",
+          "n": 1062,
+          "median": 61,
+          "q1": 56,
+          "q3": 67,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 61
+            },
+            {
+              "label": "50–69",
+              "count": 794
+            },
+            {
+              "label": "70–79",
+              "count": 147
+            },
+            {
+              "label": "80–89",
+              "count": 36
+            },
+            {
+              "label": "90–99",
+              "count": 19
+            },
+            {
+              "label": "100",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "key": "Student-Teacher Trust Score",
+          "label": "Student-Teacher Trust",
+          "n": 1062,
+          "median": 73,
+          "q1": 69,
+          "q3": 78,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 289
+            },
+            {
+              "label": "70–79",
+              "count": 573
+            },
+            {
+              "label": "80–89",
+              "count": 164
+            },
+            {
+              "label": "90–99",
+              "count": 30
+            },
+            {
+              "label": "100",
+              "count": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "instrument": "b5-family",
+      "sourceUrl": "https://infohub.nyced.org/docs/default-source/default-document-library/2026-public-data-file-b-5-guardian.xlsx",
+      "sourceHash": "bd24392caf95e084978cc6ee29ad07a496615a355e6be7c93e77619b34d680a4",
+      "rows": 1243,
+      "withScores": 1040,
+      "belowTen": 432,
+      "medianResponses": 14,
+      "topics": [
+        {
+          "key": "Building Families' Capacity as their Child's Primary Advocate",
+          "label": "Building Families' Capacity as their Child's Primary Advocate",
+          "n": 1009,
+          "median": 94,
+          "q1": 82,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 28
+            },
+            {
+              "label": "50–69",
+              "count": 77
+            },
+            {
+              "label": "70–79",
+              "count": 98
+            },
+            {
+              "label": "80–89",
+              "count": 204
+            },
+            {
+              "label": "90–99",
+              "count": 195
+            },
+            {
+              "label": "100",
+              "count": 407
+            }
+          ]
+        },
+        {
+          "key": "Building Families' Capacity as their Child's Primary Teacher",
+          "label": "Building Families' Capacity as their Child's Primary Teacher",
+          "n": 1015,
+          "median": 100,
+          "q1": 95,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 6
+            },
+            {
+              "label": "70–79",
+              "count": 13
+            },
+            {
+              "label": "80–89",
+              "count": 90
+            },
+            {
+              "label": "90–99",
+              "count": 346
+            },
+            {
+              "label": "100",
+              "count": 559
+            }
+          ]
+        },
+        {
+          "key": "Family Satisfaction with Child's Education",
+          "label": "Family Satisfaction with Child's Education",
+          "n": 1037,
+          "median": 100,
+          "q1": 98,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 3
+            },
+            {
+              "label": "70–79",
+              "count": 5
+            },
+            {
+              "label": "80–89",
+              "count": 31
+            },
+            {
+              "label": "90–99",
+              "count": 304
+            },
+            {
+              "label": "100",
+              "count": 693
+            }
+          ]
+        },
+        {
+          "key": "Inclusive Leadership",
+          "label": "Inclusive Leadership",
+          "n": 1036,
+          "median": 100,
+          "q1": 97,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 2
+            },
+            {
+              "label": "50–69",
+              "count": 9
+            },
+            {
+              "label": "70–79",
+              "count": 3
+            },
+            {
+              "label": "80–89",
+              "count": 33
+            },
+            {
+              "label": "90–99",
+              "count": 440
+            },
+            {
+              "label": "100",
+              "count": 549
+            }
+          ]
+        },
+        {
+          "key": "Outreach to Parents",
+          "label": "Outreach to Parents",
+          "n": 1039,
+          "median": 98,
+          "q1": 95,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 2
+            },
+            {
+              "label": "80–89",
+              "count": 40
+            },
+            {
+              "label": "90–99",
+              "count": 720
+            },
+            {
+              "label": "100",
+              "count": 275
+            }
+          ]
+        },
+        {
+          "key": "Parent Involvement in School",
+          "label": "Parent Involvement in School",
+          "n": 1039,
+          "median": 96,
+          "q1": 93,
+          "q3": 99,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 12
+            },
+            {
+              "label": "80–89",
+              "count": 100
+            },
+            {
+              "label": "90–99",
+              "count": 730
+            },
+            {
+              "label": "100",
+              "count": 195
+            }
+          ]
+        },
+        {
+          "key": "Parent-Principal Trust",
+          "label": "Parent-Principal Trust",
+          "n": 1036,
+          "median": 100,
+          "q1": 97,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 7
+            },
+            {
+              "label": "70–79",
+              "count": 8
+            },
+            {
+              "label": "80–89",
+              "count": 43
+            },
+            {
+              "label": "90–99",
+              "count": 389
+            },
+            {
+              "label": "100",
+              "count": 588
+            }
+          ]
+        },
+        {
+          "key": "Parent-Teacher Trust",
+          "label": "Parent-Teacher Trust",
+          "n": 1039,
+          "median": 100,
+          "q1": 97,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 3
+            },
+            {
+              "label": "80–89",
+              "count": 25
+            },
+            {
+              "label": "90–99",
+              "count": 448
+            },
+            {
+              "label": "100",
+              "count": 560
+            }
+          ]
+        },
+        {
+          "key": "School Facilities and Services",
+          "label": "School Facilities and Services",
+          "n": 1037,
+          "median": 96,
+          "q1": 91,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 3
+            },
+            {
+              "label": "50–69",
+              "count": 18
+            },
+            {
+              "label": "70–79",
+              "count": 32
+            },
+            {
+              "label": "80–89",
+              "count": 156
+            },
+            {
+              "label": "90–99",
+              "count": 521
+            },
+            {
+              "label": "100",
+              "count": 307
+            }
+          ]
+        },
+        {
+          "key": "Strong Relationships",
+          "label": "Strong Relationships",
+          "n": 1011,
+          "median": 100,
+          "q1": 99,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 4
+            },
+            {
+              "label": "70–79",
+              "count": 2
+            },
+            {
+              "label": "80–89",
+              "count": 43
+            },
+            {
+              "label": "90–99",
+              "count": 208
+            },
+            {
+              "label": "100",
+              "count": 753
+            }
+          ]
+        },
+        {
+          "key": "IEP Service Satisfaction",
+          "label": "IEP Service Satisfaction",
+          "n": 776,
+          "median": 98,
+          "q1": 93,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 3
+            },
+            {
+              "label": "50–69",
+              "count": 5
+            },
+            {
+              "label": "70–79",
+              "count": 25
+            },
+            {
+              "label": "80–89",
+              "count": 101
+            },
+            {
+              "label": "90–99",
+              "count": 299
+            },
+            {
+              "label": "100",
+              "count": 343
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "instrument": "b5-teacher",
+      "sourceUrl": "https://infohub.nyced.org/docs/default-source/default-document-library/2026-public-data-file-b-5-teacher.xlsx",
+      "sourceHash": "b9e4ca80a82c535d20eac8963879d086001eb7daddea08c65d8fa1f4f4c64a64",
+      "rows": 1057,
+      "withScores": 151,
+      "belowTen": 992,
+      "medianResponses": 3,
+      "topics": [
+        {
+          "key": "Building Families' Capacity as their Child's Primary Advocate Score",
+          "label": "Building Families' Capacity as their Child's Primary Advocate",
+          "n": 144,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 6
+            },
+            {
+              "label": "90–99",
+              "count": 6
+            },
+            {
+              "label": "100",
+              "count": 132
+            }
+          ]
+        },
+        {
+          "key": "Building Families' Capacity as their Child's Primary Teacher Score",
+          "label": "Building Families' Capacity as their Child's Primary Teacher",
+          "n": 144,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 1
+            },
+            {
+              "label": "80–89",
+              "count": 4
+            },
+            {
+              "label": "90–99",
+              "count": 3
+            },
+            {
+              "label": "100",
+              "count": 136
+            }
+          ]
+        },
+        {
+          "key": "Academic Press Score",
+          "label": "Academic Press",
+          "n": 146,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 8
+            },
+            {
+              "label": "90–99",
+              "count": 21
+            },
+            {
+              "label": "100",
+              "count": 116
+            }
+          ]
+        },
+        {
+          "key": "Classroom Behavior Score",
+          "label": "Classroom Behavior",
+          "n": 143,
+          "median": 76,
+          "q1": 58.5,
+          "q3": 88.5,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 28
+            },
+            {
+              "label": "50–69",
+              "count": 31
+            },
+            {
+              "label": "70–79",
+              "count": 20
+            },
+            {
+              "label": "80–89",
+              "count": 31
+            },
+            {
+              "label": "90–99",
+              "count": 18
+            },
+            {
+              "label": "100",
+              "count": 15
+            }
+          ]
+        },
+        {
+          "key": "Conflict Resolution Score",
+          "label": "Conflict Resolution",
+          "n": 144,
+          "median": 100,
+          "q1": 94,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 4
+            },
+            {
+              "label": "80–89",
+              "count": 18
+            },
+            {
+              "label": "90–99",
+              "count": 24
+            },
+            {
+              "label": "100",
+              "count": 95
+            }
+          ]
+        },
+        {
+          "key": "Cultural Awareness and Inclusive Classroom Instruction Score",
+          "label": "Cultural Awareness and Inclusive Classroom Instruction",
+          "n": 151,
+          "median": 98,
+          "q1": 95,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 4
+            },
+            {
+              "label": "80–89",
+              "count": 11
+            },
+            {
+              "label": "90–99",
+              "count": 86
+            },
+            {
+              "label": "100",
+              "count": 49
+            }
+          ]
+        },
+        {
+          "key": "Early Childhood Instruction Score",
+          "label": "Early Childhood Instruction",
+          "n": 144,
+          "median": 100,
+          "q1": 96.75,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 4
+            },
+            {
+              "label": "80–89",
+              "count": 12
+            },
+            {
+              "label": "90–99",
+              "count": 25
+            },
+            {
+              "label": "100",
+              "count": 102
+            }
+          ]
+        },
+        {
+          "key": "Guidance Score",
+          "label": "Guidance",
+          "n": 0,
+          "median": null,
+          "q1": null,
+          "q3": null,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 0
+            },
+            {
+              "label": "90–99",
+              "count": 0
+            },
+            {
+              "label": "100",
+              "count": 0
+            }
+          ]
+        },
+        {
+          "key": "Inclusive Learning Environment Score",
+          "label": "Inclusive Learning Environment",
+          "n": 146,
+          "median": 100,
+          "q1": 97,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 1
+            },
+            {
+              "label": "80–89",
+              "count": 8
+            },
+            {
+              "label": "90–99",
+              "count": 42
+            },
+            {
+              "label": "100",
+              "count": 95
+            }
+          ]
+        },
+        {
+          "key": "Innovation and Collective Responsibility Score",
+          "label": "Innovation and Collective Responsibility",
+          "n": 151,
+          "median": 96,
+          "q1": 86.5,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 2
+            },
+            {
+              "label": "50–69",
+              "count": 11
+            },
+            {
+              "label": "70–79",
+              "count": 12
+            },
+            {
+              "label": "80–89",
+              "count": 23
+            },
+            {
+              "label": "90–99",
+              "count": 46
+            },
+            {
+              "label": "100",
+              "count": 57
+            }
+          ]
+        },
+        {
+          "key": "Instructional Leadership Score",
+          "label": "Instructional Leadership",
+          "n": 142,
+          "median": 100,
+          "q1": 95.25,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 1
+            },
+            {
+              "label": "70–79",
+              "count": 3
+            },
+            {
+              "label": "80–89",
+              "count": 14
+            },
+            {
+              "label": "90–99",
+              "count": 42
+            },
+            {
+              "label": "100",
+              "count": 82
+            }
+          ]
+        },
+        {
+          "key": "Outreach to Parents Score",
+          "label": "Outreach to Parents",
+          "n": 146,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 5
+            },
+            {
+              "label": "90–99",
+              "count": 16
+            },
+            {
+              "label": "100",
+              "count": 125
+            }
+          ]
+        },
+        {
+          "key": "Peer Collaboration Score",
+          "label": "Peer Collaboration",
+          "n": 146,
+          "median": 100,
+          "q1": 94,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 4
+            },
+            {
+              "label": "80–89",
+              "count": 21
+            },
+            {
+              "label": "90–99",
+              "count": 36
+            },
+            {
+              "label": "100",
+              "count": 83
+            }
+          ]
+        },
+        {
+          "key": "Preventing Bullying Score",
+          "label": "Preventing Bullying",
+          "n": 143,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 3
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 18
+            },
+            {
+              "label": "90–99",
+              "count": 8
+            },
+            {
+              "label": "100",
+              "count": 112
+            }
+          ]
+        },
+        {
+          "key": "Program Coherence Score",
+          "label": "Program Coherence",
+          "n": 146,
+          "median": 100,
+          "q1": 95.25,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 7
+            },
+            {
+              "label": "80–89",
+              "count": 11
+            },
+            {
+              "label": "90–99",
+              "count": 29
+            },
+            {
+              "label": "100",
+              "count": 96
+            }
+          ]
+        },
+        {
+          "key": "Quality of Professional Development Score",
+          "label": "Quality of Professional Development",
+          "n": 143,
+          "median": 100,
+          "q1": 90,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 3
+            },
+            {
+              "label": "70–79",
+              "count": 7
+            },
+            {
+              "label": "80–89",
+              "count": 24
+            },
+            {
+              "label": "90–99",
+              "count": 33
+            },
+            {
+              "label": "100",
+              "count": 75
+            }
+          ]
+        },
+        {
+          "key": "Quality of Student Discussion Score",
+          "label": "Quality of Student Discussion",
+          "n": 144,
+          "median": 69,
+          "q1": 55.75,
+          "q3": 86.25,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 29
+            },
+            {
+              "label": "50–69",
+              "count": 45
+            },
+            {
+              "label": "70–79",
+              "count": 19
+            },
+            {
+              "label": "80–89",
+              "count": 18
+            },
+            {
+              "label": "90–99",
+              "count": 19
+            },
+            {
+              "label": "100",
+              "count": 14
+            }
+          ]
+        },
+        {
+          "key": "Safety Score",
+          "label": "Safety",
+          "n": 0,
+          "median": null,
+          "q1": null,
+          "q3": null,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 0
+            },
+            {
+              "label": "90–99",
+              "count": 0
+            },
+            {
+              "label": "100",
+              "count": 0
+            }
+          ]
+        },
+        {
+          "key": "School Commitment Score",
+          "label": "School Commitment",
+          "n": 146,
+          "median": 100,
+          "q1": 93,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 6
+            },
+            {
+              "label": "80–89",
+              "count": 21
+            },
+            {
+              "label": "90–99",
+              "count": 23
+            },
+            {
+              "label": "100",
+              "count": 93
+            }
+          ]
+        },
+        {
+          "key": "School Facilities and Services Score",
+          "label": "School Facilities and Services",
+          "n": 146,
+          "median": 100,
+          "q1": 91,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 3
+            },
+            {
+              "label": "50–69",
+              "count": 8
+            },
+            {
+              "label": "70–79",
+              "count": 6
+            },
+            {
+              "label": "80–89",
+              "count": 16
+            },
+            {
+              "label": "90–99",
+              "count": 32
+            },
+            {
+              "label": "100",
+              "count": 81
+            }
+          ]
+        },
+        {
+          "key": "Social-Emotional Score",
+          "label": "Social-Emotional",
+          "n": 143,
+          "median": 94,
+          "q1": 82.5,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 2
+            },
+            {
+              "label": "50–69",
+              "count": 14
+            },
+            {
+              "label": "70–79",
+              "count": 11
+            },
+            {
+              "label": "80–89",
+              "count": 29
+            },
+            {
+              "label": "90–99",
+              "count": 47
+            },
+            {
+              "label": "100",
+              "count": 40
+            }
+          ]
+        },
+        {
+          "key": "Strong Core Instruction Score",
+          "label": "Strong Core Instruction",
+          "n": 0,
+          "median": null,
+          "q1": null,
+          "q3": null,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 0
+            },
+            {
+              "label": "90–99",
+              "count": 0
+            },
+            {
+              "label": "100",
+              "count": 0
+            }
+          ]
+        },
+        {
+          "key": "Strong Relationships Score",
+          "label": "Strong Relationships",
+          "n": 144,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 2
+            },
+            {
+              "label": "90–99",
+              "count": 12
+            },
+            {
+              "label": "100",
+              "count": 130
+            }
+          ]
+        },
+        {
+          "key": "Teacher Influence Score",
+          "label": "Teacher Influence",
+          "n": 146,
+          "median": 82.5,
+          "q1": 72,
+          "q3": 90.75,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 5
+            },
+            {
+              "label": "50–69",
+              "count": 21
+            },
+            {
+              "label": "70–79",
+              "count": 39
+            },
+            {
+              "label": "80–89",
+              "count": 35
+            },
+            {
+              "label": "90–99",
+              "count": 31
+            },
+            {
+              "label": "100",
+              "count": 15
+            }
+          ]
+        },
+        {
+          "key": "Teacher-Principal Trust Score",
+          "label": "Teacher-Principal Trust",
+          "n": 147,
+          "median": 100,
+          "q1": 94,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 1
+            },
+            {
+              "label": "50–69",
+              "count": 2
+            },
+            {
+              "label": "70–79",
+              "count": 8
+            },
+            {
+              "label": "80–89",
+              "count": 15
+            },
+            {
+              "label": "90–99",
+              "count": 33
+            },
+            {
+              "label": "100",
+              "count": 88
+            }
+          ]
+        },
+        {
+          "key": "Teacher-Teacher Trust Score",
+          "label": "Teacher-Teacher Trust",
+          "n": 147,
+          "median": 100,
+          "q1": 90,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 7
+            },
+            {
+              "label": "70–79",
+              "count": 8
+            },
+            {
+              "label": "80–89",
+              "count": 21
+            },
+            {
+              "label": "90–99",
+              "count": 25
+            },
+            {
+              "label": "100",
+              "count": 86
+            }
+          ]
+        },
+        {
+          "key": "Two-Way Communication Score",
+          "label": "Two-Way Communication",
+          "n": 141,
+          "median": 100,
+          "q1": 100,
+          "q3": 100,
+          "bins": [
+            {
+              "label": "0–49",
+              "count": 0
+            },
+            {
+              "label": "50–69",
+              "count": 0
+            },
+            {
+              "label": "70–79",
+              "count": 0
+            },
+            {
+              "label": "80–89",
+              "count": 8
+            },
+            {
+              "label": "90–99",
+              "count": 0
+            },
+            {
+              "label": "100",
+              "count": 133
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { httpServerHandler } from "cloudflare:node";
+import { externalRel, isExternalWebLink } from '../shared/external-links';
 
 type WorkerHandler = ReturnType<typeof httpServerHandler>;
 
@@ -139,6 +140,20 @@ export default {
       });
     }
 
+    if (response.body && contentType.toLowerCase().includes('text/html')) {
+      // Streaming parser touches only anchors; metadata, scripts and form flows stay intact.
+      const headers=new Headers(response.headers);
+      headers.delete('content-length');
+      headers.delete('transfer-encoding');
+      return new HTMLRewriter().on('a[href]', {
+        element(element) {
+          if(isExternalWebLink(element.getAttribute('href'),request.url)){
+            element.setAttribute('rel',externalRel(element.getAttribute('rel')));
+            element.setAttribute('target','_blank');
+          }
+        },
+      }).transform(new Response(response.body,{status:response.status,statusText:response.statusText,headers}));
+    }
     return response;
   },
 

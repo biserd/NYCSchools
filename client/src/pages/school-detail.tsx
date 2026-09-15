@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Progress } from "@/components/ui/progress";
 import { Footer } from "@/components/Footer";
 import { SafetyIndexCard } from "@/components/SafetyIndexCard";
+import { SchoolSurveySection } from "@/components/SchoolSurveySection";
 import { SEOHead } from "@/components/SEOHead";
 import { getSchoolSeoMeta } from "@shared/school-seo";
 import { getSeoLandingPath, getSeoLandingsForSchool } from "@shared/seo-landings";
@@ -242,7 +243,7 @@ export default function SchoolDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader />
+        <AppHeader stackOnMobile />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center text-muted-foreground">Loading school details...</div>
         </div>
@@ -253,7 +254,7 @@ export default function SchoolDetail() {
   if (!schoolWithScore) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader />
+        <AppHeader stackOnMobile />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">School with DBN {dbn} not found.</p>
@@ -322,7 +323,7 @@ export default function SchoolDetail() {
         appendSiteName={false}
       />
       <StructuredData data={educationalOrgSchema} />
-      <AppHeader />
+      <AppHeader stackOnMobile />
 
       <main className="mx-auto w-full max-w-7xl px-4 md:px-8 py-8">
         <div className="space-y-6">
@@ -352,8 +353,8 @@ export default function SchoolDetail() {
           </div>
           
           {/* School Header - Simplified */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <h1 className="text-3xl font-bold mb-2" data-testid="text-school-name">
                 {schoolDisplayName(schoolWithScore)}
               </h1>
@@ -2128,6 +2129,8 @@ export default function SchoolDetail() {
           )}
 
           {/* Attendance & Chronic Absenteeism */}
+          <SchoolSurveySection schoolKey={schoolWithScore.dbn} />
+
           {attendanceData && attendanceData.length > 0 && (() => {
             const latestYear = attendanceData[0];
             const previousYear = attendanceData.length > 1 ? attendanceData[1] : null;

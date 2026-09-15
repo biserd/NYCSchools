@@ -21,7 +21,7 @@
     "EMAIL_FROM_NAME": "NYC Schools staging",
     "STRIPE_SEASON_PASS_PRODUCT_ID": "",
     "STRIPE_SEASON_PASS_PRICE_ID": "",
-    "STAGING_EXPIRES_AT": "2026-09-14T21:59:42Z"
+    "STAGING_EXPIRES_AT": "2026-09-22T16:58:00Z"
   },
   "observability": {"enabled": true}
 }
