@@ -44,7 +44,7 @@ async function main() {
       academics_score: sql`
         case
           when ${schools.ela_proficiency} is not null and ${schools.math_proficiency} is not null
-          then round((${schools.ela_proficiency} + ${schools.math_proficiency})::numeric / 2)
+          then round((${schools.ela_proficiency} + ${schools.math_proficiency}) / 2.0)
           else ${schools.academics_score}
         end
       `,

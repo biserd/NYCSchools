@@ -1,0 +1,11 @@
+{
+  "name":"nyc-d1-readonly-export-preview",
+  "main":"./scripts/d1/source-export-worker.js",
+  "account_id":"73d71a2bef58f7469ecb48e2b8e84c0e",
+  "compatibility_date":"2026-09-15",
+  "compatibility_flags":["nodejs_compat"],
+  "workers_dev":false,
+  "preview_urls":false,
+  "routes":[],
+  "hyperdrive":[{"binding":"HYPERDRIVE","id":"be7e2a5021cc4e5f9873f2194f509062"}]
+}

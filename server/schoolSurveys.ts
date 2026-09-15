@@ -10,5 +10,9 @@ export async function getSchoolSurveys(key: string, kind: 'school' | 'center' = 
       r.response_count AS "responseCount", r.response_rate AS "responseRate", r.metrics
     FROM school_survey_results r JOIN school_survey_releases s ON s.id = r.release_id
     WHERE ${filter} AND s.year = 2026 ORDER BY s.instrument, r.source_id`);
-  return (result.rows as SurveyResult[]).map(row=>({...row, importedAt:new Date(row.importedAt).toISOString()}));
+  return result.rows.map(row=>({
+    ...row,
+    metrics: typeof row.metrics === 'string' ? JSON.parse(row.metrics) : row.metrics,
+    importedAt: new Date(Number(row.importedAt)).toISOString(),
+  })) as SurveyResult[];
 }

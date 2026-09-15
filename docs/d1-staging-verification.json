@@ -1,0 +1,388 @@
+{
+  "checkedAt": "2026-09-15T21:33:41.6993019Z",
+  "deployedVersion": "e9932e00-97d1-45fc-9a12-ff7bd0a5cf63",
+  "copy": {
+    "report": [
+      {
+        "table": "admissions_metrics",
+        "count": 8401,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "admissions_offers",
+        "count": 8401,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "enrollment_data",
+        "count": 2413,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "hs_admissions_program",
+        "count": 943,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "hs_graduation",
+        "count": 4554,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "hs_regents",
+        "count": 36361,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "nyceec_ai_insights",
+        "count": 3,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "nyceec_centers",
+        "count": 1885,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "nypd_complaints",
+        "count": 1137835,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "private_schools",
+        "count": 623,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "private_school_history",
+        "count": 1315,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "schools",
+        "count": 2408,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_attendance",
+        "count": 10787,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_discipline",
+        "count": 9049,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_historical_scores",
+        "count": 6628,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_safety_index",
+        "count": 19424,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_survey_releases",
+        "count": 5,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_survey_results",
+        "count": 7039,
+        "allRowsSha256Matched": true
+      },
+      {
+        "table": "school_zones",
+        "count": 1015,
+        "allRowsSha256Matched": true
+      }
+    ],
+    "inventory": {
+      "counts": {
+        "admissions_metrics": 8401,
+        "admissions_offers": 8401,
+        "ai_chat_messages": 0,
+        "ai_chat_sessions": 0,
+        "api_abuse_alerts": 0,
+        "api_key_rate_state": 0,
+        "api_keys": 0,
+        "api_request_log": 0,
+        "app_settings": 0,
+        "contact_submissions": 0,
+        "enrollment_data": 2413,
+        "favorites": 0,
+        "hs_admissions_program": 943,
+        "hs_graduation": 4554,
+        "hs_regents": 36361,
+        "magic_link_tokens": 0,
+        "nyceec_ai_insights": 3,
+        "nyceec_centers": 1885,
+        "nyceec_reviews": 0,
+        "nypd_complaints": 1137835,
+        "oauth_access_tokens": 0,
+        "oauth_authorization_codes": 0,
+        "oauth_clients": 0,
+        "oauth_refresh_tokens": 0,
+        "password_reset_tokens": 0,
+        "private_school_history": 1315,
+        "private_schools": 623,
+        "processed_webhook_events": 0,
+        "reviews": 0,
+        "school_attendance": 10787,
+        "school_discipline": 9049,
+        "school_historical_scores": 6628,
+        "school_safety_index": 19424,
+        "school_survey_releases": 5,
+        "school_survey_results": 7039,
+        "school_zones": 1015,
+        "schools": 2408,
+        "sessions": 0,
+        "tracked_schools": 0,
+        "user_profiles": 0,
+        "users": 0
+      },
+      "foreignKeys": []
+    }
+  },
+  "auth": {
+    "passed": [
+      "register and secure session cookie",
+      "session survives next request",
+      "authenticated favorite write/read",
+      "duplicate favorite rejected",
+      "free-tier authorization retained",
+      "favorite deletion",
+      "logout and anonymous write protection",
+      "invalid password rejected",
+      "password login and session persistence",
+      "D1 staging/noindex headers"
+    ]
+  },
+  "safetyParity": [
+    {
+      "school": "06G262",
+      "radii": 4,
+      "countsCategoriesAndWeightsMatch": true
+    },
+    {
+      "school": "02M475",
+      "radii": 4,
+      "countsCategoriesAndWeightsMatch": true
+    },
+    {
+      "school": "31R005",
+      "radii": 4,
+      "countsCategoriesAndWeightsMatch": true
+    }
+  ],
+  "safetyQueue": {
+    "passed": [
+      "source failure retries without advancing checkpoint",
+      "two-dataset complaint deduplication",
+      "queued phase transitions",
+      "all four safety radii",
+      "current/prior date boundaries",
+      "violent felony classification",
+      "percentile finalization",
+      "completed-job duplicate ignored"
+    ],
+    "requests": 3,
+    "queueMessages": 3
+  },
+  "publicApi": [
+    {
+      "path": "/api/schools",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/twok-centers",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/nyceec-centers",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/private-schools",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/history",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/graduation",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/regents",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/attendance",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/discipline",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/admissions-programs",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools/02M475/zone",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/surveys/school/02M475",
+      "match": false,
+      "passed": true,
+      "expectedImportTimeDifference": true,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/twok-centers-stats",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/nyceec-centers-stats",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/private-schools-stats",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/districts/averages",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/districts/citywide",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/districts/2/averages",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools-trends-summary",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/schools-trends",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/blog/covid-recovery-data",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/safety/public/06G262",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    },
+    {
+      "path": "/api/safe-and-strong",
+      "match": true,
+      "passed": true,
+      "expectedImportTimeDifference": false,
+      "productionStatus": 200,
+      "stageStatus": 200
+    }
+  ]
+}

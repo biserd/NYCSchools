@@ -1,103 +1,44 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-import type { NextFunction, Request, Response } from "express";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client, Pool } from "pg";
-import * as schema from "@shared/schema";
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type { NextFunction, Request, Response } from 'express';
+import { drizzle } from 'drizzle-orm/d1';
+import type { SQL } from 'drizzle-orm';
+import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
+import * as schema from '@shared/schema';
 
-function requireConnectionString(): string {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error(
-      "DATABASE_URL must be set directly or initialized from the Hyperdrive binding.",
-    );
-  }
-  return connectionString;
+type AsyncDatabase = BaseSQLiteDatabase<'async', unknown, typeof schema>;
+export function wrapDatabase(database: AsyncDatabase) {
+  // Preserve the raw-query result contract. SQL is SQLite, not translated PG.
+  return Object.assign(database, {
+    async execute<T extends Record<string, unknown> = Record<string, unknown>>(query: SQL) {
+      return { rows: await database.all<T>(query) };
+    },
+  });
 }
-
-function createDatabase(client: Client | Pool) {
-  return drizzle({ client, schema });
+export function createDatabase(binding: D1Database) {
+  return wrapDatabase(drizzle(binding, { schema }));
 }
-
-export type Database = ReturnType<typeof createDatabase>;
-
-interface RequestDatabaseContext {
-  client: Client;
-  database: Database;
+export type Database = ReturnType<typeof wrapDatabase>;
+const requestDatabase = new AsyncLocalStorage<Database>();
+export function withDatabaseInstance<T>(database: Database, callback: () => Promise<T>): Promise<T> {
+  return requestDatabase.run(database, callback);
 }
-
-const requestDatabase = new AsyncLocalStorage<RequestDatabaseContext>();
-
-let fallbackPool: Pool | undefined;
-let fallbackDatabase: Database | undefined;
-
-function getFallbackDatabase(): Database {
-  if (!fallbackPool || !fallbackDatabase) {
-    fallbackPool = new Pool({
-      connectionString: requireConnectionString(),
-      max: 2,
-    });
-    fallbackDatabase = createDatabase(fallbackPool);
-  }
-  return fallbackDatabase;
-}
-
 function getActiveDatabase(): Database {
-  return requestDatabase.getStore()?.database ?? getFallbackDatabase();
+  const database = requestDatabase.getStore();
+  if (!database) throw new Error('D1 operation outside database request context');
+  return database;
 }
-
-// Existing storage modules import `db` directly. The proxy preserves that API
-// while resolving every operation against the current request's Hyperdrive
-// client. CLI/import scripts fall back to a small Node.js pool.
 export const db = new Proxy({} as Database, {
   get(_target, property) {
     const database = getActiveDatabase();
     const value = Reflect.get(database, property, database);
-    return typeof value === "function" ? value.bind(database) : value;
+    return typeof value === 'function' ? value.bind(database) : value;
   },
 });
-
-export async function withDatabaseConnection<T>(
-  callback: () => Promise<T>,
-): Promise<T> {
-  const client = new Client({ connectionString: requireConnectionString() });
-  await client.connect();
-
-  try {
-    return await requestDatabase.run(
-      { client, database: createDatabase(client) },
-      callback,
-    );
-  } finally {
-    await client.end();
-  }
+export async function withDatabaseConnection<T>(callback: () => Promise<T>): Promise<T> {
+  if (requestDatabase.getStore()) return callback();
+  const { env } = await import('cloudflare:workers');
+  return requestDatabase.run(createDatabase(env.DB), callback);
 }
-
-export function databaseContextMiddleware(
-  _req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
-  const client = new Client({ connectionString: requireConnectionString() });
-
-  void client.connect().then(() => {
-    let closed = false;
-    const close = () => {
-      if (closed) return;
-      closed = true;
-      void client.end().catch((error) => {
-        console.error(JSON.stringify({
-          message: "Failed to close PostgreSQL request connection",
-          error: error instanceof Error ? error.message : String(error),
-        }));
-      });
-    };
-
-    res.once("finish", close);
-    res.once("close", close);
-
-    requestDatabase.run(
-      { client, database: createDatabase(client) },
-      next,
-    );
-  }).catch(next);
+export function databaseContextMiddleware(_req: Request, _res: Response, next: NextFunction): void {
+  void withDatabaseConnection(async () => next()).catch(next);
 }

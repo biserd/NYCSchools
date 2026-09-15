@@ -18,6 +18,7 @@
  */
 
 import { db } from "../db";
+import { d1Chunks } from '../d1-batches';
 import { sql, and, eq, between, gte, lte } from "drizzle-orm";
 import {
   nypdComplaints,
@@ -71,7 +72,7 @@ function haversineMeters(
 // 1. Pull NYPD complaints from Socrata into local cache
 // ---------------------------------------------------------------------------
 
-function parseRow(row: NypdComplaintRow): InsertNypdComplaint | null {
+export function parseComplaintRow(row: NypdComplaintRow): InsertNypdComplaint | null {
   const id = row.cmplnt_num;
   if (!id) return null;
 
@@ -112,7 +113,7 @@ async function bulkUpsertComplaints(rows: InsertNypdComplaint[]) {
   // Drizzle's onConflictDoUpdate doesn't easily express column-by-column
   // upserts when the conflict target IS the PK. We just do "do nothing"
   // since complaint records are immutable.
-  await db.insert(nypdComplaints).values(rows).onConflictDoNothing();
+  for (const chunk of d1Chunks(rows, 8)) await db.insert(nypdComplaints).values(chunk).onConflictDoNothing();
 }
 
 export interface SyncOptions {
@@ -154,7 +155,7 @@ export async function syncNypdComplaints(opts: SyncOptions = {}): Promise<{
         pageSize: 50_000,
         maxRows: opts.maxRows,
       })) {
-        const parsed = parseRow(raw);
+        const parsed = parseComplaintRow(raw);
         if (!parsed) continue;
         buffer.push(parsed);
         datasetCount++;
@@ -180,7 +181,7 @@ export async function syncNypdComplaints(opts: SyncOptions = {}): Promise<{
   // Trim anything older than the cutoff to keep the table bounded
   await db.execute(sql`
     DELETE FROM nypd_complaints
-    WHERE complaint_date < ${cutoff}
+    WHERE complaint_date < ${cutoff.getTime()}
   `);
 
   console.log(`[safety-sync] complaint cache total inserted: ${total}`);
@@ -232,44 +233,6 @@ async function loadAllSchoolPoints(): Promise<SchoolPoint[]> {
   return points;
 }
 
-interface ComplaintLite {
-  date: Date;
-  lat: number;
-  lng: number;
-  cat: string | null;     // 'FELONY' | 'MISDEMEANOR' | 'VIOLATION'
-  ofns: string | null;
-  isViolent: boolean;
-}
-
-/**
- * Load all complaints once and keep them in memory. ~800k rows × ~80 bytes
- * each ≈ 65 MB; comfortably fits and lets us avoid a query per school.
- */
-async function loadComplaintsInMemory(periodStart: Date): Promise<ComplaintLite[]> {
-  const rows = await db
-    .select({
-      complaintDate: nypdComplaints.complaintDate,
-      latitude: nypdComplaints.latitude,
-      longitude: nypdComplaints.longitude,
-      lawCatCd: nypdComplaints.lawCatCd,
-      ofnsDesc: nypdComplaints.ofnsDesc,
-    })
-    .from(nypdComplaints)
-    .where(gte(nypdComplaints.complaintDate, periodStart));
-
-  return rows.map((r) => ({
-    date: r.complaintDate,
-    lat: r.latitude,
-    lng: r.longitude,
-    cat: r.lawCatCd,
-    ofns: r.ofnsDesc,
-    isViolent:
-      r.lawCatCd === "FELONY" &&
-      !!r.ofnsDesc &&
-      VIOLENT_FELONY_OFFENSES.has(r.ofnsDesc),
-  }));
-}
-
 interface RadiusAggregate {
   total: number;
   felony: number;
@@ -288,21 +251,6 @@ function emptyAgg(): RadiusAggregate {
     violation: 0,
     byCategory: new Map(),
   };
-}
-
-function bumpAgg(agg: RadiusAggregate, c: ComplaintLite) {
-  agg.total++;
-  if (c.cat === "FELONY") {
-    agg.felony++;
-    if (c.isViolent) agg.violentFelony++;
-  } else if (c.cat === "MISDEMEANOR") {
-    agg.misdemeanor++;
-  } else if (c.cat === "VIOLATION") {
-    agg.violation++;
-  }
-  if (c.ofns) {
-    agg.byCategory.set(c.ofns, (agg.byCategory.get(c.ofns) ?? 0) + 1);
-  }
 }
 
 function topCategories(byCategory: Map<string, number>, n = 3) {
@@ -329,6 +277,45 @@ interface PerSchoolRow {
   current: RadiusAggregate;
   prior: RadiusAggregate;
   weightedRiskScore: number;
+}
+
+/** Aggregate in D1 instead of bringing >1m complaint objects into a 128 MB Worker.
+ * The distance, time windows, category counts and weights match the previous
+ * JavaScript algorithm. Only a few hundred grouped rows cross the binding.
+ */
+export async function computeSafetyRows(school: SchoolPoint, priorStart: Date, periodStart: Date, periodEnd: Date): Promise<PerSchoolRow[]> {
+  const radii=SAFETY_RADIUS_OPTIONS.map(r=>r.meters),maxRadius=Math.max(...radii);
+  const latDelta=maxRadius/METERS_PER_DEG_LAT,lngDelta=maxRadius/metersPerDegLng(school.lat);
+  const result=await db.execute<{radius:number;current:number;category:string|null;offense:string|null;reports:number}>(sql`
+    WITH nearby AS MATERIALIZED (
+      SELECT law_cat_cd,ofns_desc,complaint_date,
+        2 * 6371000 * asin(min(1, sqrt(
+          pow(sin(radians(latitude - ${school.lat}) / 2), 2)
+          + cos(radians(${school.lat})) * cos(radians(latitude))
+          * pow(sin(radians(longitude - ${school.lng}) / 2), 2)
+        ))) AS distance
+      FROM nypd_complaints
+      WHERE latitude >= ${school.lat-latDelta} AND latitude < ${school.lat+latDelta}
+        AND longitude >= ${school.lng-lngDelta} AND longitude <= ${school.lng+lngDelta}
+        AND complaint_date >= ${priorStart.getTime()} AND complaint_date <= ${periodEnd.getTime()}
+    ), radii(radius) AS (VALUES ${sql.join(radii.map(r=>sql`(${r})`),sql`,`)})
+    SELECT radius, CASE WHEN complaint_date >= ${periodStart.getTime()} THEN 1 ELSE 0 END AS current,
+      law_cat_cd AS category, ofns_desc AS offense, count(*) AS reports
+    FROM nearby CROSS JOIN radii WHERE distance <= radius
+    GROUP BY radius,current,law_cat_cd,ofns_desc
+  `);
+  const rows=radii.map(radiusMeters=>({schoolType:school.type,schoolKey:school.key,radiusMeters,current:emptyAgg(),prior:emptyAgg(),weightedRiskScore:0}));
+  for(const group of result.rows){
+    const row=rows.find(r=>r.radiusMeters===group.radius)!;
+    const agg=group.current?row.current:row.prior,n=Number(group.reports);
+    agg.total+=n;
+    if(group.category==='FELONY'){agg.felony+=n;if(group.offense&&VIOLENT_FELONY_OFFENSES.has(group.offense))agg.violentFelony+=n;}
+    else if(group.category==='MISDEMEANOR')agg.misdemeanor+=n;
+    else if(group.category==='VIOLATION')agg.violation+=n;
+    if(group.offense)agg.byCategory.set(group.offense,(agg.byCategory.get(group.offense)||0)+n);
+  }
+  for(const row of rows)row.weightedRiskScore=weightedScore(row.current,Math.PI*(row.radiusMeters/1000)**2);
+  return rows;
 }
 
 // Resumable run state — persisted in app_settings so a restart-killed run
@@ -388,14 +375,14 @@ async function finalizeSafetyPercentiles(runStartedAt: Date): Promise<number> {
                ORDER BY weighted_risk_score
              ) AS rp
       FROM school_safety_index
-      WHERE last_calculated_at >= ${runStartedAt}
+      WHERE last_calculated_at >= ${runStartedAt.getTime()}
     )
-    UPDATE school_safety_index s
-    SET safety_index = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int)),
-        percentile_citywide = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int))
+    UPDATE school_safety_index AS s
+    SET safety_index = MAX(0, MIN(100, 100 - ROUND(ranked.rp * 100))),
+        percentile_citywide = MAX(0, MIN(100, 100 - ROUND(ranked.rp * 100)))
     FROM ranked
     WHERE s.id = ranked.id
-    RETURNING (1)::text AS updated
+    RETURNING (1) AS updated
   `);
   // Drizzle's neon driver returns either `.rows` or array-shape — handle both.
   const rows = (result as any).rows ?? (result as any);
@@ -448,7 +435,7 @@ export async function recomputeSafetyIndex(): Promise<{
   }>(sql`
     SELECT DISTINCT school_type, school_key
     FROM school_safety_index
-    WHERE last_calculated_at >= ${runStartedAt}
+    WHERE last_calculated_at >= ${runStartedAt.getTime()}
   `);
   const doneRowsArr = (doneRows as any).rows ?? (doneRows as any);
   const doneSet = new Set<string>();
@@ -485,32 +472,10 @@ export async function recomputeSafetyIndex(): Promise<{
     };
   }
 
-  // ---- Load complaints into memory + sort by lat once ---------------------
-  const allComplaints = await loadComplaintsInMemory(priorStart);
-  console.log(`[safety-recompute] complaints loaded: ${allComplaints.length}`);
-
-  const radii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
-  const maxRadius = Math.max(...radii);
-
-  const sortedByLat = allComplaints.slice().sort((a, b) => a.lat - b.lat);
-  const lats = new Float64Array(sortedByLat.length);
-  for (let i = 0; i < sortedByLat.length; i++) lats[i] = sortedByLat[i].lat;
-  const lowerBound = (target: number): number => {
-    let lo = 0;
-    let hi = lats.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (lats[mid] < target) lo = mid + 1;
-      else hi = mid;
-    }
-    return lo;
-  };
-  console.log(`[safety-recompute] complaints sorted by lat`);
-
   // ---- Per-batch processing + persistence ---------------------------------
   // Persist every BATCH schools (= BATCH * radii.length rows) so a restart
   // mid-run only loses ~BATCH schools of work.
-  const BATCH = 100;
+  const BATCH = 10;
   let processed = 0;
   let writtenTotal = 0;
   let pendingRows: PerSchoolRow[] = [];
@@ -560,9 +525,9 @@ export async function recomputeSafetyIndex(): Promise<{
       };
     });
 
-    await db
+    for (const chunk of d1Chunks(values, 25)) await db
       .insert(schoolSafetyIndex)
-      .values(values)
+      .values(chunk)
       .onConflictDoUpdate({
         target: [
           schoolSafetyIndex.schoolType,
@@ -591,64 +556,9 @@ export async function recomputeSafetyIndex(): Promise<{
     pendingRows = [];
   };
 
-  for (const school of points) {
-    const latDelta = maxRadius / METERS_PER_DEG_LAT;
-    const lngDelta = maxRadius / metersPerDegLng(school.lat);
-    const minLat = school.lat - latDelta;
-    const maxLat = school.lat + latDelta;
-    const minLng = school.lng - lngDelta;
-    const maxLng = school.lng + lngDelta;
-
-    const startIdx = lowerBound(minLat);
-    const endIdx = lowerBound(maxLat);
-    const nearby: ComplaintLite[] = [];
-    for (let i = startIdx; i < endIdx; i++) {
-      const c = sortedByLat[i];
-      if (c.lng >= minLng && c.lng <= maxLng) {
-        nearby.push(c);
-      }
-    }
-
-    if (nearby.length === 0) {
-      for (const radiusMeters of radii) {
-        pendingRows.push({
-          schoolType: school.type,
-          schoolKey: school.key,
-          radiusMeters,
-          current: emptyAgg(),
-          prior: emptyAgg(),
-          weightedRiskScore: 0,
-        });
-      }
-    } else {
-      const aggs = new Map<number, { current: RadiusAggregate; prior: RadiusAggregate }>();
-      for (const r of radii) aggs.set(r, { current: emptyAgg(), prior: emptyAgg() });
-      for (const c of nearby) {
-        const d = haversineMeters(school.lat, school.lng, c.lat, c.lng);
-        const isCurrent = c.date >= periodStart && c.date <= periodEnd;
-        const isPrior = c.date >= priorStart && c.date < periodStart;
-        if (!isCurrent && !isPrior) continue;
-        for (const r of radii) {
-          if (d <= r) {
-            const slot = aggs.get(r)!;
-            if (isCurrent) bumpAgg(slot.current, c);
-            else bumpAgg(slot.prior, c);
-          }
-        }
-      }
-      for (const r of radii) {
-        const slot = aggs.get(r)!;
-        const areaSqKm = Math.PI * (r / 1000) ** 2;
-        pendingRows.push({
-          schoolType: school.type,
-          schoolKey: school.key,
-          radiusMeters: r,
-          current: slot.current,
-          prior: slot.prior,
-          weightedRiskScore: weightedScore(slot.current, areaSqKm),
-        });
-      }
-    }
+  // Each request stays below D1 query and Worker CPU budgets. Subsequent calls resume.
+  for (const school of points.slice(0, 20)) {
+    pendingRows.push(...await computeSafetyRows(school, priorStart, periodStart, periodEnd));
 
     processed++;
 
@@ -673,9 +583,9 @@ export async function recomputeSafetyIndex(): Promise<{
 
   // ---- If every school is now done, finalize percentiles ------------------
   const remaining = await db.execute<{ remaining: string }>(sql`
-    SELECT (${allPoints.length}::int - COUNT(DISTINCT (school_type || '|' || school_key)))::text AS remaining
+    SELECT (${allPoints.length} - COUNT(DISTINCT (school_type || '|' || school_key))) AS remaining
     FROM school_safety_index
-    WHERE last_calculated_at >= ${runStartedAt}
+    WHERE last_calculated_at >= ${runStartedAt.getTime()}
   `);
   const remRows = (remaining as any).rows ?? (remaining as any);
   const remainingSchools = Number(remRows[0]?.remaining ?? 0);
@@ -720,12 +630,12 @@ async function finalizeSafetyPercentilesAll(): Promise<number> {
              ) AS rp
       FROM school_safety_index
     )
-    UPDATE school_safety_index s
-    SET safety_index = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int)),
-        percentile_citywide = GREATEST(0, LEAST(100, 100 - ROUND(ranked.rp * 100)::int))
+    UPDATE school_safety_index AS s
+    SET safety_index = MAX(0, MIN(100, 100 - ROUND(ranked.rp * 100))),
+        percentile_citywide = MAX(0, MIN(100, 100 - ROUND(ranked.rp * 100)))
     FROM ranked
     WHERE s.id = ranked.id
-    RETURNING (1)::text AS updated
+    RETURNING (1) AS updated
   `);
   const rows = (result as any).rows ?? (result as any);
   return Array.isArray(rows) ? rows.length : 0;
@@ -759,73 +669,8 @@ export async function recomputeSafetyForKeys(
   );
   if (!targets.length) return { schoolsProcessed: 0, rowsWritten: 0, rowsRanked: 0 };
 
-  const allComplaints = await loadComplaintsInMemory(priorStart);
-  console.log(
-    `[safety-recompute-targeted] complaints loaded: ${allComplaints.length}`,
-  );
-
-  const radii = SAFETY_RADIUS_OPTIONS.map((r) => r.meters);
-  const maxRadius = Math.max(...radii);
-
-  const sortedByLat = allComplaints.slice().sort((a, b) => a.lat - b.lat);
-  const lats = new Float64Array(sortedByLat.length);
-  for (let i = 0; i < sortedByLat.length; i++) lats[i] = sortedByLat[i].lat;
-  const lowerBound = (target: number): number => {
-    let lo = 0;
-    let hi = lats.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (lats[mid] < target) lo = mid + 1;
-      else hi = mid;
-    }
-    return lo;
-  };
-
   const pendingRows: PerSchoolRow[] = [];
-  for (const school of targets) {
-    const latDelta = maxRadius / METERS_PER_DEG_LAT;
-    const lngDelta = maxRadius / metersPerDegLng(school.lat);
-    const minLat = school.lat - latDelta;
-    const maxLat = school.lat + latDelta;
-    const minLng = school.lng - lngDelta;
-    const maxLng = school.lng + lngDelta;
-
-    const startIdx = lowerBound(minLat);
-    const endIdx = lowerBound(maxLat);
-    const nearby: ComplaintLite[] = [];
-    for (let i = startIdx; i < endIdx; i++) {
-      const c = sortedByLat[i];
-      if (c.lng >= minLng && c.lng <= maxLng) nearby.push(c);
-    }
-
-    const aggs = new Map<number, { current: RadiusAggregate; prior: RadiusAggregate }>();
-    for (const r of radii) aggs.set(r, { current: emptyAgg(), prior: emptyAgg() });
-    for (const c of nearby) {
-      const d = haversineMeters(school.lat, school.lng, c.lat, c.lng);
-      const isCurrent = c.date >= periodStart && c.date <= periodEnd;
-      const isPrior = c.date >= priorStart && c.date < periodStart;
-      if (!isCurrent && !isPrior) continue;
-      for (const r of radii) {
-        if (d <= r) {
-          const slot = aggs.get(r)!;
-          if (isCurrent) bumpAgg(slot.current, c);
-          else bumpAgg(slot.prior, c);
-        }
-      }
-    }
-    for (const r of radii) {
-      const slot = aggs.get(r)!;
-      const areaSqKm = Math.PI * (r / 1000) ** 2;
-      pendingRows.push({
-        schoolType: school.type,
-        schoolKey: school.key,
-        radiusMeters: r,
-        current: slot.current,
-        prior: slot.prior,
-        weightedRiskScore: weightedScore(slot.current, areaSqKm),
-      });
-    }
-  }
+  for (const school of targets) pendingRows.push(...await computeSafetyRows(school, priorStart, periodStart, periodEnd));
 
   const stamp = new Date();
   const values = pendingRows.map((row) => {
@@ -860,9 +705,9 @@ export async function recomputeSafetyForKeys(
     };
   });
 
-  await db
+  for (const chunk of d1Chunks(values, 25)) await db
     .insert(schoolSafetyIndex)
-    .values(values)
+    .values(chunk)
     .onConflictDoUpdate({
       target: [
         schoolSafetyIndex.schoolType,

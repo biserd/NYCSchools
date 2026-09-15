@@ -17,12 +17,13 @@ import { getUncachableStripeClient, getStripePublishableKey, getStripeMode } fro
 import { WebhookHandlers } from "./webhookHandlers";
 import { stripeService } from "./stripeService";
 import { getCached, setCache, deleteCache, invalidateUserCaches, CACHE_TTL_SHORT, CACHE_TTL_DEFAULT, CACHE_TTL_LONG } from "./cache";
-import { getSafetyIndex, runSafetySync, getSafetySyncStatus } from "./services/safetyIndex";
+import { getSafetyIndex, getSafetySyncStatus } from "./services/safetyIndex";
+import { startSafetyRefresh } from "./services/safetyQueue";
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
 import { flushApiLogsNow } from "./apiObservability";
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 import { CANONICAL_SCHOOL_GUIDES } from "@shared/school-guides";
-import { waitUntil } from "cloudflare:workers";
+import { env as workerEnv } from "cloudflare:workers";
 import { getAppUrl } from "./runtimeConfig";
 import { generateJson, streamText, type AiMessage } from "./aiService";
 import { llmsText, sitemapByName, sitemapIndex, submitIndexNow } from "./seoFeeds";
@@ -3761,36 +3762,15 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const monthsParam = parseInt(String(req.query.months ?? ""), 10);
-      const maxRowsParam = parseInt(String(req.query.maxRows ?? ""), 10);
-      const skipPull = String(req.query.skipPull ?? "").toLowerCase() === "true";
-
-      const opts = {
-        months: Number.isFinite(monthsParam) && monthsParam > 0 ? monthsParam : 24,
-        maxRows: Number.isFinite(maxRowsParam) && maxRowsParam > 0 ? maxRowsParam : undefined,
-        skipPull,
-      };
-
-      console.log('[SAFETY_CRON] starting background safety sync', opts);
-      waitUntil(runSafetySync(opts)
-        .then((result) => {
-          console.log('[SAFETY_CRON] sync finished', {
-            success: result.success,
-            durationMs: result.durationMs,
-            inserted: result.inserted,
-            schoolCount: result.schoolCount,
-            rowsWritten: result.rowsWritten,
-            error: result.error,
-          });
-        })
-        .catch((err) => {
-          console.error('[SAFETY_CRON] sync threw uncaught error:', err);
-        }));
+      if (req.query.maxRows !== undefined || req.query.skipPull !== undefined || (req.query.months !== undefined && String(req.query.months) !== '24')) {
+        return res.status(400).json({error:'D1 refresh uses the complete 24-month window. Partial refresh options are not supported.'});
+      }
+      const job = await startSafetyRefresh(workerEnv);
 
       res.status(202).json({
         accepted: true,
-        message: 'Safety sync started in the background. Poll /api/admin/safety-sync/status for results.',
-        opts,
+        message: 'Safety refresh queued. Poll /api/admin/safety-sync/status for progress.',
+        ...job,
         startedAt: new Date().toISOString(),
       });
     } catch (error: any) {
@@ -3806,7 +3786,8 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         return res.status(403).json({ error: 'Forbidden' });
       }
       const status = await getSafetySyncStatus();
-      res.json(status);
+      const queueState = await workerEnv.DB.prepare('SELECT value FROM app_settings WHERE key=?').bind('d1_safety_refresh_job').first<string>('value');
+      res.json({...status, queue:queueState ? JSON.parse(queueState) : null});
     } catch (error: any) {
       console.error('[SAFETY_CRON] status error:', error);
       res.status(500).json({ error: 'Failed to read safety-sync status', message: error.message });

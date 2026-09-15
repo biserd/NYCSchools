@@ -47,7 +47,9 @@ async function getCredentials() {
     return cachedCredentials;
   }
 
-  const isProduction = process.env.ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production';
+  const isProduction = process.env.ENVIRONMENT
+    ? process.env.ENVIRONMENT === 'production'
+    : process.env.NODE_ENV === 'production';
   
   if (isProduction) {
     // Production: Use LIVE keys

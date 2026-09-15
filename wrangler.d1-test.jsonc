@@ -1,0 +1,11 @@
+{
+  "name":"nyc-d1-staging-test-preview",
+  "main":"scripts/d1/test-worker.ts",
+  "account_id":"73d71a2bef58f7469ecb48e2b8e84c0e",
+  "compatibility_date":"2026-09-15",
+  "compatibility_flags":["nodejs_compat"],
+  "workers_dev":false,
+  "preview_urls":false,
+  "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-d1-staging","database_id":"e48a9ae9-4948-4dae-863a-06f6b026b436"}],
+  "vars":{"ENVIRONMENT":"staging"}
+}

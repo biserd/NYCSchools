@@ -2,7 +2,8 @@ import { db } from "./db";
 import { normalizeSchool, schoolBorough } from "../shared/early-childhood";
 import { getSchoolUrl } from "../shared/schema";
 import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert, type TwokCenter } from "@shared/schema";
-import { eq, and, sql, desc, asc, like, or, ilike, gte, isNotNull, inArray, lt } from "drizzle-orm";
+import { eq, and, sql, desc, asc, like, or, gte, isNotNull, inArray, lt } from "drizzle-orm";
+import { d1Chunks } from './d1-batches';
 
 export interface IStorage {
   // User operations for standalone auth
@@ -335,14 +336,15 @@ export class DbStorage implements IStorage {
   async getFavoriteStatusBatch(userId: string, schoolDbns: string[]): Promise<Record<string, boolean>> {
     if (!schoolDbns.length) return {};
     
-    const userFavorites = await db.select({ schoolDbn: favorites.schoolDbn })
+    const userFavorites: {schoolDbn:string}[] = [];
+    for (const chunk of d1Chunks(schoolDbns, 1, 1)) userFavorites.push(...await db.select({ schoolDbn: favorites.schoolDbn })
       .from(favorites)
       .where(
         and(
           eq(favorites.userId, userId),
-          inArray(favorites.schoolDbn, schoolDbns)
+          inArray(favorites.schoolDbn, chunk)
         )
-      );
+      ));
     
     const favoriteSet = new Set(userFavorites.map(f => f.schoolDbn));
     const result: Record<string, boolean> = {};
@@ -420,8 +422,8 @@ export class DbStorage implements IStorage {
   async upsertSchools(schoolList: School[]): Promise<void> {
     if (schoolList.length === 0) return;
     
-    await db.insert(schools)
-      .values(schoolList)
+    for (const chunk of d1Chunks(schoolList, 98)) await db.insert(schools)
+      .values(chunk)
       .onConflictDoUpdate({
         target: schools.dbn,
         set: {
@@ -568,33 +570,33 @@ export class DbStorage implements IStorage {
     const [stats] = await db
       .select({
         schoolCount: sql<number>`COUNT(*)`,
-        elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
-        mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
-        climateScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END), 1)`,
-        progressScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END), 1)`,
-        studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
-        economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
+        elaProficiency: sql<number>`(ROUND((AVG(${schools.ela_proficiency})) * 10, 0) / 10.0)`,
+        mathProficiency: sql<number>`(ROUND((AVG(${schools.math_proficiency})) * 10, 0) / 10.0)`,
+        climateScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END)) * 10, 0) / 10.0)`,
+        progressScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END)) * 10, 0) / 10.0)`,
+        studentTeacherRatio: sql<number>`(ROUND((AVG(${schools.student_teacher_ratio})) * 10, 0) / 10.0)`,
+        economicNeedIndex: sql<number>`(ROUND((AVG(${schools.economic_need_index})) * 10, 0) / 10.0)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
         // Demographics
-        ellPercent: sql<number>`ROUND(AVG(${schools.ell_percent}), 1)`,
-        iepPercent: sql<number>`ROUND(AVG(${schools.iep_percent}), 1)`,
-        asianPercent: sql<number>`ROUND(AVG(${schools.asian_percent}), 1)`,
-        blackPercent: sql<number>`ROUND(AVG(${schools.black_percent}), 1)`,
-        hispanicPercent: sql<number>`ROUND(AVG(${schools.hispanic_percent}), 1)`,
-        whitePercent: sql<number>`ROUND(AVG(${schools.white_percent}), 1)`,
-        multiRacialPercent: sql<number>`ROUND(AVG(${schools.multi_racial_percent}), 1)`,
+        ellPercent: sql<number>`(ROUND((AVG(${schools.ell_percent})) * 10, 0) / 10.0)`,
+        iepPercent: sql<number>`(ROUND((AVG(${schools.iep_percent})) * 10, 0) / 10.0)`,
+        asianPercent: sql<number>`(ROUND((AVG(${schools.asian_percent})) * 10, 0) / 10.0)`,
+        blackPercent: sql<number>`(ROUND((AVG(${schools.black_percent})) * 10, 0) / 10.0)`,
+        hispanicPercent: sql<number>`(ROUND((AVG(${schools.hispanic_percent})) * 10, 0) / 10.0)`,
+        whitePercent: sql<number>`(ROUND((AVG(${schools.white_percent})) * 10, 0) / 10.0)`,
+        multiRacialPercent: sql<number>`(ROUND((AVG(${schools.multi_racial_percent})) * 10, 0) / 10.0)`,
         // Survey - Student
-        studentSafety: sql<number>`ROUND(AVG(${schools.student_safety}), 1)`,
-        studentTeacherTrust: sql<number>`ROUND(AVG(${schools.student_teacher_trust}), 1)`,
-        studentEngagement: sql<number>`ROUND(AVG(${schools.student_engagement}), 1)`,
+        studentSafety: sql<number>`(ROUND((AVG(${schools.student_safety})) * 10, 0) / 10.0)`,
+        studentTeacherTrust: sql<number>`(ROUND((AVG(${schools.student_teacher_trust})) * 10, 0) / 10.0)`,
+        studentEngagement: sql<number>`(ROUND((AVG(${schools.student_engagement})) * 10, 0) / 10.0)`,
         // Survey - Teacher
-        teacherQuality: sql<number>`ROUND(AVG(${schools.teacher_quality}), 1)`,
-        teacherCollaboration: sql<number>`ROUND(AVG(${schools.teacher_collaboration}), 1)`,
-        teacherLeadership: sql<number>`ROUND(AVG(${schools.teacher_leadership}), 1)`,
+        teacherQuality: sql<number>`(ROUND((AVG(${schools.teacher_quality})) * 10, 0) / 10.0)`,
+        teacherCollaboration: sql<number>`(ROUND((AVG(${schools.teacher_collaboration})) * 10, 0) / 10.0)`,
+        teacherLeadership: sql<number>`(ROUND((AVG(${schools.teacher_leadership})) * 10, 0) / 10.0)`,
         // Survey - Guardian
-        guardianSatisfaction: sql<number>`ROUND(AVG(${schools.guardian_satisfaction}), 1)`,
-        guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
-        guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
+        guardianSatisfaction: sql<number>`(ROUND((AVG(${schools.guardian_satisfaction})) * 10, 0) / 10.0)`,
+        guardianCommunication: sql<number>`(ROUND((AVG(${schools.guardian_communication})) * 10, 0) / 10.0)`,
+        guardianSchoolTrust: sql<number>`(ROUND((AVG(${schools.guardian_school_trust})) * 10, 0) / 10.0)`,
       })
       .from(schools)
       .where(and(eq(schools.district, district), sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`));
@@ -648,33 +650,33 @@ export class DbStorage implements IStorage {
       .select({
         district: schools.district,
         schoolCount: sql<number>`COUNT(*)`,
-        elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
-        mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
-        climateScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END), 1)`,
-        progressScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END), 1)`,
-        studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
-        economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
+        elaProficiency: sql<number>`(ROUND((AVG(${schools.ela_proficiency})) * 10, 0) / 10.0)`,
+        mathProficiency: sql<number>`(ROUND((AVG(${schools.math_proficiency})) * 10, 0) / 10.0)`,
+        climateScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END)) * 10, 0) / 10.0)`,
+        progressScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END)) * 10, 0) / 10.0)`,
+        studentTeacherRatio: sql<number>`(ROUND((AVG(${schools.student_teacher_ratio})) * 10, 0) / 10.0)`,
+        economicNeedIndex: sql<number>`(ROUND((AVG(${schools.economic_need_index})) * 10, 0) / 10.0)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
         // Demographics
-        ellPercent: sql<number>`ROUND(AVG(${schools.ell_percent}), 1)`,
-        iepPercent: sql<number>`ROUND(AVG(${schools.iep_percent}), 1)`,
-        asianPercent: sql<number>`ROUND(AVG(${schools.asian_percent}), 1)`,
-        blackPercent: sql<number>`ROUND(AVG(${schools.black_percent}), 1)`,
-        hispanicPercent: sql<number>`ROUND(AVG(${schools.hispanic_percent}), 1)`,
-        whitePercent: sql<number>`ROUND(AVG(${schools.white_percent}), 1)`,
-        multiRacialPercent: sql<number>`ROUND(AVG(${schools.multi_racial_percent}), 1)`,
+        ellPercent: sql<number>`(ROUND((AVG(${schools.ell_percent})) * 10, 0) / 10.0)`,
+        iepPercent: sql<number>`(ROUND((AVG(${schools.iep_percent})) * 10, 0) / 10.0)`,
+        asianPercent: sql<number>`(ROUND((AVG(${schools.asian_percent})) * 10, 0) / 10.0)`,
+        blackPercent: sql<number>`(ROUND((AVG(${schools.black_percent})) * 10, 0) / 10.0)`,
+        hispanicPercent: sql<number>`(ROUND((AVG(${schools.hispanic_percent})) * 10, 0) / 10.0)`,
+        whitePercent: sql<number>`(ROUND((AVG(${schools.white_percent})) * 10, 0) / 10.0)`,
+        multiRacialPercent: sql<number>`(ROUND((AVG(${schools.multi_racial_percent})) * 10, 0) / 10.0)`,
         // Survey - Student
-        studentSafety: sql<number>`ROUND(AVG(${schools.student_safety}), 1)`,
-        studentTeacherTrust: sql<number>`ROUND(AVG(${schools.student_teacher_trust}), 1)`,
-        studentEngagement: sql<number>`ROUND(AVG(${schools.student_engagement}), 1)`,
+        studentSafety: sql<number>`(ROUND((AVG(${schools.student_safety})) * 10, 0) / 10.0)`,
+        studentTeacherTrust: sql<number>`(ROUND((AVG(${schools.student_teacher_trust})) * 10, 0) / 10.0)`,
+        studentEngagement: sql<number>`(ROUND((AVG(${schools.student_engagement})) * 10, 0) / 10.0)`,
         // Survey - Teacher
-        teacherQuality: sql<number>`ROUND(AVG(${schools.teacher_quality}), 1)`,
-        teacherCollaboration: sql<number>`ROUND(AVG(${schools.teacher_collaboration}), 1)`,
-        teacherLeadership: sql<number>`ROUND(AVG(${schools.teacher_leadership}), 1)`,
+        teacherQuality: sql<number>`(ROUND((AVG(${schools.teacher_quality})) * 10, 0) / 10.0)`,
+        teacherCollaboration: sql<number>`(ROUND((AVG(${schools.teacher_collaboration})) * 10, 0) / 10.0)`,
+        teacherLeadership: sql<number>`(ROUND((AVG(${schools.teacher_leadership})) * 10, 0) / 10.0)`,
         // Survey - Guardian
-        guardianSatisfaction: sql<number>`ROUND(AVG(${schools.guardian_satisfaction}), 1)`,
-        guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
-        guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
+        guardianSatisfaction: sql<number>`(ROUND((AVG(${schools.guardian_satisfaction})) * 10, 0) / 10.0)`,
+        guardianCommunication: sql<number>`(ROUND((AVG(${schools.guardian_communication})) * 10, 0) / 10.0)`,
+        guardianSchoolTrust: sql<number>`(ROUND((AVG(${schools.guardian_school_trust})) * 10, 0) / 10.0)`,
       })
       .from(schools)
       .where(sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`)
@@ -734,33 +736,33 @@ export class DbStorage implements IStorage {
     const [stats] = await db
       .select({
         schoolCount: sql<number>`COUNT(*)`,
-        elaProficiency: sql<number>`ROUND(AVG(${schools.ela_proficiency}), 1)`,
-        mathProficiency: sql<number>`ROUND(AVG(${schools.math_proficiency}), 1)`,
-        climateScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END), 1)`,
-        progressScore: sql<number>`ROUND(AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END), 1)`,
-        studentTeacherRatio: sql<number>`ROUND(AVG(${schools.student_teacher_ratio}::numeric), 1)`,
-        economicNeedIndex: sql<number>`ROUND(AVG(${schools.economic_need_index}), 1)`,
+        elaProficiency: sql<number>`(ROUND((AVG(${schools.ela_proficiency})) * 10, 0) / 10.0)`,
+        mathProficiency: sql<number>`(ROUND((AVG(${schools.math_proficiency})) * 10, 0) / 10.0)`,
+        climateScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END)) * 10, 0) / 10.0)`,
+        progressScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END)) * 10, 0) / 10.0)`,
+        studentTeacherRatio: sql<number>`(ROUND((AVG(${schools.student_teacher_ratio})) * 10, 0) / 10.0)`,
+        economicNeedIndex: sql<number>`(ROUND((AVG(${schools.economic_need_index})) * 10, 0) / 10.0)`,
         enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
         // Demographics
-        ellPercent: sql<number>`ROUND(AVG(${schools.ell_percent}), 1)`,
-        iepPercent: sql<number>`ROUND(AVG(${schools.iep_percent}), 1)`,
-        asianPercent: sql<number>`ROUND(AVG(${schools.asian_percent}), 1)`,
-        blackPercent: sql<number>`ROUND(AVG(${schools.black_percent}), 1)`,
-        hispanicPercent: sql<number>`ROUND(AVG(${schools.hispanic_percent}), 1)`,
-        whitePercent: sql<number>`ROUND(AVG(${schools.white_percent}), 1)`,
-        multiRacialPercent: sql<number>`ROUND(AVG(${schools.multi_racial_percent}), 1)`,
+        ellPercent: sql<number>`(ROUND((AVG(${schools.ell_percent})) * 10, 0) / 10.0)`,
+        iepPercent: sql<number>`(ROUND((AVG(${schools.iep_percent})) * 10, 0) / 10.0)`,
+        asianPercent: sql<number>`(ROUND((AVG(${schools.asian_percent})) * 10, 0) / 10.0)`,
+        blackPercent: sql<number>`(ROUND((AVG(${schools.black_percent})) * 10, 0) / 10.0)`,
+        hispanicPercent: sql<number>`(ROUND((AVG(${schools.hispanic_percent})) * 10, 0) / 10.0)`,
+        whitePercent: sql<number>`(ROUND((AVG(${schools.white_percent})) * 10, 0) / 10.0)`,
+        multiRacialPercent: sql<number>`(ROUND((AVG(${schools.multi_racial_percent})) * 10, 0) / 10.0)`,
         // Survey - Student
-        studentSafety: sql<number>`ROUND(AVG(${schools.student_safety}), 1)`,
-        studentTeacherTrust: sql<number>`ROUND(AVG(${schools.student_teacher_trust}), 1)`,
-        studentEngagement: sql<number>`ROUND(AVG(${schools.student_engagement}), 1)`,
+        studentSafety: sql<number>`(ROUND((AVG(${schools.student_safety})) * 10, 0) / 10.0)`,
+        studentTeacherTrust: sql<number>`(ROUND((AVG(${schools.student_teacher_trust})) * 10, 0) / 10.0)`,
+        studentEngagement: sql<number>`(ROUND((AVG(${schools.student_engagement})) * 10, 0) / 10.0)`,
         // Survey - Teacher
-        teacherQuality: sql<number>`ROUND(AVG(${schools.teacher_quality}), 1)`,
-        teacherCollaboration: sql<number>`ROUND(AVG(${schools.teacher_collaboration}), 1)`,
-        teacherLeadership: sql<number>`ROUND(AVG(${schools.teacher_leadership}), 1)`,
+        teacherQuality: sql<number>`(ROUND((AVG(${schools.teacher_quality})) * 10, 0) / 10.0)`,
+        teacherCollaboration: sql<number>`(ROUND((AVG(${schools.teacher_collaboration})) * 10, 0) / 10.0)`,
+        teacherLeadership: sql<number>`(ROUND((AVG(${schools.teacher_leadership})) * 10, 0) / 10.0)`,
         // Survey - Guardian
-        guardianSatisfaction: sql<number>`ROUND(AVG(${schools.guardian_satisfaction}), 1)`,
-        guardianCommunication: sql<number>`ROUND(AVG(${schools.guardian_communication}), 1)`,
-        guardianSchoolTrust: sql<number>`ROUND(AVG(${schools.guardian_school_trust}), 1)`,
+        guardianSatisfaction: sql<number>`(ROUND((AVG(${schools.guardian_satisfaction})) * 10, 0) / 10.0)`,
+        guardianCommunication: sql<number>`(ROUND((AVG(${schools.guardian_communication})) * 10, 0) / 10.0)`,
+        guardianSchoolTrust: sql<number>`(ROUND((AVG(${schools.guardian_school_trust})) * 10, 0) / 10.0)`,
       })
       .from(schools)
       .where(sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`);
@@ -966,8 +968,8 @@ export class DbStorage implements IStorage {
     if (filters?.search) {
       conditions.push(
         or(
-          ilike(nyceecCenters.name, `%${filters.search}%`),
-          ilike(nyceecCenters.address, `%${filters.search}%`)
+          sql`instr(lower(${nyceecCenters.name}), lower(${filters.search})) > 0`,
+          sql`instr(lower(${nyceecCenters.address}), lower(${filters.search})) > 0`
         )
       );
     }
@@ -982,8 +984,9 @@ export class DbStorage implements IStorage {
   private async linkCanonicalCenters(centers: NyceecCenter[]): Promise<NyceecCenter[]> {
     const identifiers = centers.map(c => c.semsCode?.trim().toUpperCase()).filter(Boolean) as string[];
     if (!identifiers.length) return centers;
-    const linked = await db.select({ dbn: schools.dbn, name: schools.name, has_2k: schools.has_2k,
-      has_3k: schools.has_3k, has_prek: schools.has_prek }).from(schools).where(inArray(schools.dbn, identifiers));
+    const linked: Pick<School, 'dbn'|'name'|'has_2k'|'has_3k'|'has_prek'>[] = [];
+    for (const chunk of d1Chunks(identifiers, 1)) linked.push(...await db.select({ dbn: schools.dbn, name: schools.name, has_2k: schools.has_2k,
+      has_3k: schools.has_3k, has_prek: schools.has_prek }).from(schools).where(inArray(schools.dbn, chunk)));
     const byId = new Map(linked.map(s => [s.dbn, s]));
     return centers.map(c => {
       const s = byId.get(c.semsCode?.trim().toUpperCase() || "");
@@ -1019,8 +1022,8 @@ export class DbStorage implements IStorage {
   async upsertNyceecCenters(centers: InsertNyceecCenter[]): Promise<void> {
     if (centers.length === 0) return;
     
-    // Batch upsert in chunks of 100
-    const chunkSize = 100;
+    // 23 columns plus conflict timestamp must fit D1's 100 parameter budget.
+    const chunkSize = 4;
     for (let i = 0; i < centers.length; i += chunkSize) {
       const chunk = centers.slice(i, i + chunkSize);
       await db
@@ -1160,7 +1163,7 @@ export class DbStorage implements IStorage {
           considerations: insight.considerations,
           tourQuestions: insight.tourQuestions,
           neighborhoodContext: insight.neighborhoodContext,
-          createdAt: sql`now()`,
+          createdAt: sql`(unixepoch() * 1000)`,
         },
       })
       .returning();
@@ -1173,8 +1176,8 @@ export class DbStorage implements IStorage {
       SELECT 
         year,
         COUNT(*) as school_count,
-        ROUND(AVG(ela_proficiency)::numeric, 1) as avg_ela,
-        ROUND(AVG(math_proficiency)::numeric, 1) as avg_math
+        (ROUND((AVG(ela_proficiency)) * 10, 0) / 10.0) as avg_ela,
+        (ROUND((AVG(math_proficiency)) * 10, 0) / 10.0) as avg_math
       FROM school_historical_scores
       WHERE ela_proficiency IS NOT NULL AND math_proficiency IS NOT NULL
       GROUP BY year
@@ -1203,13 +1206,13 @@ export class DbStorage implements IStorage {
       )
       SELECT 
         d22.district,
-        ROUND(d22.ela_2022::numeric, 1) as ela_2022,
-        ROUND(d25.ela_2025::numeric, 1) as ela_2025,
-        ROUND((d25.ela_2025 - d22.ela_2022)::numeric, 1) as ela_change,
-        ROUND(d22.math_2022::numeric, 1) as math_2022,
-        ROUND(d25.math_2025::numeric, 1) as math_2025,
-        ROUND((d25.math_2025 - d22.math_2022)::numeric, 1) as math_change,
-        ROUND(((d25.ela_2025 - d22.ela_2022 + d25.math_2025 - d22.math_2022) / 2)::numeric, 1) as avg_change
+        (ROUND((d22.ela_2022) * 10, 0) / 10.0) as ela_2022,
+        (ROUND((d25.ela_2025) * 10, 0) / 10.0) as ela_2025,
+        (ROUND(((d25.ela_2025 - d22.ela_2022)) * 10, 0) / 10.0) as ela_change,
+        (ROUND((d22.math_2022) * 10, 0) / 10.0) as math_2022,
+        (ROUND((d25.math_2025) * 10, 0) / 10.0) as math_2025,
+        (ROUND(((d25.math_2025 - d22.math_2022)) * 10, 0) / 10.0) as math_change,
+        (ROUND((((d25.ela_2025 - d22.ela_2022 + d25.math_2025 - d22.math_2022) / 2)) * 10, 0) / 10.0) as avg_change
       FROM district_2022 d22
       JOIN district_2025 d25 ON d22.district = d25.district
       ORDER BY (d25.ela_2025 - d22.ela_2022 + d25.math_2025 - d22.math_2022) DESC
@@ -1341,24 +1344,24 @@ export class DbStorage implements IStorage {
           and(
             eq(trackedSchools.notifyOpenHouse, true),
             isNotNull(trackedSchools.openHouseDate),
-            sql`${trackedSchools.openHouseDate} <= ${reminderTime}`,
-            sql`${trackedSchools.openHouseDate} > NOW()`,
+            sql`${trackedSchools.openHouseDate} <= ${reminderTime.getTime()}`,
+            sql`${trackedSchools.openHouseDate} > (unixepoch() * 1000)`,
             sql`${trackedSchools.openHouseNotifiedAt} IS NULL`
           ),
           // Tour coming up
           and(
             eq(trackedSchools.notifyTour, true),
             isNotNull(trackedSchools.tourDate),
-            sql`${trackedSchools.tourDate} <= ${reminderTime}`,
-            sql`${trackedSchools.tourDate} > NOW()`,
+            sql`${trackedSchools.tourDate} <= ${reminderTime.getTime()}`,
+            sql`${trackedSchools.tourDate} > (unixepoch() * 1000)`,
             sql`${trackedSchools.tourNotifiedAt} IS NULL`
           ),
           // Deadline coming up
           and(
             eq(trackedSchools.notifyDeadline, true),
             isNotNull(trackedSchools.applicationDeadline),
-            sql`${trackedSchools.applicationDeadline} <= ${reminderTime}`,
-            sql`${trackedSchools.applicationDeadline} > NOW()`,
+            sql`${trackedSchools.applicationDeadline} <= ${reminderTime.getTime()}`,
+            sql`${trackedSchools.applicationDeadline} > (unixepoch() * 1000)`,
             sql`${trackedSchools.deadlineNotifiedAt} IS NULL`
           )
         )
@@ -1398,7 +1401,7 @@ export class DbStorage implements IStorage {
   async deleteExpiredPasswordResetTokens(): Promise<void> {
     await db
       .delete(passwordResetTokens)
-      .where(sql`${passwordResetTokens.expiresAt} < NOW()`);
+      .where(sql`${passwordResetTokens.expiresAt} < (unixepoch() * 1000)`);
   }
 
   async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
@@ -1466,7 +1469,7 @@ export class DbStorage implements IStorage {
   async deleteExpiredMagicLinkTokens(): Promise<void> {
     await db
       .delete(magicLinkTokens)
-      .where(sql`${magicLinkTokens.expiresAt} < NOW()`);
+      .where(sql`${magicLinkTokens.expiresAt} < (unixepoch() * 1000)`);
   }
   
   // Webhook idempotency operations
@@ -1537,8 +1540,8 @@ export class DbStorage implements IStorage {
       if (filters.search) {
         conditions.push(
           or(
-            ilike(privateSchools.name, `%${filters.search}%`),
-            ilike(privateSchools.address, `%${filters.search}%`)
+            sql`instr(lower(${privateSchools.name}), lower(${filters.search})) > 0`,
+            sql`instr(lower(${privateSchools.address}), lower(${filters.search})) > 0`
           )
         );
       }
@@ -1578,8 +1581,8 @@ export class DbStorage implements IStorage {
   async upsertPrivateSchools(schoolList: InsertPrivateSchool[]): Promise<void> {
     if (schoolList.length === 0) return;
     
-    // Batch upsert in chunks of 100
-    const chunkSize = 100;
+    // 56 columns per row: only one row fits D1's 100 parameter budget.
+    const chunkSize = 1;
     for (let i = 0; i < schoolList.length; i += chunkSize) {
       const chunk = schoolList.slice(i, i + chunkSize);
       await db
@@ -1762,29 +1765,29 @@ export class DbStorage implements IStorage {
     // requests for the same key.
     const result = await db.execute(sql`
       INSERT INTO api_key_rate_state (key_id, minute_window_start, minute_count, day_window_start, day_count, updated_at)
-      VALUES (${keyId}, ${now.toISOString()}, 1, ${now.toISOString()}, 1, ${now.toISOString()})
+      VALUES (${keyId}, ${now.getTime()}, 1, ${now.getTime()}, 1, ${now.getTime()})
       ON CONFLICT (key_id) DO UPDATE SET
         minute_window_start = CASE
-          WHEN api_key_rate_state.minute_window_start < ${minuteAgo.toISOString()}
-          THEN ${now.toISOString()}::timestamp
+          WHEN api_key_rate_state.minute_window_start < ${minuteAgo.getTime()}
+          THEN ${now.getTime()}
           ELSE api_key_rate_state.minute_window_start
         END,
         minute_count = CASE
-          WHEN api_key_rate_state.minute_window_start < ${minuteAgo.toISOString()}
+          WHEN api_key_rate_state.minute_window_start < ${minuteAgo.getTime()}
           THEN 1
           ELSE api_key_rate_state.minute_count + 1
         END,
         day_window_start = CASE
-          WHEN api_key_rate_state.day_window_start < ${dayAgo.toISOString()}
-          THEN ${now.toISOString()}::timestamp
+          WHEN api_key_rate_state.day_window_start < ${dayAgo.getTime()}
+          THEN ${now.getTime()}
           ELSE api_key_rate_state.day_window_start
         END,
         day_count = CASE
-          WHEN api_key_rate_state.day_window_start < ${dayAgo.toISOString()}
+          WHEN api_key_rate_state.day_window_start < ${dayAgo.getTime()}
           THEN 1
           ELSE api_key_rate_state.day_count + 1
         END,
-        updated_at = ${now.toISOString()}
+        updated_at = ${now.getTime()}
       RETURNING key_id, minute_window_start, minute_count, day_window_start, day_count, updated_at
     `);
     const row: any = (result as any).rows?.[0] ?? (result as any)[0];
@@ -1800,7 +1803,7 @@ export class DbStorage implements IStorage {
 
   async insertApiRequestLogs(rows: InsertApiRequestLog[]): Promise<void> {
     if (!rows.length) return;
-    await db.insert(apiRequestLog).values(rows);
+    for (const chunk of d1Chunks(rows, 7)) await db.insert(apiRequestLog).values(chunk);
   }
 
   async pruneApiRequestLogs(olderThan: Date): Promise<number> {
@@ -1813,7 +1816,7 @@ export class DbStorage implements IStorage {
 
   async countRecentRateLimitHits(keyId: number, sinceTs: Date): Promise<number> {
     const [row] = await db
-      .select({ c: sql<number>`count(*)::int` })
+      .select({ c: sql<number>`count(*)` })
       .from(apiRequestLog)
       .where(and(
         eq(apiRequestLog.keyId, keyId),
@@ -1825,7 +1828,7 @@ export class DbStorage implements IStorage {
 
   async countDistinctIpsForKey(keyId: number, sinceTs: Date): Promise<number> {
     const [row] = await db
-      .select({ c: sql<number>`count(distinct ${apiRequestLog.ip})::int` })
+      .select({ c: sql<number>`count(distinct ${apiRequestLog.ip})` })
       .from(apiRequestLog)
       .where(and(
         eq(apiRequestLog.keyId, keyId),
@@ -1876,9 +1879,9 @@ export class DbStorage implements IStorage {
   async getApiKeyUsageSummary(keyId: number, sinceTs: Date): Promise<{ total: number; errors429: number; distinctIps: number }> {
     const [row] = await db
       .select({
-        total: sql<number>`count(*)::int`,
-        errors429: sql<number>`sum(case when ${apiRequestLog.status} = 429 then 1 else 0 end)::int`,
-        distinctIps: sql<number>`count(distinct ${apiRequestLog.ip})::int`,
+        total: sql<number>`count(*)`,
+        errors429: sql<number>`sum(case when ${apiRequestLog.status} = 429 then 1 else 0 end)`,
+        distinctIps: sql<number>`count(distinct ${apiRequestLog.ip})`,
       })
       .from(apiRequestLog)
       .where(and(
@@ -1896,7 +1899,7 @@ export class DbStorage implements IStorage {
     const rows = await db
       .select({
         keyId: apiRequestLog.keyId,
-        total: sql<number>`count(*)::int`,
+        total: sql<number>`count(*)`,
       })
       .from(apiRequestLog)
       .where(and(
@@ -1946,7 +1949,7 @@ export class DbStorage implements IStorage {
     const rows = await db
       .select({
         ip: apiRequestLog.ip,
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`count(*)`,
         lastSeen: sql<Date>`max(${apiRequestLog.ts})`,
       })
       .from(apiRequestLog)
@@ -1967,7 +1970,7 @@ export class DbStorage implements IStorage {
     const rows = await db
       .select({
         path: apiRequestLog.path,
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`count(*)`,
       })
       .from(apiRequestLog)
       .where(and(

@@ -235,7 +235,8 @@ function calculateDefaultProgressScore(scores: {
   return 70;
 }
 
-async function importSchoolsInBatches(schoolSeeds: SchoolSeed[], batchSize: number = 100) {
+async function importSchoolsInBatches(schoolSeeds: SchoolSeed[], batchSize: number = 1) {
+  batchSize = Math.min(batchSize, 1); // 98 school columns; D1 permits 100 bound parameters.
   let imported = 0;
   let updated = 0;
   let errors = 0;

@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { fetchTwok, planTwok, normalizeId, centerId, repairEncoding } from "../server/twokImport";
 
-// Read-only: generated SQL defaults to ROLLBACK, never applied by this script.
+// Read-only: SQL is commented out unless the source cycle is explicitly confirmed.
 const snapshot = await fetchTwok();
 async function get(url: string) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
@@ -11,7 +11,7 @@ async function get(url: string) {
   return rows;
 }
 const [schools, centers] = await Promise.all([
-  get("https://nycschoolsratings.com/api/schools"), get("https://nycschoolsratings.com/api/nyceec-centers"),
+  get("https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/api/schools"), get("https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/api/nyceec-centers"),
 ]);
 const changes = planTwok(snapshot, schools, centers);
 const ids = new Set(snapshot.records.map(r => normalizeId(r.school.dbn)));
@@ -44,11 +44,9 @@ const report = {
   encodingReview: snapshot.records.filter(r => repairEncoding(r.school.name) !== r.school.name).map(r => ({ dbn: r.school.dbn, original: r.school.name, repaired: repairEncoding(r.school.name) })), changes,
 };
 const quote = (s: string) => "'" + s.replace(/'/g, "''") + "'";
-const literal = (v: any) => v == null ? "NULL" : typeof v === "object" ? quote(JSON.stringify(v)) + "::jsonb" : typeof v === "string" ? quote(v) : String(v);
+const literal = (v: any) => v == null ? "NULL" : typeof v === "object" ? quote(JSON.stringify(v)) : typeof v === "string" ? quote(v) : typeof v === "boolean" ? (v ? "1" : "0") : String(v);
 const col = (s: string) => '"' + s + '"';
-// PostgreSQL real columns must compare against real-typed literals; otherwise
-// decimal JSON round-trips promote comparison precision and skip unchanged rows.
-const comparison = (k: string, v: any) => `${col(k)} IS NOT DISTINCT FROM ${literal(v)}${["latitude", "longitude", "student_teacher_ratio"].includes(k) ? "::real" : ""}`;
+const comparison = (k: string, v: any) => `${col(k)} IS ${literal(v)}`;
 const sql = changes.map(c => c.action === "insert"
   ? `INSERT INTO schools (${Object.keys(c.after).map(col).join(",")}) VALUES (${Object.values(c.after).map(literal).join(",")}) ON CONFLICT (dbn) DO NOTHING;`
   : `UPDATE schools SET ${Object.entries(c.after).map(([k,v]) => `${col(k)}=${literal(v)}`).join(",")} WHERE dbn=${quote(c.dbn)} AND (${Object.entries(c.before).map(([k,v]) => comparison(k,v)).join(" AND ")});`).join("\n");
@@ -56,6 +54,8 @@ const rollback = changes.filter(c => c.before).map(c => `UPDATE schools SET ${Ob
 const out = "reports/twok";
 await mkdir(out, { recursive: true });
 await writeFile(`${out}/reconciliation.json`, JSON.stringify(report, null, 2));
-await writeFile(`${out}/proposed.sql`, `-- REVIEW ONLY. Source cycle: ${snapshot.cycle}\n-- Run schema migration first. Inspect changed-row counts.\n-- Explicitly acknowledge this source cycle via SET app.twok_expected_cycle before running.\nBEGIN;\nDO $$ BEGIN IF current_setting('app.twok_expected_cycle', true) IS DISTINCT FROM ${quote(snapshot.cycle)} THEN RAISE EXCEPTION 'Confirm the MySchools cycle before applying'; END IF; END $$;\n${sql}\nROLLBACK;\n`);
-await writeFile(`${out}/rollback.sql`, `-- Restores updates only if this import still owns provenance.\n-- Retain new providers to preserve relationships.\nBEGIN;\n${rollback}\nROLLBACK;\n`);
+const confirmed=process.argv.includes('--expected-cycle')&&process.argv[process.argv.indexOf('--expected-cycle')+1]===snapshot.cycle;
+const reviewSql=(value:string)=>confirmed?value:value.split('\n').map(line=>'-- '+line).join('\n');
+await writeFile(`${out}/proposed.sql`, `-- D1 STAGING ONLY. Source cycle: ${snapshot.cycle}\n-- ${confirmed?'Cycle explicitly confirmed. Review before applying with Wrangler.':'Inactive SQL: rerun with --expected-cycle matching this source cycle.'}\n-- This script never executes SQL. Inspect changed-row counts after import.\n${reviewSql(sql)}\n`);
+await writeFile(`${out}/rollback.sql`, `-- D1 staging: restores updates only if this import still owns provenance.\n-- Retain new providers to preserve relationships.\n${reviewSql(rollback)}\n`);
 console.log(JSON.stringify({ ...report, changes: changes.length, candidates: candidates.length, sharedAddresses: report.sharedAddresses.length, exactOverlaps: exactOverlaps.length }, null, 2));

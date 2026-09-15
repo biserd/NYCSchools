@@ -1,29 +1,37 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, serial, timestamp, index, uniqueIndex, primaryKey, jsonb, boolean, date } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, check } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import type { SurveyMetric } from './surveys';
 
-export const schoolSurveyReleases = pgTable('school_survey_releases', {
+export const schoolSurveyReleases = sqliteTable('school_survey_releases', {
   id: text('id').primaryKey(), year: integer('year').notNull(), instrument: text('instrument').notNull(),
   sourceUrl: text('source_url').notNull(), sourceHash: text('source_hash').notNull(),
-  importedAt: timestamp('imported_at', {withTimezone:true}).defaultNow().notNull(),
-}, table => [uniqueIndex('school_survey_releases_year_instrument_key').on(table.year, table.instrument)]);
-export const schoolSurveyResults = pgTable('school_survey_results', {
+  importedAt: integer('imported_at', { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+}, table => [
+  uniqueIndex('school_survey_releases_year_instrument_key').on(table.year, table.instrument),
+  check('school_survey_releases_year_check',sql`${table.year} >= 2007`),
+  check('school_survey_releases_instrument_check',sql`${table.instrument} IN ('k12-family','k12-teacher','k12-student','b5-family','b5-teacher')`),
+]);
+export const schoolSurveyResults = sqliteTable('school_survey_results', {
   releaseId: text('release_id').notNull().references(()=>schoolSurveyReleases.id),
   sourceId: text('source_id').notNull(), sourceName:text('source_name').notNull(),
-  schoolDbn: varchar('school_dbn').references(()=>schools.dbn),
+  schoolDbn: text('school_dbn').references(()=>schools.dbn),
   centerId:integer('center_id').references(()=>nyceecCenters.id),
   responseCount:integer('response_count'), responseRate:real('response_rate'),
-  metrics:jsonb('metrics').$type<SurveyMetric[]>().notNull(), matchMethod:text('match_method').notNull(),
-}, table => [primaryKey({columns:[table.releaseId,table.sourceId]}), index('school_survey_results_school_idx').on(table.schoolDbn), index('school_survey_results_center_idx').on(table.centerId)]);
+  metrics:text('metrics', { mode: "json" }).$type<SurveyMetric[]>().notNull(), matchMethod:text('match_method').notNull(),
+}, table => [primaryKey({columns:[table.releaseId,table.sourceId]}), index('school_survey_results_school_idx').on(table.schoolDbn), index('school_survey_results_center_idx').on(table.centerId),
+  check('school_survey_results_response_count_check',sql`${table.responseCount} >= 0`),
+  check('school_survey_results_response_rate_check',sql`${table.responseRate} >= 0 AND ${table.responseRate} <= 1`),
+  check('school_survey_results_match_method_check',sql`${table.matchMethod} IN ('dbn','loc_code','loc_code_sems_code','unmatched')`),
+]);
 
-export const schools = pgTable("schools", {
-  dbn: varchar("dbn").primaryKey(),
+export const schools = sqliteTable("schools", {
+  dbn: text("dbn").primaryKey(),
   name: text("name").notNull(),
   district: integer("district").notNull(),
   address: text("address").notNull(),
-  grade_band: varchar("grade_band").notNull(),
+  grade_band: text("grade_band").notNull(),
   
   // Academic Performance
   academics_score: integer("academics_score"),
@@ -56,8 +64,8 @@ export const schools = pgTable("schools", {
   science_grade8: integer("science_grade8"), // Science % proficient Grade 8
   
   // Assessment Data Source Metadata
-  assessment_year: varchar("assessment_year"), // School year (e.g., "2024-25")
-  assessment_source: varchar("assessment_source"), // Data source (e.g., "NYSED")
+  assessment_year: text("assessment_year"), // School year (e.g., "2024-25")
+  assessment_source: text("assessment_source"), // Data source (e.g., "NYSED")
   
   // School Info
   enrollment: integer("enrollment"),
@@ -72,9 +80,9 @@ export const schools = pgTable("schools", {
   economic_need_index: integer("economic_need_index"),
   attendance_rate: integer("attendance_rate"),
   teacher_attendance_rate: integer("teacher_attendance_rate"),
-  quality_rating_instruction: varchar("quality_rating_instruction"),
-  quality_rating_safety: varchar("quality_rating_safety"),
-  quality_rating_family: varchar("quality_rating_family"),
+  quality_rating_instruction: text("quality_rating_instruction"),
+  quality_rating_safety: text("quality_rating_safety"),
+  quality_rating_family: text("quality_rating_family"),
   ell_percent: integer("ell_percent"),
   iep_percent: integer("iep_percent"),
   asian_percent: integer("asian_percent"),
@@ -83,14 +91,14 @@ export const schools = pgTable("schools", {
   white_percent: integer("white_percent"),
   multi_racial_percent: integer("multi_racial_percent"),
   next_level_readiness: integer("next_level_readiness"),
-  admission_method: varchar("admission_method"),
-  accountability_status: varchar("accountability_status"),
-  principal_name: varchar("principal_name"),
+  admission_method: text("admission_method"),
+  accountability_status: text("accountability_status"),
+  principal_name: text("principal_name"),
   principal_experience_years: real("principal_experience_years"),
   teacher_experience_percent: integer("teacher_experience_percent"),
-  middle_schools_pipeline: jsonb("middle_schools_pipeline"),
-  website: varchar("website"),
-  phone: varchar("phone"),
+  middle_schools_pipeline: text("middle_schools_pipeline", { mode: "json" }),
+  website: text("website"),
+  phone: text("phone"),
   
   // NYC School Survey Data - Student
   student_safety: integer("student_safety"),
@@ -110,15 +118,15 @@ export const schools = pgTable("schools", {
   // Geographic Coordinates
   latitude: real("latitude"),
   longitude: real("longitude"),
-  zip_code: varchar("zip_code"), // NYC zip code derived from lat/lng
+  zip_code: text("zip_code"), // NYC zip code derived from lat/lng
   
   // Early Childhood Programs
-  has_3k: boolean("has_3k").default(false),
-  has_prek: boolean("has_prek").default(false),
-  has_2k: boolean("has_2k").default(false),
-  borough: varchar("borough"),
+  has_3k: integer("has_3k", { mode: "boolean" }).default(false),
+  has_prek: integer("has_prek", { mode: "boolean" }).default(false),
+  has_2k: integer("has_2k", { mode: "boolean" }).default(false),
+  borough: text("borough"),
   // Provenance and program details belong to the canonical school, not a mirror table.
-  early_childhood_source: jsonb("early_childhood_source").$type<{
+  early_childhood_source: text("early_childhood_source", { mode: "json" }).$type<{
     sourceUrl: string; processId: number; cycle: string; verifiedAt: string | null;
     status: "verified" | "needs_verification"; providerName?: string;
     registrationInstructions?: string | null; childcareLocation?: string; rawProviderName?: string; programs?: string[];
@@ -127,17 +135,17 @@ export const schools = pgTable("schools", {
   }>(),
   
   // Gifted & Talented Programs
-  has_gifted_talented: boolean("has_gifted_talented").default(false),
-  gt_program_type: varchar("gt_program_type"), // 'district', 'citywide', or null
+  has_gifted_talented: integer("has_gifted_talented", { mode: "boolean" }).default(false),
+  gt_program_type: text("gt_program_type"), // 'district', 'citywide', or null
   
   // Dual Language & Bilingual Programs
-  has_dual_language: boolean("has_dual_language").default(false),
-  dual_language_languages: text("dual_language_languages").array(), // Languages offered in dual language program
-  has_transitional_bilingual: boolean("has_transitional_bilingual").default(false),
+  has_dual_language: integer("has_dual_language", { mode: "boolean" }).default(false),
+  dual_language_languages: text("dual_language_languages", { mode: "json" }).$type<string[]>(), // Languages offered in dual language program
+  has_transitional_bilingual: integer("has_transitional_bilingual", { mode: "boolean" }).default(false),
   
   // PTA Fundraising Data (from NYC DOE Local Law 171 reports)
   pta_fundraising_total: integer("pta_fundraising_total"), // Total income reported by PTA
-  pta_fundraising_year: varchar("pta_fundraising_year"), // School year (e.g., "2023-24")
+  pta_fundraising_year: text("pta_fundraising_year"), // School year (e.g., "2023-24")
   pta_per_student: integer("pta_per_student"), // Calculated: total / enrollment
   
   // High School Metrics
@@ -151,11 +159,11 @@ export const schools = pgTable("schools", {
   regents_pass_rate: integer("regents_pass_rate"), // Overall Regents exam pass rate
   ap_course_count: integer("ap_course_count"), // Number of AP courses offered
   ap_pass_rate: integer("ap_pass_rate"), // AP exam pass rate (3+ score)
-  is_specialized_hs: boolean("is_specialized_hs").default(false), // Is specialized high school
-  hs_admission_method: varchar("hs_admission_method"), // screened, unscreened, limited unscreened, audition, test
+  is_specialized_hs: integer("is_specialized_hs", { mode: "boolean" }).default(false), // Is specialized high school
+  hs_admission_method: text("hs_admission_method"), // screened, unscreened, limited unscreened, audition, test
   
   // Metadata
-  last_updated: timestamp("last_updated").defaultNow(),
+  last_updated: integer("last_updated", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("schools_district_idx").on(table.district),
 ]);
@@ -166,9 +174,9 @@ export type InsertSchool = z.infer<typeof insertSchoolSchema>;
 export type School = typeof schools.$inferSelect;
 
 // Historical Scores Table - stores year-over-year data for trend analysis
-export const schoolHistoricalScores = pgTable("school_historical_scores", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
+export const schoolHistoricalScores = sqliteTable("school_historical_scores", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
   year: integer("year").notNull(),
   ela_proficiency: integer("ela_proficiency"), // ELA % Level 3+4
   math_proficiency: integer("math_proficiency"), // Math % Level 3+4
@@ -179,8 +187,8 @@ export const schoolHistoricalScores = pgTable("school_historical_scores", {
   math_tested_count: integer("math_tested_count"),
   math_eligible_count: integer("math_eligible_count"),
   math_participation_rate: integer("math_participation_rate"),
-  data_source: varchar("data_source"), // Data source (e.g., "NYSED")
-  data_source_release: varchar("data_source_release"), // NYSED release date, e.g., "2025-12-03"
+  data_source: text("data_source"), // Data source (e.g., "NYSED")
+  data_source_release: text("data_source_release"), // NYSED release date, e.g., "2025-12-03"
 }, (table) => ({
   dbnYearIdx: index("historical_dbn_year_idx").on(table.dbn, table.year),
 }));
@@ -257,11 +265,11 @@ export function calculateTrend(scores: HistoricalScore[]): SchoolTrend {
 }
 
 // High School Graduation Outcomes - multi-year cohort data from NYC DOE InfoHub
-export const hsGraduation = pgTable("hs_graduation", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
+export const hsGraduation = sqliteTable("hs_graduation", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
   cohort_year: integer("cohort_year").notNull(), // Cohort start year (e.g., 2020 for Class of 2024)
-  cohort_label: varchar("cohort_label"), // e.g., "Class of 2024"
+  cohort_label: text("cohort_label"), // e.g., "Class of 2024"
   total_cohort: integer("total_cohort"), // Total students in cohort
   grad_rate_4yr: real("grad_rate_4yr"), // 4-year graduation rate %
   grad_rate_5yr: real("grad_rate_5yr"), // 5-year graduation rate %
@@ -282,7 +290,7 @@ export const hsGraduation = pgTable("hs_graduation", {
   grad_rate_ell: real("grad_rate_ell"), // English Language Learners
   grad_rate_swd: real("grad_rate_swd"), // Students with Disabilities
   grad_rate_econ_disadv: real("grad_rate_econ_disadv"), // Economically Disadvantaged
-  data_source: varchar("data_source").default("NYC DOE InfoHub"),
+  data_source: text("data_source").default("NYC DOE InfoHub"),
 }, (table) => ({
   dbnCohortIdx: index("hs_grad_dbn_cohort_idx").on(table.dbn, table.cohort_year),
 }));
@@ -292,11 +300,11 @@ export type InsertHsGraduation = z.infer<typeof insertHsGraduationSchema>;
 export type HsGraduation = typeof hsGraduation.$inferSelect;
 
 // High School Regents Exam Results - per-exam, per-year from NYC DOE InfoHub
-export const hsRegents = pgTable("hs_regents", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
+export const hsRegents = sqliteTable("hs_regents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
   year: integer("year").notNull(), // School year start (e.g., 2024 for 2024-25)
-  exam_name: varchar("exam_name").notNull(), // e.g., "English", "Algebra I", "Living Environment"
+  exam_name: text("exam_name").notNull(), // e.g., "English", "Algebra I", "Living Environment"
   total_tested: integer("total_tested"), // Number of students tested
   pass_rate: real("pass_rate"), // % scoring 65+ (passing)
   college_ready_rate: real("college_ready_rate"), // % scoring 80+ (college-ready threshold)
@@ -312,7 +320,7 @@ export const hsRegents = pgTable("hs_regents", {
   pass_rate_ell: real("pass_rate_ell"),
   pass_rate_swd: real("pass_rate_swd"),
   pass_rate_econ_disadv: real("pass_rate_econ_disadv"),
-  data_source: varchar("data_source").default("NYC DOE InfoHub"),
+  data_source: text("data_source").default("NYC DOE InfoHub"),
 }, (table) => ({
   dbnYearIdx: index("hs_regents_dbn_year_idx").on(table.dbn, table.year),
   dbnYearExamIdx: index("hs_regents_dbn_year_exam_idx").on(table.dbn, table.year, table.exam_name),
@@ -338,11 +346,11 @@ export const REGENTS_EXAMS = [
 
 export type RegentsExam = typeof REGENTS_EXAMS[number];
 
-export const schoolAttendance = pgTable("school_attendance", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
-  year: varchar("year").notNull(), // e.g., "2018-19", "2024-25"
-  grade: varchar("grade").notNull().default("All Grades"),
+export const schoolAttendance = sqliteTable("school_attendance", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
+  year: text("year").notNull(), // e.g., "2018-19", "2024-25"
+  grade: text("grade").notNull().default("All Grades"),
   total_days: integer("total_days"),
   days_absent: integer("days_absent"),
   days_present: integer("days_present"),
@@ -365,7 +373,7 @@ export const schoolAttendance = pgTable("school_attendance", {
   ca_rate_not_ell: real("ca_rate_not_ell"),
   ca_rate_sth: real("ca_rate_sth"),
   ca_rate_not_sth: real("ca_rate_not_sth"),
-  data_source: varchar("data_source").default("NYC DOE InfoHub"),
+  data_source: text("data_source").default("NYC DOE InfoHub"),
 }, (table) => ({
   dbnYearIdx: index("school_attendance_dbn_year_idx").on(table.dbn, table.year),
 }));
@@ -375,12 +383,12 @@ export type InsertSchoolAttendance = z.infer<typeof insertSchoolAttendanceSchema
 export type SchoolAttendance = typeof schoolAttendance.$inferSelect;
 
 // School Discipline / Suspension Data - from NYC DOE InfoHub LL93 Reports
-export const schoolDiscipline = pgTable("school_discipline", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
-  year: varchar("year").notNull(), // e.g., "2024-25", "2023-24"
+export const schoolDiscipline = sqliteTable("school_discipline", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
+  year: text("year").notNull(), // e.g., "2024-25", "2023-24"
   school_name: text("school_name"),
-  category: varchar("category"), // "Elementary", "K-8", "Middle", "High School", "Transfer", etc.
+  category: text("category"), // "Elementary", "K-8", "Middle", "High School", "Transfer", etc.
   total_suspensions: integer("total_suspensions"), // Total removals + suspensions
   teacher_removals: integer("teacher_removals"), // Teacher/classroom removals
   principal_suspensions: integer("principal_suspensions"), // Principal suspensions (1-5 days)
@@ -402,7 +410,7 @@ export const schoolDiscipline = pgTable("school_discipline", {
   susp_non_ell: integer("susp_non_ell"),
   susp_sth: integer("susp_sth"), // Students in Temporary Housing
   susp_non_sth: integer("susp_non_sth"),
-  data_source: varchar("data_source").default("NYC DOE InfoHub LL93"),
+  data_source: text("data_source").default("NYC DOE InfoHub LL93"),
 }, (table) => ({
   dbnYearIdx: index("school_discipline_dbn_year_idx").on(table.dbn, table.year),
 }));
@@ -411,23 +419,23 @@ export const insertSchoolDisciplineSchema = createInsertSchema(schoolDiscipline)
 export type InsertSchoolDiscipline = z.infer<typeof insertSchoolDisciplineSchema>;
 export type SchoolDiscipline = typeof schoolDiscipline.$inferSelect;
 
-export const hsAdmissionsProgram = pgTable("hs_admissions_program", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn", { length: 10 }).notNull(),
+export const hsAdmissionsProgram = sqliteTable("hs_admissions_program", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
   program_number: integer("program_number").notNull(),
   program_name: text("program_name"),
   interest_area: text("interest_area"),
   program_description: text("program_description"),
   eligibility: text("eligibility"),
-  admission_method: varchar("admission_method", { length: 100 }),
+  admission_method: text("admission_method"),
   grade9_ge_applicants: integer("grade9_ge_applicants"),
   grade9_swd_applicants: integer("grade9_swd_applicants"),
   seats_ge: integer("seats_ge"),
   seats_swd: integer("seats_swd"),
   applicants_per_seat_ge: real("applicants_per_seat_ge"),
   applicants_per_seat_swd: real("applicants_per_seat_swd"),
-  filled_flag_ge: boolean("filled_flag_ge"),
-  filled_flag_swd: boolean("filled_flag_swd"),
+  filled_flag_ge: integer("filled_flag_ge", { mode: "boolean" }),
+  filled_flag_swd: integer("filled_flag_swd", { mode: "boolean" }),
   seats_10plus: integer("seats_10plus"),
   requirement_1: text("requirement_1"),
   requirement_2: text("requirement_2"),
@@ -440,16 +448,16 @@ export const hsAdmissionsProgram = pgTable("hs_admissions_program", {
   offer_rate_1: text("offer_rate_1"),
   offer_rate_2: text("offer_rate_2"),
   offer_rate_3: text("offer_rate_3"),
-  specialized_code: varchar("specialized_code", { length: 20 }),
+  specialized_code: text("specialized_code"),
   specialized_applicants: integer("specialized_applicants"),
   specialized_seats: integer("specialized_seats"),
   specialized_apps_per_seat: real("specialized_apps_per_seat"),
-  is_specialized: boolean("is_specialized").default(false),
+  is_specialized: integer("is_specialized", { mode: "boolean" }).default(false),
   school_name: text("school_name"),
   overview_paragraph: text("overview_paragraph"),
   academic_opportunities: text("academic_opportunities"),
-  data_year: varchar("data_year", { length: 10 }).default("2025-26"),
-  data_source: varchar("data_source", { length: 100 }).default("NYC DOE HS Directory"),
+  data_year: text("data_year").default("2025-26"),
+  data_source: text("data_source").default("NYC DOE HS Directory"),
 }, (table) => ({
   dbnIdx: index("hs_admissions_dbn_idx").on(table.dbn),
 }));
@@ -841,42 +849,42 @@ export function getMetricColor(score: number): "green" | "yellow" | "purple" | "
 }
 
 // Session storage table for standalone email/password authentication
-export const sessions = pgTable(
+export const sessions = sqliteTable(
   "sessions",
   {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
+    sid: text("sid").primaryKey(),
+    sess: text("sess", { mode: "json" }).notNull(),
+    expire: integer("expire", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
 // User storage table for standalone authentication
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique().notNull(),
-  password: varchar("password").notNull(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  homeAddress: varchar("home_address"),
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text("email").unique().notNull(),
+  password: text("password").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
+  homeAddress: text("home_address"),
   homeLat: real("home_lat"),
   homeLng: real("home_lng"),
-  stripeCustomerId: varchar("stripe_customer_id"),
-  stripeSubscriptionId: varchar("stripe_subscription_id"),
-  subscriptionStatus: varchar("subscription_status").default("free"),
-  subscriptionPlan: varchar("subscription_plan").default("free"), // 'free', 'season_pass', 'premium'
-  subscriptionExpiresAt: timestamp("subscription_expires_at"), // For Season Pass expiration
-  freeViewSchoolDbn: varchar("free_view_school_dbn"), // DBN of the one school they can view for free
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").default("free"),
+  subscriptionPlan: text("subscription_plan").default("free"), // 'free', 'season_pass', 'premium'
+  subscriptionExpiresAt: integer("subscription_expires_at", { mode: "timestamp_ms" }), // For Season Pass expiration
+  freeViewSchoolDbn: text("free_view_school_dbn"), // DBN of the one school they can view for free
   // Drip campaign tracking
-  dripEmailsSent: text("drip_emails_sent").array().default([]), // Array of sent drip email types
-  emailUnsubscribed: boolean("email_unsubscribed").default(false), // User opted out of marketing emails
-  lastDripEmailAt: timestamp("last_drip_email_at"), // When the last drip email was sent
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  dripEmailsSent: text("drip_emails_sent", { mode: "json" }).$type<string[]>().default(sql`'[]'`), // Array of sent drip email types
+  emailUnsubscribed: integer("email_unsubscribed", { mode: "boolean" }).default(false), // User opted out of marketing emails
+  lastDripEmailAt: integer("last_drip_email_at", { mode: "timestamp_ms" }), // When the last drip email was sent
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertUserSchema = createInsertSchema(users, {dripEmailsSent:z.array(z.string()).nullable().optional()}).omit({
   id: true,
   profileImageUrl: true,
   stripeCustomerId: true,
@@ -892,13 +900,13 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 // Password Reset Tokens for forgot password flow
-export const passwordResetTokens = pgTable("password_reset_tokens", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  tokenHash: varchar("token_hash").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const passwordResetTokens = sqliteTable("password_reset_tokens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  usedAt: integer("used_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   tokenHashIdx: index("password_reset_tokens_hash_idx").on(table.tokenHash),
   userIdx: index("password_reset_tokens_user_idx").on(table.userId),
@@ -911,15 +919,15 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 // user exactly once at creation time. `keyPrefix` is the first 12 chars of the
 // plaintext key (e.g., "nycr_live_aB") and is safe to display in the UI so the
 // user can identify which key is which.
-export const apiKeys = pgTable("api_keys", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  name: varchar("name").notNull(),
-  keyPrefix: varchar("key_prefix").notNull(),
-  keyHash: varchar("key_hash").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  lastUsedAt: timestamp("last_used_at"),
-  revokedAt: timestamp("revoked_at"),
+export const apiKeys = sqliteTable("api_keys", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  keyPrefix: text("key_prefix").notNull(),
+  keyHash: text("key_hash").notNull().unique(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
+  revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
 }, (table) => ({
   userIdx: index("api_keys_user_idx").on(table.userId),
   hashIdx: index("api_keys_hash_idx").on(table.keyHash),
@@ -933,13 +941,13 @@ export type InsertApiKey = typeof apiKeys.$inferInsert;
 // reset on every server restart; this table makes the daily 10K cap resilient
 // to deploys/crashes/HMR. Updated atomically via a single UPSERT in the auth
 // middleware (see server/apiKeyAuth.ts).
-export const apiKeyRateState = pgTable("api_key_rate_state", {
+export const apiKeyRateState = sqliteTable("api_key_rate_state", {
   keyId: integer("key_id").primaryKey().references(() => apiKeys.id, { onDelete: "cascade" }),
-  minuteWindowStart: timestamp("minute_window_start").notNull(),
+  minuteWindowStart: integer("minute_window_start", { mode: "timestamp_ms" }).notNull(),
   minuteCount: integer("minute_count").notNull().default(0),
-  dayWindowStart: timestamp("day_window_start").notNull(),
+  dayWindowStart: integer("day_window_start", { mode: "timestamp_ms" }).notNull(),
   dayCount: integer("day_count").notNull().default(0),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
 });
 
 export type ApiKeyRateState = typeof apiKeyRateState.$inferSelect;
@@ -949,14 +957,14 @@ export type InsertApiKeyRateState = typeof apiKeyRateState.$inferInsert;
 // abuse-detection job. Pruned after 30 days by a scheduled job. `keyId` is
 // nullable so we can also record unauthenticated 401s (used by the per-IP
 // throttle and useful for spotting brute-force scans).
-export const apiRequestLog = pgTable("api_request_log", {
-  id: serial("id").primaryKey(),
+export const apiRequestLog = sqliteTable("api_request_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   keyId: integer("key_id").references(() => apiKeys.id, { onDelete: "set null" }),
-  path: varchar("path").notNull(),
+  path: text("path").notNull(),
   status: integer("status").notNull(),
-  ip: varchar("ip"),
+  ip: text("ip"),
   responseTimeMs: integer("response_time_ms"),
-  ts: timestamp("ts").notNull().defaultNow(),
+  ts: integer("ts", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => ({
   keyTsIdx: index("api_request_log_key_ts_idx").on(table.keyId, table.ts),
   tsIdx: index("api_request_log_ts_idx").on(table.ts),
@@ -969,13 +977,13 @@ export type InsertApiRequestLog = typeof apiRequestLog.$inferInsert;
 // De-duplication for the abuse-detection job. One row per (key, alert type,
 // day) means the admin gets at most one email per condition per key per day,
 // no matter how often the cron runs.
-export const apiAbuseAlerts = pgTable("api_abuse_alerts", {
-  id: serial("id").primaryKey(),
+export const apiAbuseAlerts = sqliteTable("api_abuse_alerts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   keyId: integer("key_id").notNull().references(() => apiKeys.id, { onDelete: "cascade" }),
-  alertType: varchar("alert_type").notNull(), // 'rate_limit_storm' | 'distinct_ip_spike'
-  alertDay: date("alert_day").notNull(),
-  detail: jsonb("detail"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  alertType: text("alert_type").notNull(), // 'rate_limit_storm' | 'distinct_ip_spike'
+  alertDay: text("alert_day").notNull(),
+  detail: text("detail", { mode: "json" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => ({
   uniq: uniqueIndex("api_abuse_alerts_unique_per_day").on(table.keyId, table.alertType, table.alertDay),
 }));
@@ -984,13 +992,13 @@ export type ApiAbuseAlert = typeof apiAbuseAlerts.$inferSelect;
 export type InsertApiAbuseAlert = typeof apiAbuseAlerts.$inferInsert;
 
 // Magic Link Tokens for passwordless authentication
-export const magicLinkTokens = pgTable("magic_link_tokens", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  tokenHash: varchar("token_hash").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const magicLinkTokens = sqliteTable("magic_link_tokens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  usedAt: integer("used_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   tokenHashIdx: index("magic_link_tokens_hash_idx").on(table.tokenHash),
   userIdx: index("magic_link_tokens_user_idx").on(table.userId),
@@ -999,10 +1007,10 @@ export const magicLinkTokens = pgTable("magic_link_tokens", {
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 
 // Processed Webhook Events for idempotency (prevent duplicate processing)
-export const processedWebhookEvents = pgTable("processed_webhook_events", {
-  eventId: varchar("event_id").primaryKey(), // Stripe event ID
-  eventType: varchar("event_type").notNull(),
-  processedAt: timestamp("processed_at").defaultNow().notNull(),
+export const processedWebhookEvents = sqliteTable("processed_webhook_events", {
+  eventId: text("event_id").primaryKey(), // Stripe event ID
+  eventType: text("event_type").notNull(),
+  processedAt: integer("processed_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   eventTypeIdx: index("processed_webhook_events_type_idx").on(table.eventType),
 }));
@@ -1010,16 +1018,16 @@ export const processedWebhookEvents = pgTable("processed_webhook_events", {
 export type ProcessedWebhookEvent = typeof processedWebhookEvents.$inferSelect;
 
 // OAuth 2.1 Authorization Codes for ChatGPT integration
-export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
-  code: varchar("code").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  clientId: varchar("client_id").notNull(),
-  redirectUri: varchar("redirect_uri").notNull(),
-  codeChallenge: varchar("code_challenge").notNull(), // PKCE S256 challenge
-  codeChallengeMethod: varchar("code_challenge_method").notNull().default("S256"),
-  scope: varchar("scope"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const oauthAuthorizationCodes = sqliteTable("oauth_authorization_codes", {
+  code: text("code").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(), // PKCE S256 challenge
+  codeChallengeMethod: text("code_challenge_method").notNull().default("S256"),
+  scope: text("scope"),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   userIdx: index("oauth_auth_codes_user_idx").on(table.userId),
 }));
@@ -1027,13 +1035,13 @@ export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
 export type OAuthAuthorizationCode = typeof oauthAuthorizationCodes.$inferSelect;
 
 // OAuth 2.1 Access Tokens
-export const oauthAccessTokens = pgTable("oauth_access_tokens", {
-  token: varchar("token").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  clientId: varchar("client_id").notNull(),
-  scope: varchar("scope"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const oauthAccessTokens = sqliteTable("oauth_access_tokens", {
+  token: text("token").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: text("client_id").notNull(),
+  scope: text("scope"),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   userIdx: index("oauth_access_tokens_user_idx").on(table.userId),
 }));
@@ -1041,14 +1049,14 @@ export const oauthAccessTokens = pgTable("oauth_access_tokens", {
 export type OAuthAccessToken = typeof oauthAccessTokens.$inferSelect;
 
 // OAuth 2.1 Refresh Tokens
-export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
-  token: varchar("token").primaryKey(),
-  accessToken: varchar("access_token").notNull(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  clientId: varchar("client_id").notNull(),
-  scope: varchar("scope"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const oauthRefreshTokens = sqliteTable("oauth_refresh_tokens", {
+  token: text("token").primaryKey(),
+  accessToken: text("access_token").notNull(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: text("client_id").notNull(),
+  scope: text("scope"),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   userIdx: index("oauth_refresh_tokens_user_idx").on(table.userId),
 }));
@@ -1056,33 +1064,33 @@ export const oauthRefreshTokens = pgTable("oauth_refresh_tokens", {
 export type OAuthRefreshToken = typeof oauthRefreshTokens.$inferSelect;
 
 // OAuth 2.0 Dynamic Client Registration (RFC 7591)
-export const oauthClients = pgTable("oauth_clients", {
-  clientId: varchar("client_id").primaryKey(),
-  clientSecret: varchar("client_secret"),
-  clientName: varchar("client_name").notNull(),
-  redirectUris: text("redirect_uris").array().notNull(),
-  grantTypes: text("grant_types").array().default(["authorization_code"]),
-  responseTypes: text("response_types").array().default(["code"]),
-  tokenEndpointAuthMethod: varchar("token_endpoint_auth_method").default("none"),
-  scope: varchar("scope"),
-  clientUri: varchar("client_uri"),
-  logoUri: varchar("logo_uri"),
-  tosUri: varchar("tos_uri"),
-  policyUri: varchar("policy_uri"),
-  contacts: text("contacts").array(),
-  clientIdIssuedAt: timestamp("client_id_issued_at").defaultNow().notNull(),
-  clientSecretExpiresAt: timestamp("client_secret_expires_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const oauthClients = sqliteTable("oauth_clients", {
+  clientId: text("client_id").primaryKey(),
+  clientSecret: text("client_secret"),
+  clientName: text("client_name").notNull(),
+  redirectUris: text("redirect_uris", { mode: "json" }).$type<string[]>().notNull(),
+  grantTypes: text("grant_types", { mode: "json" }).$type<string[]>().default(sql`'["authorization_code"]'`),
+  responseTypes: text("response_types", { mode: "json" }).$type<string[]>().default(sql`'["code"]'`),
+  tokenEndpointAuthMethod: text("token_endpoint_auth_method").default("none"),
+  scope: text("scope"),
+  clientUri: text("client_uri"),
+  logoUri: text("logo_uri"),
+  tosUri: text("tos_uri"),
+  policyUri: text("policy_uri"),
+  contacts: text("contacts", { mode: "json" }).$type<string[]>(),
+  clientIdIssuedAt: integer("client_id_issued_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  clientSecretExpiresAt: integer("client_secret_expires_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 });
 
 export type OAuthClient = typeof oauthClients.$inferSelect;
 export type InsertOAuthClient = typeof oauthClients.$inferInsert;
 
-export const favorites = pgTable("favorites", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  schoolDbn: varchar("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const favorites = sqliteTable("favorites", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  schoolDbn: text("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => [
   index("favorites_user_id_idx").on(table.userId),
   index("favorites_user_school_idx").on(table.userId, table.schoolDbn),
@@ -1097,28 +1105,28 @@ export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type Favorite = typeof favorites.$inferSelect;
 
 // Application Tracker - Tracked Schools for premium users
-export const trackedSchools = pgTable("tracked_schools", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  schoolDbn: varchar("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
+export const trackedSchools = sqliteTable("tracked_schools", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  schoolDbn: text("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
   // Tracking status
-  status: varchar("status").default("researching"), // 'researching', 'applied', 'waitlisted', 'accepted', 'enrolled', 'rejected'
+  status: text("status").default("researching"), // 'researching', 'applied', 'waitlisted', 'accepted', 'enrolled', 'rejected'
   notes: text("notes"), // User's personal notes about this school
   // Important dates
-  openHouseDate: timestamp("open_house_date"),
-  tourDate: timestamp("tour_date"),
-  applicationDeadline: timestamp("application_deadline"),
+  openHouseDate: integer("open_house_date", { mode: "timestamp_ms" }),
+  tourDate: integer("tour_date", { mode: "timestamp_ms" }),
+  applicationDeadline: integer("application_deadline", { mode: "timestamp_ms" }),
   // Notification preferences
-  notifyOpenHouse: boolean("notify_open_house").default(true),
-  notifyTour: boolean("notify_tour").default(true),
-  notifyDeadline: boolean("notify_deadline").default(true),
+  notifyOpenHouse: integer("notify_open_house", { mode: "boolean" }).default(true),
+  notifyTour: integer("notify_tour", { mode: "boolean" }).default(true),
+  notifyDeadline: integer("notify_deadline", { mode: "boolean" }).default(true),
   // Email notification tracking
-  openHouseNotifiedAt: timestamp("open_house_notified_at"),
-  tourNotifiedAt: timestamp("tour_notified_at"),
-  deadlineNotifiedAt: timestamp("deadline_notified_at"),
+  openHouseNotifiedAt: integer("open_house_notified_at", { mode: "timestamp_ms" }),
+  tourNotifiedAt: integer("tour_notified_at", { mode: "timestamp_ms" }),
+  deadlineNotifiedAt: integer("deadline_notified_at", { mode: "timestamp_ms" }),
   // Timestamps
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => ({
   userSchoolIdx: index("tracked_user_school_idx").on(table.userId, table.schoolDbn),
 }));
@@ -1135,15 +1143,15 @@ export const insertTrackedSchoolSchema = createInsertSchema(trackedSchools).omit
 export type InsertTrackedSchool = z.infer<typeof insertTrackedSchoolSchema>;
 export type TrackedSchool = typeof trackedSchools.$inferSelect;
 
-export const reviews = pgTable("reviews", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  schoolDbn: varchar("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
+export const reviews = sqliteTable("reviews", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  schoolDbn: text("school_dbn").notNull().references(() => schools.dbn, { onDelete: "cascade" }),
   rating: integer("rating").notNull(),
   reviewText: text("review_text"),
   helpfulCount: integer("helpful_count").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => [
   index("idx_reviews_school").on(table.schoolDbn),
   index("idx_reviews_user").on(table.userId),
@@ -1170,28 +1178,28 @@ export interface ReviewWithUser extends Review {
   } | null;
 }
 
-export const userProfiles = pgTable("user_profiles", {
-  userId: varchar("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+export const userProfiles = sqliteTable("user_profiles", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   homeAddress: text("home_address"),
   latitude: real("latitude"),
   longitude: real("longitude"),
   // Cached zoned schools from NYC DOE official zone boundaries
-  zonedElementaryDbn: varchar("zoned_elementary_dbn"), // User's zoned elementary school DBN
-  zonedMiddleDbn: varchar("zoned_middle_dbn"), // User's zoned middle school DBN
-  zonedHighDbn: varchar("zoned_high_dbn"), // User's zoned high school DBN (if applicable)
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  zonedElementaryDbn: text("zoned_elementary_dbn"), // User's zoned elementary school DBN
+  zonedMiddleDbn: text("zoned_middle_dbn"), // User's zoned middle school DBN
+  zonedHighDbn: text("zoned_high_dbn"), // User's zoned high school DBN (if applicable)
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 });
 
 // NYC DOE School Zone Boundaries - stores official zone polygons from NYC Open Data
-export const schoolZones = pgTable("school_zones", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(), // School DBN
+export const schoolZones = sqliteTable("school_zones", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(), // School DBN
   schoolName: text("school_name"),
   district: integer("district"),
-  gradeLevel: varchar("grade_level").notNull(), // 'elementary', 'middle', 'high'
-  geometry: jsonb("geometry").notNull(), // GeoJSON geometry (Polygon or MultiPolygon)
+  gradeLevel: text("grade_level").notNull(), // 'elementary', 'middle', 'high'
+  geometry: text("geometry", { mode: "json" }).notNull(), // GeoJSON geometry (Polygon or MultiPolygon)
   remarks: text("remarks"), // Any special notes from DOE
-  lastUpdated: timestamp("last_updated").defaultNow(),
+  lastUpdated: integer("last_updated", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("idx_school_zones_dbn").on(table.dbn),
   index("idx_school_zones_grade").on(table.gradeLevel),
@@ -1214,12 +1222,12 @@ export type InsertSchoolZone = z.infer<typeof insertSchoolZoneSchema>;
 export type SchoolZone = typeof schoolZones.$inferSelect;
 
 // AI Chat Sessions - stores conversation sessions for training and history
-export const aiChatSessions = pgTable("ai_chat_sessions", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+export const aiChatSessions = sqliteTable("ai_chat_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title"), // Auto-generated from first message or user-specified
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => [
   index("idx_chat_sessions_user").on(table.userId),
   index("idx_chat_sessions_created").on(table.createdAt),
@@ -1235,12 +1243,12 @@ export type InsertAiChatSession = z.infer<typeof insertAiChatSessionSchema>;
 export type AiChatSession = typeof aiChatSessions.$inferSelect;
 
 // AI Chat Messages - stores individual messages for training purposes
-export const aiChatMessages = pgTable("ai_chat_messages", {
-  id: serial("id").primaryKey(),
+export const aiChatMessages = sqliteTable("ai_chat_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   sessionId: integer("session_id").notNull().references(() => aiChatSessions.id, { onDelete: "cascade" }),
-  role: varchar("role", { length: 20 }).notNull(), // 'user' or 'assistant'
+  role: text("role").notNull(), // 'user' or 'assistant'
   content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => [
   index("idx_chat_messages_session").on(table.sessionId),
   index("idx_chat_messages_created").on(table.createdAt),
@@ -1270,42 +1278,42 @@ export type TwokCenter = {
 };
 
 // ─── NYCEEC Early Childhood Centers ─────────────────────────────────────────
-export const nyceecCenters = pgTable("nyceec_centers", {
-  id: serial("id").primaryKey(),
-  locCode: varchar("loc_code").unique().notNull(), // Location code (e.g., "KCPY")
+export const nyceecCenters = sqliteTable("nyceec_centers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  locCode: text("loc_code").unique().notNull(), // Location code (e.g., "KCPY")
   
   // Basic Info
   name: text("name").notNull(), // Center name
-  centerType: varchar("center_type").notNull(), // 'NYCEEC', 'DOE', 'Charter'
-  borough: varchar("borough").notNull(), // K=Brooklyn, M=Manhattan, X=Bronx, Q=Queens, R=Staten Island
+  centerType: text("center_type").notNull(), // 'NYCEEC', 'DOE', 'Charter'
+  borough: text("borough").notNull(), // K=Brooklyn, M=Manhattan, X=Bronx, Q=Queens, R=Staten Island
   district: integer("district"), // Extracted from sems_code
   
   // Location
   address: text("address").notNull(),
-  zipCode: varchar("zip_code"),
+  zipCode: text("zip_code"),
   latitude: real("latitude"),
   longitude: real("longitude"),
-  nta: varchar("nta"), // Neighborhood Tabulation Area
+  nta: text("nta"), // Neighborhood Tabulation Area
   
   // Contact
-  phone: varchar("phone"),
-  email: varchar("email"),
-  website: varchar("website"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
   
   // Program Details
   seats: integer("seats"), // Number of Pre-K seats
-  dayLength: varchar("day_length"), // Full day, half day
-  extendedDay: boolean("extended_day").default(false), // Offers extended hours
-  mealsProvided: boolean("meals_provided").default(false), // Offers meals
-  indoorOutdoor: varchar("indoor_outdoor"), // Play space type
+  dayLength: text("day_length"), // Full day, half day
+  extendedDay: integer("extended_day", { mode: "boolean" }).default(false), // Offers extended hours
+  mealsProvided: integer("meals_provided", { mode: "boolean" }).default(false), // Offers meals
+  indoorOutdoor: text("indoor_outdoor"), // Play space type
   
   // Additional fields
-  semsCode: varchar("sems_code"), // DOE organizational code
-  communityBoard: varchar("community_board"),
-  councilDistrict: varchar("council_district"),
+  semsCode: text("sems_code"), // DOE organizational code
+  communityBoard: text("community_board"),
+  councilDistrict: text("council_district"),
   
   // Metadata
-  lastUpdated: timestamp("last_updated").defaultNow(),
+  lastUpdated: integer("last_updated", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("idx_nyceec_borough").on(table.borough),
   index("idx_nyceec_district").on(table.district),
@@ -1325,15 +1333,15 @@ export type NyceecCenter = typeof nyceecCenters.$inferSelect & {
 };
 
 // NYCEEC Reviews - Parent reviews for early childhood centers
-export const nyceecReviews = pgTable("nyceec_reviews", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  locCode: varchar("loc_code").notNull().references(() => nyceecCenters.locCode, { onDelete: "cascade" }),
+export const nyceecReviews = sqliteTable("nyceec_reviews", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  locCode: text("loc_code").notNull().references(() => nyceecCenters.locCode, { onDelete: "cascade" }),
   rating: integer("rating").notNull(),
   reviewText: text("review_text"),
   helpfulCount: integer("helpful_count").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => [
   index("idx_nyceec_reviews_center").on(table.locCode),
   index("idx_nyceec_reviews_user").on(table.userId),
@@ -1361,14 +1369,14 @@ export interface NyceecReviewWithUser extends NyceecReview {
 }
 
 // NYCEEC AI Insights Cache - Store generated AI insights per center
-export const nyceecAiInsights = pgTable("nyceec_ai_insights", {
-  id: serial("id").primaryKey(),
-  locCode: varchar("loc_code").unique().notNull().references(() => nyceecCenters.locCode, { onDelete: "cascade" }),
+export const nyceecAiInsights = sqliteTable("nyceec_ai_insights", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  locCode: text("loc_code").unique().notNull().references(() => nyceecCenters.locCode, { onDelete: "cascade" }),
   overview: text("overview").notNull(),
-  considerations: text("considerations").array().notNull(),
-  tourQuestions: text("tour_questions").array().notNull(),
+  considerations: text("considerations", { mode: "json" }).$type<string[]>().notNull(),
+  tourQuestions: text("tour_questions", { mode: "json" }).$type<string[]>().notNull(),
   neighborhoodContext: text("neighborhood_context").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
 }, (table) => [
   index("idx_nyceec_insights_loccode").on(table.locCode),
 ]);
@@ -1377,14 +1385,14 @@ export type NyceecAiInsight = typeof nyceecAiInsights.$inferSelect;
 export type InsertNyceecAiInsight = typeof nyceecAiInsights.$inferInsert;
 
 // Contact form submissions
-export const contactSubmissions = pgTable("contact_submissions", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  subject: varchar("subject", { length: 100 }).notNull(),
+export const contactSubmissions = sqliteTable("contact_submissions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
   message: text("message").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  read: boolean("read").default(false),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`).notNull(),
+  read: integer("read", { mode: "boolean" }).default(false),
 }, (table) => [
   index("idx_contact_created").on(table.createdAt),
 ]);
@@ -1433,12 +1441,12 @@ export function getNyceecUrl(center: Pick<NyceecCenter, 'name' | 'locCode'>): st
 // ========================================
 
 // Admissions Offers Table - LL72 Applications & Offers data
-export const admissionsOffers = pgTable("admissions_offers", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
-  schoolYear: varchar("school_year").notNull(), // e.g., "2025-2026"
-  gradeBand: varchar("grade_band").notNull(), // "K", "3K", "PK"
-  category: varchar("category").notNull(), // "All Students" or breakdown category
+export const admissionsOffers = sqliteTable("admissions_offers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
+  schoolYear: text("school_year").notNull(), // e.g., "2025-2026"
+  gradeBand: text("grade_band").notNull(), // "K", "3K", "PK"
+  category: text("category").notNull(), // "All Students" or breakdown category
   
   // Core metrics from LL72
   seatsAvailable: integer("seats_available"),
@@ -1447,11 +1455,11 @@ export const admissionsOffers = pgTable("admissions_offers", {
   offers: integer("offers"),
   
   // Suppression flags
-  isSuppressed: boolean("is_suppressed").default(false),
+  isSuppressed: integer("is_suppressed", { mode: "boolean" }).default(false),
   
   // Source tracking
-  sourceFile: varchar("source_file"),
-  ingestedAt: timestamp("ingested_at").defaultNow(),
+  sourceFile: text("source_file"),
+  ingestedAt: integer("ingested_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("idx_admissions_dbn").on(table.dbn),
   index("idx_admissions_year_grade").on(table.schoolYear, table.gradeBand),
@@ -1462,17 +1470,17 @@ export type InsertAdmissionsOffers = z.infer<typeof insertAdmissionsOffersSchema
 export type AdmissionsOffers = typeof admissionsOffers.$inferSelect;
 
 // Enrollment Data Table - LL72 Enrollment data (actual registered students)
-export const enrollmentData = pgTable("enrollment_data", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
-  schoolYear: varchar("school_year").notNull(), // e.g., "2024-2025"
-  grade: varchar("grade").notNull(), // "K", "3K", "PK", "1", "2", etc.
+export const enrollmentData = sqliteTable("enrollment_data", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
+  schoolYear: text("school_year").notNull(), // e.g., "2024-2025"
+  grade: text("grade").notNull(), // "K", "3K", "PK", "1", "2", etc.
   
   enrolled: integer("enrolled"),
-  isSuppressed: boolean("is_suppressed").default(false),
+  isSuppressed: integer("is_suppressed", { mode: "boolean" }).default(false),
   
-  sourceFile: varchar("source_file"),
-  ingestedAt: timestamp("ingested_at").defaultNow(),
+  sourceFile: text("source_file"),
+  ingestedAt: integer("ingested_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("idx_enrollment_dbn").on(table.dbn),
   index("idx_enrollment_year_grade").on(table.schoolYear, table.grade),
@@ -1483,11 +1491,11 @@ export type InsertEnrollmentData = z.infer<typeof insertEnrollmentDataSchema>;
 export type EnrollmentData = typeof enrollmentData.$inferSelect;
 
 // Computed Admissions Metrics - stored for fast retrieval
-export const admissionsMetrics = pgTable("admissions_metrics", {
-  id: serial("id").primaryKey(),
-  dbn: varchar("dbn").notNull(),
-  schoolYear: varchar("school_year").notNull(),
-  gradeBand: varchar("grade_band").notNull(), // "K", "3K", "PK"
+export const admissionsMetrics = sqliteTable("admissions_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  dbn: text("dbn").notNull(),
+  schoolYear: text("school_year").notNull(),
+  gradeBand: text("grade_band").notNull(), // "K", "3K", "PK"
   
   // Demand metrics
   appsPerSeat: real("apps_per_seat"), // Total applicants / seats
@@ -1502,7 +1510,7 @@ export const admissionsMetrics = pgTable("admissions_metrics", {
   // Estimated metrics (for current year without enrollment data)
   estimatedYield: real("estimated_yield"), // Bayesian-smoothed yield estimate
   estimatedFillRate: real("estimated_fill_rate"),
-  estimationMethod: varchar("estimation_method"), // "historical_yield", "district_average"
+  estimationMethod: text("estimation_method"), // "historical_yield", "district_average"
   
   // Raw values for reference
   seatsAvailable: integer("seats_available"),
@@ -1514,7 +1522,7 @@ export const admissionsMetrics = pgTable("admissions_metrics", {
   // District-level averages used for smoothing
   districtAvgYield: real("district_avg_yield"),
   
-  computedAt: timestamp("computed_at").defaultNow(),
+  computedAt: integer("computed_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("idx_metrics_dbn").on(table.dbn),
   index("idx_metrics_year_grade").on(table.schoolYear, table.gradeBand),
@@ -1547,11 +1555,11 @@ export interface SchoolAdmissionsData {
 }
 
 // App Settings table for global configuration
-export const appSettings = pgTable("app_settings", {
-  key: varchar("key").primaryKey(),
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
   value: text("value").notNull(),
   description: text("description"),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 });
 
 export type AppSetting = typeof appSettings.$inferSelect;
@@ -1599,48 +1607,48 @@ export function getCompetitivenessDisplay(level: string): { label: string; color
 // ===============================
 
 // Private Schools Table - data from NCES Private School Universe Survey (PSS)
-export const privateSchools = pgTable("private_schools", {
+export const privateSchools = sqliteTable("private_schools", {
   // Primary identifier from NCES
-  ncesId: varchar("nces_id").primaryKey(), // NCES School ID (PPIN)
+  ncesId: text("nces_id").primaryKey(), // NCES School ID (PPIN)
   
   // Basic Information
   name: text("name").notNull(),
   address: text("address").notNull(),
   city: text("city").notNull(),
-  state: varchar("state", { length: 2 }).notNull().default('NY'),
-  zipCode: varchar("zip_code", { length: 10 }),
-  phone: varchar("phone"),
-  website: varchar("website"),
+  state: text("state").notNull().default('NY'),
+  zipCode: text("zip_code"),
+  phone: text("phone"),
+  website: text("website"),
   
   // Location (from NYC Geoclient enrichment)
-  borough: varchar("borough"), // Manhattan, Bronx, Brooklyn, Queens, Staten Island
-  neighborhood: varchar("neighborhood"),
+  borough: text("borough"), // Manhattan, Bronx, Brooklyn, Queens, Staten Island
+  neighborhood: text("neighborhood"),
   latitude: real("latitude"),
   longitude: real("longitude"),
-  bbl: varchar("bbl"), // Borough-Block-Lot (NYC property identifier)
-  bin: varchar("bin"), // Building Identification Number
+  bbl: text("bbl"), // Borough-Block-Lot (NYC property identifier)
+  bin: text("bin"), // Building Identification Number
   
   // Grade Configuration
   gradesOffered: text("grades_offered"), // e.g., "PK-12", "K-8", "9-12"
-  lowestGrade: varchar("lowest_grade"), // PK, K, 1, 2, etc.
-  highestGrade: varchar("highest_grade"), // 12, 8, etc.
+  lowestGrade: text("lowest_grade"), // PK, K, 1, 2, etc.
+  highestGrade: text("highest_grade"), // 12, 8, etc.
   
   // Enrollment & Staff
   enrollment: integer("enrollment"), // Total enrollment
-  enrollmentByGrade: jsonb("enrollment_by_grade"), // { "PK": 20, "K": 30, ... }
+  enrollmentByGrade: text("enrollment_by_grade", { mode: "json" }), // { "PK": 20, "K": 30, ... }
   teachersFte: real("teachers_fte"), // Full-time equivalent teachers
   studentTeacherRatio: real("student_teacher_ratio"),
   
   // School Characteristics
-  coedStatus: varchar("coed_status"), // 'coed', 'male', 'female'
-  religiousAffiliation: varchar("religious_affiliation"), // Catholic, Jewish, Episcopal, None, etc.
-  religiousOrientation: varchar("religious_orientation"), // Specific denomination
-  isReligious: boolean("is_religious").default(false),
+  coedStatus: text("coed_status"), // 'coed', 'male', 'female'
+  religiousAffiliation: text("religious_affiliation"), // Catholic, Jewish, Episcopal, None, etc.
+  religiousOrientation: text("religious_orientation"), // Specific denomination
+  isReligious: integer("is_religious", { mode: "boolean" }).default(false),
   
   // Program & Focus
-  programEmphasis: text("program_emphasis").array(), // ['college_prep', 'montessori', 'stem', 'arts', etc.]
-  schoolType: varchar("school_type"), // 'day', 'boarding', 'day_boarding'
-  hasExtendedDay: boolean("has_extended_day").default(false),
+  programEmphasis: text("program_emphasis", { mode: "json" }).$type<string[]>(), // ['college_prep', 'montessori', 'stem', 'arts', etc.]
+  schoolType: text("school_type"), // 'day', 'boarding', 'day_boarding'
+  hasExtendedDay: integer("has_extended_day", { mode: "boolean" }).default(false),
   schoolDayMinutes: integer("school_day_minutes"), // Length of school day
   schoolYearDays: integer("school_year_days"), // Days per school year
   
@@ -1648,7 +1656,7 @@ export const privateSchools = pgTable("private_schools", {
   tuitionElementary: integer("tuition_elementary"), // Annual tuition for elementary grades
   tuitionMiddle: integer("tuition_middle"), // Annual tuition for middle grades  
   tuitionHigh: integer("tuition_high"), // Annual tuition for high school
-  hasFinancialAid: boolean("has_financial_aid").default(false),
+  hasFinancialAid: integer("has_financial_aid", { mode: "boolean" }).default(false),
   financialAidPercent: integer("financial_aid_percent"), // % of students receiving aid
   
   // Demographics (from PSS survey)
@@ -1661,44 +1669,49 @@ export const privateSchools = pgTable("private_schools", {
   multiRacialPercent: real("multi_racial_percent"),
   
   // Facilities
-  hasLibrary: boolean("has_library"),
+  hasLibrary: integer("has_library", { mode: "boolean" }),
   
   // School Associations (from PSS)
-  associations: text("associations").array(), // ['NAIS', 'NYSAIS', etc.]
+  associations: text("associations", { mode: "json" }).$type<string[]>(), // ['NAIS', 'NYSAIS', etc.]
   
   // Accreditation & Affiliations
-  accreditation: text("accreditation").array(), // ['NYSAIS', 'Middle States', etc.]
-  networkAffiliation: varchar("network_affiliation"), // Archdiocese of NY, etc.
+  accreditation: text("accreditation", { mode: "json" }).$type<string[]>(), // ['NYSAIS', 'Middle States', etc.]
+  networkAffiliation: text("network_affiliation"), // Archdiocese of NY, etc.
   
   // Admissions Info
-  applicationDeadline: varchar("application_deadline"),
-  hasRollingAdmissions: boolean("has_rolling_admissions").default(false),
-  admissionsSelectivity: varchar("admissions_selectivity"), // 'highly_selective', 'selective', 'moderate', 'open'
-  requiresInterview: boolean("requires_interview").default(false),
-  requiresTesting: boolean("requires_testing").default(false),
-  testingTypes: text("testing_types").array(), // ['ISEE', 'SSAT', 'ERB', etc.]
+  applicationDeadline: text("application_deadline"),
+  hasRollingAdmissions: integer("has_rolling_admissions", { mode: "boolean" }).default(false),
+  admissionsSelectivity: text("admissions_selectivity"), // 'highly_selective', 'selective', 'moderate', 'open'
+  requiresInterview: integer("requires_interview", { mode: "boolean" }).default(false),
+  requiresTesting: integer("requires_testing", { mode: "boolean" }).default(false),
+  testingTypes: text("testing_types", { mode: "json" }).$type<string[]>(), // ['ISEE', 'SSAT', 'ERB', etc.]
   
   // Data Source Info
   dataSourceYear: integer("data_source_year"), // Year of PSS survey
-  dataSourceVersion: varchar("data_source_version"), // PSS release version
+  dataSourceVersion: text("data_source_version"), // PSS release version
   
   // Metadata
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("private_schools_borough_idx").on(table.borough),
   index("private_schools_zip_idx").on(table.zipCode),
   index("private_schools_religious_idx").on(table.religiousAffiliation),
 ]);
 
-export const insertPrivateSchoolSchema = createInsertSchema(privateSchools);
+export const insertPrivateSchoolSchema = createInsertSchema(privateSchools, {
+  programEmphasis:z.array(z.string()).nullable().optional(),
+  associations:z.array(z.string()).nullable().optional(),
+  accreditation:z.array(z.string()).nullable().optional(),
+  testingTypes:z.array(z.string()).nullable().optional(),
+});
 export type InsertPrivateSchool = z.infer<typeof insertPrivateSchoolSchema>;
 export type PrivateSchool = typeof privateSchools.$inferSelect;
 
 // Private School History Table - for tracking year-over-year changes
-export const privateSchoolHistory = pgTable("private_school_history", {
-  id: serial("id").primaryKey(),
-  ncesId: varchar("nces_id").notNull(),
+export const privateSchoolHistory = sqliteTable("private_school_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ncesId: text("nces_id").notNull(),
   schoolYear: integer("school_year").notNull(), // e.g., 2023 for 2023-24
   
   // Metrics that change over time
@@ -1712,8 +1725,8 @@ export const privateSchoolHistory = pgTable("private_school_history", {
   schoolYearDays: integer("school_year_days"),
   
   // Data source tracking
-  dataSourceVersion: varchar("data_source_version"),
-  createdAt: timestamp("created_at").defaultNow(),
+  dataSourceVersion: text("data_source_version"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index("private_school_history_nces_year_idx").on(table.ncesId, table.schoolYear),
 ]);
@@ -1840,13 +1853,13 @@ export function getProgramEmphasisLabel(emphasis: string): string {
 // school. We pull the last ~24 months from Socrata (datasets 5uac-w243 + qgea-i56i)
 // and compute distances to schools locally instead of issuing 16k+ within_circle
 // queries per sync run.
-export const nypdComplaints = pgTable("nypd_complaints", {
-  cmplntNum: varchar("cmplnt_num").primaryKey(),
-  complaintDate: timestamp("complaint_date").notNull(),
-  lawCatCd: varchar("law_cat_cd", { length: 20 }), // FELONY | MISDEMEANOR | VIOLATION
-  ofnsDesc: varchar("ofns_desc"),                  // e.g. "GRAND LARCENY"
-  pdDesc: varchar("pd_desc"),                      // narrower NYPD code
-  borough: varchar("borough", { length: 30 }),
+export const nypdComplaints = sqliteTable("nypd_complaints", {
+  cmplntNum: text("cmplnt_num").primaryKey(),
+  complaintDate: integer("complaint_date", { mode: "timestamp_ms" }).notNull(),
+  lawCatCd: text("law_cat_cd"), // FELONY | MISDEMEANOR | VIOLATION
+  ofnsDesc: text("ofns_desc"),                  // e.g. "GRAND LARCENY"
+  pdDesc: text("pd_desc"),                      // narrower NYPD code
+  borough: text("borough"),
   latitude: real("latitude").notNull(),
   longitude: real("longitude").notNull(),
 }, (t) => [
@@ -1861,15 +1874,15 @@ export type InsertNypdComplaint = typeof nypdComplaints.$inferInsert;
 // Per-school, per-radius safety snapshot. School identity is encoded as
 // (school_type, school_key) so the same table covers public, private, and
 // NYCEEC sources. One row per (school, radius); upserted on each sync.
-export const schoolSafetyIndex = pgTable("school_safety_index", {
-  id: serial("id").primaryKey(),
-  schoolType: varchar("school_type", { length: 20 }).notNull(), // 'public' | 'private' | 'nyceec'
-  schoolKey: varchar("school_key").notNull(),                   // dbn | nces_id | loc_code
+export const schoolSafetyIndex = sqliteTable("school_safety_index", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  schoolType: text("school_type").notNull(), // 'public' | 'private' | 'nyceec'
+  schoolKey: text("school_key").notNull(),                   // dbn | nces_id | loc_code
   radiusMeters: integer("radius_meters").notNull(),
 
   // Reporting window
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
+  periodStart: integer("period_start", { mode: "timestamp_ms" }).notNull(),
+  periodEnd: integer("period_end", { mode: "timestamp_ms" }).notNull(),
 
   // Raw counts
   totalReports: integer("total_reports").notNull().default(0),
@@ -1879,7 +1892,7 @@ export const schoolSafetyIndex = pgTable("school_safety_index", {
   violationReports: integer("violation_reports").notNull().default(0),
 
   // Top reported offense categories within the radius
-  topCategories: jsonb("top_categories").$type<Array<{ category: string; count: number }>>().notNull().default([]),
+  topCategories: text("top_categories", { mode: "json" }).$type<Array<{ category: string; count: number }>>().notNull().default(sql`'[]'`),
 
   // Severity-weighted incident rate, per square kilometer
   weightedRiskScore: real("weighted_risk_score").notNull().default(0),
@@ -1889,11 +1902,11 @@ export const schoolSafetyIndex = pgTable("school_safety_index", {
   percentileCitywide: integer("percentile_citywide"),
 
   // Comparison to the prior 12 months
-  trend: varchar("trend", { length: 20 }), // 'improving' | 'stable' | 'worsening' | 'insufficient_data'
+  trend: text("trend"), // 'improving' | 'stable' | 'worsening' | 'insufficient_data'
   trendDelta: real("trend_delta"),         // signed % change vs prior period
   priorPeriodTotal: integer("prior_period_total"),
 
-  lastCalculatedAt: timestamp("last_calculated_at").notNull().defaultNow(),
+  lastCalculatedAt: integer("last_calculated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("safety_school_radius_unique").on(t.schoolType, t.schoolKey, t.radiusMeters),
   index("safety_radius_idx").on(t.radiusMeters),

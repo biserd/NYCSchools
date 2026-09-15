@@ -14,7 +14,7 @@ interface OutboundEmail {
 }
 
 async function sendEmail(message: OutboundEmail): Promise<EmailSendResult> {
-  if (env.EMAIL_DELIVERY_ENABLED !== "true") {
+  if (env.ENVIRONMENT === 'staging' || env.EMAIL_DELIVERY_ENABLED !== "true") {
     logEmail("WARN", "Email delivery disabled", {
       subject: message.subject,
       to: message.to,
@@ -29,7 +29,9 @@ async function sendEmail(message: OutboundEmail): Promise<EmailSendResult> {
       name: env.EMAIL_FROM_NAME,
     },
   };
-  return env.EMAIL.send(builder);
+  const binding: SendEmail | undefined = Reflect.get(env, 'EMAIL');
+  if (!binding) throw new Error('Email binding is not configured');
+  return binding.send(builder);
 }
 
 const ADMIN_EMAIL = 'hello@bigappledigital.nyc';

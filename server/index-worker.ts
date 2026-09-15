@@ -8,7 +8,6 @@ let expressHandlerPromise: Promise<WorkerHandler> | undefined;
 function initializeProcessEnvironment(workerEnv: Env): void {
   const runtimeEnv = workerEnv as unknown as Record<string, string | undefined>;
   const values: Record<string, string | undefined> = {
-    DATABASE_URL: workerEnv.HYPERDRIVE.connectionString,
     APP_URL: workerEnv.APP_URL,
     ENVIRONMENT: workerEnv.ENVIRONMENT,
     NODE_ENV: runtimeEnv.NODE_ENV,
@@ -102,8 +101,8 @@ async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
     }
 
     if (cron === "0 9 1 * *") {
-      const { runSafetySync } = await import("./services/safetyIndex");
-      await runSafetySync({ months: 24 });
+      const { startSafetyRefresh } = await import("./services/safetyQueue");
+      await startSafetyRefresh(workerEnv);
       return;
     }
 
@@ -159,5 +158,9 @@ export default {
 
   scheduled(controller, workerEnv, ctx): void {
     ctx.waitUntil(runScheduledTask(controller.cron, workerEnv));
+  },
+  async queue(batch,workerEnv):Promise<void>{
+    const {consumeSafetyRefresh}=await import('./services/safetyQueue');
+    await consumeSafetyRefresh(batch,workerEnv);
   },
 } satisfies ExportedHandler<Env>;

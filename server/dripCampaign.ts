@@ -159,7 +159,7 @@ async function recordDripEmailSent(userId: string, emailType: DripEmailType): Pr
     await db
       .update(users)
       .set({
-        dripEmailsSent: sql`array_append(COALESCE(${users.dripEmailsSent}, ARRAY[]::text[]), ${emailType})`,
+        dripEmailsSent: sql`json_insert(COALESCE(${users.dripEmailsSent}, '[]'), '$[#]', ${emailType})`,
         lastDripEmailAt: new Date(),
         updatedAt: new Date(),
       })

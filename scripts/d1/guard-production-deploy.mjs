@@ -1,0 +1,1 @@
+throw new Error('Production cutover is not authorized/configured on this D1 staging branch. Use npm run deploy:d1:staging. Do not deploy wrangler.jsonc until the production D1 database, final sync, rollback and bindings are approved.');

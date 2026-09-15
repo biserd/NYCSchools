@@ -1,0 +1,32 @@
+{
+  "$schema":"node_modules/wrangler/config-schema.json",
+  "name":"nyc-schools-ratings-d1-staging",
+  "main":"./server/index-d1-staging.ts",
+  "account_id":"73d71a2bef58f7469ecb48e2b8e84c0e",
+  "compatibility_date":"2026-09-15",
+  "compatibility_flags":["nodejs_compat"],
+  "workers_dev":true,
+  "preview_urls":false,
+  "routes":[],
+  "ai":{"binding":"AI"},
+  "assets":{"directory":"./dist/public","binding":"ASSETS","run_worker_first":true},
+  "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-d1-staging","database_id":"e48a9ae9-4948-4dae-863a-06f6b026b436","migrations_dir":"migrations-d1"}],
+  "triggers":{"crons":[]},
+  "queues":{
+    "producers":[{"binding":"SAFETY_QUEUE","queue":"nyc-schools-d1-stage-safety"}],
+    "consumers":[{"queue":"nyc-schools-d1-stage-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-d1-stage-safety-failed"}]
+  },
+  "vars":{
+    "ENVIRONMENT":"staging",
+    "NODE_ENV":"production",
+    "APP_URL":"https://nyc-schools-ratings-d1-staging.biser-d.workers.dev",
+    "ADMIN_EMAILS":"",
+    "EMAIL_DELIVERY_ENABLED":"false",
+    "EMAIL_FROM":"hello@nycschoolsratings.com",
+    "EMAIL_FROM_NAME":"NYC Schools D1 staging",
+    "STRIPE_SEASON_PASS_PRODUCT_ID":"",
+    "STRIPE_SEASON_PASS_PRICE_ID":"",
+    "STAGING_EXPIRES_AT":"2026-09-22T16:58:00Z"
+  },
+  "observability":{"enabled":true}
+}
