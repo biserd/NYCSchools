@@ -2,7 +2,9 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "nyc-schools-ratings",
   "main": "./server/index-worker.ts",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
   "workers_dev": true,
+  "preview_urls": false,
   "routes": [
     {
       "pattern": "nycschoolsratings.com/*",
@@ -13,7 +15,7 @@
       "zone_name": "nycschoolsratings.com"
     }
   ],
-  "compatibility_date": "2026-08-30",
+  "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist/public",
@@ -23,13 +25,18 @@
   "ai": {
     "binding": "AI"
   },
-  "hyperdrive": [
+  "d1_databases": [
     {
-      "binding": "HYPERDRIVE",
-      "id": "def7c546eb804bbfb9e546d005c2266c",
-      "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/nycschools"
+      "binding": "DB",
+      "database_name": "nyc-schools-ratings-production",
+      "database_id": "35237f81-df27-4908-be1a-1226faf501e0",
+      "migrations_dir": "migrations-d1"
     }
   ],
+  "queues": {
+    "producers": [{"binding":"SAFETY_QUEUE","queue":"nyc-schools-production-safety"}],
+    "consumers": [{"queue":"nyc-schools-production-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-production-safety-failed"}]
+  },
   "send_email": [
     {
       "name": "EMAIL",
@@ -40,6 +47,7 @@
   "vars": {
     "APP_URL": "https://nycschoolsratings.com",
     "ENVIRONMENT": "production",
+    "MAINTENANCE_MODE": "false",
     "NODE_ENV": "production",
     "ADMIN_EMAILS": "biserd@gmail.com",
     "STRIPE_SEASON_PASS_PRODUCT_ID": "prod_Tc0wGwu3FOifBE",

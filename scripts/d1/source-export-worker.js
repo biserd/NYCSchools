@@ -9,6 +9,8 @@ export default { async fetch(request, env) {
   await client.connect();
   try {
     await client.query('BEGIN READ ONLY');
+    if(url.pathname === '/activity') return Response.json((await client.query("SELECT count(*)::int AS other_active_or_transaction_sessions FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type='client backend' AND (state='active' OR state LIKE 'idle in transaction%')")).rows[0]);
+    if(url.pathname === '/sequences') return Response.json((await client.query("SELECT c.table_name,c.column_name,s.last_value::text FROM information_schema.columns c JOIN pg_sequences s ON pg_get_serial_sequence(format('%I.%I',c.table_schema,c.table_name),c.column_name)=format('%I.%I',s.schemaname,s.sequencename) WHERE c.table_schema='public' ORDER BY c.table_name,c.column_name")).rows);
     if(url.pathname === '/inventory') {
       const result = await client.query("SELECT schemaname,relname name,n_live_tup estimated_rows,pg_total_relation_size(relid)::text bytes FROM pg_stat_user_tables ORDER BY relname");
       return Response.json(result.rows);

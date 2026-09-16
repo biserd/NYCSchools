@@ -134,9 +134,9 @@ Key conventions:
 - **Schema first.** All data models live in `shared/schema.ts` (Drizzle +
   `drizzle-zod` insert schemas). Frontend and backend both import from
   there for type safety.
-- **No raw SQL migrations.** Schema changes are applied with
-  `npm run db:push`. If a push warns about data loss, use
-  `npm run db:push --force`.
+- **Reviewed D1 migrations.** Schema changes live in `migrations-d1/`.
+  Generate with `npm run db:generate:d1`, inspect the SQL, then test on staging
+  before applying to production. `db:push` is intentionally blocked.
 - **No SQL outside `server/storage.ts`.** Routes are thin and call into
   the storage layer.
 - **Caching by default.** Hot endpoints go through `server/cache.ts`
@@ -275,11 +275,12 @@ Common status codes: `400` (validation), `401` (missing/invalid key),
 
 ## Deployment
 
-Production is configured for Cloudflare Workers. Vite builds the Express
-Worker and static SPA together; Worker Assets serves the frontend, Hyperdrive
-connects the current PostgreSQL database, Email Service handles transactional
-messages, and Cron Triggers run observability, drip email, and monthly safety
-jobs.
+Production uses Cloudflare Workers and D1. Vite builds the frontend; Wrangler
+bundles the Express Worker and deploys its static assets. Email Service handles
+transactional messages. Cron Triggers run observability and drip email only;
+safety data refresh is manual-only, using the authenticated administrative flow
+and production safety queue. Neon is retained for migration recovery, not used
+by the production runtime.
 
 ```bash
 npm run check
@@ -288,10 +289,13 @@ npm run deploy
 ```
 
 The Worker is deployed at
-`https://nyc-schools-ratings.biser-d.workers.dev`; Hyperdrive, Workers AI,
-Email Service, cron triggers, Stripe, maps, and the data-source token are
-provisioned. See
-[`CLOUDFLARE_MIGRATION.md`](./CLOUDFLARE_MIGRATION.md) for the cutover checklist.
+`https://nyc-schools-ratings.biser-d.workers.dev`. Canonical production config is
+`wrangler.jsonc`; staging uses `wrangler.d1-staging.jsonc` and a separate database.
+`wrangler.d1-production.jsonc` is the explicit **maintenance-on** configuration,
+not the normal deployment command. See
+[`docs/d1-production-cutover.md`](./docs/d1-production-cutover.md) for verification,
+deferred checks, and recovery constraints. Do not roll back to Neon after D1
+accepts writes without reconciling those new writes first.
 
 ## License
 

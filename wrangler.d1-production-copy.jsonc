@@ -1,0 +1,13 @@
+{
+  "name":"nyc-schools-production-copy-preview",
+  "main":"scripts/d1/production-copy-worker.ts",
+  "account_id":"73d71a2bef58f7469ecb48e2b8e84c0e",
+  "compatibility_date":"2026-09-15",
+  "compatibility_flags":["nodejs_compat"],
+  "workers_dev":false,
+  "preview_urls":false,
+  "routes":[],
+  "hyperdrive":[{"binding":"HYPERDRIVE","id":"def7c546eb804bbfb9e546d005c2266c"}],
+  "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-production","database_id":"35237f81-df27-4908-be1a-1226faf501e0","migrations_dir":"migrations-d1"}],
+  "vars":{"COPY_TARGET_ID":"35237f81-df27-4908-be1a-1226faf501e0","COPY_EXPIRES_AT":"2026-09-16T00:00:15Z"}
+}

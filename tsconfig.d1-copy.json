@@ -1,0 +1,5 @@
+{
+  "extends":"./tsconfig.json",
+  "compilerOptions":{"allowJs":true,"checkJs":false,"incremental":false},
+  "include":["server/**/*","shared/**/*","worker-configuration.d.ts","scripts/d1/production-copy-worker.ts","scripts/d1/production-copy-env.d.ts","scripts/d1/final-sync-handler.ts"]
+}

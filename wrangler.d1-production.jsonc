@@ -1,0 +1,28 @@
+{
+  "$schema":"./node_modules/wrangler/config-schema.json",
+  "name":"nyc-schools-ratings",
+  "main":"./server/index-worker.ts",
+  "account_id":"73d71a2bef58f7469ecb48e2b8e84c0e",
+  "workers_dev":true,
+  "preview_urls":false,
+  "routes":[{"pattern":"nycschoolsratings.com/*","zone_name":"nycschoolsratings.com"},{"pattern":"www.nycschoolsratings.com/*","zone_name":"nycschoolsratings.com"}],
+  "compatibility_date":"2026-09-15",
+  "compatibility_flags":["nodejs_compat"],
+  "assets":{"directory":"./dist/public","binding":"ASSETS","run_worker_first":true},
+  "ai":{"binding":"AI"},
+  "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-production","database_id":"35237f81-df27-4908-be1a-1226faf501e0","migrations_dir":"migrations-d1"}],
+  "send_email":[{"name":"EMAIL","allowed_sender_addresses":["hello@nycschoolsratings.com"],"remote":true}],
+  "queues":{
+    "producers":[{"binding":"SAFETY_QUEUE","queue":"nyc-schools-production-safety"}],
+    "consumers":[{"queue":"nyc-schools-production-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-production-safety-failed"}]
+  },
+  "vars":{
+    "APP_URL":"https://nycschoolsratings.com","ENVIRONMENT":"production","NODE_ENV":"production",
+    "ADMIN_EMAILS":"biserd@gmail.com","MAINTENANCE_MODE":"true",
+    "STRIPE_SEASON_PASS_PRODUCT_ID":"prod_Tc0wGwu3FOifBE","STRIPE_SEASON_PASS_PRICE_ID":"price_1SemubRwvWaTf8xfAYvh2qJl",
+    "EMAIL_FROM":"hello@nycschoolsratings.com","EMAIL_FROM_NAME":"NYC School Ratings","EMAIL_DELIVERY_ENABLED":"true",
+    "INDEXNOW_KEY":"a4c2f27e06d54a0fa8bd43b93fe6bc72"
+  },
+  "triggers":{"crons":["*/15 * * * *","0 14 * * *"]},
+  "observability":{"enabled":true,"logs":{"enabled":true,"head_sampling_rate":1},"traces":{"enabled":true,"head_sampling_rate":0.05}}
+}

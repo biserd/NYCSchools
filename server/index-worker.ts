@@ -1,5 +1,6 @@
 import { httpServerHandler } from "cloudflare:node";
 import { externalRel, isExternalWebLink } from '../shared/external-links';
+import {maintenanceResponse} from './maintenanceResponse';
 
 type WorkerHandler = ReturnType<typeof httpServerHandler>;
 
@@ -100,11 +101,7 @@ async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
       return;
     }
 
-    if (cron === "0 9 1 * *") {
-      const { startSafetyRefresh } = await import("./services/safetyQueue");
-      await startSafetyRefresh(workerEnv);
-      return;
-    }
+    // Safety refresh is manual-only. Never start it from a scheduled event.
 
     console.warn(JSON.stringify({ message: "Unknown scheduled trigger", cron }));
   });
@@ -112,6 +109,7 @@ async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
 
 export default {
   async fetch(request, workerEnv, ctx): Promise<Response> {
+    if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true')return maintenanceResponse(request);
     const pathname = new URL(request.url).pathname;
     if (shouldServeAsset(pathname)) return workerEnv.ASSETS.fetch(request);
 
@@ -157,9 +155,11 @@ export default {
   },
 
   scheduled(controller, workerEnv, ctx): void {
+    if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true')return;
     ctx.waitUntil(runScheduledTask(controller.cron, workerEnv));
   },
   async queue(batch,workerEnv):Promise<void>{
+    if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true'){batch.retryAll({delaySeconds:60});return;}
     const {consumeSafetyRefresh}=await import('./services/safetyQueue');
     await consumeSafetyRefresh(batch,workerEnv);
   },

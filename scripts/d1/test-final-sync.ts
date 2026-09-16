@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {mkdtemp,readFile,readdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {getPlatformProxy} from 'wrangler';
+import {finalSyncHandler} from './final-sync-handler';
+import {productionSmokeHandler} from './production-smoke-handler';
+const platform=await getPlatformProxy<Env>({configPath:'wrangler.d1-test.jsonc',persist:{path:await mkdtemp(join(tmpdir(),'nyc-final-sync-'))}}),binding=platform.env.DB;
+const realFetch=globalThis.fetch;let frozen=false;
+globalThis.fetch=async()=>new Response('',{status:frozen?503:200,headers:frozen?{'X-Migration-Maintenance':'true'}:{}});
+const request=(path:string,rows:unknown[])=>new Request('https://example.invalid/final/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedDatabase:'35237f81-df27-4908-be1a-1226faf501e0',rows})});
+try{
+ for(const file of (await readdir('migrations-d1')).filter(f=>f.endsWith('.sql')).sort())for(const statement of (await readFile(`migrations-d1/${file}`,'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean))await binding.prepare(statement).run();
+ await binding.prepare("INSERT INTO users(id,email,password) VALUES('synthetic','original@example.invalid','synthetic-hash')").run();
+ const row=await binding.prepare("SELECT * FROM users WHERE id='synthetic'").first();assert.ok(row);row.email='updated@example.invalid';
+ assert.equal((await finalSyncHandler(request('merge?table=users',[row]),binding)).status,409);
+ assert.equal(await binding.prepare("SELECT email FROM users WHERE id='synthetic'").first('email'),'original@example.invalid');
+ frozen=true;assert.equal((await finalSyncHandler(request('merge?table=users',[row]),binding)).status,200);
+ assert.equal(await binding.prepare("SELECT email FROM users WHERE id='synthetic'").first('email'),'updated@example.invalid');
+ const schema=await (await finalSyncHandler(new Request('https://example.invalid/final/schema?table=users'),binding)).json() as {keys:string[]};assert.deepEqual(schema.keys,['id']);
+ assert.equal((await finalSyncHandler(request('delete?table=users',[{id:'synthetic'}]),binding)).status,200);assert.equal(await binding.prepare('SELECT count(*) n FROM users').first('n'),0);
+ assert.equal((await finalSyncHandler(request('sequences',[{table_name:'favorites',last_value:'999'}]),binding)).status,200);assert.equal(await binding.prepare("SELECT seq FROM sqlite_sequence WHERE name='favorites'").first('seq'),999);
+ console.log('Final-sync tests passed: maintenance-required writes, primary-key upsert, scoped delete, schema keys and sequence preservation.');
+ const smokeId='d1-cutover-smoke-12345678-1234-1234-1234-123456789abc';
+ const smokeRequest=(action:string,id=smokeId)=>new Request('https://example.invalid/smoke/'+action,{method:'POST',body:JSON.stringify({id,passwordHash:'$2b$10$'+'.'.repeat(53)})});
+ assert.equal((await productionSmokeHandler(smokeRequest('create','real-account'),binding)).status,400);
+ assert.equal((await productionSmokeHandler(smokeRequest('create'),binding)).status,200);
+ assert.equal(await binding.prepare('SELECT count(*) n FROM users').first('n'),1);
+ assert.equal((await productionSmokeHandler(smokeRequest('cleanup'),binding)).status,200);
+ assert.equal(await binding.prepare('SELECT count(*) n FROM users').first('n'),0);
+ console.log('Production smoke helper: rejects non-synthetic identifiers and cleans only its test account.');
+}finally{globalThis.fetch=realFetch;await platform.dispose();}

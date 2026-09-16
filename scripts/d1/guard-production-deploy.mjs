@@ -1,1 +1,12 @@
-throw new Error('Production D1 cutover preparation is authorized, but the target database, final sync, rollback and production bindings are not ready. See docs/d1-production-cutover.md. Use npm run deploy:d1:staging for staging only; do not deploy wrangler.jsonc yet.');
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+if(process.env.npm_lifecycle_event==='db:push')throw new Error('Use reviewed D1 migrations, not db:push. See docs/d1-production-cutover.md.');
+const config=JSON.parse(await readFile(new URL('../../wrangler.jsonc',import.meta.url),'utf8'));
+assert.equal(config.name,'nyc-schools-ratings');
+assert.equal(config.d1_databases?.[0]?.database_id,'35237f81-df27-4908-be1a-1226faf501e0');
+assert.ok(!config.hyperdrive?.length,'Production must not reconnect to stale Neon data');
+assert.equal(config.vars.ENVIRONMENT,'production');
+assert.equal(config.vars.MAINTENANCE_MODE,'false','Use the explicit maintenance config for a gated deployment');
+assert.equal(config.vars.EMAIL_DELIVERY_ENABLED,'true');
+assert.ok(!config.triggers.crons.includes('0 9 1 * *'),'Safety refresh is manual-only');
+console.log('Production target verified: D1, live integrations, manual-only safety refresh.');
