@@ -8,6 +8,7 @@ import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, inse
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
+import { tuckRouter } from "./tuck/routes";
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
 import apiV1Router from "./routesV1";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
@@ -208,6 +209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth middleware
   setupAuth(app);
+  app.use('/api/tuck', tuckRouter(isAuthenticated, getAppUrl));
+  app.get('/family', (_req, res) => res.redirect(302, '/tuck'));
   
   // OAuth 2.1 endpoints for ChatGPT
   setupOAuth(app);

@@ -10,7 +10,7 @@ const KNOWN_STATIC_ROUTES = new Set([
   "/features", "/benefits", "/release-notes", "/blog", "/pricing",
   "/developers", "/developers/docs", "/contact", "/safety-methodology",
   "/safe-and-strong", "/admin/api-usage", "/thanks",
-  "/explore-schools", "/methodology", "/about",
+  "/explore-schools", "/methodology", "/about", "/tuck",
   "/auth/magic-link/callback",
 ]);
 

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, check } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, check, foreignKey } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import type { SurveyMetric } from './surveys';
@@ -898,6 +898,34 @@ export const insertUserSchema = createInsertSchema(users, {dripEmailsSent:z.arra
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Tuck is part of Ratings: one account, one database, no parallel auth or school copy.
+// Initial rebuild is owner-only. Shared access must use verified memberships later.
+export const tuckHouseholds = sqliteTable("tuck_households", {
+  id: text("id").primaryKey(),
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
+}, t => [uniqueIndex("tuck_household_owner_key").on(t.ownerUserId)]);
+
+export const tuckChildren = sqliteTable("tuck_children", {
+  id: text("id").primaryKey(),
+  householdId: text("household_id").notNull().references(() => tuckHouseholds.id, { onDelete: "cascade" }),
+  nickname: text("nickname").notNull(),
+  schoolDbn: text("school_dbn").references(() => schools.dbn, { onDelete: "set null" }),
+}, t => [uniqueIndex("tuck_child_household_key").on(t.id, t.householdId), index("tuck_children_household_idx").on(t.householdId)]);
+
+export const tuckEvents = sqliteTable("tuck_events", {
+  id: text("id").primaryKey(),
+  householdId: text("household_id").notNull().references(() => tuckHouseholds.id, { onDelete: "cascade" }),
+  childId: text("child_id"),
+  title: text("title").notNull(),
+  date: text("date").notNull(), // All-day local calendar date, never an implicit UTC instant.
+  detail: text("detail").notNull().default(""),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
+}, t => [
+  index("tuck_events_household_date_idx").on(t.householdId, t.date),
+  foreignKey({ columns: [t.childId, t.householdId], foreignColumns: [tuckChildren.id, tuckChildren.householdId] }).onDelete("cascade"),
+]);
 
 // Password Reset Tokens for forgot password flow
 export const passwordResetTokens = sqliteTable("password_reset_tokens", {

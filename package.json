@@ -15,6 +15,7 @@
     "deploy": "node scripts/d1/guard-production-deploy.mjs && vite build && wrangler deploy --config wrangler.jsonc",
     "deploy:d1:staging": "vite build && wrangler deploy --config wrangler.d1-staging.jsonc",
     "test:d1:auth": "node scripts/d1/test-auth.mjs",
+    "test:tuck": "tsx scripts/d1/test-tuck.ts",
     "test:d1:safety": "tsx scripts/d1/test-safety-queue.ts",
     "test:d1:parity": "node scripts/d1/compare-public.mjs",
     "import:surveys:d1": "tsx scripts/d1/import-surveys.ts",

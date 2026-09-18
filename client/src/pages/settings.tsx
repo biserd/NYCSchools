@@ -364,6 +364,10 @@ export default function Settings() {
           <SettingsIcon className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-bold">Settings</h1>
         </div>
+        <Card className="mb-6">
+          <CardHeader><CardTitle>Tuck · Your family space</CardTitle><CardDescription>Your calendar and school links, using this same account. WhatsApp assistance is being rebuilt.</CardDescription></CardHeader>
+          <CardContent><Button asChild><Link href="/tuck">Open Tuck</Link></Button></CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
