@@ -100,8 +100,8 @@ function Router() {
           <Home />
         </Route>
         <Route path="/login" component={LoginPage} />
-        <Route path="/tuck" component={TuckPage} />
-        <Route path="/family"><Redirect to="/tuck" replace /></Route>
+        <Route path="/family" component={TuckPage} />
+        <Route path="/tuck"><Redirect to="/family" replace /></Route>
         <Route path="/register" component={RegisterPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />

@@ -14,6 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MapPin, Save, Settings as SettingsIcon, LogIn, CreditCard, Crown, Loader2, ExternalLink, MessageCircle, Calendar, Lock, Sparkles } from "lucide-react";
 import { UserProfile, AiChatSession, AiChatSessionWithMessages } from "@shared/schema";
 import { ApiAccessCard } from "@/components/ApiAccessCard";
+import { AccountPlanSummary } from '@/components/AccountPlanSummary';
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 
@@ -22,11 +23,12 @@ interface SubscriptionStatus {
   subscription: {
     id: string;
     status: string;
-    current_period_end: number;
+    current_period_end: number | null;
     cancel_at_period_end: boolean;
     plan?: {
       nickname: string;
-      amount: number;
+      amount: number | null;
+      recurring?: boolean;
       currency: string;
       interval: string;
     };
@@ -365,8 +367,8 @@ export default function Settings() {
           <h1 className="text-2xl font-bold">Settings</h1>
         </div>
         <Card className="mb-6">
-          <CardHeader><CardTitle>Tuck · Your family space</CardTitle><CardDescription>Your calendar and school links, using this same account. WhatsApp assistance is being rebuilt.</CardDescription></CardHeader>
-          <CardContent><Button asChild><Link href="/tuck">Open Tuck</Link></Button></CardContent>
+          <CardHeader><CardTitle>My Family</CardTitle><CardDescription>Your calendar and school links, using this same account. The WhatsApp Parent Assistant is coming with Family Premium.</CardDescription></CardHeader>
+          <CardContent><Button asChild><Link href="/family">Open My Family</Link></Button></CardContent>
         </Card>
         <Card>
           <CardHeader>
@@ -433,6 +435,7 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <AccountPlanSummary />
             {subscriptionLoading ? (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -443,7 +446,7 @@ export default function Settings() {
                 <div className="flex items-center gap-2">
                   <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-orange-500">
                     <Crown className="w-3 h-3 mr-1" />
-                    Premium
+                    {subscriptionData.subscription.plan?.nickname || 'Research access'}
                   </Badge>
                   {subscriptionData.subscription.cancel_at_period_end && (
                     <Badge variant="outline" className="text-yellow-600 border-yellow-600">
@@ -457,7 +460,7 @@ export default function Settings() {
                     <span className="text-muted-foreground">Plan</span>
                     <span className="font-medium" data-testid="text-plan-name">
                       {subscriptionData.subscription.plan 
-                        ? `${subscriptionData.subscription.plan.nickname} (${formatPrice(subscriptionData.subscription.plan.amount, subscriptionData.subscription.plan.currency)}/${subscriptionData.subscription.plan.interval})`
+                        ? `${subscriptionData.subscription.plan.nickname}${subscriptionData.subscription.plan.amount !== null ? ' (' + formatPrice(subscriptionData.subscription.plan.amount, subscriptionData.subscription.plan.currency) + '/' + subscriptionData.subscription.plan.interval + ')' : ' — prepaid access'}`
                         : 'Premium'}
                     </span>
                   </div>
@@ -469,10 +472,10 @@ export default function Settings() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {subscriptionData.subscription.cancel_at_period_end ? "Access until" : "Next billing date"}
+                      {subscriptionData.subscription.plan?.recurring === false || subscriptionData.subscription.cancel_at_period_end ? "Access until" : "Next billing date"}
                     </span>
                     <span className="font-medium" data-testid="text-billing-date">
-                      {new Date(subscriptionData.subscription.current_period_end * 1000).toLocaleDateString()}
+                      {subscriptionData.subscription.current_period_end ? new Date(subscriptionData.subscription.current_period_end * 1000).toLocaleDateString() : 'No expiry recorded'}
                     </span>
                   </div>
                 </div>
@@ -480,7 +483,7 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">
                   {subscriptionData.subscription.cancel_at_period_end 
                     ? "Your subscription will end at the end of the current billing period. You can reactivate anytime before then."
-                    : "You have access to all premium features including unlimited AI questions, commute calculator, and smart recommendations."}
+                    : "Your school-research tools remain available. A Research Pass does not automatically renew. WhatsApp Parent Assistant features are not live yet."}
                 </p>
 
                 <Button 
@@ -493,7 +496,7 @@ export default function Settings() {
                   ) : (
                     <ExternalLink className="mr-2 h-4 w-4" />
                   )}
-                  Manage Subscription
+                  Manage Billing
                 </Button>
               </div>
             ) : (
@@ -503,12 +506,12 @@ export default function Settings() {
                 </div>
                 
                 <p className="text-sm text-muted-foreground">
-                  You're currently on the free plan. Upgrade to Premium to unlock unlimited AI questions, 
+                  You're currently on the free plan. Get a School Research Pass to unlock unlimited on-site AI questions,
                   commute calculator, smart recommendations, and more.
                 </p>
 
                 <div className="p-4 bg-muted rounded-md" data-testid="premium-features-list">
-                  <p className="text-sm font-medium mb-2">Premium features include:</p>
+                  <p className="text-sm font-medium mb-2">School Research Pass features include:</p>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li className="flex items-center gap-2">
                       <Crown className="w-3 h-3 text-amber-500" />
@@ -532,7 +535,7 @@ export default function Settings() {
                 <Link href="/pricing">
                   <Button data-testid="button-upgrade-premium">
                     <Crown className="mr-2 h-4 w-4" />
-                    Upgrade to Premium
+                    Get School Research Pass
                   </Button>
                 </Link>
               </div>
@@ -562,7 +565,7 @@ export default function Settings() {
                   <span className="text-sm">Premium feature</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Upgrade to Premium to access unlimited AI questions and view your conversation history.
+                  Get a School Research Pass to access unlimited on-site AI questions and view your conversation history.
                 </p>
                 <Link href="/pricing">
                   <Button variant="outline" size="sm" data-testid="button-upgrade-for-chat">

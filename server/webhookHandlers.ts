@@ -6,6 +6,8 @@ import { invalidateUserCaches } from './cache';
 import Stripe from 'stripe';
 import crypto from 'crypto';
 import { getAppUrl } from './runtimeConfig';
+import { matchesFamilyPrice, recordFamilySubscription } from './familyBilling';
+import { sixMonthsFrom } from '@shared/plans';
 
 // Enhanced logging for webhook debugging
 function logWebhook(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any) {
@@ -101,6 +103,14 @@ export class WebhookHandlers {
       });
       
       // Determine subscription status and plan
+      if (matchesFamilyPrice(subscription, process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID)) {
+        await recordFamilySubscription(user.id, subscription, event.created, eventType === 'customer.subscription.deleted');
+        invalidateUserCaches(user.id);
+        return; // Never overwrite the separately purchased research pass.
+      }
+      if (subscription.metadata?.plan === 'family_premium') throw new Error('Family Premium price is not configured or does not match');
+
+      // Determine legacy subscription status and plan
       let subscriptionStatus = 'free';
       let subscriptionPlan = 'free';
       let stripeSubscriptionId: string | null = null;
@@ -152,8 +162,9 @@ export class WebhookHandlers {
     }
     
     // Handle checkout session completed
-    if (eventType === 'checkout.session.completed') {
+    if (eventType === 'checkout.session.completed' || eventType === 'checkout.session.async_payment_succeeded') {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.payment_status !== 'paid') return;
       
       const customerId = typeof session.customer === 'string' 
         ? session.customer 
@@ -239,6 +250,14 @@ export class WebhookHandlers {
         const subscriptionId = typeof session.subscription === 'string'
           ? session.subscription
           : session.subscription.id;
+        const stripe = await getUncachableStripeClient();
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        if (matchesFamilyPrice(subscription, process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID)) {
+          await recordFamilySubscription(user.id, subscription, event.created);
+          invalidateUserCaches(user.id);
+          return;
+        }
+        if (session.metadata?.plan === 'family_premium' || subscription.metadata?.plan === 'family_premium') throw new Error('Family Premium price is not configured or does not match');
         
         logWebhook('INFO', `Processing subscription checkout`, {
           customerId,
@@ -268,11 +287,11 @@ export class WebhookHandlers {
         
         // Check metadata for plan type
         const planType = session.metadata?.plan || 'season_pass';
-        const durationMonths = parseInt(session.metadata?.duration_months || '6', 10);
+        if (planType !== 'season_pass') return;
+        const durationMonths = 6;
         
         // Calculate expiration date (6 months from now for Season Pass)
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+        const expiresAt = sixMonthsFrom(new Date(session.created * 1000));
         
         logWebhook('INFO', `Updating user with Season Pass`, {
           userId: user.id,
@@ -282,7 +301,6 @@ export class WebhookHandlers {
         });
         
         await storage.updateUserStripeInfo(user.id, {
-          stripeSubscriptionId: session.payment_intent as string | null,
           subscriptionStatus: 'active',
           subscriptionPlan: planType,
           subscriptionExpiresAt: expiresAt,

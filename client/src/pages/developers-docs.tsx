@@ -373,7 +373,7 @@ export default function DevelopersDocsPage() {
                     <div>
                       <h3 className="font-semibold mb-3">Getting Your API Key</h3>
                       <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                        <li>Purchase the Enrollment Season Pass ($29 for six months, with no automatic renewal)</li>
+                        <li>Purchase the School Research Pass ($29.99 for six months, with no automatic renewal)</li>
                         <li>Go to your Settings page</li>
                         <li>Navigate to the "API Access" section</li>
                         <li>Click "Generate API Key" to create your key</li>

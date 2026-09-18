@@ -87,7 +87,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
   
-  // Check for premium access - includes recurring subscriptions and Season Pass
+  // Check for premium access - includes recurring subscriptions and School Research Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   // Only show upgrade prompts after subscription query completes and user is NOT premium

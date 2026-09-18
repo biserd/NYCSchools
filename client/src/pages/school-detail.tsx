@@ -168,7 +168,7 @@ export default function SchoolDetail() {
   const disciplineLegend = useChartLegendToggle();
 
   // Check for premium access - includes:
-  // 1. Recurring subscriptions and Season Pass
+  // 1. Recurring subscriptions and School Research Pass
   // 2. OR this is the user's one free school view
   const hasPaidPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
@@ -859,7 +859,7 @@ export default function SchoolDetail() {
                       </p>
                         <Button data-testid="button-unlock-snapshot" onClick={startCheckout} disabled={checkoutPending}>
                           {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                          {checkoutPending ? "Loading..." : "Unlock for $29"}
+                          {checkoutPending ? "Loading..." : "Unlock for $29.99"}
                         </Button>
                     </div>
                   </div>
@@ -982,7 +982,7 @@ export default function SchoolDetail() {
                   </p>
                     <Button data-testid="button-unlock-breakdown" onClick={startCheckout} disabled={checkoutPending}>
                       {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                      {checkoutPending ? "Loading..." : "Unlock for $29"}
+                      {checkoutPending ? "Loading..." : "Unlock for $29.99"}
                     </Button>
                 </CardContent>
               </Card>

@@ -112,7 +112,7 @@ export default function Home() {
     enabled: isAuthenticated,
     staleTime: 60000,
   });
-  // Check for premium access - includes recurring subscriptions and Season Pass
+  // Check for premium access - includes recurring subscriptions and School Research Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 

@@ -13,18 +13,29 @@ async function call(path, account, method = 'GET', body, origin = base) {
   let value; try { value = JSON.parse(raw); } catch { value = raw; }
   return { response, value };
 }
-const preview = await call('/tuck');
+const preview = await call('/family');
 assert.equal(preview.response.headers.get('x-staging-database'), 'D1');
 assert.equal(preview.response.status, 200);
-assert.match(preview.value, /<title>Tuck \| NYC School Ratings<\/title>/);
+assert.match(preview.value, /<title>My Family \| NYC School Ratings<\/title>/);
 assert.match(preview.value, /name="robots" content="noindex, nofollow"/);
-assert.equal((await call('/family')).response.headers.get('location'), '/tuck');
+assert.equal((await call('/tuck')).response.headers.get('location'), '/family');
 assert.equal((await call('/api/tuck/overview')).response.status, 401);
+const plans = (await call('/api/plans')).value;
+assert.equal(plans.researchPass.amount, 2999);
+assert.equal(plans.familyPremium.amount, 1999);
+assert.equal(plans.familyPremium.available, false);
+assert.equal((await call('/api/checkout/guest', undefined, 'POST', { mode: 'subscription' })).response.status, 403, 'Staging must block all checkout');
 try {
   for (const account of identities) {
     const registered = await call('/api/register', account, 'POST', { email: account.email, password: account.password, firstName: 'Synthetic Tuck check' });
     assert.equal(registered.response.status, 201);
     assert.ok(account.cookie);
+    const access = (await call('/api/subscription', account)).value.access;
+    assert.equal(access.research, false);
+    assert.equal(access.researchPass.active, false);
+    assert.equal(access.familyPremium.active, false);
+    assert.equal(access.parentAssistant, false);
+    assert.equal((await call('/api/subscription-status', account)).value.isSubscribed, false);
     assert.equal((await call('/api/tuck/household', account, 'POST')).response.status, 200);
   }
   const [a, b] = identities;

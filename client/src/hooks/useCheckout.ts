@@ -3,6 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { trackEvent } from "@/lib/analytics";
+import { RESEARCH_PASS } from '@shared/plans';
 
 interface ProductData {
   data: Array<{
@@ -78,22 +79,22 @@ export function useCheckout() {
     },
   });
 
-  // Find the Season Pass product/price - use the LAST match to prefer test mode products
+  // Find the School Research Pass product/price - use the LAST match to prefer test mode products
   // (Test mode products are synced after live mode products due to the recent key switch)
   const allSeasonPassProducts = products?.data?.filter(p => 
     p.name?.toLowerCase().includes("season") || 
     p.metadata?.plan === "season_pass"
   ) || [];
   const seasonPassProduct = allSeasonPassProducts[allSeasonPassProducts.length - 1];
-  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active);
+  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active && p.unit_amount === RESEARCH_PASS.amount && p.currency === RESEARCH_PASS.currency);
 
   // New checkout is intentionally one non-renewing offer. Legacy monthly
-  // subscribers retain access, but a missing Season Pass must not silently
+  // subscribers retain access, but a missing School Research Pass must not silently
   // turn a one-time CTA into a recurring subscription.
   const currentPrice = seasonPassPrice;
   const isSeasonPass = true;
 
-  // Check for premium access - includes recurring subscriptions and Season Pass
+  // Check for premium access - includes recurring subscriptions and School Research Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 
@@ -143,7 +144,7 @@ export function useCheckout() {
     isPending: checkoutMutation.isPending || guestCheckoutMutation.isPending,
     isReady: !productsLoading && !!currentPrice,
     isPremium,
-    priceAmount: currentPrice?.unit_amount ? (currentPrice.unit_amount / 100).toFixed(0) : "29",
+    priceAmount: (RESEARCH_PASS.amount / 100).toFixed(2),
     isSeasonPass,
   };
 }

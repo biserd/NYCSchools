@@ -38,7 +38,7 @@ export default function FavoritesPage() {
     enabled: isAuthenticated,
   });
 
-  // Check for premium access - includes recurring subscriptions and Season Pass
+  // Check for premium access - includes recurring subscriptions and School Research Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
   // Only show upgrade nudge after subscription query completes and user is NOT premium

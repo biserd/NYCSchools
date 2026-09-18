@@ -234,7 +234,7 @@ export default function ChancesCalculatorPage() {
               <Link href="/pricing">
                 <Button data-testid="button-upgrade-chances">
                   <Star className="w-4 h-4 mr-2" />
-                  Unlock for $29
+                  Unlock for $29.99
                 </Button>
               </Link>
             </CardContent>

@@ -256,7 +256,7 @@ export default function BenefitsPage() {
               <Link href="/pricing">
                 <Button size="lg" data-testid="button-get-premium">
                   <Zap className="h-4 w-4 mr-2" />
-                  Get Season Pass - $29
+                  Get School Research Pass - $29.99
                 </Button>
               </Link>
               <p className="text-xs text-muted-foreground mt-2">One-time payment. 6 months of full access.</p>
@@ -292,7 +292,7 @@ export default function BenefitsPage() {
                   ) : (
                     <Zap className="w-4 h-4 mr-2" />
                   )}
-                  Get Premium - $29
+                  Get Premium - $29.99
                 </Button>
               )}
             </div>

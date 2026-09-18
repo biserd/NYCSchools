@@ -877,7 +877,7 @@ I focused on schools with strong academics and Dual Language programs in Brookly
               )}
               {checkoutPending
                 ? "Loading..."
-                : `Unlock for $${priceAmount}${isSeasonPass ? " (Season Pass)" : "/mo"}`}
+                : `Unlock for $${priceAmount}${isSeasonPass ? " (School Research Pass)" : "/mo"}`}
             </Button>
             <Button
               variant="ghost"
@@ -901,7 +901,7 @@ I focused on schools with strong academics and Dual Language programs in Brookly
             <DialogDescription className="text-center">
               Personalized school recommendations are included with a Premium subscription ($
               {priceAmount}
-              {isSeasonPass ? " Season Pass" : "/mo"}). You can upgrade now — no account needed to start checkout — or log in if you already have one.
+              {isSeasonPass ? " School Research Pass" : "/mo"}). You can upgrade now — no account needed to start checkout — or log in if you already have one.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-col gap-2">
@@ -918,7 +918,7 @@ I focused on schools with strong academics and Dual Language programs in Brookly
               )}
               {checkoutPending
                 ? "Loading..."
-                : `Upgrade for $${priceAmount}${isSeasonPass ? " (Season Pass)" : "/mo"}`}
+                : `Upgrade for $${priceAmount}${isSeasonPass ? " (School Research Pass)" : "/mo"}`}
             </Button>
             <Button
               variant="outline"

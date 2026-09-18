@@ -17,7 +17,8 @@ import {
   Star,
   ClipboardList,
   Target,
-  Shield
+  Shield,
+  CalendarDays
 } from "lucide-react";
 
 export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean } = {}) {
@@ -117,6 +118,12 @@ export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean }
                     </Button>
                   </Link>
                 )}
+                <Link href="/family">
+                  <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-family-nav">
+                    <CalendarDays className="w-4 h-4 2xl:mr-2" />
+                    <span className="sr-only 2xl:not-sr-only">My Family</span>
+                  </Button>
+                </Link>
                 <Link href="/settings">
                   <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-settings-nav">
                     <Settings className="w-4 h-4 2xl:mr-2" />

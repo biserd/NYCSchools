@@ -51,11 +51,11 @@ export async function sendAdminNewCustomerNotification(customerEmail: string, pl
   try {
     
     const formattedAmount = amount ? `$${(amount / 100).toFixed(2)}` : 'N/A';
-    const planName = planType === 'season_pass' ? 'Season Pass ($29 for 6 months)' : planType;
+    const planName = planType === 'season_pass' ? 'School Research Pass (6 months)' : planType;
     
     const result = await sendEmail({
       to: ADMIN_EMAIL,
-      subject: `New Season Pass Customer: ${customerEmail}`,
+      subject: `New School Research Pass Customer: ${customerEmail}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h1 style="color: #2563eb; margin-bottom: 20px;">New Customer Alert!</h1>
@@ -89,22 +89,22 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
     
     const result = await sendEmail({
       to: customerEmail,
-      subject: 'Welcome to NYC School Ratings Season Pass!',
+      subject: 'Welcome to NYC School Ratings School Research Pass!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
           
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to NYC School Ratings!</h1>
-            <p style="color: #6b7280; font-size: 16px;">Your Season Pass is now active</p>
+            <p style="color: #6b7280; font-size: 16px;">Your School Research Pass is now active</p>
           </div>
           
           <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
           
           <p style="font-size: 16px; line-height: 1.6;">
-            Thank you for joining the NYC School Ratings family! Your Season Pass is now active and you have full access to all premium features.
+            Thank you for joining the NYC School Ratings family! Your School Research Pass is now active and you have full access to the school research tools.
           </p>
           
-          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">Your Season Pass Benefits</h2>
+          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">Your School Research Pass Benefits</h2>
           
           <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
             <ul style="list-style: none; padding: 0; margin: 0;">
@@ -162,7 +162,7 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
           
           <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
-              Your Season Pass is valid for <strong>6 months</strong>. If you have any questions, 
+              Your School Research Pass is valid for <strong>6 months</strong>. If you have any questions,
               just reply to this email or reach out at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>.
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
@@ -242,9 +242,9 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
           </div>
           
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
-            <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Unlock Premium Features with Season Pass</h2>
+            <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Unlock Premium Features with School Research Pass</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
-              Get the complete toolkit for your school search — just <strong>$29 for 6 months</strong>:
+              Get the complete toolkit for your school search — just <strong>$29.99 for 6 months</strong>:
             </p>
             <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
               <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
@@ -275,7 +275,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
             <div style="text-align: center;">
               <a href="https://nycschoolsratings.com/pricing" 
                  style="background: #f59e0b; color: #78350f; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                View Season Pass
+                View School Research Pass
               </a>
             </div>
           </div>
@@ -328,7 +328,7 @@ export async function sendAdminNewUserRegistrationNotification(userEmail: string
           </div>
           
           <p style="color: #6b7280; font-size: 14px;">
-            This user has created a free account and may convert to a Season Pass customer.
+            This user has created a free account and may convert to a School Research Pass customer.
           </p>
         </div>
       `,
@@ -423,7 +423,7 @@ export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string
           <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
           
           <p style="font-size: 16px; line-height: 1.6;">
-            Thank you for your purchase! Your Season Pass is now active, and you have full access to all premium features.
+            Thank you for your purchase! Your School Research Pass is now active, and you have full access to the school research tools.
           </p>
           
           <p style="font-size: 16px; line-height: 1.6;">
@@ -444,7 +444,7 @@ export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string
             </p>
           </div>
           
-          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">Your Season Pass Benefits</h2>
+          <h2 style="color: #2563eb; font-size: 18px; margin-top: 30px;">Your School Research Pass Benefits</h2>
           
           <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
             <ul style="list-style: none; padding: 0; margin: 0;">
@@ -678,14 +678,14 @@ export async function sendDripAiSpotlight(userEmail: string, userId: string, fir
           
           <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #f59e0b;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>This premium feature is available with Season Pass</strong> — just $29 for 6 months of full access.
+              <strong>This premium feature is available with School Research Pass</strong> — just $29.99 for 6 months of full access.
             </p>
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="https://nycschoolsratings.com/pricing" 
                style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-              Learn More About Season Pass
+              Learn More About School Research Pass
             </a>
           </div>
           
@@ -759,7 +759,7 @@ export async function sendDripDataInsight(userEmail: string, userId: string, fir
   }
 }
 
-// Day 14: Soft upgrade nudge with Season Pass benefits
+// Day 14: Soft upgrade nudge with School Research Pass benefits
 export async function sendDripUpgradeNudge(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
   try {
     
@@ -767,7 +767,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
     
     const result = await sendEmail({
       to: userEmail,
-      subject: 'Get the Full Picture with Season Pass',
+      subject: 'Get the Full Picture with School Research Pass',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
           
@@ -778,7 +778,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           </p>
           
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
-            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">Season Pass: $29 for 6 Months</h2>
+            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">School Research Pass: $29.99 for 6 Months</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
               Built by a NYC parent, for NYC parents. Get everything you need for your school search:
             </p>
@@ -818,7 +818,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           <div style="text-align: center; margin: 30px 0;">
             <a href="https://nycschoolsratings.com/pricing" 
                style="background: #f59e0b; color: #78350f; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-              Get Season Pass Now
+              Get School Research Pass Now
             </a>
           </div>
           

@@ -9,6 +9,8 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
+import { accountAccess } from './familyBilling';
+import { RESEARCH_PASS, FAMILY_PREMIUM, PARENT_ASSISTANT_AVAILABLE } from '@shared/plans';
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
 import apiV1Router from "./routesV1";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
@@ -57,25 +59,11 @@ async function isPremiumUser(userId: string): Promise<boolean> {
       setCache(cacheKey, false, CACHE_TTL_SHORT);
       return false;
     }
+    if ((await accountAccess(user)).research) return true;
     
-    // First check database fields for Season Pass (one-time purchase)
-    if (user.subscriptionStatus === 'active' && 
-        (user.subscriptionPlan === 'season_pass' || user.subscriptionPlan === 'premium')) {
-      // Check if Season Pass has expired
-      if (user.subscriptionExpiresAt) {
-        const now = new Date();
-        if (now > user.subscriptionExpiresAt) {
-          // Season Pass expired - update database and return false
-          await storage.updateUserStripeInfo(userId, {
-            subscriptionStatus: 'expired',
-            subscriptionPlan: 'free',
-          });
-          setCache(cacheKey, false, CACHE_TTL_SHORT);
-          return false;
-        }
-      }
-      setCache(cacheKey, true, CACHE_TTL_SHORT);
-      return true;
+    // Expiry is evaluated, not written over the original purchase record.
+    if (user.subscriptionPlan === 'season_pass' || (user.subscriptionExpiresAt && user.subscriptionExpiresAt <= new Date())) {
+      return false;
     }
     
     // Fall back to checking Stripe subscription for recurring plans
@@ -210,7 +198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   setupAuth(app);
   app.use('/api/tuck', tuckRouter(isAuthenticated, getAppUrl));
-  app.get('/family', (_req, res) => res.redirect(302, '/tuck'));
+  app.get('/tuck', (_req, res) => res.redirect(301, '/family'));
+  app.get('/api/plans', (_req, res) => res.json({ researchPass: RESEARCH_PASS, familyPremium: { ...FAMILY_PREMIUM, available: PARENT_ASSISTANT_AVAILABLE } }));
   
   // OAuth 2.1 endpoints for ChatGPT
   setupOAuth(app);
@@ -2797,31 +2786,15 @@ When answering:
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check if Season Pass has expired
-      let status = user.subscriptionStatus || 'free';
-      let plan = user.subscriptionPlan || 'free';
-      
-      if (user.subscriptionExpiresAt) {
-        const now = new Date();
-        if (now > user.subscriptionExpiresAt) {
-          // Season Pass has expired - revert to free
-          status = 'expired';
-          plan = 'free';
-          // Update the database to reflect expired status
-          await storage.updateUserStripeInfo(userId, {
-            subscriptionStatus: 'expired',
-            subscriptionPlan: 'free',
-          });
-        }
-      }
-
-      // Return subscription info from user record
-      res.json({
-        status,
-        plan,
+      const access = await accountAccess(user);
+      // Compatibility plan names keep existing research gates working.
+      res.set('Cache-Control', 'private, no-store').json({
+        status: access.research ? 'active' : 'free',
+        plan: access.familyPremium.active ? 'premium' : access.research ? user.subscriptionPlan : 'free',
         stripeCustomerId: user.stripeCustomerId,
         stripeSubscriptionId: user.stripeSubscriptionId,
-        expiresAt: user.subscriptionExpiresAt?.toISOString() || null,
+        expiresAt: access.familyPremium.active ? access.familyPremium.currentPeriodEnd : access.researchPass.expiresAt,
+        access,
       });
     } catch (error) {
       console.error("Error fetching subscription:", error);
@@ -2871,6 +2844,7 @@ When answering:
     try {
       const userId = req.session.userId;
       const { priceId, mode = 'payment' } = req.body;
+      if (mode === 'subscription' || req.body.plan === 'family_premium') return res.status(409).json({ error: 'Family Premium is coming soon. Monthly checkout is not available.' });
       
       console.log("Checkout request:", { userId, priceId, mode });
 
@@ -2882,7 +2856,7 @@ When answering:
       const seasonPassPriceId = stripeService.getSeasonPassPriceId();
       if (priceId !== seasonPassPriceId || mode !== 'payment') {
         console.warn("Checkout rejected: Invalid NYC Schools offer", { userId, priceId, mode });
-        return res.status(400).json({ error: "Only the NYC Schools Season Pass is available" });
+        return res.status(400).json({ error: "Only the School Research Pass is available" });
       }
 
       const user = await storage.getUser(userId);
@@ -2910,6 +2884,7 @@ When answering:
       const baseUrl = getAppUrl(req);
       console.log("Creating checkout session with baseUrl:", baseUrl);
       
+      await stripeService.getSeasonPassOffer();
       const session = await stripeService.createCheckoutSession(
         customerId,
         seasonPassPriceId,
@@ -2932,6 +2907,7 @@ When answering:
   app.post("/api/checkout/guest", async (req: Request, res: Response) => {
     try {
       const { priceId, mode = 'payment' } = req.body;
+      if (mode === 'subscription' || req.body.plan === 'family_premium') return res.status(409).json({ error: 'Family Premium is coming soon. Monthly checkout is not available.' });
       
       console.log("Guest checkout request:", { priceId, mode });
 
@@ -2944,17 +2920,17 @@ When answering:
       const seasonPassPriceId = stripeService.getSeasonPassPriceId();
       if (priceId !== seasonPassPriceId || mode !== 'payment') {
         console.warn("Guest checkout rejected: Invalid NYC Schools offer", { priceId, mode });
-        return res.status(400).json({ error: "Only the NYC Schools Season Pass is available" });
+        return res.status(400).json({ error: "Only the School Research Pass is available" });
       }
 
       const stripe = await getUncachableStripeClient();
       
       // Create checkout session without a customer (Stripe will create one)
+      await stripeService.getSeasonPassOffer();
       // Email collection is required so we can create/link the user account after payment
       const baseUrl = getAppUrl(req);
       
       const sessionParams: any = {
-        payment_method_types: ['card'],
         line_items: [{ price: seasonPassPriceId, quantity: 1 }],
         mode: 'payment',
         success_url: `${baseUrl}/thanks?session_id={CHECKOUT_SESSION_ID}`,
@@ -3036,6 +3012,7 @@ When answering:
       
       res.json({ 
         success: true, 
+        purchase: { amount: session.amount_total, currency: session.currency },
         user: {
           id: user.id,
           email: user.email,
@@ -3168,43 +3145,22 @@ When answering:
         return res.json(result);
       }
 
-      // First check for Season Pass (one-time purchase) in database
-      if (user.subscriptionStatus === 'active' && 
-          (user.subscriptionPlan === 'season_pass' || user.subscriptionPlan === 'premium')) {
-        // Check if Season Pass has expired
-        if (user.subscriptionExpiresAt) {
-          const now = new Date();
-          if (now > user.subscriptionExpiresAt) {
-            // Season Pass expired
-            await storage.updateUserStripeInfo(userId, {
-              subscriptionStatus: 'expired',
-              subscriptionPlan: 'free',
-            });
-            const result = { isSubscribed: false, subscription: null };
-            setCache(cacheKey, result, CACHE_TTL_SHORT);
-            invalidateUserCaches(userId);
-            return res.json(result);
-          }
-        }
-        
-        // Active Season Pass
+      const access = await accountAccess(user);
+      if (access.familyPremium.active || access.researchPass.active) {
+        const monthly = access.familyPremium.active;
+        const expiry = monthly ? access.familyPremium.currentPeriodEnd : access.researchPass.expiresAt;
         const result = {
-          isSubscribed: true,
+          isSubscribed: true, access,
           subscription: {
-            id: 'season_pass',
-            status: 'active',
-            current_period_end: user.subscriptionExpiresAt ? Math.floor(user.subscriptionExpiresAt.getTime() / 1000) : null,
-            cancel_at_period_end: false,
-            plan: {
-              nickname: 'Season Pass',
-              amount: 2900,
-              currency: 'usd',
-              interval: '6 months',
-            },
-          }
+            id: monthly ? 'family_premium' : 'season_pass', status: 'active',
+            current_period_end: expiry ? Math.floor(Date.parse(expiry) / 1000) : null,
+            cancel_at_period_end: monthly && access.familyPremium.cancelAtPeriodEnd,
+            plan: { nickname: monthly ? FAMILY_PREMIUM.name : RESEARCH_PASS.name,
+              amount: monthly ? FAMILY_PREMIUM.amount : null, currency: 'usd',
+              interval: monthly ? 'month' : '6 months', recurring: monthly },
+          },
         };
-        setCache(cacheKey, result, CACHE_TTL_SHORT);
-        return res.json(result);
+        return res.set('Cache-Control', 'private, no-store').json(result);
       }
 
       // Fall back to checking Stripe subscription for recurring plans
@@ -3279,12 +3235,13 @@ When answering:
 
   // Get available products and prices (public)
   app.get("/api/products", async (req: Request, res: Response) => {
+    if (process.env.ENVIRONMENT === 'staging' && !process.env.STRIPE_TEST_SECRET_KEY) return res.json({ data: [], checkoutAvailable: false });
     try {
       const { product, price } = await stripeService.getSeasonPassOffer();
       res.json({
         data: [{
           id: product.id,
-          name: product.name,
+          name: RESEARCH_PASS.name,
           description: product.description,
           active: product.active,
           metadata: { ...product.metadata, plan: 'season_pass' },

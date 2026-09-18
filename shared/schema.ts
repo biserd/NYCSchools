@@ -899,6 +899,17 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// Monthly entitlement is independent of the existing paid research pass fields.
+// Never clear subscriptionExpiresAt when Family Premium ends.
+export const familySubscriptions = sqliteTable('family_subscriptions', {
+  stripeSubscriptionId: text('stripe_subscription_id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  status: text('status').notNull(),
+  currentPeriodEnd: integer('current_period_end', { mode: 'timestamp_ms' }).notNull(),
+  cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).notNull().default(false),
+  lastEventCreated: integer('last_event_created').notNull(),
+}, t => [index('family_subscriptions_user_idx').on(t.userId)]);
+
 // Tuck is part of Ratings: one account, one database, no parallel auth or school copy.
 // Initial rebuild is owner-only. Shared access must use verified memberships later.
 export const tuckHouseholds = sqliteTable("tuck_households", {
