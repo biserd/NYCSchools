@@ -65,7 +65,7 @@ const triggerContent: Record<UpgradeModalTrigger, { title: string; description: 
     icon: Target,
   },
   general: {
-    title: "Get the Enrollment Season Pass",
+    title: "Get the School Research Pass",
     description: "Unlock six months of comparison, planning, and application tools with one payment and no renewal.",
     icon: Sparkles,
   },
@@ -78,8 +78,8 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
 
   const priceLabel = "one-time";
   const priceDescription = "6 months of full access · no automatic renewal";
-  const badgeText = "Enrollment Season Pass";
-  const buttonText = "Get Season Pass";
+  const badgeText = "School Research Pass";
+  const buttonText = "Get School Research Pass";
 
   const premiumFeatures = [
     { icon: MessageCircle, text: "Unlimited AI questions" },

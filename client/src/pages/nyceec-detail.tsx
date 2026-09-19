@@ -439,14 +439,14 @@ export default function NyceecDetail() {
                   <div>
                     <h4 className="font-medium mb-2">Premium Feature</h4>
                     <p className="text-muted-foreground text-sm">
-                      AI Insights for early childhood centers are available with Season Pass.
+                      AI Insights for early childhood centers are available with School Research Pass.
                       Get personalized analysis and questions to ask during your tour.
                     </p>
                   </div>
                   <Link href="/pricing">
                     <Button data-testid="button-upgrade-insights">
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Upgrade to Season Pass
+                      Upgrade to School Research Pass
                     </Button>
                   </Link>
                 </div>

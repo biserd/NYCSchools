@@ -850,9 +850,9 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     heading: "NYC School Admissions Priority Planner",
   },
   "/pricing": {
-    title: "Enrollment Season Pass Pricing | NYC School Ratings",
-    description: "Get six months of NYC school comparison, personalized recommendations, commute planning, and application tracking with one payment and no renewal.",
-    heading: "Enrollment Season Pass",
+    title: "School Research Pass & Family Premium Pricing | NYC School Ratings",
+    description: "School Research Pass: $29.00 once for six months. Family Premium: $19.99/month at launch, including school research and a WhatsApp Parent Assistant. Coming soon.",
+    heading: "School Research Pass & Family Premium",
   },
   "/blog": {
     title: "NYC School Guides, Rankings & Admissions Resources",
@@ -937,6 +937,7 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
   "/favorites": { title: "My Favorite Schools | NYC School Ratings", description: "View and manage your saved schools.", heading: "My Favorite Schools", noindex: true },
   "/application-tracker": { title: "Application Tracker | NYC School Ratings", description: "Manage your private school application checklist.", heading: "Application Tracker", noindex: true },
   "/settings": { title: "Settings | NYC School Ratings", description: "Configure your private NYC School Ratings account settings.", heading: "Settings", noindex: true },
+  "/family": { title: "My Family | NYC School Ratings", description: "Your private family calendar within NYC School Ratings.", heading: "My Family", noindex: true },
   "/admin/api-usage": { title: "API Usage Admin | NYC School Ratings", description: "Private administration page.", heading: "API Usage Admin", noindex: true },
   "/admin/early-childhood": { title: "Early Childhood Data Review | NYC School Ratings", description: "Private administration page.", heading: "Early Childhood Data Review", noindex: true },
   "/thanks": { title: "Thank You | NYC School Ratings", description: "Payment confirmation.", heading: "Thank You", noindex: true },

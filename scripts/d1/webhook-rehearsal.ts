@@ -6,6 +6,7 @@ import {db} from '../../server/db';
 import {users,processedWebhookEvents,magicLinkTokens} from '../../shared/schema';
 import {eq} from 'drizzle-orm';
 import {WebhookHandlers} from '../../server/webhookHandlers';
+import {accountAccess} from '../../server/familyBilling';
 
 /** Signed, simulated Stripe events against actual D1. No Stripe API calls,
  * real credentials, payments or outgoing email. Called only by private preview. */
@@ -26,7 +27,7 @@ export async function rehearseWebhooks(){
  }
  try{
   await storage.updateUserStripeInfo(user.id,{stripeCustomerId:customer});
-  const payment=event('checkout.session.completed',{id:`cs_${tag}`,customer,customer_email:user.email,mode:'payment',payment_status:'paid',payment_intent:`pi_${tag}`,metadata:{plan:'season_pass',duration_months:'6'},amount_total:2900});
+  const payment=event('checkout.session.completed',{id:`cs_${tag}`,customer,customer_email:user.email,mode:'payment',payment_status:'paid',payment_intent:`pi_${tag}`,metadata:{plan:'season_pass',duration_months:'6'},created:Math.floor(Date.now()/1000),amount_total:2999});
   const payload=JSON.stringify(payment);
   const invalidSignature=await stripe.webhooks.generateTestHeaderStringAsync({payload,secret:randomBytes(32).toString('hex')});
   await assert.rejects(()=>WebhookHandlers.processWebhook(Buffer.from(payload),invalidSignature));
@@ -35,14 +36,26 @@ export async function rehearseWebhooks(){
   await assert.rejects(()=>WebhookHandlers.processWebhook(Buffer.from(payload),expiredSignature));passed.push('expired signature rejected');
   await deliver(payment);const paid=await storage.getUser(user.id);assert.equal(paid?.subscriptionStatus,'active');assert.equal(paid.subscriptionPlan,'season_pass');assert.ok(paid.subscriptionExpiresAt instanceof Date);assert.ok(paid.subscriptionExpiresAt.getTime()>Date.now());passed.push('signed checkout persists season-pass access and expiry');
   await deliver(payment);assert.equal((await storage.getUser(user.id))?.subscriptionExpiresAt?.getTime(),paid.subscriptionExpiresAt.getTime());passed.push('duplicate event does not extend access');
+  process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID='price_synthetic_family';
+  const family={id:`sub_family_${tag}`,customer,status:'active',cancel_at_period_end:false,metadata:{plan:'family_premium'},items:{data:[{current_period_end:Math.floor(Date.now()/1000)+30*86400,price:{id:'price_synthetic_family',unit_amount:1999,currency:'usd',recurring:{interval:'month',interval_count:1}}}]}};
+  await deliver(event('customer.subscription.updated',family));
+  assert.equal((await accountAccess((await storage.getUser(user.id))!)).familyPremium.active,true);
+  await deliver(event('customer.subscription.deleted',{...family,status:'canceled'}));
+  const afterFamily=(await storage.getUser(user.id))!;
+  assert.equal(afterFamily.subscriptionExpiresAt?.getTime(),paid.subscriptionExpiresAt.getTime());
+  assert.equal(afterFamily.subscriptionPlan,'season_pass');
+  assert.equal((await accountAccess(afterFamily)).familyPremium.active,false);
+  passed.push('signed monthly lifecycle preserves separate research pass and expiry');
+  delete process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID;
   await deliver(event('customer.subscription.updated',{id:`sub_${tag}`,customer,status:'past_due'}));assert.equal((await storage.getUser(user.id))?.subscriptionStatus,'past_due');passed.push('subscription status update persisted');
   await deliver(event('customer.subscription.deleted',{id:`sub_${tag}`,customer,status:'canceled'}));assert.equal((await storage.getUser(user.id))?.subscriptionStatus,'free');assert.equal((await storage.getUser(user.id))?.stripeSubscriptionId,null);passed.push('subscription deletion persisted');
   const guestEmail=`${tag}-guest@example.invalid`;
-  await deliver(event('checkout.session.completed',{id:`cs_guest_${tag}`,customer:`cus_guest_${tag}`,customer_details:{email:guestEmail,name:'Synthetic Guest'},mode:'payment',payment_status:'paid',metadata:{source:'guest_checkout',plan:'season_pass',duration_months:'6'},amount_total:2900}));
+  await deliver(event('checkout.session.completed',{id:`cs_guest_${tag}`,customer:`cus_guest_${tag}`,customer_details:{email:guestEmail,name:'Synthetic Guest'},mode:'payment',payment_status:'paid',metadata:{source:'guest_checkout',plan:'season_pass',duration_months:'6'},created:Math.floor(Date.now()/1000),amount_total:2900}));
   const guest=await storage.getUserByEmail(guestEmail);assert.ok(guest);guestId=guest.id;assert.equal(guest.subscriptionStatus,'active');
   const tokens=await db.select().from(magicLinkTokens).where(eq(magicLinkTokens.userId,guest.id));assert.equal(tokens.length,1);assert.ok(tokens[0].expiresAt instanceof Date);passed.push('guest account and magic-link token created with email delivery disabled');
   return {simulated:true,stripeApiCalls:0,realPayments:0,passed};
  }finally{
+  delete process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID;
   for(const id of new Set(events))await db.delete(processedWebhookEvents).where(eq(processedWebhookEvents.eventId,id));
   await db.delete(users).where(eq(users.id,user.id));
   const guest=guestId?await storage.getUser(guestId):await storage.getUserByEmail(`${tag}-guest@example.invalid`);

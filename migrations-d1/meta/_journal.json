@@ -29,6 +29,27 @@
       "when": 1789511931105,
       "tag": "0003_loud_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789771694965,
+      "tag": "0004_tuck_unified_calendar",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789773603638,
+      "tag": "0005_independent_family_subscription",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789820942380,
+      "tag": "0006_parent_whatsapp_connection",
+      "breakpoints": true
     }
   ]
 }

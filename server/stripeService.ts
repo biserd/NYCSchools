@@ -1,6 +1,7 @@
 // Stripe service for NYC School Ratings - handles Stripe API operations
 import { getSeasonPassStripeConfiguration, getUncachableStripeClient } from './stripeClient';
 import type Stripe from 'stripe';
+import { RESEARCH_PASS } from '@shared/plans';
 
 interface ProductWithPriceRow {
   product_id: string;
@@ -35,8 +36,8 @@ export class StripeService {
     if (!price.active || price.recurring !== null || price.type !== 'one_time') {
       throw new Error('Configured Season Pass price must be an active one-time price');
     }
-    if (price.currency !== 'usd' || price.unit_amount !== 2900) {
-      throw new Error('Configured Season Pass price must be exactly $29.00 USD');
+    if (price.currency !== RESEARCH_PASS.currency || price.unit_amount !== RESEARCH_PASS.amount) {
+      throw new Error('Configured School Research Pass price must be exactly $29.00 USD');
     }
 
     const product = typeof price.product === 'string'
@@ -72,12 +73,11 @@ export class StripeService {
     const stripe = await getUncachableStripeClient();
     return await stripe.checkout.sessions.create({
       customer: customerId,
-      payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode,
       success_url: successUrl,
       cancel_url: cancelUrl,
-      metadata: { userId },
+      metadata: { userId, plan: 'season_pass', duration_months: '6' },
     });
   }
 

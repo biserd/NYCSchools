@@ -18,6 +18,8 @@
   },
   "vars":{
     "ENVIRONMENT":"staging",
+    "PARENT_WHATSAPP_ENABLED":"true",
+    "TWILIO_WHATSAPP_FROM":"whatsapp:+19174730386",
     "NODE_ENV":"production",
     "APP_URL":"https://nyc-schools-ratings-d1-staging.biser-d.workers.dev",
     "ADMIN_EMAILS":"",

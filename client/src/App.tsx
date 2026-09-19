@@ -17,6 +17,7 @@ import { initializeAttribution, trackEvent } from "@/lib/analytics";
 // Lazy-load every non-Home route so its JS + CSS split into separate chunks.
 // Home stays eager so its LCP element ships in the initial bundle.
 const SettingsPage = lazy(() => import("@/pages/settings"));
+const TuckPage = lazy(() => import("@/pages/tuck"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const TermsPage = lazy(() => import("@/pages/terms"));
 const FAQPage = lazy(() => import("@/pages/faq"));
@@ -99,6 +100,8 @@ function Router() {
           <Home />
         </Route>
         <Route path="/login" component={LoginPage} />
+        <Route path="/family" component={TuckPage} />
+        <Route path="/tuck"><Redirect to="/family" replace /></Route>
         <Route path="/register" component={RegisterPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />

@@ -1,6 +1,7 @@
 import application from './index-worker';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { startSafetyRefresh } from './services/safetyQueue';
+import { parentWhatsappWebhook, PARENT_WEBHOOK_PATH } from './parent/whatsapp';
 
 // Private RPC only: this entrypoint has no HTTP route and can only be reached
 // through an explicitly configured same-account service binding.
@@ -26,6 +27,13 @@ export default {
       return new Response('Staging preview expired', {status:410});
     }
     const path = new URL(request.url).pathname;
+    // Dedicated signed provider ingress: deliberately outside session/CSRF
+    // middleware. The handler enforces Twilio signature, account and recipient.
+    // Calendar reads additionally require account linking. Other preview delivery remains disabled.
+    if (path === PARENT_WEBHOOK_PATH) {
+      try { return await parentWhatsappWebhook(request, env); }
+      catch { console.error('Parent WhatsApp staging webhook failed'); return new Response('Webhook unavailable', { status: 503 }); }
+    }
     if (path === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n');
     if (/^\/api\/(admin|cron|stripe|webhooks|newsletter|contact|checkout|customer-portal)(\/|$)/.test(path)) {
       return Response.json({message:'External delivery and administrative jobs are disabled in this preview.'},{status:403});

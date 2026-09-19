@@ -8,5 +8,8 @@ assert.ok(!config.hyperdrive?.length,'Production must not reconnect to stale Neo
 assert.equal(config.vars.ENVIRONMENT,'production');
 assert.equal(config.vars.MAINTENANCE_MODE,'false','Use the explicit maintenance config for a gated deployment');
 assert.equal(config.vars.EMAIL_DELIVERY_ENABLED,'true');
+assert.equal(config.vars.STRIPE_SEASON_PASS_PRICE_ID,'price_1SemubRwvWaTf8xfAYvh2qJl','Preserve the verified existing $29.00 live Pass price.');
+const plans=await readFile(new URL('../../shared/plans.ts',import.meta.url),'utf8');
+assert.match(plans,/RESEARCH_PASS = .*amount: 2900,/,'Pass checkout and displayed price must match the existing Stripe price');
 assert.ok(!config.triggers.crons.includes('0 9 1 * *'),'Safety refresh is manual-only');
 console.log('Production target verified: D1, live integrations, manual-only safety refresh.');

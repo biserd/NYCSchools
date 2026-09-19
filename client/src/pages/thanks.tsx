@@ -49,8 +49,8 @@ export default function ThanksPage() {
         
         if (data.success) {
           const purchaseKey = `nycsr_purchase_${sessionId}`;
-          if (!sessionStorage.getItem(purchaseKey)) {
-            trackEvent("purchase", { transaction_id: sessionId, currency: "USD", value: 29 });
+          if (!sessionStorage.getItem(purchaseKey) && typeof data.purchase?.amount === 'number' && data.purchase?.currency) {
+            trackEvent("purchase", { transaction_id: sessionId, currency: data.purchase.currency.toUpperCase(), value: data.purchase.amount / 100 });
             sessionStorage.setItem(purchaseKey, "1");
           }
           setVerificationStatus('success');
@@ -85,7 +85,7 @@ export default function ThanksPage() {
                   <Loader2 className="h-16 w-16 text-primary animate-spin" />
                 </div>
                 <CardTitle className="text-2xl">Setting Up Your Account...</CardTitle>
-                <CardDescription>Please wait while we activate your Season Pass</CardDescription>
+                <CardDescription>Please wait while we activate your School Research Pass</CardDescription>
               </>
             )}
             
@@ -100,7 +100,7 @@ export default function ThanksPage() {
                   You're All Set!
                 </CardTitle>
                 <CardDescription className="text-base">
-                  Your Season Pass is now active. Enjoy full access to all premium features.
+                  Your School Research Pass is now active. Enjoy six months of school research tools. The future WhatsApp Parent Assistant is a separate monthly service.
                 </CardDescription>
               </>
             )}

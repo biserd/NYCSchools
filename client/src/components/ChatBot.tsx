@@ -177,7 +177,7 @@ export function ChatBot() {
     enabled: isAuthenticated,
   });
 
-  // Check for premium access - includes recurring subscriptions and Season Pass
+  // Check for premium access - includes recurring subscriptions and School Research Pass
   const isPremium = subscription?.status === "active" && 
     (subscription?.plan === "premium" || subscription?.plan === "season_pass");
 
@@ -617,7 +617,7 @@ export function ChatBot() {
               <Link href="/pricing">
                 <Button className="w-full" data-testid="button-chat-upgrade">
                   <Star className="w-4 h-4 mr-2" />
-                  Unlock for $29
+                  Unlock for $29.00
                 </Button>
               </Link>
             </div>

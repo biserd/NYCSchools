@@ -1,6 +1,7 @@
 import { httpServerHandler } from "cloudflare:node";
 import { externalRel, isExternalWebLink } from '../shared/external-links';
 import {maintenanceResponse} from './maintenanceResponse';
+import {parentWhatsappWebhook, PARENT_WEBHOOK_PATH} from './parent/whatsapp';
 
 type WorkerHandler = ReturnType<typeof httpServerHandler>;
 
@@ -24,6 +25,7 @@ function initializeProcessEnvironment(workerEnv: Env): void {
     STRIPE_SEASON_PASS_PRODUCT_ID: workerEnv.STRIPE_SEASON_PASS_PRODUCT_ID,
     STRIPE_SEASON_PASS_PRICE_ID: workerEnv.STRIPE_SEASON_PASS_PRICE_ID,
     STRIPE_WEBHOOK_SECRET: runtimeEnv.STRIPE_WEBHOOK_SECRET,
+    STRIPE_FAMILY_PREMIUM_PRICE_ID: runtimeEnv.STRIPE_FAMILY_PREMIUM_PRICE_ID,
     INDEXNOW_KEY: runtimeEnv.INDEXNOW_KEY,
   };
 
@@ -111,6 +113,10 @@ export default {
   async fetch(request, workerEnv, ctx): Promise<Response> {
     if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true')return maintenanceResponse(request);
     const pathname = new URL(request.url).pathname;
+    if (pathname === PARENT_WEBHOOK_PATH) {
+      try { return await parentWhatsappWebhook(request, workerEnv); }
+      catch { return new Response('WhatsApp temporarily unavailable', {status: 503, headers: {'Cache-Control': 'no-store'}}); }
+    }
     if (shouldServeAsset(pathname)) return workerEnv.ASSETS.fetch(request);
 
     const expressHandler = await getExpressHandler(workerEnv);

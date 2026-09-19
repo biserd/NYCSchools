@@ -863,7 +863,7 @@ export default function ComparePage() {
                       data-testid="button-upgrade-compare"
                     >
                       <Lock className="w-4 h-4 mr-2" />
-                      Unlock with Season Pass - $29
+                      Unlock with School Research Pass - $29.00
                     </Button>
                   )}
                 </div>

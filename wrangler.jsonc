@@ -47,6 +47,8 @@
   "vars": {
     "APP_URL": "https://nycschoolsratings.com",
     "ENVIRONMENT": "production",
+    "PARENT_WHATSAPP_ENABLED": "true",
+    "TWILIO_WHATSAPP_FROM": "whatsapp:+19174730386",
     "MAINTENANCE_MODE": "false",
     "NODE_ENV": "production",
     "ADMIN_EMAILS": "biserd@gmail.com",
