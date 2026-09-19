@@ -256,10 +256,10 @@ export default function BenefitsPage() {
               <Link href="/pricing">
                 <Button size="lg" data-testid="button-get-premium">
                   <Zap className="h-4 w-4 mr-2" />
-                  Get School Research Pass - $29.00
+                  Explore Family Premium - $19.99/month
                 </Button>
               </Link>
-              <p className="text-xs text-muted-foreground mt-2">One-time payment. 6 months of full access.</p>
+              <p className="text-xs text-muted-foreground mt-2">Renews monthly until canceled. No free trial.</p>
             </div>
           </CardContent>
         </Card>
@@ -270,7 +270,7 @@ export default function BenefitsPage() {
               <div className="text-center md:text-left">
                 <h2 className="text-2xl font-bold mb-2">Unlock Premium Features</h2>
                 <p className="text-muted-foreground">
-                  Get 6 months of full access with a single payment. No subscriptions, no hidden fees.
+                  Get full research access while subscribed for $19.99/month. Cancel anytime.
                   All the tools you need to find the perfect school for your child.
                 </p>
               </div>
@@ -292,7 +292,7 @@ export default function BenefitsPage() {
                   ) : (
                     <Zap className="w-4 h-4 mr-2" />
                   )}
-                  Get Premium - $29.00
+                  Family Premium - $19.99/month
                 </Button>
               )}
             </div>

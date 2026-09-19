@@ -859,7 +859,7 @@ export default function SchoolDetail() {
                       </p>
                         <Button data-testid="button-unlock-snapshot" onClick={startCheckout} disabled={checkoutPending}>
                           {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                          {checkoutPending ? "Loading..." : "Unlock for $29.00"}
+                          {checkoutPending ? "Loading..." : "Family Premium - $19.99/month"}
                         </Button>
                     </div>
                   </div>
@@ -982,7 +982,7 @@ export default function SchoolDetail() {
                   </p>
                     <Button data-testid="button-unlock-breakdown" onClick={startCheckout} disabled={checkoutPending}>
                       {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                      {checkoutPending ? "Loading..." : "Unlock for $29.00"}
+                      {checkoutPending ? "Loading..." : "Family Premium - $19.99/month"}
                     </Button>
                 </CardContent>
               </Card>

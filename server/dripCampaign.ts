@@ -3,7 +3,7 @@
 // IMPORTANT: Only runs when drip_campaign_enabled setting is 'true'
 
 import { db } from './db';
-import { users, appSettings, type DripEmailType, DRIP_EMAIL_TYPES } from '@shared/schema';
+import { users, familySubscriptions, appSettings, type DripEmailType, DRIP_EMAIL_TYPES } from '@shared/schema';
 import { eq, and, isNull, or, sql, lte, not, inArray } from 'drizzle-orm';
 import {
   sendDripWelcomeTip,
@@ -85,7 +85,10 @@ async function getEligibleUsers() {
           or(
             eq(users.subscriptionPlan, 'free'),
             isNull(users.subscriptionPlan)
-          )
+          ),
+          // Monthly entitlements are separate from legacy user fields.
+          // Do not send new-customer upgrade nudges to anyone with billing history.
+          sql`NOT EXISTS (SELECT 1 FROM ${familySubscriptions} WHERE ${familySubscriptions.userId} = ${users.id})`
         )
       );
     

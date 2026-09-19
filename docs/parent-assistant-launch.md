@@ -2,6 +2,39 @@
 
 ## Scope and status
 
+### Pricing decision update — 2026-09-19
+
+The owner has retired the $29 Research Pass from new sales. Family Premium at
+$19.99/month, with no free trial, is now the sole new paid offer. Existing
+prepaid customers retain their original benefits and expiry; existing recurring
+customers retain their existing price and terms. No customer data migration,
+Stripe subscription update, forced enrollment or cancellation is performed.
+
+The old authenticated and guest purchase endpoints return 410, not a redirect
+to recurring payment. Historical checkout verification, receipts, delayed
+webhooks, price identifiers and entitlement evaluation remain intact. Existing
+recurring customers are blocked from accidentally buying a second subscription.
+The public catalog no longer exposes the legacy price; pricing, paywalls,
+marketing emails and server/client metadata use the monthly offer.
+
+The code is staged only. Do not retire the live Stripe price/payment links while
+production still runs the old sales code. At the coordinated production cutover,
+audit and deactivate any separate legacy Payment Links, and expire open legacy
+Checkout Sessions if the owner requires a hard cutoff; continue honoring already
+paid purchases. Preserve subscription records and historical product/price IDs.
+Keep the new offer closed until the real billing and WhatsApp rehearsals pass.
+The historical implementation notes below describe the earlier two-offer phase;
+this pricing decision supersedes references to continuing new Pass sales.
+
+Pricing revision checks passed: TypeScript, frontend build, Worker dry-run,
+local legacy/prepaid/monthly entitlement tests, duplicate legacy-subscription
+guard, and the real staging API/AI suite. Both retired purchase endpoints
+returned 410 on staging; the public product catalog exposed no legacy offer.
+The deployed pricing page was visually checked in the browser and shows one
+$19.99/month card plus the grandfathering notice. Synthetic staging test
+accounts were removed. Twilio approval remains Pending and staging Stripe
+test credentials are still absent; checkout and reminder delivery remain off.
+
 Implemented on `feature/parent-assistant-launch`, deployed to the D1 staging Worker only. Production and the existing $29 one-time, six-month Research Pass are unchanged. No free trial is configured. This is not yet a completed paid launch.
 
 1. Reminders: explicit consent, linked WhatsApp account, timezone/DST validation, quiet hours, cancellation, atomic claims, signed status callbacks, bounded retries and uncertain-send quarantine.

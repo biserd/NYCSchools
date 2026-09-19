@@ -40,7 +40,8 @@ export default {
     // separate test-mode rehearsal is explicitly enabled. Never allow Pass checkout.
     const testBillingRoute=familyCheckoutAvailable(env)&&!!Reflect.get(env,'STRIPE_WEBHOOK_SECRET')&&
       (path==='/api/stripe/webhook'||path==='/api/customer-portal');
-    if (!testBillingRoute&&/^\/api\/(admin|cron|stripe|webhooks|newsletter|contact|checkout|customer-portal)(\/|$)/.test(path)) {
+    const retiredCheckout = request.method === 'POST' && (path === '/api/checkout' || path === '/api/checkout/guest');
+    if (!retiredCheckout&&!testBillingRoute&&/^\/api\/(admin|cron|stripe|webhooks|newsletter|contact|checkout|customer-portal)(\/|$)/.test(path)) {
       return Response.json({message:'External delivery and administrative jobs are disabled in this preview.'},{status:403});
     }
     const response = await application.fetch(request, env, ctx);

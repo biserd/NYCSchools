@@ -863,12 +863,12 @@ export default function ComparePage() {
                       data-testid="button-upgrade-compare"
                     >
                       <Lock className="w-4 h-4 mr-2" />
-                      Unlock with School Research Pass - $29.00
+                      Family Premium - $19.99/month
                     </Button>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  6 months of full access. Built by a NYC Parent for NYC Parents.
+                  Full access while subscribed. Renews monthly until canceled. No free trial.
                 </p>
               </CardContent>
             </Card>

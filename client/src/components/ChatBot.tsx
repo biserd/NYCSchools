@@ -534,7 +534,7 @@ export function ChatBot() {
               Get Premium
             </Button>
             <p className="text-xs text-muted-foreground">
-              One-time payment - 6 months of full access
+              $19.99/month. Renews until canceled. No free trial.
             </p>
           </div>
         </CardContent>
@@ -617,7 +617,7 @@ export function ChatBot() {
               <Link href="/pricing">
                 <Button className="w-full" data-testid="button-chat-upgrade">
                   <Star className="w-4 h-4 mr-2" />
-                  Unlock for $29.00
+                  Family Premium - $19.99/month
                 </Button>
               </Link>
             </div>

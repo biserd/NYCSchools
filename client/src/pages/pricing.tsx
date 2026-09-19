@@ -1,7 +1,5 @@
 import { Link } from 'wouter';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { Check, BookOpen, MessageCircle } from 'lucide-react';
+import { Check, MessageCircle } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Footer } from '@/components/Footer';
 import { SEOHead } from '@/components/SEOHead';
@@ -9,67 +7,62 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCheckout } from '@/hooks/useCheckout';
-import { useAuth } from '@/hooks/useAuth';
-import { RESEARCH_PASS, FAMILY_PREMIUM, type AccountAccess } from '@shared/plans';
+import { FAMILY_PREMIUM } from '@shared/plans';
 
-const researchFeatures = ['Full school database access and detailed profiles', 'School comparisons, historical trends and commute tools', 'Unlimited favorites and application tracking', 'Existing on-site AI school-research chat and recommendations'];
-const familyFeatures = ['All School Research Pass benefits while subscribed', 'Parent Assistant: up to 30 requests per day', 'Up to 100 opted-in WhatsApp reminders per calendar month', 'Official NYCPS calendar suggestions and saved-school answers'];
-const comparisons = [
-  ['Detailed school data and research tools', '6 months', 'While subscribed'],
-  ['On-site school-research chat', 'Included', 'Included'],
-  ['WhatsApp Parent Assistant', 'Not included', 'Included when available'],
-  ['Opted-in calendar reminders', 'Not included', 'Included when available'],
-  ['Payment', '$29.00 once', '$19.99/month'],
-  ['Renewal', 'No automatic renewal', 'Monthly; cancel anytime'],
+const features = [
+  'Full school database access, detailed profiles and historical trends',
+  'School comparisons, commute tools, favorites and application tracking',
+  'Existing on-site AI school-research chat and recommendations',
+  'WhatsApp Parent Assistant: up to 30 requests per day',
+  'Up to 100 opted-in WhatsApp reminders per calendar month',
+  'Official NYCPS calendar suggestions and saved-school answers',
 ];
 const questions = [
-  ['Do I need to buy both?', 'No. Family Premium will include the school database and research tools while subscribed. The Pass is for families who prefer a single payment for six months of research.'],
-  ['What happens to my existing Pass if I upgrade?', 'Its original expiry and benefits stay intact. Family Premium does not pause, replace or extend your Pass.'],
-  ['What happens when I cancel Family Premium?', 'Monthly benefits end when your paid billing period ends. If you still have an unexpired Research Pass, your school-research access continues until its original expiry. Otherwise you return to free access.'],
-  ['How do I know which assistant features are available?', 'The plan card shows whether subscriptions are open. My Family shows the features enabled for your account and whether reminder delivery is active. Connecting WhatsApp alone does not start a subscription or enable reminders.'],
-  ['Is the existing on-site AI chat being removed?', 'No. Existing Pass benefits, including on-site school-research chat, stay included. The new Parent Assistant adds ongoing WhatsApp and calendar assistance.'],
-  ['Does a monthly payment give me six months of research?', 'No. It includes research while the monthly plan remains active. Only a separately purchased Research Pass provides its own six-month access period.'],
+  ['What happens to my existing paid plan?', 'Nothing changes automatically. Existing customers keep their original benefits, expiry dates and billing terms. A prepaid Research Pass remains valid through its original expiry without renewal. Existing recurring subscriptions keep their existing terms.'],
+  ['Can I still buy the $29 Research Pass?', 'No. It is closed to new purchases. Family Premium at $19.99/month is the only paid plan available to new customers when checkout opens.'],
+  ['Is there a free trial?', 'No. Your first monthly payment is charged at checkout, then the subscription renews monthly until canceled.'],
+  ['What happens when I cancel?', 'Cancel in account settings. Monthly benefits continue through the paid billing period. Any separately held, unexpired legacy Research Pass remains valid through its original expiry.'],
+  ['Does connecting WhatsApp subscribe me?', 'No. A paid subscription requires a separate checkout. Reminder delivery also requires a connected phone and explicit consent. Reply STOP to stop WhatsApp reminders; this does not cancel billing.'],
+  ['Are school calendars updated automatically?', 'The assistant offers reviewed official NYCPS calendar dates for you to confirm. This is not a live school-announcement feed. Check applicability and dates with your provider.'],
 ];
+
 export default function PricingPage() {
-  const { user } = useAuth();
   const checkout = useCheckout();
-  const plans=useQuery<{familyPremium:{available:boolean}}>({queryKey:['/api/plans']});
-  const monthlyAvailable=plans.data?.familyPremium.available===true;
-  const monthly=useMutation({mutationFn:async()=>{
-    if(!user){window.location.href='/login?redirect=/pricing';return;}
-    const result=await (await apiRequest('POST','/api/tuck/family-checkout')).json();
-    if(new URL(result.url).origin!=='https://checkout.stripe.com')throw new Error('Unexpected checkout destination.');
-    window.location.href=result.url;
-  }});
-  const { data: subscription } = useQuery<{ access: AccountAccess }>({ queryKey: ['/api/subscription'], enabled: !!user });
   const returned = new URLSearchParams(window.location.search).get('success') === 'true';
   return <div className="min-h-screen flex flex-col bg-background">
-    <SEOHead title="School Research Pass & Family Premium Pricing" description="Compare the $29.00 one-time, six-month School Research Pass with $19.99/month Family Premium. Check availability and included school-research and parent-assistance features." canonicalPath="/pricing" />
+    <SEOHead title="Family Premium — $19.99/month" description="Family Premium is $19.99/month: school research and a WhatsApp Parent Assistant in one plan. No free trial. Existing paid customers keep their original terms." canonicalPath="/pricing" />
     <AppHeader stackOnMobile />
-    <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-12 space-y-12">
+    <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-12 space-y-10">
       <header className="text-center max-w-3xl mx-auto space-y-4">
-        <p className="text-primary font-semibold">One account. Two ways to help your family.</p>
+        <p className="text-primary font-semibold">One account. One monthly plan.</p>
         <h1 className="text-4xl md:text-5xl font-bold">Find the right school.<br />Stay on top of school life.</h1>
-        <p className="text-lg text-muted-foreground">Research schools yourself with a one-time Pass, or choose ongoing help from a Parent Assistant{monthlyAvailable ? '.' : ' when Family Premium launches.'}</p>
+        <p className="text-lg text-muted-foreground">School research and ongoing help from a Parent Assistant, together in Family Premium.</p>
       </header>
-      {returned && <p role="status">Checkout returned. Your access updates after payment is confirmed. Check your account for its status.</p>}
-      {subscription?.access?.research && <p className="rounded-lg border p-4 bg-muted" role="status">Your school-research access is active. <Link className="underline" href="/settings">View your plan and expiry</Link>.</p>}
-      <section className="grid md:grid-cols-2 gap-6" aria-label="Paid plans">
-        <Card className="border-primary shadow-sm" data-testid="card-research-pass">
-          <CardHeader className="space-y-3"><BookOpen className="text-primary" /><Badge className="w-fit">For your school search</Badge><CardTitle className="text-2xl">{RESEARCH_PASS.name}</CardTitle><p className="text-muted-foreground">“Help me choose a school.”</p><p><span className="text-4xl font-bold">${(RESEARCH_PASS.amount / 100).toFixed(2)}</span> one-time</p><p className="font-medium">6 months of school-research access. No renewal.</p></CardHeader>
-          <CardContent className="space-y-6"><ul className="space-y-3">{researchFeatures.map(feature => <li className="flex gap-2" key={feature}><Check className="w-5 h-5 text-teal-700 shrink-0" />{feature}</li>)}</ul><p className="text-sm text-muted-foreground">WhatsApp assistance and automated reminders are not included. Your existing research tools remain included.</p>
-            {checkout.isPremium ? <Button asChild className="w-full"><Link href="/settings">Manage my access</Link></Button> : <Button className="w-full min-h-11" onClick={checkout.startCheckout} disabled={!checkout.isReady || checkout.isPending} data-testid="button-research-checkout">{checkout.isPending ? 'Opening secure checkout…' : 'Get School Research Pass — $29.00'}</Button>}
-            {!checkout.isReady && !checkout.isLoading && <p className="text-sm text-muted-foreground">Checkout is not available in this preview or is temporarily unavailable. You will not be charged.</p>}
-            <p className="text-xs text-muted-foreground">One payment. No automatic renewal. Existing Pass purchases keep their original benefits and expiry.</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-teal-50/60 dark:bg-teal-950/20" data-testid="card-family-premium">
-          <CardHeader className="space-y-3"><MessageCircle className="text-teal-700" /><Badge variant="secondary" className="w-fit">{monthlyAvailable?'Ongoing family support':'Coming soon · Not for sale yet'}</Badge><CardTitle className="text-2xl">{FAMILY_PREMIUM.name}</CardTitle><p className="text-muted-foreground">“Help me manage school life.”</p><p><span className="text-4xl font-bold">${(FAMILY_PREMIUM.amount / 100).toFixed(2)}</span>/month</p><p className="font-medium">School research included while subscribed.</p></CardHeader>
-          <CardContent className="space-y-6"><ul className="space-y-3">{familyFeatures.map(feature => <li className="flex gap-2" key={feature}><Check className="w-5 h-5 text-teal-700 shrink-0" />{feature}</li>)}</ul><p className="text-sm text-muted-foreground">{monthlyAvailable?'No free trial. Charged today, then monthly until canceled.':'Monthly billing is closed while the assistant completes testing.'} Reminder delivery requires a connected WhatsApp phone and separate consent. Calendar dates require your review; not a live school-announcement feed.</p>{subscription?.access.familyPremium.active?<Button asChild className="w-full"><Link href="/settings">Manage Family Premium</Link></Button>:<Button className="w-full min-h-11" disabled={!monthlyAvailable||monthly.isPending} onClick={()=>monthly.mutate()} data-testid="button-family-checkout">{monthly.isPending?'Opening secure checkout…':monthlyAvailable?'Subscribe — $19.99/month':'Family Premium — Coming soon'}</Button>}{monthly.isError&&<p role="alert" className="text-destructive">{monthly.error.message}</p>}<Link className="block text-center underline min-h-11 py-2" href="/family">Explore My Family</Link><p className="text-xs text-muted-foreground">Renews monthly until canceled. Access continues through the paid billing period. No separate Research Pass purchase required.</p></CardContent>
-        </Card>
+      {returned && <p role="status">Checkout returned. Access updates after payment is confirmed. Check your account for its status.</p>}
+      {checkout.isPremium && <p className="rounded-lg border p-4 bg-muted" role="status">Your school-research access is active. You do not need to buy another plan to keep your existing benefits. <Link className="underline" href="/settings">View your current plan</Link>.</p>}
+      <Card className="max-w-xl mx-auto border-teal-600 bg-teal-50/60 dark:bg-teal-950/20" data-testid="card-family-premium">
+        <CardHeader className="space-y-3">
+          <MessageCircle className="text-teal-700" />
+          <Badge variant="secondary" className="w-fit">{checkout.isReady ? 'School research + parent support' : 'Coming soon · Not for sale yet'}</Badge>
+          <CardTitle className="text-2xl">{FAMILY_PREMIUM.name}</CardTitle>
+          <p><span className="text-4xl font-bold">${checkout.priceAmount}</span>/month</p>
+          <p className="font-medium">School research included while subscribed.</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <ul className="space-y-3">{features.map(feature => <li className="flex gap-2" key={feature}><Check className="w-5 h-5 text-teal-700 shrink-0" />{feature}</li>)}</ul>
+          <p className="text-sm text-muted-foreground">No free trial. Charged at checkout, then $19.99 monthly until canceled. Cancel in account settings; access continues through the paid billing period.</p>
+          {!checkout.isReady && <p role="status" className="text-sm">Monthly checkout is closed while launch testing is completed. No payment will be taken.</p>}
+          {checkout.monthlyActive ? <Button asChild className="w-full"><Link href="/settings">Manage Family Premium</Link></Button> : <Button className="w-full min-h-11" disabled={!checkout.isReady || checkout.isPending} onClick={checkout.startCheckout} data-testid="button-family-checkout">{checkout.isPending ? 'Opening secure checkout…' : checkout.isReady ? 'Subscribe — $19.99/month' : 'Family Premium — Coming soon'}</Button>}
+          <Link className="block text-center underline min-h-11 py-2" href="/family">Explore My Family</Link>
+          <p className="text-xs text-muted-foreground">Reminder delivery requires a connected WhatsApp phone and separate consent. Calendar dates require your review. The assistant is not a live school-announcement feed.</p>
+        </CardContent>
+      </Card>
+      <section className="rounded-xl border p-6 space-y-2" aria-label="Existing paid customers">
+        <h2 className="text-xl font-semibold">Already a paying customer? Your plan stays intact.</h2>
+        <p className="text-muted-foreground">We will not switch you to monthly billing or change your existing price, benefits or expiry. The legacy Research Pass is no longer sold. Any future subscription is a separate, explicit purchase.</p>
+        <Link className="inline-block underline py-2" href="/settings">View existing access</Link>
       </section>
       <section className="rounded-xl border p-6 text-center"><h2 className="text-xl font-semibold">Just exploring? Start free.</h2><p className="text-muted-foreground my-3">Browse the directory and map, see basic school details and save up to five favorites.</p><Button variant="outline" asChild><Link href="/">Explore schools</Link></Button></section>
-      <section className="space-y-4"><h2 className="text-2xl font-bold">Research on your terms. Assistance when you need it.</h2><div className="overflow-x-auto rounded-xl border"><table className="w-full text-sm min-w-[560px]"><caption className="sr-only">Compare School Research Pass and planned Family Premium benefits</caption><thead className="bg-muted"><tr><th className="p-4 text-left" scope="col">Feature</th><th className="p-4 text-left" scope="col">School Research Pass</th><th className="p-4 text-left" scope="col">Family Premium · Coming soon</th></tr></thead><tbody>{comparisons.map(row => <tr key={row[0]} className="border-t"><th scope="row" className="p-4 text-left font-medium">{row[0]}</th><td className="p-4">{row[1]}</td><td className="p-4">{row[2]}</td></tr>)}</tbody></table></div></section>
       <section className="grid md:grid-cols-2 gap-6" aria-label="Plan questions">{questions.map(([question, answer]) => <div key={question} className="space-y-2"><h3 className="font-semibold">{question}</h3><p className="text-muted-foreground text-sm">{answer}</p></div>)}</section>
     </main><Footer />
   </div>;

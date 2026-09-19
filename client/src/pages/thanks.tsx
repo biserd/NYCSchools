@@ -100,7 +100,7 @@ export default function ThanksPage() {
                   You're All Set!
                 </CardTitle>
                 <CardDescription className="text-base">
-                  Your School Research Pass is now active. Enjoy six months of school research tools. The future WhatsApp Parent Assistant is a separate monthly service.
+                  Your legacy School Research Pass is active under its original terms. View your access and original expiry in account settings. You have not been enrolled in monthly billing.
                 </CardDescription>
               </>
             )}

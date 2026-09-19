@@ -270,7 +270,7 @@ export function SchoolDetailPanel({ school, open, onOpenChange, isPremium: hasPa
                     <Link href="/pricing">
                       <Button data-testid="button-unlock-breakdown">
                         <Lock className="w-4 h-4 mr-2" />
-                        Unlock for $29.00
+                        Family Premium - $19.99/month
                       </Button>
                     </Link>
                   </div>

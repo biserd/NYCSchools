@@ -373,7 +373,7 @@ export default function DevelopersDocsPage() {
                     <div>
                       <h3 className="font-semibold mb-3">Getting Your API Key</h3>
                       <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                        <li>Purchase the School Research Pass ($29.00 for six months, with no automatic renewal)</li>
+                        <li>Subscribe to Family Premium ($19.99/month, renewing until canceled; no free trial). Existing paid access remains valid under its original terms.</li>
                         <li>Go to your Settings page</li>
                         <li>Navigate to the "API Access" section</li>
                         <li>Click "Generate API Key" to create your key</li>

@@ -65,8 +65,8 @@ const triggerContent: Record<UpgradeModalTrigger, { title: string; description: 
     icon: Target,
   },
   general: {
-    title: "Get the School Research Pass",
-    description: "Unlock six months of comparison, planning, and application tools with one payment and no renewal.",
+    title: "Explore Family Premium",
+    description: "School research and parent assistance in one monthly plan. Existing paid customers keep their original terms.",
     icon: Sparkles,
   },
 };
@@ -76,10 +76,10 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
   const content = triggerContent[trigger];
   const IconComponent = content.icon;
 
-  const priceLabel = "one-time";
-  const priceDescription = "6 months of full access · no automatic renewal";
-  const badgeText = "School Research Pass";
-  const buttonText = "Get School Research Pass";
+  const priceLabel = "/month";
+  const priceDescription = "Renews monthly until canceled. No free trial.";
+  const badgeText = "Family Premium";
+  const buttonText = isReady ? "Subscribe — $19.99/month" : "View pricing and availability";
 
   const premiumFeatures = [
     { icon: MessageCircle, text: "Unlimited AI questions" },
@@ -135,7 +135,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
             </div>
             <div className="flex items-center gap-1">
               <Check className="w-3 h-3" />
-              No renewal
+              Cancel anytime
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
           <Button 
             className="w-full" 
             onClick={startCheckout}
-            disabled={isPending || !isReady}
+            disabled={isPending}
             data-testid="button-modal-upgrade"
           >
             {isPending ? (

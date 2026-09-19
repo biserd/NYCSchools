@@ -62,41 +62,8 @@ export class StripeService {
     });
   }
 
-  async createCheckoutSession(
-    customerId: string, 
-    priceId: string, 
-    successUrl: string, 
-    cancelUrl: string,
-    userId: string,
-    mode: 'subscription' | 'payment' = 'subscription'
-  ) {
-    const stripe = await getUncachableStripeClient();
-    return await stripe.checkout.sessions.create({
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: { userId, plan: 'season_pass', duration_months: '6' },
-    });
-  }
-
-  async createSeasonPassCheckout(
-    customerId: string,
-    priceId: string,
-    successUrl: string,
-    cancelUrl: string,
-    userId: string
-  ) {
-    return this.createCheckoutSession(
-      customerId,
-      priceId,
-      successUrl,
-      cancelUrl,
-      userId,
-      'payment'
-    );
-  }
+  // Legacy products remain readable for historical purchases. New Checkout
+  // Sessions are created only by parent/checkout.ts for Family Premium.
 
   async createCustomerPortalSession(customerId: string, returnUrl: string) {
     const stripe = await getUncachableStripeClient();

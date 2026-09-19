@@ -506,12 +506,12 @@ export default function Settings() {
                 </div>
                 
                 <p className="text-sm text-muted-foreground">
-                  You're currently on the free plan. Get a School Research Pass to unlock unlimited on-site AI questions,
+                  You're currently on the free plan. Explore Family Premium for on-site AI questions,
                   commute calculator, smart recommendations, and more.
                 </p>
 
                 <div className="p-4 bg-muted rounded-md" data-testid="premium-features-list">
-                  <p className="text-sm font-medium mb-2">School Research Pass features include:</p>
+                  <p className="text-sm font-medium mb-2">Family Premium research features include:</p>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li className="flex items-center gap-2">
                       <Crown className="w-3 h-3 text-amber-500" />
@@ -535,7 +535,7 @@ export default function Settings() {
                 <Link href="/pricing">
                   <Button data-testid="button-upgrade-premium">
                     <Crown className="mr-2 h-4 w-4" />
-                    Get School Research Pass
+                    Explore Family Premium - $19.99/month
                   </Button>
                 </Link>
               </div>
@@ -565,7 +565,7 @@ export default function Settings() {
                   <span className="text-sm">Premium feature</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Get a School Research Pass to access unlimited on-site AI questions and view your conversation history.
+                  Family Premium includes on-site school-research chat and conversation history. Existing paid access stays intact.
                 </p>
                 <Link href="/pricing">
                   <Button variant="outline" size="sm" data-testid="button-upgrade-for-chat">

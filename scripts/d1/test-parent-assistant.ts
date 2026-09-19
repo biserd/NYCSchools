@@ -90,5 +90,11 @@ try {
   assert.equal(keys[0],keys[1]);assert.deepEqual(sessions[0],sessions[1]);
   assert.equal(sessions[0].mode,'subscription');assert.equal(sessions[0].subscription_data?.trial_period_days,undefined);assert.equal(sessions[0].subscription_data?.trial_end,undefined);
   assert.equal(await DB.prepare("SELECT subscription_plan FROM users WHERE id='a'").first('subscription_plan'),'season_pass');
+  await DB.prepare("UPDATE users SET stripe_subscription_id='sub_legacy' WHERE id='b'").run();
+  const guardedStripe = Object.assign({},stripe,{subscriptions:{list:async()=>({data:[{id:'sub_legacy',status:'active'}],has_more:false})}});
+  const before=sessions.length;
+  await assert.rejects(()=>familyCheckout('b',checkoutEnv,guardedStripe),/existing recurring plan remains unchanged/);
+  assert.equal(sessions.length,before,'No second subscription for an active legacy recurring customer');
+  assert.equal(await DB.prepare("SELECT stripe_subscription_id FROM users WHERE id='b'").first('stripe_subscription_id'),'sub_legacy');
   console.log('Parent Assistant passed: full migrations, DST/quiet hours, consent, ownership, entitlement, draft confirmation/idempotency/expiry, canonical early-childhood answers, atomic delivery claims, signed callbacks, retry/quarantine, disconnect cancellation, guarded/no-trial/idempotent monthly checkout. No provider calls or real messages.');
 } finally {await platform.dispose();}

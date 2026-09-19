@@ -26,9 +26,19 @@ const unsigned = await fetch(base + '/api/parent/whatsapp/inbound', { method: 'P
 assert.equal(unsigned.status, 403, 'Configured receiver rejects unsigned traffic');
 const plans = (await call('/api/plans')).value;
 assert.equal(plans.researchPass.amount, 2900);
+assert.equal(plans.researchPass.available, false);
+assert.equal(plans.researchPass.legacy, true);
 assert.equal(plans.familyPremium.amount, 1999);
 assert.equal(plans.familyPremium.available, false);
-assert.equal((await call('/api/checkout/guest', undefined, 'POST', { mode: 'subscription' })).response.status, 403, 'Staging must block all checkout');
+for (const path of ['/api/checkout', '/api/checkout/guest']) {
+  const retired = await call(path, undefined, 'POST', { priceId: 'price_retired', mode: 'payment' });
+  assert.equal(retired.response.status, 410, 'Old one-time checkout must not create any payment');
+  assert.equal(retired.value.code, 'RESEARCH_PASS_RETIRED');
+}
+assert.deepEqual((await call('/api/products')).value.data, [], 'No retired price is advertised');
+const pricing = await call('/pricing');
+assert.match(pricing.value, /Family Premium — \$19\.99\/month/);
+assert.ok(!pricing.value.includes('School Research Pass &amp; Family Premium'));
 try {
   for (const account of identities) {
     const registered = await call('/api/register', account, 'POST', { email: account.email, password: account.password, firstName: 'Synthetic Tuck check' });

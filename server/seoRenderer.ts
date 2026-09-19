@@ -850,9 +850,9 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     heading: "NYC School Admissions Priority Planner",
   },
   "/pricing": {
-    title: "School Research Pass & Family Premium Pricing | NYC School Ratings",
-    description: "School Research Pass: $29.00 once for six months. Family Premium: $19.99/month at launch, including school research and a WhatsApp Parent Assistant. Coming soon.",
-    heading: "School Research Pass & Family Premium",
+    title: "Family Premium — $19.99/month | NYC School Ratings",
+    description: "Family Premium is $19.99/month: school research and a WhatsApp Parent Assistant in one plan. No free trial. Existing paid customers keep their original terms.",
+    heading: "Family Premium — $19.99/month",
   },
   "/blog": {
     title: "NYC School Guides, Rankings & Admissions Resources",

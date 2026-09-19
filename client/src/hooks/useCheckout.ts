@@ -1,150 +1,39 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { trackEvent } from "@/lib/analytics";
-import { RESEARCH_PASS } from '@shared/plans';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
+import { FAMILY_PREMIUM, type AccountAccess } from '@shared/plans';
 
-interface ProductData {
-  data: Array<{
-    id: string;
-    name: string;
-    description: string;
-    active: boolean;
-    metadata: Record<string, string>;
-    prices: Array<{
-      id: string;
-      unit_amount: number;
-      currency: string;
-      recurring: { interval: string } | null;
-      active: boolean;
-    }>;
-  }>;
-}
-
+// Only explicit monthly checkout creates new purchases. Retired Pass endpoints
+// never silently turn an old one-time offer into a recurring charge.
 export function useCheckout() {
   const { user } = useAuth();
   const { toast } = useToast();
-
-  const { data: products, isLoading: productsLoading } = useQuery<ProductData>({
-    queryKey: ["/api/products"],
-    staleTime: 1000 * 60 * 5,
+  const plans = useQuery<{ familyPremium: { available: boolean } }>({ queryKey: ['/api/plans'] });
+  const subscription = useQuery<{ access: AccountAccess }>({ queryKey: ['/api/subscription'], enabled: !!user });
+  const isReady = plans.data?.familyPremium.available === true;
+  const monthlyActive = subscription.data?.access.familyPremium.active === true;
+  const checkout = useMutation({
+    mutationFn: async () => {
+      const result = await (await apiRequest('POST', '/api/tuck/family-checkout')).json();
+      if (new URL(result.url).origin !== 'https://checkout.stripe.com') throw new Error('Unexpected checkout destination.');
+      window.location.href = result.url;
+    },
+    onError: (error: Error) => toast({ title: 'Checkout unavailable', description: error.message, variant: 'destructive' }),
   });
-
-  const { data: subscription } = useQuery<{
-    status: string;
-    plan: string;
-  }>({
-    queryKey: ["/api/subscription"],
-    enabled: !!user,
-  });
-
-  // Authenticated user checkout
-  const checkoutMutation = useMutation({
-    mutationFn: async ({ priceId, mode }: { priceId: string; mode: 'subscription' | 'payment' }) => {
-      const res = await apiRequest("POST", "/api/checkout", { priceId, mode });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Guest checkout (no login required)
-  const guestCheckoutMutation = useMutation({
-    mutationFn: async ({ priceId, mode }: { priceId: string; mode: 'subscription' | 'payment' }) => {
-      const res = await apiRequest("POST", "/api/checkout/guest", { priceId, mode });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Find the School Research Pass product/price - use the LAST match to prefer test mode products
-  // (Test mode products are synced after live mode products due to the recent key switch)
-  const allSeasonPassProducts = products?.data?.filter(p => 
-    p.name?.toLowerCase().includes("season") || 
-    p.metadata?.plan === "season_pass"
-  ) || [];
-  const seasonPassProduct = allSeasonPassProducts[allSeasonPassProducts.length - 1];
-  const seasonPassPrice = seasonPassProduct?.prices?.find(p => !p.recurring && p.active && p.unit_amount === RESEARCH_PASS.amount && p.currency === RESEARCH_PASS.currency);
-
-  // New checkout is intentionally one non-renewing offer. Legacy monthly
-  // subscribers retain access, but a missing School Research Pass must not silently
-  // turn a one-time CTA into a recurring subscription.
-  const currentPrice = seasonPassPrice;
-  const isSeasonPass = true;
-
-  // Check for premium access - includes recurring subscriptions and School Research Pass
-  const isPremium = subscription?.status === "active" && 
-    (subscription?.plan === "premium" || subscription?.plan === "season_pass");
-
   const startCheckout = () => {
-    // Wait for products to load before showing error
-    if (productsLoading) {
-      return;
-    }
-
-    // Products loaded but price not found - show error
-    if (!currentPrice) {
-      toast({
-        title: "Error",
-        description: "Unable to load pricing. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const mode = 'payment' as const;
-    trackEvent("begin_checkout", {
-      currency: "USD",
-      value: currentPrice.unit_amount / 100,
-      price_id: currentPrice.id,
-      checkout_type: user ? "authenticated" : "guest",
-    });
-
-    // If authenticated, check premium status and use authenticated checkout
-    if (user) {
-      if (isPremium) {
-        toast({
-          title: "Access already active",
-          description: "You already have full NYC School Ratings access.",
-        });
-        return;
-      }
-      checkoutMutation.mutate({ priceId: currentPrice.id, mode });
-    } else {
-      // Guest checkout - no login required, Stripe collects email
-      guestCheckoutMutation.mutate({ priceId: currentPrice.id, mode });
-    }
+    if (checkout.isPending) return;
+    if (!isReady) { window.location.href = '/pricing'; return; }
+    if (!user) { window.location.href = '/login?redirect=/pricing'; return; }
+    if (monthlyActive) { window.location.href = '/settings'; return; }
+    trackEvent('begin_checkout', { currency: 'USD', value: FAMILY_PREMIUM.amount / 100, checkout_type: 'monthly' });
+    checkout.mutate();
   };
-
   return {
-    startCheckout,
-    isLoading: productsLoading || checkoutMutation.isPending || guestCheckoutMutation.isPending,
-    isPending: checkoutMutation.isPending || guestCheckoutMutation.isPending,
-    isReady: !productsLoading && !!currentPrice,
-    isPremium,
-    priceAmount: (RESEARCH_PASS.amount / 100).toFixed(2),
-    isSeasonPass,
+    startCheckout, isLoading: plans.isLoading || checkout.isPending,
+    isPending: checkout.isPending, isReady, monthlyActive,
+    isPremium: subscription.data?.access.research === true,
+    priceAmount: (FAMILY_PREMIUM.amount / 100).toFixed(2), isSeasonPass: false,
   };
 }

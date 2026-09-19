@@ -10,7 +10,7 @@ import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
 import { accountAccess } from './familyBilling';
-import { RESEARCH_PASS, FAMILY_PREMIUM, PARENT_ASSISTANT_AVAILABLE } from '@shared/plans';
+import { RESEARCH_PASS, FAMILY_PREMIUM } from '@shared/plans';
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
 import apiV1Router from "./routesV1";
 import { setupOAuth, getUserFromAccessToken } from "./oauth";
@@ -2842,118 +2842,13 @@ When answering:
     }
   });
 
-  // Create checkout session for subscription
-  app.post("/api/checkout", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.session.userId;
-      const { priceId, mode = 'payment' } = req.body;
-      if (mode === 'subscription' || req.body.plan === 'family_premium') return res.status(409).json({ error: 'Family Premium is coming soon. Monthly checkout is not available.' });
-      
-      console.log("Checkout request:", { userId, priceId, mode });
-
-      if (!priceId) {
-        console.error("Checkout failed: Missing priceId");
-        return res.status(400).json({ error: "Price ID is required" });
-      }
-
-      const seasonPassPriceId = stripeService.getSeasonPassPriceId();
-      if (priceId !== seasonPassPriceId || mode !== 'payment') {
-        console.warn("Checkout rejected: Invalid NYC Schools offer", { userId, priceId, mode });
-        return res.status(400).json({ error: "Only the School Research Pass is available" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        console.error("Checkout failed: User not found", userId);
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      console.log("User found:", { userId, email: user.email, hasStripeCustomer: !!user.stripeCustomerId });
-
-      // Create or get Stripe customer
-      let customerId = user.stripeCustomerId;
-      if (!customerId) {
-        console.log("Creating new Stripe customer for user:", userId);
-        const customer = await stripeService.createCustomer(
-          user.email,
-          userId,
-          user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : undefined
-        );
-        customerId = customer.id;
-        console.log("Created Stripe customer:", customerId);
-        await storage.updateUserStripeInfo(userId, { stripeCustomerId: customerId });
-      }
-
-      const baseUrl = getAppUrl(req);
-      console.log("Creating checkout session with baseUrl:", baseUrl);
-      
-      await stripeService.getSeasonPassOffer();
-      const session = await stripeService.createCheckoutSession(
-        customerId,
-        seasonPassPriceId,
-        `${baseUrl}/pricing?success=true`,
-        `${baseUrl}/pricing?canceled=true`,
-        userId,
-        'payment'
-      );
-
-      console.log("Checkout session created:", session.id, "mode: payment");
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error("Error creating checkout session:", error?.message || error);
-      console.error("Full error:", JSON.stringify(error, null, 2));
-      res.status(500).json({ error: "Failed to create checkout session", details: error?.message });
-    }
-  });
-
-  // Guest checkout - no login required, creates account after payment
-  app.post("/api/checkout/guest", async (req: Request, res: Response) => {
-    try {
-      const { priceId, mode = 'payment' } = req.body;
-      if (mode === 'subscription' || req.body.plan === 'family_premium') return res.status(409).json({ error: 'Family Premium is coming soon. Monthly checkout is not available.' });
-      
-      console.log("Guest checkout request:", { priceId, mode });
-
-      if (!priceId) {
-        console.error("Guest checkout failed: Missing priceId");
-        return res.status(400).json({ error: "Price ID is required" });
-      }
-
-
-      const seasonPassPriceId = stripeService.getSeasonPassPriceId();
-      if (priceId !== seasonPassPriceId || mode !== 'payment') {
-        console.warn("Guest checkout rejected: Invalid NYC Schools offer", { priceId, mode });
-        return res.status(400).json({ error: "Only the School Research Pass is available" });
-      }
-
-      const stripe = await getUncachableStripeClient();
-      
-      // Create checkout session without a customer (Stripe will create one)
-      await stripeService.getSeasonPassOffer();
-      // Email collection is required so we can create/link the user account after payment
-      const baseUrl = getAppUrl(req);
-      
-      const sessionParams: any = {
-        line_items: [{ price: seasonPassPriceId, quantity: 1 }],
-        mode: 'payment',
-        success_url: `${baseUrl}/thanks?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/pricing?canceled=true`,
-        customer_creation: 'always', // Always create a Stripe customer
-        metadata: {
-          plan: 'season_pass',
-          duration_months: '6',
-          source: 'guest_checkout',
-        },
-      };
-
-      const session = await stripe.checkout.sessions.create(sessionParams);
-
-      console.log("Guest checkout session created:", session.id, "mode: payment");
-      res.json({ url: session.url, sessionId: session.id });
-    } catch (error: any) {
-      console.error("Error creating guest checkout session:", error?.message || error);
-      res.status(500).json({ error: "Failed to create checkout session", details: error?.message });
-    }
+  // Retired purchase URLs must never convert a cached one-time offer into
+  // monthly billing. Keep verify-session and webhooks below for old purchases.
+  app.post(['/api/checkout', '/api/checkout/guest'], (_req, res) => {
+    res.set('Cache-Control', 'no-store').status(410).json({
+      error: 'The Research Pass is no longer sold. Existing purchases are unchanged. Review Family Premium pricing to start a new monthly subscription.',
+      code: 'RESEARCH_PASS_RETIRED', pricingUrl: '/pricing',
+    });
   });
 
   // Verify checkout session and auto-login (for /thanks page)
@@ -3238,30 +3133,20 @@ When answering:
 
   // Get available products and prices (public)
   app.get("/api/products", async (req: Request, res: Response) => {
-    if (process.env.ENVIRONMENT === 'staging' && !process.env.STRIPE_TEST_SECRET_KEY) return res.json({ data: [], checkoutAvailable: false });
-    try {
-      const { product, price } = await stripeService.getSeasonPassOffer();
-      res.json({
-        data: [{
-          id: product.id,
-          name: RESEARCH_PASS.name,
-          description: product.description,
-          active: product.active,
-          metadata: { ...product.metadata, plan: 'season_pass' },
-          prices: [{
-            id: price.id,
-            unit_amount: price.unit_amount,
-            currency: price.currency,
-            recurring: price.recurring,
-            active: price.active,
-            metadata: price.metadata,
-          }],
-        }],
-      });
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
-    }
+    const { familyCheckoutAvailable } = await import('./parent/checkout');
+    const available = familyCheckoutAvailable(process.env);
+    // Never publish a retired Stripe price to stale clients. The monthly
+    // checkout validates its configured Stripe price again before any payment.
+    res.set('Cache-Control', 'no-store').json({
+      checkoutAvailable: available,
+      data: available ? [{
+        id: FAMILY_PREMIUM.id, name: FAMILY_PREMIUM.name, active: true,
+        metadata: { plan: FAMILY_PREMIUM.id },
+        prices: [{ id: process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID,
+          unit_amount: FAMILY_PREMIUM.amount, currency: FAMILY_PREMIUM.currency,
+          recurring: { interval: FAMILY_PREMIUM.interval }, active: true }],
+      }] : [],
+    });
   });
 
   // ============ END STRIPE INTEGRATION ============

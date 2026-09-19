@@ -242,9 +242,9 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
           </div>
           
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
-            <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Unlock Premium Features with School Research Pass</h2>
+            <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Explore Family Premium</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
-              Get the complete toolkit for your school search — just <strong>$29.00 for 6 months</strong>:
+              School research and parent assistance in one plan — <strong>$19.99/month</strong> when available. No free trial; renews until canceled. Check current availability on our pricing page.
             </p>
             <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
               <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
@@ -275,7 +275,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
             <div style="text-align: center;">
               <a href="https://nycschoolsratings.com/pricing" 
                  style="background: #f59e0b; color: #78350f; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                View School Research Pass
+                View Family Premium pricing
               </a>
             </div>
           </div>
@@ -328,7 +328,7 @@ export async function sendAdminNewUserRegistrationNotification(userEmail: string
           </div>
           
           <p style="color: #6b7280; font-size: 14px;">
-            This user has created a free account and may convert to a School Research Pass customer.
+            This user has created a free account and may choose Family Premium.
           </p>
         </div>
       `,
@@ -678,14 +678,14 @@ export async function sendDripAiSpotlight(userEmail: string, userId: string, fir
           
           <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #f59e0b;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>This premium feature is available with School Research Pass</strong> — just $29.00 for 6 months of full access.
+              <strong>Explore Family Premium</strong> — $19.99/month when available. No free trial; renews until canceled. Existing paid plans keep their benefits.
             </p>
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="https://nycschoolsratings.com/pricing" 
                style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-              Learn More About School Research Pass
+              View Family Premium pricing and availability
             </a>
           </div>
           
@@ -759,7 +759,7 @@ export async function sendDripDataInsight(userEmail: string, userId: string, fir
   }
 }
 
-// Day 14: Soft upgrade nudge with School Research Pass benefits
+// Day 14: Monthly-plan information; no promise that checkout is already open.
 export async function sendDripUpgradeNudge(userEmail: string, userId: string, firstName?: string | null): Promise<boolean> {
   try {
     
@@ -767,7 +767,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
     
     const result = await sendEmail({
       to: userEmail,
-      subject: 'Get the Full Picture with School Research Pass',
+      subject: 'Explore Family Premium for Your School Search',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
           
@@ -778,7 +778,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           </p>
           
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
-            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">School Research Pass: $29.00 for 6 Months</h2>
+            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">Family Premium: $19.99/month</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
               Built by a NYC parent, for NYC parents. Get everything you need for your school search:
             </p>
@@ -812,13 +812,13 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           </div>
           
           <p style="font-size: 16px; line-height: 1.6; text-align: center; color: #6b7280;">
-            That's less than <strong>$5 per month</strong> for complete peace of mind during your school search.
+            No free trial. Charged at checkout and renewed monthly until canceled. Check current availability before subscribing. Existing paid plans remain unchanged.
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="https://nycschoolsratings.com/pricing" 
                style="background: #f59e0b; color: #78350f; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-              Get School Research Pass Now
+              View pricing and availability
             </a>
           </div>
           

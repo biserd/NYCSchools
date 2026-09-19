@@ -17,7 +17,7 @@ export async function familyCheckout(userId:string,env:AssistantEnvironment,stri
   const portals=await stripe.billingPortal.configurations.list({active:true,is_default:true,limit:1});
   const cancel=portals.data[0]?.features.subscription_cancel;
   if(!cancel?.enabled||cancel.mode!=='at_period_end')throw new TuckError(503,'Self-service cancellation must be configured before monthly checkout opens.');
-  const user=await env.DB.prepare('SELECT email,stripe_customer_id FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null}>();
+  const user=await env.DB.prepare('SELECT email,stripe_customer_id,stripe_subscription_id FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null;stripe_subscription_id:string|null}>();
   if(!user)throw new TuckError(401,'Sign in again.');
   let customerId=user.stripe_customer_id;
   if(!customerId) {
@@ -27,6 +27,7 @@ export async function familyCheckout(userId:string,env:AssistantEnvironment,stri
   }
   if(!customerId)throw new TuckError(503,'Could not prepare billing account.');
   const existing=await stripe.subscriptions.list({customer:customerId,status:'all',limit:100});
+  if(user.stripe_subscription_id&&existing.data.some(s=>s.id===user.stripe_subscription_id&&!['canceled','incomplete_expired'].includes(s.status)))throw new TuckError(409,'Your existing recurring plan remains unchanged. Manage it in account settings or contact support before purchasing another subscription.');
   if(existing.has_more||existing.data.some(s=>!['canceled','incomplete_expired'].includes(s.status)&&(s.metadata.plan==='family_premium'||s.items.data.some(i=>i.price.id===price.id))))throw new TuckError(409,'A monthly subscription or payment is already in progress. Manage it in account settings.');
   // Durable attempts reuse one Stripe session, even after an uncertain response.
   await env.DB.prepare(`INSERT INTO parent_checkout_attempts(user_id,attempt_id,expires_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET attempt_id=excluded.attempt_id,expires_at=excluded.expires_at WHERE expires_at<?`).bind(userId,crypto.randomUUID(),now+3600000,now).run();
