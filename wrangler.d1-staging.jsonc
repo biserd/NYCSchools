@@ -21,8 +21,9 @@
     "PARENT_WHATSAPP_ENABLED":"true",
     "PARENT_ASSISTANT_ENABLED":"true",
     "PARENT_REMINDERS_ENABLED":"false",
-    "FAMILY_CHECKOUT_ENABLED":"false",
+    "FAMILY_CHECKOUT_ENABLED":"true",
     "PARENT_LAUNCH_VERIFIED":"false",
+    "PARENT_REMINDER_CONTENT_SID":"HXcb3d96c071bada2d611b06b8498796e8",
     "TWILIO_WHATSAPP_FROM":"whatsapp:+19174730386",
     "NODE_ENV":"production",
     "APP_URL":"https://nyc-schools-ratings-d1-staging.biser-d.workers.dev",
@@ -30,6 +31,7 @@
     "EMAIL_DELIVERY_ENABLED":"false",
     "EMAIL_FROM":"hello@nycschoolsratings.com",
     "EMAIL_FROM_NAME":"NYC Schools D1 staging",
+    "STRIPE_FAMILY_PREMIUM_PRICE_ID":"price_1UHTA7RwvWaTf8xfT3VzOnbm",
     "STRIPE_SEASON_PASS_PRODUCT_ID":"",
     "STRIPE_SEASON_PASS_PRICE_ID":"",
     "STAGING_EXPIRES_AT":"2026-09-22T16:58:00Z"

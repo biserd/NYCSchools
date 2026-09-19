@@ -29,13 +29,18 @@ assert.equal(plans.researchPass.amount, 2900);
 assert.equal(plans.researchPass.available, false);
 assert.equal(plans.researchPass.legacy, true);
 assert.equal(plans.familyPremium.amount, 1999);
-assert.equal(plans.familyPremium.available, false);
+assert.equal(plans.familyPremium.available, true);
 for (const path of ['/api/checkout', '/api/checkout/guest']) {
   const retired = await call(path, undefined, 'POST', { priceId: 'price_retired', mode: 'payment' });
   assert.equal(retired.response.status, 410, 'Old one-time checkout must not create any payment');
   assert.equal(retired.value.code, 'RESEARCH_PASS_RETIRED');
 }
-assert.deepEqual((await call('/api/products')).value.data, [], 'No retired price is advertised');
+const products=(await call('/api/products')).value.data;
+assert.equal(products.length,1,'Only the new monthly offer is advertised');
+assert.equal(products[0].id,'family_premium');
+assert.equal(products[0].prices.length,1);
+assert.equal(products[0].prices[0].unit_amount,1999);
+assert.equal(products[0].prices[0].recurring.interval,'month');
 const pricing = await call('/pricing');
 assert.match(pricing.value, /Family Premium — \$19\.99\/month/);
 assert.ok(!pricing.value.includes('School Research Pass &amp; Family Premium'));
@@ -70,7 +75,9 @@ try {
   assert.equal(assistant.value.enabled,true);
   assert.equal(assistant.value.entitled,true,'Separate staging-only preview access');
   assert.equal(assistant.value.deliveryEnabled,false,'No outbound reminders during initial rehearsal');
-  assert.equal((await call('/api/tuck/family-checkout',a,'POST')).response.status,503);
+  const checkout=await call('/api/tuck/family-checkout',a,'POST');
+  assert.equal(checkout.response.status,200,`Sandbox checkout session should open: ${JSON.stringify(checkout.value)}`);
+  assert.match(checkout.value.url,/^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_/);
   assert.equal((await call('/api/tuck/assistant/message',a,'POST',{message:'Tell me about 02M475'})).response.status,409,'AI requires consent');
   assert.equal((await call('/api/tuck/assistant/preferences',a,'PUT',{timezone:'America/New_York',quietStart:21,quietEnd:8,aiConsent:true,reminderConsent:false})).response.status,200);
   const started=Date.now();
