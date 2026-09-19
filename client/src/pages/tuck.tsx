@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import type { TuckOverview } from "@shared/tuck";
 import { ParentWhatsAppConnection } from '@/components/ParentWhatsAppConnection';
+import { ParentAssistantPanel } from '@/components/ParentAssistantPanel';
 
 export default function TuckPage() {
   const { user, isLoading } = useAuth();
@@ -43,7 +44,6 @@ export default function TuckPage() {
         <p className="mt-3 max-w-2xl text-muted-foreground">Keep your children’s school links and important dates together. One account, alongside your school research.</p>
         <p className="mt-4 flex items-start gap-2 text-sm"><ShieldCheck className="w-5 h-5 shrink-0" />Private to your account. Family sharing is not enabled yet.</p>
       </section>
-      <Card><CardContent className="pt-6 flex gap-3"><MessageCircle className="w-6 h-6 shrink-0" /><div><h2 className="font-semibold">Parent Assistant · Coming with Family Premium</h2><p className="text-sm text-muted-foreground mt-1">Try the WhatsApp connection preview below to request dates from your manual calendar. Automatic reminders and AI assistance are not enabled yet. Your current subscription and billing have not changed.</p></div></CardContent></Card>
       {isLoading ? <p role="status">Checking your account…</p> : !user ? <Card><CardContent className="pt-6 space-y-4"><h2 className="font-semibold">Use your NYC School Ratings account</h2><p>Use the same account as your school research. This manual calendar is a preview.</p><Button asChild><Link href="/login?redirect=/family">Sign in to My Family</Link></Button></CardContent></Card> : <>
         <nav className="flex flex-wrap gap-4 text-sm underline"><Link href="/favorites">Saved schools</Link><Link href="/application-tracker">Application tracker</Link><Link href="/settings">Account &amp; subscription</Link></nav>
         <ParentWhatsAppConnection key={user.id} userId={user.id} />
@@ -58,7 +58,7 @@ export default function TuckPage() {
             </form>
           </CardContent></Card>
           <Card><CardHeader><CardTitle className="flex gap-2"><CalendarDays className="w-5 h-5" />Family calendar</CardTitle></CardHeader><CardContent className="space-y-5">
-            <p className="text-sm text-muted-foreground">All-day dates you enter, not verified school announcements. No reminders will be sent.</p>
+            <p className="text-sm text-muted-foreground">All-day dates you enter, not verified school announcements. Adding a date alone does not schedule a reminder.</p>
             {data.events.length === 0 && <p>No dates yet. Add a school visit, deadline or family event.</p>}
             <ol className="space-y-3">{data.events.map(event => <li key={event.id} className="border-l-4 border-teal-600 pl-4"><time className="text-sm font-medium" dateTime={event.date}>{new Date(`${event.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</time><p className="font-semibold">{event.title}</p><p className="text-xs text-muted-foreground">{data.children.find(child => child.id === event.childId)?.nickname || "Whole family"}</p>{event.detail && <p className="text-sm whitespace-pre-wrap">{event.detail}</p>}<button className="min-h-11 underline text-sm" disabled={busy} onClick={() => { if (window.confirm("Remove this event?")) change.mutate({ method: "DELETE", path: `events/${event.id}` }); }}>Remove event</button></li>)}</ol>
             <form className="space-y-3 border-t pt-4" onSubmit={e => { e.preventDefault(); change.mutate({ path: "events", body: { title, date, childId: childId || null, detail } }, { onSuccess: () => { setTitle(""); setDetail(""); } }); }}>
@@ -72,6 +72,7 @@ export default function TuckPage() {
           </CardContent></Card>
         </div>}
         {change.isError && <p role="alert" className="text-destructive">{change.error.message}</p>}
+        {data?.household&&<ParentAssistantPanel key={`assistant-${user.id}`} userId={user.id} events={data.events} onSaved={()=>void overview.refetch()}/>}
       </>}
     </main><Footer />
   </div>;

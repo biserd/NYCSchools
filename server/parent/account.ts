@@ -5,7 +5,7 @@ export async function parentWhatsappStatus(userId: string, env: ParentWhatsappEn
   const configured = parentWhatsappReady(env);
   if (!['staging', 'production'].includes(env.ENVIRONMENT)) return { preview: false, configured: false, connected: false, phone: null };
   const row = await env.DB.prepare('SELECT phone,consent_at FROM parent_whatsapp_links WHERE user_id=?').bind(userId).first<{ phone: string | null; consent_at: number | null }>();
-  return { preview: true, configured, connected: !!row?.phone && !!row.consent_at, phone: row?.phone ? `••••${row.phone.slice(-4)}` : null };
+  return { preview: true, configured, assistantEnabled: Reflect.get(env,'PARENT_ASSISTANT_ENABLED')==='true', connected: !!row?.phone && !!row.consent_at, phone: row?.phone ? `••••${row.phone.slice(-4)}` : null };
 }
 export async function createParentWhatsappLink(userId: string, env: ParentWhatsappEnvironment, consent: unknown) {
   if (consent !== true) throw new TuckError(400, 'Confirm that you want to link WhatsApp for this preview.');
@@ -22,5 +22,9 @@ export async function createParentWhatsappLink(userId: string, env: ParentWhatsa
 }
 export async function disconnectParentWhatsapp(userId: string, env: ParentWhatsappEnvironment) {
   if (!['staging', 'production'].includes(env.ENVIRONMENT)) throw new TuckError(404, 'Connection not available.');
-  await env.DB.prepare('UPDATE parent_whatsapp_links SET phone=NULL,consent_at=NULL,token_hash=NULL,token_expires_at=NULL WHERE user_id=?').bind(userId).run();
+  await env.DB.batch([
+    env.DB.prepare('UPDATE parent_preferences SET reminder_consent_at=NULL WHERE user_id=?').bind(userId),
+    env.DB.prepare("UPDATE parent_reminders SET status='canceled' WHERE user_id=? AND status='pending'").bind(userId),
+    env.DB.prepare('UPDATE parent_whatsapp_links SET phone=NULL,consent_at=NULL,token_hash=NULL,token_expires_at=NULL WHERE user_id=?').bind(userId),
+  ]);
 }

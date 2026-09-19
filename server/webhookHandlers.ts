@@ -1,5 +1,5 @@
 // Stripe webhook handlers for NYC School Ratings
-import { getUncachableStripeClient } from './stripeClient';
+import { getUncachableStripeClient, getStripeMode } from './stripeClient';
 import { storage } from './storage';
 import { sendAdminNewCustomerNotification, sendWelcomeEmail, sendMagicLinkEmail } from './emailService';
 import { invalidateUserCaches } from './cache';
@@ -39,6 +39,7 @@ export class WebhookHandlers {
 
     const stripe = await getUncachableStripeClient();
     const event = await stripe.webhooks.constructEventAsync(payload, signature, webhookSecret);
+    if(event.livemode!==((await getStripeMode())==='live'))throw new Error('Stripe event mode does not match this environment');
 
     try {
       logWebhook('INFO', `Parsed event for custom handling`, { 

@@ -3,6 +3,11 @@ import { ZodError } from "zod";
 import { addChild, addEvent, createHousehold, getOverview, removeChild, removeEvent, TuckError } from "./store";
 import { createParentWhatsappLink, disconnectParentWhatsapp, parentWhatsappStatus } from '../parent/account';
 import type { ParentWhatsappEnvironment } from '../parent/whatsapp';
+import { assistantOverview, savePreferences, createReminder, cancelReminder, localParts, preferences } from '../parent/service';
+import { answerParent, confirmDraft, rejectDraft, suggestCalendarEvent } from '../parent/assistant';
+import { calendarSuggestions, CALENDAR_SCOPE } from '../parent/calendar';
+import { familyCheckout, familyCheckoutAvailable } from '../parent/checkout';
+import { getUncachableStripeClient } from '../stripeClient';
 
 function userId(req: Request): string {
   if (!req.session?.userId) throw new TuckError(401, "Sign in to use Tuck.");
@@ -22,6 +27,20 @@ export function tuckRouter(authenticate: RequestHandler, appOrigin: () => string
     next();
   });
   router.use(authenticate);
+  router.post('/family-checkout', async (req,res) => {
+    const env=await parentEnvironment();
+    if(!familyCheckoutAvailable(env))throw new TuckError(503,'Monthly checkout is not available yet.');
+    res.json(await familyCheckout(userId(req),env,await getUncachableStripeClient()));
+  });
+  router.get('/assistant', async (req,res) => res.json(await assistantOverview(userId(req),await parentEnvironment())));
+  router.put('/assistant/preferences', async (req,res) => res.json(await savePreferences(userId(req),await parentEnvironment(),req.body)));
+  router.post('/assistant/message', async (req,res) => res.json(await answerParent(userId(req),await parentEnvironment(),req.body)));
+  router.post('/assistant/drafts/:id/confirm', async (req,res) => res.json(await confirmDraft(userId(req),await parentEnvironment(),req.params.id)));
+  router.delete('/assistant/drafts/:id', async (req,res) => res.json(await rejectDraft(userId(req),await parentEnvironment(),req.params.id)));
+  router.post('/assistant/reminders', async (req,res) => res.status(201).json(await createReminder(userId(req),await parentEnvironment(),req.body)));
+  router.delete('/assistant/reminders/:id', async (req,res) => {await cancelReminder(userId(req),await parentEnvironment(),req.params.id);res.sendStatus(204);});
+  router.get('/assistant/calendar', async (req,res) => {const env=await parentEnvironment(),p=await preferences(userId(req),env);res.json({scope:CALENDAR_SCOPE,events:calendarSuggestions(localParts(Date.now(),p.timezone).date)});});
+  router.post('/assistant/calendar/:id', async (req,res) => res.json(await suggestCalendarEvent(userId(req),await parentEnvironment(),req.params.id,req.body?.confirmedScope===true)));
   router.get('/whatsapp', async (req, res) => res.json(await parentWhatsappStatus(userId(req), await parentEnvironment())));
   router.post('/whatsapp/link', async (req, res) => res.json(await createParentWhatsappLink(userId(req), await parentEnvironment(), req.body?.consent)));
   router.post('/whatsapp/disconnect', async (req, res) => { await disconnectParentWhatsapp(userId(req), await parentEnvironment()); res.sendStatus(204); });

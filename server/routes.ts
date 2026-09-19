@@ -199,7 +199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
   app.use('/api/tuck', tuckRouter(isAuthenticated, getAppUrl));
   app.get('/tuck', (_req, res) => res.redirect(301, '/family'));
-  app.get('/api/plans', (_req, res) => res.json({ researchPass: RESEARCH_PASS, familyPremium: { ...FAMILY_PREMIUM, available: PARENT_ASSISTANT_AVAILABLE } }));
+  app.get('/api/plans', async (_req, res) => {
+    const {familyCheckoutAvailable}=await import('./parent/checkout');
+    res.set('Cache-Control','no-store').json({ researchPass: RESEARCH_PASS, familyPremium: { ...FAMILY_PREMIUM, available: familyCheckoutAvailable(process.env) } });
+  });
   
   // OAuth 2.1 endpoints for ChatGPT
   setupOAuth(app);

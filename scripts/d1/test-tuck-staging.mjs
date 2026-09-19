@@ -33,6 +33,7 @@ try {
   for (const account of identities) {
     const registered = await call('/api/register', account, 'POST', { email: account.email, password: account.password, firstName: 'Synthetic Tuck check' });
     assert.equal(registered.response.status, 201);
+    account.userId=registered.value.id;
     assert.ok(account.cookie);
     const access = (await call('/api/subscription', account)).value.access;
     assert.equal(access.research, false);
@@ -55,6 +56,48 @@ try {
     assert.equal((await call('/api/tuck/whatsapp/disconnect', account, 'POST')).response.status, 204);
   }
   const [a, b] = identities;
+  const assistant=await call('/api/tuck/assistant',a);
+  assert.equal(assistant.value.enabled,true);
+  assert.equal(assistant.value.entitled,true,'Separate staging-only preview access');
+  assert.equal(assistant.value.deliveryEnabled,false,'No outbound reminders during initial rehearsal');
+  assert.equal((await call('/api/tuck/family-checkout',a,'POST')).response.status,503);
+  assert.equal((await call('/api/tuck/assistant/message',a,'POST',{message:'Tell me about 02M475'})).response.status,409,'AI requires consent');
+  assert.equal((await call('/api/tuck/assistant/preferences',a,'PUT',{timezone:'America/New_York',quietStart:21,quietEnd:8,aiConsent:true,reminderConsent:false})).response.status,200);
+  const started=Date.now();
+  const answer=await call('/api/tuck/assistant/message',a,'POST',{message:'Tell me about school DBN 02M475'});
+  assert.equal(answer.response.status,200);
+  assert.match(answer.value.message,/02M475/,'Real Workers AI intent resolves to canonical school');
+  assert.ok(answer.value.sources?.[0]?.url.includes('/school/02m475-'));
+  console.log(`Real Workers AI school request completed in ${Date.now()-started}ms; canonical source link verified.`);
+  assert.match(a.userId,/^[a-f0-9-]{36}$/i);
+  // Reserved fictional number, synthetic account, outbound flag verified false.
+  execFileSync(process.execPath,['node_modules/wrangler/bin/wrangler.js','d1','execute','nyc-schools-ratings-d1-staging','--remote','--config','wrangler.d1-staging.jsonc','--command',`UPDATE parent_whatsapp_links SET phone='whatsapp:+12025550199',consent_at=1 WHERE user_id='${a.userId}'`,'--json'],{encoding:'utf8'});
+  assert.equal((await call('/api/tuck/assistant/preferences',a,'PUT',{timezone:'America/New_York',quietStart:21,quietEnd:8,aiConsent:true,reminderConsent:true})).response.status,200);
+  const natural=await call('/api/tuck/assistant/message',a,'POST',{message:'Add a school visit on January 19, 2027. Remind me on January 18, 2027 at 09:00.'});
+  assert.equal(natural.response.status,200);
+  assert.ok(natural.value.draftId,`Natural-language event produces a draft, not an immediate write: ${JSON.stringify(natural.value)}`);
+  assert.equal((await call('/api/tuck/overview',a)).value.events.length,0);
+  const naturalSaved=await call(`/api/tuck/assistant/drafts/${natural.value.draftId}/confirm`,a,'POST');
+  assert.equal(naturalSaved.response.status,200);
+  const scheduled=(await call('/api/tuck/assistant',a)).value.reminders;
+  assert.equal(scheduled.length,1);
+  assert.equal(scheduled[0].due_at,Date.parse('2027-01-18T14:00:00Z'));
+  assert.equal((await call('/api/tuck/assistant',b)).value.reminders.length,0);
+  assert.equal((await call('/api/tuck/whatsapp/disconnect',a,'POST')).response.status,204);
+  assert.equal((await call('/api/tuck/assistant',a)).value.reminders[0].status,'canceled');
+  assert.equal((await call(`/api/tuck/events/${naturalSaved.value.eventId}`,a,'DELETE')).response.status,204);
+  console.log('Real AI event: explicit draft confirmation, correct timezone, private reminder, disconnect cancellation verified; no WhatsApp message sent.');
+  const suggestions=await call('/api/tuck/assistant/calendar',a);
+  assert.ok(suggestions.value.events.length>0);
+  assert.match(suggestions.value.scope,/not a 2-K/);
+  const suggestion=suggestions.value.events[0];
+  const draft=await call(`/api/tuck/assistant/calendar/${suggestion.id}`,a,'POST',{confirmedScope:true});
+  assert.equal(draft.response.status,200);
+  assert.equal((await call(`/api/tuck/assistant/drafts/${draft.value.draftId}/confirm`,b,'POST')).response.status,404);
+  const confirmed=await call(`/api/tuck/assistant/drafts/${draft.value.draftId}/confirm`,a,'POST');
+  assert.equal(confirmed.response.status,200);
+  assert.equal((await call(`/api/tuck/assistant/drafts/${draft.value.draftId}/confirm`,a,'POST')).value.message,'Already saved.');
+  assert.equal((await call(`/api/tuck/events/${confirmed.value.eventId}`,a,'DELETE')).response.status,204);
   const child = await call('/api/tuck/children', a, 'POST', { nickname: 'Synthetic child', schoolDbn: '02M475' });
   assert.equal(child.response.status, 201);
   const event = await call('/api/tuck/events', a, 'POST', { title: 'Synthetic school visit', date: '2027-03-14', childId: child.value.id });

@@ -2,6 +2,7 @@ import application from './index-worker';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { startSafetyRefresh } from './services/safetyQueue';
 import { parentWhatsappWebhook, PARENT_WEBHOOK_PATH } from './parent/whatsapp';
+import {familyCheckoutAvailable} from './parent/checkout';
 
 // Private RPC only: this entrypoint has no HTTP route and can only be reached
 // through an explicitly configured same-account service binding.
@@ -35,7 +36,11 @@ export default {
       catch { console.error('Parent WhatsApp staging webhook failed'); return new Response('Webhook unavailable', { status: 503 }); }
     }
     if (path === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n');
-    if (/^\/api\/(admin|cron|stripe|webhooks|newsletter|contact|checkout|customer-portal)(\/|$)/.test(path)) {
+    // Allow only the exact signed test webhook and authenticated portal when a
+    // separate test-mode rehearsal is explicitly enabled. Never allow Pass checkout.
+    const testBillingRoute=familyCheckoutAvailable(env)&&!!Reflect.get(env,'STRIPE_WEBHOOK_SECRET')&&
+      (path==='/api/stripe/webhook'||path==='/api/customer-portal');
+    if (!testBillingRoute&&/^\/api\/(admin|cron|stripe|webhooks|newsletter|contact|checkout|customer-portal)(\/|$)/.test(path)) {
       return Response.json({message:'External delivery and administrative jobs are disabled in this preview.'},{status:403});
     }
     const response = await application.fetch(request, env, ctx);

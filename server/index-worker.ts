@@ -2,6 +2,7 @@ import { httpServerHandler } from "cloudflare:node";
 import { externalRel, isExternalWebLink } from '../shared/external-links';
 import {maintenanceResponse} from './maintenanceResponse';
 import {parentWhatsappWebhook, PARENT_WEBHOOK_PATH} from './parent/whatsapp';
+import {processReminders, pruneParentData, reminderStatusWebhook, PARENT_STATUS_PATH} from './parent/delivery';
 
 type WorkerHandler = ReturnType<typeof httpServerHandler>;
 
@@ -26,6 +27,15 @@ function initializeProcessEnvironment(workerEnv: Env): void {
     STRIPE_SEASON_PASS_PRICE_ID: workerEnv.STRIPE_SEASON_PASS_PRICE_ID,
     STRIPE_WEBHOOK_SECRET: runtimeEnv.STRIPE_WEBHOOK_SECRET,
     STRIPE_FAMILY_PREMIUM_PRICE_ID: runtimeEnv.STRIPE_FAMILY_PREMIUM_PRICE_ID,
+    PARENT_ASSISTANT_ENABLED: runtimeEnv.PARENT_ASSISTANT_ENABLED,
+    FAMILY_CHECKOUT_ENABLED: runtimeEnv.FAMILY_CHECKOUT_ENABLED,
+    PARENT_LAUNCH_VERIFIED: runtimeEnv.PARENT_LAUNCH_VERIFIED,
+    PARENT_REMINDERS_ENABLED: runtimeEnv.PARENT_REMINDERS_ENABLED,
+    PARENT_REMINDER_CONTENT_SID: runtimeEnv.PARENT_REMINDER_CONTENT_SID,
+    PARENT_WHATSAPP_ENABLED: runtimeEnv.PARENT_WHATSAPP_ENABLED,
+    TWILIO_AUTH_TOKEN: runtimeEnv.TWILIO_AUTH_TOKEN,
+    TWILIO_ACCOUNT_SID: runtimeEnv.TWILIO_ACCOUNT_SID,
+    STAGING_EXPIRES_AT: runtimeEnv.STAGING_EXPIRES_AT,
     INDEXNOW_KEY: runtimeEnv.INDEXNOW_KEY,
   };
 
@@ -83,10 +93,15 @@ function shouldServeAsset(pathname: string): boolean {
 
 async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
   initializeProcessEnvironment(workerEnv);
+  if (cron === '*/5 * * * *') {
+    await processReminders(workerEnv);
+    return;
+  }
   const { withDatabaseConnection } = await import("./db");
 
   await withDatabaseConnection(async () => {
     if (cron === "*/15 * * * *") {
+      await pruneParentData(workerEnv);
       const [{ flushApiLogsNow }, { pruneApiObservabilityData, runAbuseDetection }] = await Promise.all([
         import("./apiObservability"),
         import("./services/apiAbuseDetector"),
@@ -112,7 +127,11 @@ async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
 export default {
   async fetch(request, workerEnv, ctx): Promise<Response> {
     if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true')return maintenanceResponse(request);
-    const pathname = new URL(request.url).pathname;
+      const pathname = new URL(request.url).pathname;
+      if (pathname === PARENT_STATUS_PATH) {
+        try { return await reminderStatusWebhook(request,workerEnv); }
+        catch { return new Response('Callback temporarily unavailable',{status:503}); }
+      }
     if (pathname === PARENT_WEBHOOK_PATH) {
       try { return await parentWhatsappWebhook(request, workerEnv); }
       catch { return new Response('WhatsApp temporarily unavailable', {status: 503, headers: {'Cache-Control': 'no-store'}}); }

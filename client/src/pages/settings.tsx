@@ -483,7 +483,7 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">
                   {subscriptionData.subscription.cancel_at_period_end 
                     ? "Your subscription will end at the end of the current billing period. You can reactivate anytime before then."
-                    : "Your school-research tools remain available. A Research Pass does not automatically renew. WhatsApp Parent Assistant features are not live yet."}
+                    : "Your school-research tools remain available. A Research Pass does not automatically renew. Check My Family for Parent Assistant availability and preferences."}
                 </p>
 
                 <Button 

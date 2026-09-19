@@ -20,7 +20,14 @@ export default function Privacy() {
           <h1 className="text-2xl font-bold">Privacy Policy</h1>
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <p className="text-sm text-muted-foreground mb-6">Last Updated: December 18, 2025</p>
+          <p className="text-sm text-muted-foreground mb-6">Last Updated: September 19, 2026</p>
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">My Family and Parent Assistant</h2>
+            <p>My Family stores the nicknames, school links and calendar dates you choose to enter in Cloudflare D1. Use nicknames and avoid sensitive child, medical or financial details. These records are private to your account; family sharing is not enabled.</p>
+            <p>Linking WhatsApp stores your phone number and connection consent. Twilio and WhatsApp/Meta process messages to deliver the service. Scheduled notifications link to your calendar rather than include event details. Replies you request can contain your calendar dates. Disconnect or send STOP to revoke the connection and cancel pending reminders; a message already handed to the provider may still arrive.</p>
+            <p>With separate AI consent, your assistant request, today's date and your timezone are sent to Cloudflare Workers AI for interpretation. Your saved family records are not sent to that model. You review and confirm calendar changes. We do not store a full Parent Assistant conversation transcript in our database; provider retention is governed by their policies.</p>
+            <p>Drafts expire after ten minutes and are removed by scheduled maintenance after a one-day retry window. Delivery records are retained for up to 90 days, message receipt identifiers for seven days, and daily usage counts for 35 days. Calendar records remain until removed or the account is deleted. Test environments may retain records until their next cleanup.</p>
+          </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
@@ -99,6 +106,7 @@ export default function Privacy() {
               <li><strong>Google Maps APIs:</strong> For geocoding and transit time calculations</li>
               <li><strong>Cloudflare:</strong> For hosting, security, and AI-powered chat and school recommendations</li>
               <li><strong>Stripe:</strong> For payment processing (subscription and one-time purchases)</li>
+              <li><strong>Twilio and WhatsApp/Meta:</strong> For opted-in WhatsApp connections, replies and reminders</li>
             </ul>
             <p>
               These services have their own privacy policies that govern their use of your data.

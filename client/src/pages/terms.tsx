@@ -20,7 +20,13 @@ export default function Terms() {
           <h1 className="text-2xl font-bold">Terms of Service</h1>
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <p className="text-sm text-muted-foreground mb-6">Last Updated: December 18, 2025</p>
+          <p className="text-sm text-muted-foreground mb-6">Last Updated: September 19, 2026</p>
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Family Premium and reminders</h2>
+            <p>When available for purchase, Family Premium costs $19.99 per month, charged at signup and renewed monthly until canceled, with no free trial. Cancel through account settings and Stripe's customer portal. Access continues through the paid billing period. It includes school research while subscribed, up to 30 assistant requests per day and 100 WhatsApp reminders per UTC calendar month. Limits are not a promise of successful delivery.</p>
+            <p>The separate $29 School Research Pass provides six months of research with no automatic renewal. Family Premium does not pause, replace or extend that Pass; an unexpired Pass remains valid when monthly access ends.</p>
+            <p>WhatsApp reminders require a linked phone and separate opt-in. AI assistance requires separate consent. Review every suggested date before confirming. Official calendar suggestions are attributed snapshots, not a live school-announcement feed, and may not apply to your school. AI and notifications can be wrong, late or unavailable: verify admissions dates with official sources and keep a backup for critical deadlines. STOP disconnects messaging but does not cancel billing; cancel the subscription in account settings.</p>
+          </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Agreement to Terms</h2>

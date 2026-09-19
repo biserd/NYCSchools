@@ -1004,6 +1004,35 @@ export const apiKeyRateState = sqliteTable("api_key_rate_state", {
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
 });
 
+export const parentCheckoutAttempts = sqliteTable('parent_checkout_attempts', {
+  userId: text('user_id').primaryKey().references(() => users.id, {onDelete:'cascade'}),
+  attemptId: text('attempt_id').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+});
+
+export const parentPreferences = sqliteTable('parent_preferences', {
+  userId:text('user_id').primaryKey().references(()=>users.id,{onDelete:'cascade'}),
+  timezone:text('timezone').notNull().default('America/New_York'),
+  quietStart:integer('quiet_start').notNull().default(21), quietEnd:integer('quiet_end').notNull().default(8),
+  reminderConsentAt:integer('reminder_consent_at'), aiConsentAt:integer('ai_consent_at'),
+});
+export const parentReminders = sqliteTable('parent_reminders', {
+  id:text('id').primaryKey(), userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+  eventId:text('event_id').notNull().references(()=>tuckEvents.id,{onDelete:'cascade'}),
+  dueAt:integer('due_at').notNull(), timezone:text('timezone').notNull(),
+  status:text('status').notNull().default('pending'), attempts:integer('attempts').notNull().default(0),
+  nextAttemptAt:integer('next_attempt_at').notNull(), claimAt:integer('claim_at'),
+  messageSid:text('message_sid').unique(), failureCode:text('failure_code'),
+  createdAt:integer('created_at').notNull(),
+},t=>[index('parent_reminders_due_idx').on(t.status,t.nextAttemptAt),uniqueIndex('parent_reminders_event_due_key').on(t.userId,t.eventId,t.dueAt)]);
+export const parentDrafts = sqliteTable('parent_drafts', {
+  id:text('id').primaryKey(), userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+  payload:text('payload').notNull(), expiresAt:integer('expires_at').notNull(), confirmedAt:integer('confirmed_at'),
+});
+export const parentUsage = sqliteTable('parent_usage', {
+  userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}), day:text('day').notNull(), count:integer('count').notNull().default(0),
+},t=>[primaryKey({columns:[t.userId,t.day]})]);
+
 export type ApiKeyRateState = typeof apiKeyRateState.$inferSelect;
 export type InsertApiKeyRateState = typeof apiKeyRateState.$inferInsert;
 

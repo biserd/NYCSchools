@@ -1,5 +1,4 @@
-// Dedicated sender connection preview: no AI,
-// proactive sends, billing changes or production entitlement bypass.
+// Signed ingress shared by the connection preview and gated Parent Assistant.
 export const PARENT_WEBHOOK_PATH = '/api/parent/whatsapp/inbound';
 export type ParentWhatsappEnvironment = Pick<Env, 'DB' | 'ENVIRONMENT' | 'APP_URL'> & {
   STAGING_EXPIRES_AT?: string;
@@ -28,7 +27,7 @@ function xml(text = '') {
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response>${text ? `<Message>${escaped}</Message>` : ''}</Response>`,
     { headers: { 'Content-Type': 'text/xml; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
 }
-async function readBoundedBody(request: Request): Promise<string | null> {
+export async function readBoundedBody(request: Request): Promise<string | null> {
   if (Number(request.headers.get('content-length')) > 16_384) return null;
   const reader = request.body?.getReader();
   if (!reader) return '';
@@ -83,6 +82,7 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
   // a single-use link created in an authenticated NYC School Ratings session.
   const text = (form.get('Body') || '').trim();
   const command = text.toUpperCase();
+  const assistantOn=Reflect.get(env,'PARENT_ASSISTANT_ENABLED')==='true';
   const isStop = form.get('OptOutType')?.toUpperCase() === 'STOP' || stopWords.has(command);
 
   // Side effects (link/disconnect) are idempotent. Receipts suppress duplicate
@@ -90,6 +90,8 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
   if (await env.DB.prepare('SELECT message_sid FROM parent_whatsapp_receipts WHERE message_sid=?').bind(sid).first()) return xml();
   if (isStop) {
     await env.DB.batch([
+      env.DB.prepare('UPDATE parent_preferences SET reminder_consent_at=NULL WHERE user_id IN (SELECT user_id FROM parent_whatsapp_links WHERE phone=?)').bind(from),
+      env.DB.prepare("UPDATE parent_reminders SET status='canceled' WHERE status='pending' AND user_id IN (SELECT user_id FROM parent_whatsapp_links WHERE phone=?)").bind(from),
       env.DB.prepare('UPDATE parent_whatsapp_links SET phone=NULL, consent_at=NULL, token_hash=NULL, token_expires_at=NULL WHERE phone=?').bind(from),
       env.DB.prepare('INSERT OR IGNORE INTO parent_whatsapp_receipts(message_sid,received_at) VALUES (?,?)').bind(sid, now),
     ]);
@@ -100,8 +102,8 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
   // Atomic claim + daily cap. Stop is never rate-limited. A lost response may
   // require the tester to send a new message; never auto-resend an uncertain reply.
   const receipt = await env.DB.prepare(`INSERT INTO parent_whatsapp_receipts(message_sid,received_at)
-    SELECT ?,? WHERE (SELECT count(*) FROM parent_whatsapp_receipts WHERE received_at>=?) < 50
-    ON CONFLICT(message_sid) DO NOTHING RETURNING message_sid`).bind(sid, now, now - 86_400_000).first();
+    SELECT ?,? WHERE (SELECT count(*) FROM parent_whatsapp_receipts WHERE received_at>=?) < ?
+    ON CONFLICT(message_sid) DO NOTHING RETURNING message_sid`).bind(sid, now, now - 86_400_000, Reflect.get(env,'PARENT_ASSISTANT_ENABLED')==='true'?10000:50).first();
   if (!receipt) return xml();
   if (form.get('OptOutType')?.toUpperCase() === 'START' || ['START', 'UNSTOP'].includes(command)) {
     return xml(form.get('OptOutType') ? '' : `To reconnect, sign in and create a new link at ${env.APP_URL}/family. START does not reconnect your account.`);
@@ -112,12 +114,25 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
     const linked = await env.DB.prepare(`UPDATE parent_whatsapp_links SET phone=?, consent_at=?, last_inbound_at=?, token_hash=NULL, token_expires_at=NULL
       WHERE token_hash=? AND token_expires_at>? AND NOT EXISTS (SELECT 1 FROM parent_whatsapp_links WHERE phone=?) RETURNING user_id`)
       .bind(from, now, now, await hashLinkToken(token.toLowerCase()), now, from).first();
-    return xml(linked ? 'Connected to NYC School Ratings preview. Send EVENTS for your family dates, STATUS to check the connection, or STOP to disconnect. Automatic reminders and AI are not enabled yet.' :
+    return xml(linked ? (assistantOn?`Connected to NYC School Ratings. Send EVENTS for your dates or HELP for commands. Configure AI and reminder consent in ${env.APP_URL}/family. Linking alone does not enable reminders. STOP disconnects.`:'Connected to NYC School Ratings preview. Send EVENTS for your family dates, STATUS to check the connection, or STOP to disconnect. Automatic reminders and AI are not enabled yet.') :
       'Link expired, already used, or this phone is already linked. Check My Family, disconnect there if needed, and create a new link.');
   }
   const linked = await env.DB.prepare('SELECT user_id FROM parent_whatsapp_links WHERE phone=? AND consent_at IS NOT NULL').bind(from).first<{ user_id: string }>();
-  if (!linked) return xml(`NYC School Ratings preview. Sign in at ${env.APP_URL}/family to link your account. No automated reminders are enabled.`);
+  if (!linked) return xml(`NYC School Ratings. Sign in at ${env.APP_URL}/family to link your account. No automated reminders are enabled for this phone.`);
   await env.DB.prepare('UPDATE parent_whatsapp_links SET last_inbound_at=? WHERE user_id=? AND phone=?').bind(now, linked.user_id, from).run();
+  if (Reflect.get(env,'PARENT_ASSISTANT_ENABLED')==='true' && !['EVENTS','STATUS','HELP'].includes(command)) {
+    const {answerParent,confirmDraft,rejectDraft}=await import('./assistant');
+    const confirmation=/^(CONFIRM|DISCARD) ([a-f0-9-]{36})$/i.exec(text);
+    try {
+      const result=confirmation ? await (confirmation[1].toUpperCase()==='CONFIRM'?confirmDraft:rejectDraft)(linked.user_id,env,confirmation[2]) : await answerParent(linked.user_id,env,{message:text});
+      const draft='draftId' in result && 'summary' in result ? `\n${result.summary}\nReply CONFIRM ${result.draftId} to save, or DISCARD ${result.draftId}. Expires in 10 minutes.` : '';
+      const reply=result.message+draft;
+      return xml(reply.length>1500?`${reply.slice(0,1380)}\nMore details: ${env.APP_URL}/family`:reply);
+    } catch(error) {
+      const {TuckError}=await import('../tuck/store');
+      return xml(error instanceof TuckError?error.message:'Assistant temporarily unavailable. Check My Family on the website before retrying to see whether your action was saved.');
+    }
+  }
   if (command === 'EVENTS') {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now));
     const events = await env.DB.prepare(`SELECT e.title,e.date FROM tuck_events e JOIN tuck_households h ON h.id=e.household_id
@@ -126,6 +141,7 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
       .bind(linked.user_id, from, today).all<{ title: string; date: string }>();
     return xml(events.results.length ? `Your next family dates (entered by you, not verified school announcements):\n${events.results.map(e => `${e.date}: ${e.title}`).join('\n')}` : 'No upcoming family dates. Add them in My Family. These are your manually entered dates, not an imported school calendar.');
   }
+  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. AI and reminders depend on your subscription and saved preferences. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With Family Premium and AI consent, ask about a school or give an event date and reminder date/time. Review the draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
   return xml(command === 'STATUS' ? 'Connected to NYC School Ratings preview. Automatic reminders and AI are not enabled. Send STOP to disconnect.' :
     'NYC School Ratings preview commands: EVENTS (your next 5 family dates), STATUS, HELP, STOP. This is a connection test, not the full Parent Assistant yet.');
 }

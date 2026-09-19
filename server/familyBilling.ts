@@ -8,7 +8,7 @@ export async function accountAccess(user: User) {
   const rows = await db.select().from(familySubscriptions).where(eq(familySubscriptions.userId, user.id)).orderBy(desc(familySubscriptions.currentPeriodEnd));
   const now = new Date();
   const family = rows.find(row => ['active', 'trialing'].includes(row.status) && row.currentPeriodEnd > now) ?? rows[0] ?? null;
-  return resolveAccess(user, family, now);
+  return resolveAccess(user, family, now, process.env.PARENT_ASSISTANT_ENABLED === 'true');
 }
 
 export function matchesFamilyPrice(subscription: Stripe.Subscription, priceId: string | undefined) {
