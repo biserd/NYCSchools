@@ -1033,6 +1033,31 @@ export const parentUsage = sqliteTable('parent_usage', {
   userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}), day:text('day').notNull(), count:integer('count').notNull().default(0),
 },t=>[primaryKey({columns:[t.userId,t.day]})]);
 
+export const nycNeighborhoods = sqliteTable('nyc_neighborhoods', {
+  ntaCode:text('nta_code').primaryKey(), name:text('name').notNull(), borough:text('borough').notNull(),
+  sourceUrl:text('source_url').notNull(), importedAt:integer('imported_at').notNull(),
+});
+export const nycNeighborhoodAliases = sqliteTable('nyc_neighborhood_aliases', {
+  alias:text('alias').notNull(), ntaCode:text('nta_code').notNull().references(()=>nycNeighborhoods.ntaCode,{onDelete:'cascade'}),
+},t=>[primaryKey({columns:[t.alias,t.ntaCode]}),index('nyc_neighborhood_alias_idx').on(t.alias)]);
+export const schoolNeighborhoods = sqliteTable('school_neighborhoods', {
+  schoolDbn:text('school_dbn').primaryKey().references(()=>schools.dbn,{onDelete:'cascade'}),
+  ntaCode:text('nta_code').notNull().references(()=>nycNeighborhoods.ntaCode,{onDelete:'cascade'}), matchedAt:integer('matched_at').notNull(),
+},t=>[index('school_neighborhood_nta_idx').on(t.ntaCode)]);
+export const parentAgentContexts = sqliteTable('parent_agent_contexts', {
+  userId:text('user_id').primaryKey().references(()=>users.id,{onDelete:'cascade'}), lastAction:text('last_action').notNull(),
+  locationKind:text('location_kind'), locationValue:text('location_value'), locationLabel:text('location_label'), gradeLevel:text('grade_level'),
+  programs:text('programs',{mode:'json'}).$type<string[]>().notNull().default(sql`'[]'`),
+  resultDbns:text('result_dbns',{mode:'json'}).$type<string[]>().notNull().default(sql`'[]'`),
+  expiresAt:integer('expires_at').notNull(), updatedAt:integer('updated_at').notNull(),
+},t=>[index('parent_agent_context_expiry_idx').on(t.expiresAt)]);
+export const parentAgentRuns = sqliteTable('parent_agent_runs', {
+  id:text('id').primaryKey(), userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}), createdAt:integer('created_at').notNull(),
+  model:text('model').notNull(), action:text('action').notNull(), tool:text('tool').notNull(), outcome:text('outcome').notNull(), durationMs:integer('duration_ms').notNull(),
+  locationKind:text('location_kind'), locationLabel:text('location_label'), gradeLevel:text('grade_level'), resultCount:integer('result_count').notNull(),
+  usedContext:integer('used_context',{mode:'boolean'}).notNull().default(false),
+},t=>[index('parent_agent_runs_created_idx').on(t.createdAt),index('parent_agent_runs_action_idx').on(t.action,t.createdAt)]);
+
 export type ApiKeyRateState = typeof apiKeyRateState.$inferSelect;
 export type InsertApiKeyRateState = typeof apiKeyRateState.$inferInsert;
 

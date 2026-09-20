@@ -5,7 +5,8 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {getPlatformProxy} from 'wrangler';
 import {localInstant,quietNow,savePreferences,preferences,hasAssistantAccess,createReminder,cancelReminder,assistantOverview,type AssistantEnvironment} from '../../server/parent/service';
-import {answerParent,confirmDraft,stageDraft,suggestCalendarEvent} from '../../server/parent/assistant';
+import {answerParent,confirmDraft,stageDraft,suggestCalendarEvent,parentAgentModel} from '../../server/parent/assistant';
+import {PARENT_AGENT_COMPLEX_MODEL,PARENT_AGENT_FAST_MODEL,type AgentPlan} from '../../shared/parent-agent';
 import {processReminders,reminderStatusWebhook,PARENT_STATUS_PATH} from '../../server/parent/delivery';
 import {disconnectParentWhatsapp} from '../../server/parent/account';
 import {familyCheckout,familyCheckoutAvailable} from '../../server/parent/checkout';
@@ -16,6 +17,7 @@ try {
   const DB=platform.env.DB;
   for(const f of (await readdir('migrations-d1')).filter(f=>f.endsWith('.sql')).sort())for(const s of (await readFile(`migrations-d1/${f}`,'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean))await DB.prepare(s).run();
   const env:AssistantEnvironment={DB,ENVIRONMENT:'staging',APP_URL:'https://stage.example.invalid',STAGING_EXPIRES_AT:new Date(Date.now()+86400000).toISOString(),PARENT_ASSISTANT_ENABLED:'true',PARENT_WHATSAPP_ENABLED:'true',TWILIO_ACCOUNT_SID:`AC${'a'.repeat(32)}`,TWILIO_AUTH_TOKEN:'synthetic',TWILIO_WHATSAPP_FROM:'whatsapp:+12125550101',PARENT_REMINDERS_ENABLED:'true',PARENT_REMINDER_CONTENT_SID:`HX${'a'.repeat(32)}`};
+  const plan=(overrides:Partial<AgentPlan>):AgentPlan=>({action:'school_search',schoolQuery:null,schoolQueries:[],location:null,gradeLevel:null,programs:[],sort:null,title:null,date:null,reminderDate:null,reminderTime:null,clarification:null,...overrides});
   await DB.prepare("INSERT INTO users(id,email,password,subscription_status,subscription_plan,subscription_expires_at) VALUES ('a','a@example.invalid','test','active','season_pass',?),('b','b@example.invalid','test','free','free',NULL),('c','c@example.invalid','test','active','premium',NULL)").bind(Date.now()+86400000).run();
   await DB.prepare("INSERT INTO tuck_households(id,owner_user_id) VALUES ('ha','a'),('hb','b')").run();
   await DB.prepare("INSERT INTO parent_whatsapp_links(user_id,phone,consent_at,token_issued_at) VALUES ('a','whatsapp:+12125550102',1,1)").run();
@@ -68,6 +70,30 @@ try {
   assert.ok(!ues.message.includes('Other District School'),'Neighborhood results cannot leak unrelated high-scoring schools');
   const fullNeighborhood=await answerParent('a',env,{message:'I need schools on the upper east side'},async()=>({intent:'schools',schoolQuery:'upper east side'}));
   assert.match(fullNeighborhood.message,/Upper East Side/);
+  await DB.prepare("INSERT INTO schools(dbn,name,district,address,grade_band,zip_code,ela_proficiency,math_proficiency,climate_score,progress_score,has_2k,has_3k,has_prek) VALUES ('03M100','UWS Elementary',3,'Test','K-5','10024',88,86,84,82,0,0,0),('03M101','UWS Middle Only',3,'Test','6-8','10024',99,99,99,99,0,0,0),('02M100','UES Early Continuity',2,'Test','PK-5','10028',80,80,80,80,1,1,1),('02M101','UES Partial Early',2,'Test','PK-5','10028',95,95,95,95,1,1,0),('30Q100','Astoria Elementary',30,'Test','K-5','11103',85,83,81,79,0,0,0)").run();
+  await DB.batch([
+    DB.prepare("INSERT INTO nyc_neighborhoods(nta_code,name,borough,source_url,imported_at) VALUES ('QN0101','Astoria (Central)','Queens','official-test',1)"),
+    DB.prepare("INSERT INTO nyc_neighborhood_aliases(alias,nta_code) VALUES ('astoria','QN0101')"),
+    DB.prepare("INSERT INTO school_neighborhoods(school_dbn,nta_code,matched_at) VALUES ('30Q100','QN0101',1)"),
+  ]);
+  const uws=await answerParent('a',env,{message:'What are the best elementary schools on the UWS?'},async()=>plan({location:{kind:'neighborhood',value:'UWS'},gradeLevel:'elementary',sort:'overall'}));
+  assert.match(uws.message,/Upper West Side/);assert.match(uws.message,/UWS Elementary/);assert.ok(!uws.message.includes('UWS Middle Only'),'Elementary filters cannot include a middle-only school');assert.ok(!uws.message.includes('District Two Leader'),'UWS cannot leak UES/District 2 schools');
+  const astoria=await answerParent('a',env,{message:'Show elementary schools in Astoria'},async()=>plan({location:{kind:'neighborhood',value:'Astoria'},gradeLevel:'elementary'}));
+  assert.match(astoria.message,/Astoria/);assert.match(astoria.message,/Astoria Elementary/);
+  const continuity=await answerParent('a',env,{message:'Which UES schools offer 2K, 3-K and pre-K?'},async()=>plan({location:{kind:'neighborhood',value:'UES'}}));
+  assert.match(continuity.message,/UES Early Continuity/);assert.ok(!continuity.message.includes('UES Partial Early'),'All requested program flags must match on one canonical school');
+  await answerParent('a',env,{message:'Show schools on the UWS'},async()=>plan({location:{kind:'neighborhood',value:'UWS'}}));
+  const followup=await answerParent('a',env,{message:'Which of those are elementary?'},async()=>plan({gradeLevel:'elementary'}));
+  assert.match(followup.message,/Upper West Side/);assert.match(followup.message,/UWS Elementary/);
+  const comparison=await answerParent('a',env,{message:'Compare District Two Leader versus District Two Runner Up'},async()=>plan({action:'school_compare',schoolQueries:['District Two Leader','District Two Runner Up']}));
+  assert.match(comparison.message,/Comparison/);assert.match(comparison.message,/District Two Leader/);assert.match(comparison.message,/District Two Runner Up/);
+  assert.equal(parentAgentModel('Show elementary schools in Queens'),PARENT_AGENT_FAST_MODEL);
+  assert.equal(parentAgentModel('Compare these schools and explain the trade-offs'),PARENT_AGENT_COMPLEX_MODEL);
+  const contextRow=await DB.prepare("SELECT location_label,grade_level,result_dbns,expires_at FROM parent_agent_contexts WHERE user_id='a'").first<{location_label:string;grade_level:string;result_dbns:string;expires_at:number}>();
+  assert.ok(contextRow&&contextRow.expires_at>Date.now()&&contextRow.expires_at<=Date.now()+3601000,'Structured context has a one-hour expiration');
+  const telemetryColumns=(await DB.prepare('PRAGMA table_info(parent_agent_runs)').all<{name:string}>()).results.map(row=>row.name);
+  assert.ok(!telemetryColumns.some(name=>/message|prompt|response|phone|email|child/i.test(name)),'Telemetry schema cannot store private conversation content');
+  assert.ok(Number(await DB.prepare('SELECT count(*) n FROM parent_agent_runs').first('n'))>=10,'Real-question regressions emit operational telemetry');
   const due=Date.parse('2027-01-18T14:00:00Z');
   // Production entitlement for simulated future dispatch.
   await DB.prepare("UPDATE family_subscriptions SET current_period_end=? WHERE user_id='a'").bind(due+86400000).run();
@@ -115,5 +141,5 @@ try {
   await assert.rejects(()=>familyCheckout('b',checkoutEnv,guardedStripe),/existing recurring plan remains unchanged/);
   assert.equal(sessions.length,before,'No second subscription for an active legacy recurring customer');
   assert.equal(await DB.prepare("SELECT stripe_subscription_id FROM users WHERE id='b'").first('stripe_subscription_id'),'sub_legacy');
-  console.log('Parent Assistant passed: full migrations, DST/quiet hours, consent, ownership, entitlement, draft confirmation/idempotency/expiry, canonical early-childhood answers, atomic delivery claims, signed callbacks, retry/quarantine, disconnect cancellation, guarded/no-trial/idempotent monthly checkout. No provider calls or real messages.');
+  console.log('Parent Assistant passed: full migrations, UES/UWS/official-neighborhood resolution, grade and multi-program filters, short-lived follow-up context, comparisons, model routing, privacy-safe telemetry, DST/quiet hours, entitlement, draft idempotency, delivery safety and guarded monthly checkout. No provider calls or real messages.');
 } finally {await platform.dispose();}

@@ -20,13 +20,13 @@ export default function Privacy() {
           <h1 className="text-2xl font-bold">Privacy Policy</h1>
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <p className="text-sm text-muted-foreground mb-6">Last Updated: September 19, 2026</p>
+          <p className="text-sm text-muted-foreground mb-6">Last Updated: September 20, 2026</p>
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">My Family and Parent Assistant</h2>
             <p>My Family stores the nicknames, school links and calendar dates you choose to enter in Cloudflare D1. Use nicknames and avoid sensitive child, medical or financial details. These records are private to your account; family sharing is not enabled.</p>
             <p>Linking WhatsApp stores your phone number and connection consent. Twilio and WhatsApp/Meta process messages to deliver the service. Scheduled notifications link to your calendar rather than include event details. Replies you request can contain your calendar dates. Disconnect or send STOP to revoke the connection and cancel pending reminders; a message already handed to the provider may still arrive.</p>
-            <p>When you submit a Parent Assistant request, that request, today's date and your timezone are sent to Cloudflare Workers AI for interpretation. Your saved family records are not sent to that model. You review and confirm calendar changes. We do not store a full Parent Assistant conversation transcript in our database; provider retention is governed by their policies.</p>
-            <p>Drafts expire after ten minutes and are removed by scheduled maintenance after a one-day retry window. Delivery records are retained for up to 90 days, message receipt identifiers for seven days, and daily usage counts for 35 days. Calendar records remain until removed or the account is deleted. Test environments may retain records until their next cleanup.</p>
+            <p>When you submit a Parent Assistant request, that request, today's date, your timezone and—when needed for a follow-up—short-lived structured filters such as neighborhood, grade, requested programs and prior result identifiers are sent to Cloudflare Workers AI for interpretation. Child records, calendar contents, phone numbers and full account records are not sent to the model. You review and confirm calendar changes. We do not store a full Parent Assistant conversation transcript in our database; provider retention is governed by their policies.</p>
+            <p>Structured assistant context expires after one hour. Operational telemetry—model, interpreted action, tool, non-sensitive filters, result count, outcome and latency, but not message or response content—is retained for up to 90 days. Drafts expire after ten minutes and are removed by scheduled maintenance after a one-day retry window. Delivery records are retained for up to 90 days, message receipt identifiers for seven days, and daily usage counts for 35 days. Calendar records remain until removed or the account is deleted. Test environments may retain records until their next cleanup.</p>
           </section>
 
           <section className="mb-8">

@@ -30,6 +30,8 @@ import { env as workerEnv } from "cloudflare:workers";
 import { getAppUrl } from "./runtimeConfig";
 import { generateJson, streamText, type AiMessage } from "./aiService";
 import { llmsText, sitemapByName, sitemapIndex, submitIndexNow } from "./seoFeeds";
+import { parentAgentAdminOverview } from "./parent/agent-state";
+import type { AssistantEnvironment } from "./parent/service";
 
 // Premium subscription limits
 const FREE_TIER_LIMITS = {
@@ -134,6 +136,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ['hello@bigappledigital.nyc', 'biserd@gmail.com'];
     return adminEmails.includes(email);
   }
+
+  app.get('/api/admin/parent-agent/overview', isAuthenticated, async (req:any,res:Response)=>{
+    if(!await isRequestFromAdmin(req))return res.status(403).json({error:'Admin access required'});
+    try {
+      const overview=await parentAgentAdminOverview(workerEnv as unknown as AssistantEnvironment);
+      return res.set('Cache-Control','private, no-store').json(overview);
+    } catch(error) {
+      console.error('[PARENT_AGENT_ADMIN] overview error',error);
+      return res.status(500).json({error:'Could not load Parent Assistant telemetry'});
+    }
+  });
 
   // CORS middleware for ChatGPT/OpenAI integration
   const allowedOrigins = [

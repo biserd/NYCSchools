@@ -10,6 +10,8 @@ export async function pruneParentData(env:AssistantEnvironment,now=Date.now()) {
     env.DB.prepare('DELETE FROM parent_whatsapp_receipts WHERE received_at<?').bind(now-7*86400000),
     env.DB.prepare("DELETE FROM parent_reminders WHERE created_at<? AND status NOT IN ('pending','sending')").bind(now-90*86400000),
     env.DB.prepare('DELETE FROM parent_checkout_attempts WHERE expires_at<?').bind(now-86400000),
+    env.DB.prepare('DELETE FROM parent_agent_contexts WHERE expires_at<?').bind(now),
+    env.DB.prepare('DELETE FROM parent_agent_runs WHERE created_at<?').bind(now-90*86400000),
   ]);
 }
 

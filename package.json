@@ -22,6 +22,7 @@
     "test:d1:safety": "tsx scripts/d1/test-safety-queue.ts",
     "test:d1:parity": "node scripts/d1/compare-public.mjs",
     "import:surveys:d1": "tsx scripts/d1/import-surveys.ts",
+    "import:parent-geography:d1": "tsx scripts/d1/import-parent-geography.ts",
     "start": "wrangler dev --config wrangler.d1-staging.jsonc",
     "check": "tsc",
     "cf-typegen": "wrangler types --config wrangler.d1-staging.jsonc --strict-vars false && wrangler types server/production-env.d.ts --env-interface ProductionEnv --config wrangler.jsonc --strict-vars false --include-runtime false",
