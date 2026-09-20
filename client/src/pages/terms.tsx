@@ -20,11 +20,11 @@ export default function Terms() {
           <h1 className="text-2xl font-bold">Terms of Service</h1>
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <p className="text-sm text-muted-foreground mb-6">Last Updated: September 19, 2026</p>
+          <p className="text-sm text-muted-foreground mb-6">Last Updated: September 20, 2026</p>
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Family Premium and reminders</h2>
             <p>When available for purchase, Family Premium costs $19.99 per month, charged at signup and renewed monthly until canceled, with no free trial. Cancel through account settings and Stripe's customer portal. Access continues through the paid billing period. It includes school research while subscribed, up to 30 assistant requests per day and 100 WhatsApp reminders per UTC calendar month. Limits are not a promise of successful delivery.</p>
-            <p>The legacy $29 School Research Pass is closed to new purchases. Existing paying customers retain their original benefits, expiry dates and billing terms; we do not automatically migrate or charge them for Family Premium. An existing prepaid Pass has no automatic renewal and remains valid through its original expiry, even if a separately purchased monthly subscription ends. Existing recurring plans retain their agreed terms.</p>
+            <p>The legacy $29 School Research Pass is closed to new purchases. Existing paying customers retain their original expiry dates and billing terms; we do not automatically migrate or charge them for Family Premium. As a grandfathered benefit, an active paid Pass or legacy paid plan includes Parent Assistant while that paid access remains active. An existing prepaid Pass has no automatic renewal and ends on its original expiry, even if a separately purchased monthly subscription ends. Existing recurring plans retain their agreed terms.</p>
             <p>WhatsApp reminders require a linked phone and separate opt-in. AI assistance requires separate consent. Review every suggested date before confirming. Official calendar suggestions are attributed snapshots, not a live school-announcement feed, and may not apply to your school. AI and notifications can be wrong, late or unavailable: verify admissions dates with official sources and keep a backup for critical deadlines. STOP disconnects messaging but does not cancel billing; cancel the subscription in account settings.</p>
           </section>
 

@@ -4,14 +4,20 @@ import type { ParentWhatsappEnvironment } from './whatsapp';
 
 export type AssistantEnvironment = ParentWhatsappEnvironment & { AI?: Ai; PARENT_ASSISTANT_ENABLED?:string; PARENT_REMINDERS_ENABLED?:string; PARENT_REMINDER_CONTENT_SID?:string; FAMILY_CHECKOUT_ENABLED?:string; PARENT_LAUNCH_VERIFIED?:string; STRIPE_FAMILY_PREMIUM_PRICE_ID?:string };
 export function assistantEnabled(env:AssistantEnvironment) { return env.PARENT_ASSISTANT_ENABLED === 'true'; }
-export async function hasFamilyAccess(userId:string, env:AssistantEnvironment, now=Date.now()) {
+export async function hasAssistantAccess(userId:string, env:AssistantEnvironment, now=Date.now()) {
   // Preview access is restricted to the separate staging database, never production.
   if (env.ENVIRONMENT === 'staging' && now < Date.parse(env.STAGING_EXPIRES_AT || '') && assistantEnabled(env)) return true;
-  return !!await env.DB.prepare("SELECT 1 FROM family_subscriptions WHERE user_id=? AND status='active' AND current_period_end>? LIMIT 1").bind(userId,now).first();
+  return !!await env.DB.prepare(`SELECT 1 FROM users u
+    LEFT JOIN family_subscriptions f ON f.user_id=u.id
+    WHERE u.id=? AND (
+      (u.subscription_status='active' AND u.subscription_plan IN ('season_pass','premium')
+        AND (u.subscription_expires_at IS NULL OR u.subscription_expires_at>?))
+      OR (f.status IN ('active','trialing') AND f.current_period_end>?)
+    ) LIMIT 1`).bind(userId,now,now).first();
 }
 export async function requireAssistant(userId:string, env:AssistantEnvironment) {
   if (!assistantEnabled(env)) throw new TuckError(503,'Parent Assistant is not enabled yet.');
-  if (!await hasFamilyAccess(userId,env)) throw new TuckError(403,'An active Family Premium subscription is required. Your Research Pass is unchanged.');
+  if (!await hasAssistantAccess(userId,env)) throw new TuckError(403,'An active paid plan is required. Active Research Pass customers are grandfathered through their original expiry.');
 }
 export async function preferences(userId:string, env:AssistantEnvironment):Promise<ParentPreferences> {
   const row=await env.DB.prepare('SELECT * FROM parent_preferences WHERE user_id=?').bind(userId).first<{timezone:string;quiet_start:number;quiet_end:number;reminder_consent_at:number|null;ai_consent_at:number|null}>();
@@ -70,5 +76,5 @@ export async function cancelReminder(userId:string,env:AssistantEnvironment,id:s
 }
 export async function assistantOverview(userId:string,env:AssistantEnvironment) {
   const reminders=await env.DB.prepare('SELECT r.id,r.event_id,r.due_at,r.timezone,r.status,e.title FROM parent_reminders r JOIN tuck_events e ON e.id=r.event_id WHERE r.user_id=? ORDER BY r.due_at DESC LIMIT 100').bind(userId).all();
-  return {enabled:assistantEnabled(env),entitled:await hasFamilyAccess(userId,env),deliveryEnabled:env.PARENT_REMINDERS_ENABLED==='true',preferences:await preferences(userId,env),reminders:reminders.results,limits:PARENT_LIMITS};
+  return {enabled:assistantEnabled(env),entitled:await hasAssistantAccess(userId,env),deliveryEnabled:env.PARENT_REMINDERS_ENABLED==='true',preferences:await preferences(userId,env),reminders:reminders.results,limits:PARENT_LIMITS};
 }

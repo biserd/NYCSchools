@@ -24,7 +24,7 @@ export function ParentAssistantPanel({userId,events,onSaved}:{userId:string;even
   const enabled=status.data?.enabled&&status.data.entitled,busy=action.isPending;
   if(status.isLoading)return <p role="status">Checking Parent Assistant…</p>;
   if(status.isError)return <p role="alert">Parent Assistant could not load. Your manual calendar is still available. <button className="underline min-h-11" onClick={()=>void status.refetch()}>Retry</button></p>;
-  if(!enabled)return <Card><CardHeader><CardTitle>Parent Assistant · Family Premium</CardTitle></CardHeader><CardContent><p>{status.data?.enabled?'An active Family Premium subscription is required for the assistant.':'Reminders and AI assistance are not launched yet. You can still link WhatsApp and use your manual calendar.'} Your $29 Research Pass is unchanged.</p></CardContent></Card>;
+  if(!enabled)return <Card><CardHeader><CardTitle>Parent Assistant</CardTitle></CardHeader><CardContent><p>{status.data?.enabled?'An active paid plan is required. Active Research Pass customers are grandfathered through their original expiry.':'Reminders and AI assistance are not launched yet. You can still link WhatsApp and use your manual calendar.'}</p></CardContent></Card>;
   return <section className="space-y-6" aria-label="Parent Assistant">
     <Card className="border-teal-300"><CardHeader><CardTitle>Parent Assistant</CardTitle></CardHeader><CardContent className="space-y-5">
       <p>Plan a school visit, ask about your saved schools, or set a reminder. Every calendar change needs your confirmation.</p>

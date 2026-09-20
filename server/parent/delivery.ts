@@ -1,4 +1,4 @@
-import {hasFamilyAccess,preferences,quietNow,type AssistantEnvironment} from './service';
+import {hasAssistantAccess,preferences,quietNow,type AssistantEnvironment} from './service';
 import {parentWhatsappReady,verifyTwilioSignature} from './whatsapp';
 export const PARENT_STATUS_PATH='/api/parent/whatsapp/status';
 
@@ -22,7 +22,7 @@ export async function processReminders(env:AssistantEnvironment,transport:typeof
   for(const r of due.results) {
     const p=await preferences(r.user_id,env);
     const phone=await env.DB.prepare('SELECT phone FROM parent_whatsapp_links WHERE user_id=? AND consent_at IS NOT NULL').bind(r.user_id).first<string>('phone');
-    if(!p.reminderConsent||!phone||!await hasFamilyAccess(r.user_id,env,now)) {await env.DB.prepare("UPDATE parent_reminders SET status='canceled',failure_code='access_or_consent_ended' WHERE id=? AND status='pending'").bind(r.id).run();continue;}
+    if(!p.reminderConsent||!phone||!await hasAssistantAccess(r.user_id,env,now)) {await env.DB.prepare("UPDATE parent_reminders SET status='canceled',failure_code='access_or_consent_ended' WHERE id=? AND status='pending'").bind(r.id).run();continue;}
     if(quietNow(now,p)){await env.DB.prepare("UPDATE parent_reminders SET next_attempt_at=? WHERE id=? AND status='pending'").bind(now+900000,r.id).run();continue;}
     const date=await env.DB.prepare('SELECT date FROM tuck_events WHERE id=?').bind(r.event_id).first<string>('date');
     if(!date||Date.parse(date+'T23:59:59Z')+14*3600000<now){await env.DB.prepare("UPDATE parent_reminders SET status='expired' WHERE id=? AND status='pending'").bind(r.id).run();continue;}

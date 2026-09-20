@@ -141,7 +141,7 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
       .bind(linked.user_id, from, today).all<{ title: string; date: string }>();
     return xml(events.results.length ? `Your next family dates (entered by you, not verified school announcements):\n${events.results.map(e => `${e.date}: ${e.title}`).join('\n')}` : 'No upcoming family dates. Add them in My Family. These are your manually entered dates, not an imported school calendar.');
   }
-  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. AI and reminders depend on your subscription and saved preferences. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With Family Premium and AI consent, ask about a school or give an event date and reminder date/time. Review the draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
+  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. AI and reminders depend on your paid access and saved preferences. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With an active paid plan and AI consent, ask about a school or give an event date and reminder date/time. Active Research Pass customers are grandfathered through their original expiry. Review the draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
   return xml(command === 'STATUS' ? 'Connected to NYC School Ratings preview. Automatic reminders and AI are not enabled. Send STOP to disconnect.' :
     'NYC School Ratings preview commands: EVENTS (your next 5 family dates), STATUS, HELP, STOP. This is a connection test, not the full Parent Assistant yet.');
 }

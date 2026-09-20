@@ -14,6 +14,7 @@ export function useCheckout() {
   const subscription = useQuery<{ access: AccountAccess }>({ queryKey: ['/api/subscription'], enabled: !!user });
   const isReady = plans.data?.familyPremium.available === true;
   const monthlyActive = subscription.data?.access.familyPremium.active === true;
+  const assistantActive = subscription.data?.access.parentAssistant === true;
   const checkout = useMutation({
     mutationFn: async () => {
       const result = await (await apiRequest('POST', '/api/tuck/family-checkout')).json();
@@ -26,13 +27,13 @@ export function useCheckout() {
     if (checkout.isPending) return;
     if (!isReady) { window.location.href = '/pricing'; return; }
     if (!user) { window.location.href = '/login?redirect=/pricing'; return; }
-    if (monthlyActive) { window.location.href = '/settings'; return; }
+    if (assistantActive) { window.location.href = '/family'; return; }
     trackEvent('begin_checkout', { currency: 'USD', value: FAMILY_PREMIUM.amount / 100, checkout_type: 'monthly' });
     checkout.mutate();
   };
   return {
     startCheckout, isLoading: plans.isLoading || checkout.isPending,
-    isPending: checkout.isPending, isReady, monthlyActive,
+    isPending: checkout.isPending, isReady, monthlyActive, assistantActive,
     isPremium: subscription.data?.access.research === true,
     priceAmount: (FAMILY_PREMIUM.amount / 100).toFixed(2), isSeasonPass: false,
   };

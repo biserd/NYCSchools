@@ -1,19 +1,19 @@
 # Research Pass and Family Premium
 
-This release is staging-first. The user confirmed the existing $29.00 Pass is working: preserve its pricing, Stripe IDs and checkout. Do not promote unfinished monthly features.
+Family Premium is live at $19.99/month. The legacy $29.00 Pass is closed to new sales; preserve its historical Stripe IDs and every existing customer's original expiry and billing terms.
 
 ## Offers
 
 | Plan | Price | Entitlement |
 |---|---|---|
-| School Research Pass | $29.00 once | Six calendar months of existing school-research tools, including on-site AI chat. No renewal. |
-| Family Premium | $19.99/month at launch | Research while subscribed plus planned WhatsApp Parent Assistant, calendars, reminders and proactive updates. Not for sale yet. |
+| School Research Pass | $29.00 once; closed to new sales | School research plus Parent Assistant as a grandfathered benefit through the original six-month expiry. No renewal. |
+| Family Premium | $19.99/month | Research while subscribed plus WhatsApp Parent Assistant, calendars and opted-in reminders. |
 
 Public branding is My Family (`/family`) and Parent Assistant. `/tuck` redirects permanently to `/family`. Internal `tuck_*` tables and `/api/tuck` are retained to avoid breaking existing family records and relationships.
 
 ## Access preservation
 
-Existing Pass purchases remain in their original user fields, with original expiry and benefits. The new `family_subscriptions` table stores monthly entitlements separately. Monthly lifecycle events must not update Pass fields. Cancellation at period end retains monthly access until that date. Cancellation of monthly-only access does not create a six-month Pass. An unexpired separately purchased Pass survives cancellation. Older Stripe events cannot restore a canceled subscription ID.
+Existing Pass purchases remain in their original user fields, with original expiry and billing terms. Active, unexpired Pass customers and active legacy paid-plan customers receive Parent Assistant access at no extra charge; no Stripe subscription or customer record is modified. The `family_subscriptions` table stores monthly entitlements separately. Monthly lifecycle events must not update Pass fields. Cancellation at period end retains monthly access until that date. Cancellation of monthly-only access does not create a six-month Pass. An unexpired separately purchased Pass survives cancellation. Older Stripe events cannot restore a canceled subscription ID.
 
 The manual family calendar remains a preview. `PARENT_ASSISTANT_AVAILABLE=false`, disabled monthly UI and server rejection of monthly checkout intentionally prevent selling unfinished features. Before launching: implement and test WhatsApp consent/unlink/STOP, delivery, reminders, time zones, calendar integrations, usage limits and support. Then configure the exact $19.99 USD monthly price and perform real test-mode checkout and lifecycle tests.
 

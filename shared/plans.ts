@@ -17,11 +17,14 @@ export function resolveAccess(user: AccessInput, family: FamilyAccessInput | nul
   const legacyResearchActive = user.subscriptionStatus === 'active' && user.subscriptionPlan === 'premium' &&
     (!user.subscriptionExpiresAt || user.subscriptionExpiresAt > now);
   const familyActive = !!family && ['active', 'trialing'].includes(family.status) && family.currentPeriodEnd > now;
+  const grandfatheredAssistant = passActive || legacyResearchActive;
   return {
     research: passActive || legacyResearchActive || familyActive,
     researchPass: { active: passActive, expiresAt: user.subscriptionPlan === 'season_pass' ? user.subscriptionExpiresAt?.toISOString() ?? null : null },
     familyPremium: { active: familyActive, status: family?.status ?? 'none', currentPeriodEnd: family?.currentPeriodEnd.toISOString() ?? null, cancelAtPeriodEnd: family?.cancelAtPeriodEnd ?? false },
-    parentAssistant: familyActive && assistantAvailable,
+    // Active paid customers keep Parent Assistant access without a second
+    // purchase. A prepaid Pass loses this entitlement at its original expiry.
+    parentAssistant: (familyActive || grandfatheredAssistant) && assistantAvailable,
     parentAssistantAvailable: assistantAvailable,
   };
 }

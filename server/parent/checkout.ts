@@ -12,13 +12,16 @@ export function familyCheckoutAvailable(environment:object) {
 export async function familyCheckout(userId:string,env:AssistantEnvironment,stripe:Stripe) {
   if(!familyCheckoutAvailable(env))throw new TuckError(503,'Monthly checkout is not available yet. No payment was taken.');
   const now=Date.now(),production=env.ENVIRONMENT==='production';
+  const user=await env.DB.prepare('SELECT email,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,subscription_expires_at FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null;stripe_subscription_id:string|null;subscription_status:string|null;subscription_plan:string|null;subscription_expires_at:number|null}>();
+  if(!user)throw new TuckError(401,'Sign in again.');
+  if(user.subscription_status==='active'&&['season_pass','premium'].includes(user.subscription_plan||'')&&(user.subscription_expires_at===null||user.subscription_expires_at>now)) {
+    throw new TuckError(409,'Your active paid plan already includes Parent Assistant at no extra charge. Use My Family; subscribe after your existing access ends if you want to continue.');
+  }
   const price=await stripe.prices.retrieve(env.STRIPE_FAMILY_PREMIUM_PRICE_ID!);
   if(!price.active||price.livemode!==production||price.currency!==FAMILY_PREMIUM.currency||price.unit_amount!==FAMILY_PREMIUM.amount||price.recurring?.interval!=='month'||price.recurring.interval_count!==1||price.recurring.usage_type!=='licensed')throw new TuckError(503,'Monthly offer configuration does not match the advertised price.');
   const portals=await stripe.billingPortal.configurations.list({active:true,is_default:true,limit:1});
   const cancel=portals.data[0]?.features.subscription_cancel;
   if(!cancel?.enabled||cancel.mode!=='at_period_end')throw new TuckError(503,'Self-service cancellation must be configured before monthly checkout opens.');
-  const user=await env.DB.prepare('SELECT email,stripe_customer_id,stripe_subscription_id FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null;stripe_subscription_id:string|null}>();
-  if(!user)throw new TuckError(401,'Sign in again.');
   let customerId=user.stripe_customer_id;
   if(!customerId) {
     const customer=await stripe.customers.create({email:user.email,metadata:{userId}}, {idempotencyKey:`family-customer-${userId}`});

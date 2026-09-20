@@ -1,5 +1,14 @@
 # Parent Assistant launch handoff — 2026-09-19
 
+## Grandfathering update — 2026-09-20
+
+Parent Assistant is now included for every active paid customer. Active,
+unexpired `season_pass` customers and active legacy `premium` customers receive
+assistant and reminder eligibility through their existing paid-access period at
+no extra charge. This does not create a Family Premium subscription, change a
+Stripe customer, renew a Pass or extend its original expiry. Free, inactive and
+expired accounts remain ineligible.
+
 ## Scope and status
 
 ### Pricing decision update — 2026-09-19
