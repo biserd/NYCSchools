@@ -90,14 +90,31 @@ try {
   assert.equal(queuedXml,'<?xml version="1.0" encoding="UTF-8"?><Response></Response>','Slow assistant work is acknowledged immediately');
   assert.ok(queuedJob&&queuedJob.message.includes('district 2'));
   assert.equal(await db.prepare('SELECT status FROM parent_agent_deliveries WHERE inbound_sid=?').bind(queuedJob!.inboundSid).first('status'),'pending');
-  let outbound=0,acked=0,retried=0;
+  let outbound=0,typing=0,acked=0,retried=0;
   const queuedMessage:Message<ParentAgentQueueJob>={id:'queue-message-1',timestamp:new Date(),body:queuedJob!,attempts:1,ack:()=>{acked++;},retry:()=>{retried++;}};
   const queueBatch:MessageBatch<ParentAgentQueueJob>={messages:[queuedMessage],queue:env.PARENT_AGENT_QUEUE_NAME,metadata:{metrics},ackAll:()=>{},retryAll:()=>{}};
-  await consumeParentAgentQueue(queueBatch,env,(async(_url,init)=>{outbound++;assert.match(String(init?.body),/Body=/);return Response.json({sid:`SM${'c'.repeat(32)}`});}) as typeof fetch);
-  assert.equal(outbound,1);assert.equal(acked,1);assert.equal(retried,0);
+  await consumeParentAgentQueue(queueBatch,env,(async(url,init)=>{
+    if(String(url).includes('/Indicators/Typing.json')){
+      typing++;
+      assert.deepEqual(JSON.parse(String(init?.body)),{channel:'WHATSAPP',messageId:queuedJob!.inboundSid});
+      return Response.json({success:true});
+    }
+    outbound++;assert.match(String(init?.body),/Body=/);return Response.json({sid:`SM${'c'.repeat(32)}`});
+  }) as typeof fetch);
+  assert.equal(outbound,1);assert.equal(typing,0,'Fast deterministic school searches skip typing presence');assert.equal(acked,1);assert.equal(retried,0);
   assert.equal(await db.prepare('SELECT status FROM parent_agent_deliveries WHERE inbound_sid=?').bind(queuedJob!.inboundSid).first('status'),'accepted');
   await consumeParentAgentQueue(queueBatch,env,(async()=>{outbound++;return Response.json({sid:`SM${'d'.repeat(32)}`});}) as typeof fetch);
   assert.equal(outbound,1,'An at-least-once queue redelivery cannot send a duplicate WhatsApp answer');assert.equal(acked,2);
+  const complexJob:ParentAgentQueueJob={...queuedJob!,inboundSid:`SM${'e'.repeat(32)}`,message:'Compare 02M001 versus 02M002 and explain the trade-offs'};
+  await db.prepare("INSERT INTO parent_agent_deliveries(inbound_sid,user_id,created_at,status) VALUES (?,?,?,'pending')").bind(complexJob.inboundSid,complexJob.userId,Date.now()).run();
+  const complexMessage:Message<ParentAgentQueueJob>={...queuedMessage,id:'queue-message-2',body:complexJob,ack:()=>{acked++;}};
+  await consumeParentAgentQueue({ ...queueBatch,messages:[complexMessage] },env,(async(url,init)=>{
+    if(String(url).includes('/Indicators/Typing.json')){typing++;return new Response('',{status:503});}
+    outbound++;assert.match(String(init?.body),/Body=/);return Response.json({sid:`SM${'b'.repeat(32)}`});
+  }) as typeof fetch);
+  assert.equal(typing,1,'Longer requests show WhatsApp typing presence');
+  assert.equal(outbound,2,'A typing API failure never blocks the answer');
+  assert.equal(await db.prepare('SELECT status FROM parent_agent_deliveries WHERE inbound_sid=?').bind(complexJob.inboundSid).first('status'),'accepted');
   const deliveryColumns=(await db.prepare('PRAGMA table_info(parent_agent_deliveries)').all<{name:string}>()).results.map(row=>row.name);
   assert.ok(!deliveryColumns.some(name=>/message|prompt|response|phone|email|body/i.test(name)),'Delivery state cannot store private message content');
   env.PARENT_ASSISTANT_ENABLED='false';

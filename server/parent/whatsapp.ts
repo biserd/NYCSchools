@@ -193,6 +193,21 @@ async function markDelivery(env:ParentWhatsappEnvironment,sid:string,status:stri
     WHERE inbound_sid=? AND status='processing'`).bind(status,Date.now(),failureCode,providerSid,sid).run();
 }
 
+/** Best-effort WhatsApp presence; answer delivery must never depend on this beta API. */
+async function sendTypingIndicator(env:ParentWhatsappEnvironment,messageId:string,transport:typeof fetch):Promise<void> {
+  try {
+    const response=await transport('https://messaging.twilio.com/v3/Indicators/Typing.json',{
+      method:'POST',
+      headers:{Authorization:`Basic ${btoa(env.TWILIO_ACCOUNT_SID+':'+env.TWILIO_AUTH_TOKEN)}`,'Content-Type':'application/json'},
+      body:JSON.stringify({channel:'WHATSAPP',messageId}),
+      signal:AbortSignal.timeout(3000),
+    });
+    if(!response.ok)console.warn(JSON.stringify({message:'WhatsApp typing indicator unavailable',status:response.status}));
+  } catch(error) {
+    console.warn(JSON.stringify({message:'WhatsApp typing indicator unavailable',kind:error instanceof Error?error.name:'unknown'}));
+  }
+}
+
 /** Durable, privacy-minimized consumer for slow assistant work. */
 export async function consumeParentAgentQueue(batch:MessageBatch<unknown>,env:ParentWhatsappEnvironment,transport:typeof fetch=fetch):Promise<void> {
   for(const queued of batch.messages){
@@ -213,14 +228,19 @@ export async function consumeParentAgentQueue(batch:MessageBatch<unknown>,env:Pa
       const linked=await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(job.userId,job.phone).first();
       if(!linked){await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;}
 
-      let reply:string;
+      let reply:string,typing:Promise<void>=Promise.resolve();
       try {
-        const {answerParent}=await import('./assistant');
+        const {answerParent,deterministicParentPlan,isComplexParentRequest}=await import('./assistant');
+        // Twilio recommends presence for work that takes more than a few seconds.
+        // Start it alongside slow planning so it cannot add a network round trip
+        // before the answer. Common deterministic searches remain sub-second.
+        typing=deterministicParentPlan(job.message)===null||isComplexParentRequest(job.message)
+          ?sendTypingIndicator(env,job.inboundSid,transport):Promise.resolve();
         reply=queuedReply(await answerParent(job.userId,env,{message:job.message}) as Record<string,unknown>,env.APP_URL);
       } catch(error) {
         const {TuckError}=await import('../tuck/store');
         reply=error instanceof TuckError?error.message:'Assistant temporarily unavailable. Please try again. Your calendar was not changed unless you already confirmed a draft.';
-      }
+      } finally {await typing;}
       // Re-check STOP/disconnect immediately before the provider handoff.
       if(!await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(job.userId,job.phone).first()){
         await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;
