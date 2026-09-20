@@ -22,7 +22,11 @@ export async function processReminders(env:AssistantEnvironment,transport:typeof
   for(const r of due.results) {
     const p=await preferences(r.user_id,env);
     const phone=await env.DB.prepare('SELECT phone FROM parent_whatsapp_links WHERE user_id=? AND consent_at IS NOT NULL').bind(r.user_id).first<string>('phone');
-    if(!p.reminderConsent||!phone||!await hasAssistantAccess(r.user_id,env,now)) {await env.DB.prepare("UPDATE parent_reminders SET status='canceled',failure_code='access_or_consent_ended' WHERE id=? AND status='pending'").bind(r.id).run();continue;}
+    // The reminder row is created only by the parent's explicit schedule or
+    // confirmation action, so it is the durable authorization for that send.
+    // Subscription access and a still-linked WhatsApp number are checked at
+    // delivery time; STOP/disconnect removes the link and cancels pending rows.
+    if(!phone||!await hasAssistantAccess(r.user_id,env,now)) {await env.DB.prepare("UPDATE parent_reminders SET status='canceled',failure_code='access_or_connection_ended' WHERE id=? AND status='pending'").bind(r.id).run();continue;}
     if(quietNow(now,p)){await env.DB.prepare("UPDATE parent_reminders SET next_attempt_at=? WHERE id=? AND status='pending'").bind(now+900000,r.id).run();continue;}
     const date=await env.DB.prepare('SELECT date FROM tuck_events WHERE id=?').bind(r.event_id).first<string>('date');
     if(!date||Date.parse(date+'T23:59:59Z')+14*3600000<now){await env.DB.prepare("UPDATE parent_reminders SET status='expired' WHERE id=? AND status='pending'").bind(r.id).run();continue;}
@@ -32,8 +36,8 @@ export async function processReminders(env:AssistantEnvironment,transport:typeof
       await env.DB.prepare("UPDATE parent_reminders SET status='limit_reached',failure_code='monthly_limit' WHERE id=? AND status='pending' AND (SELECT count(*) FROM parent_reminders WHERE user_id=? AND claim_at>=? AND status NOT IN ('pending','canceled','limit_reached'))>=100").bind(r.id,r.user_id,monthStart).run();
       continue;
     }
-    // Last-moment consent check before handing off to the provider.
-    if(!(await preferences(r.user_id,env)).reminderConsent||!await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(r.user_id,phone).first()) {await env.DB.prepare("UPDATE parent_reminders SET status='canceled' WHERE id=?").bind(r.id).run();continue;}
+    // Last-moment connection check before handing off to the provider.
+    if(!await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(r.user_id,phone).first()) {await env.DB.prepare("UPDATE parent_reminders SET status='canceled' WHERE id=?").bind(r.id).run();continue;}
     const form=new URLSearchParams({From:env.TWILIO_WHATSAPP_FROM!,To:phone,ContentSid:env.PARENT_REMINDER_CONTENT_SID!,StatusCallback:`${env.APP_URL}${PARENT_STATUS_PATH}?id=${r.id}`});
     try {
       const response=await transport(`https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`,{method:'POST',headers:{Authorization:`Basic ${btoa(env.TWILIO_ACCOUNT_SID+':'+env.TWILIO_AUTH_TOKEN)}`,'Content-Type':'application/x-www-form-urlencoded'},body:form.toString(),signal:AbortSignal.timeout(10000)});

@@ -54,7 +54,7 @@ export default function PricingPage() {
           {!checkout.isReady && <p role="status" className="text-sm">Monthly checkout is closed while launch testing is completed. No payment will be taken.</p>}
           {checkout.monthlyActive ? <Button asChild className="w-full"><Link href="/settings">Manage Family Premium</Link></Button> : checkout.assistantActive ? <Button asChild className="w-full"><Link href="/family">Use your included Parent Assistant</Link></Button> : <Button className="w-full min-h-11" disabled={!checkout.isReady || checkout.isPending} onClick={checkout.startCheckout} data-testid="button-family-checkout">{checkout.isPending ? 'Opening secure checkout…' : checkout.isReady ? 'Subscribe — $19.99/month' : 'Family Premium — Coming soon'}</Button>}
           <Link className="block text-center underline min-h-11 py-2" href="/family">Explore My Family</Link>
-          <p className="text-xs text-muted-foreground">Reminder delivery requires a connected WhatsApp phone and separate consent. Calendar dates require your review. The assistant is not a live school-announcement feed.</p>
+          <p className="text-xs text-muted-foreground">Reminder delivery requires a connected WhatsApp phone and an explicitly scheduled or confirmed reminder. Calendar dates require your review. The assistant is not a live school-announcement feed.</p>
         </CardContent>
       </Card>
       <section className="rounded-xl border p-6 space-y-2" aria-label="Existing paid customers">

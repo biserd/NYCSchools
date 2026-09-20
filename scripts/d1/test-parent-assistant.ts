@@ -4,7 +4,7 @@ import {mkdtemp,readFile,readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {getPlatformProxy} from 'wrangler';
-import {localInstant,quietNow,savePreferences,hasAssistantAccess,createReminder,cancelReminder,assistantOverview,type AssistantEnvironment} from '../../server/parent/service';
+import {localInstant,quietNow,savePreferences,preferences,hasAssistantAccess,createReminder,cancelReminder,assistantOverview,type AssistantEnvironment} from '../../server/parent/service';
 import {answerParent,confirmDraft,stageDraft,suggestCalendarEvent} from '../../server/parent/assistant';
 import {processReminders,reminderStatusWebhook,PARENT_STATUS_PATH} from '../../server/parent/delivery';
 import {disconnectParentWhatsapp} from '../../server/parent/account';
@@ -21,7 +21,7 @@ try {
   await DB.prepare("INSERT INTO parent_whatsapp_links(user_id,phone,consent_at,token_issued_at) VALUES ('a','whatsapp:+12125550102',1,1)").run();
   const prefs={timezone:'America/New_York',quietStart:21,quietEnd:8,aiConsent:true,reminderConsent:true};
   await savePreferences('a',env,prefs);
-  await assert.rejects(()=>savePreferences('b',env,prefs),/Connect WhatsApp/);
+  await savePreferences('b',env,prefs);
   await assert.rejects(()=>savePreferences('a',env,{...prefs,timezone:'Not/Real'}));
   assert.equal(localInstant('2027-01-19','09:00','America/New_York'),Date.parse('2027-01-19T14:00:00Z'));
   assert.throws(()=>localInstant('2027-03-14','02:30','America/New_York'),/clock change/);
@@ -49,7 +49,8 @@ try {
   await Promise.all([confirmDraft('a',env,id),confirmDraft('a',env,id)]);
   assert.equal(await DB.prepare('SELECT count(*) n FROM tuck_events').first('n'),1);
   assert.equal(await DB.prepare('SELECT count(*) n FROM parent_reminders').first('n'),1);
-  await assert.rejects(()=>createReminder('b',env,{eventId:id,localDate:'2027-01-18',localTime:'10:00'}),/Opt in/);
+  assert.equal((await preferences('a',env)).reminderConsent,true,'Confirming a requested reminder records its authorization');
+  await assert.rejects(()=>createReminder('b',env,{eventId:id,localDate:'2027-01-18',localTime:'10:00'}),/Event not found/);
   await assert.rejects(()=>createReminder('a',env,{eventId:id,localDate:'2027-01-18',localTime:'09:00'}),/already scheduled/);
   await assert.rejects(()=>suggestCalendarEvent('a',env,'nycps-2026-27-2026-09-21',false),/Confirm your school/);
   await DB.prepare("INSERT INTO schools(dbn,name,district,address,grade_band,has_2k) VALUES ('01G001','Little Center',1,'Test','2K',1)").run();

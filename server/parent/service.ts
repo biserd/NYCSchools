@@ -21,17 +21,20 @@ export async function requireAssistant(userId:string, env:AssistantEnvironment) 
 }
 export async function preferences(userId:string, env:AssistantEnvironment):Promise<ParentPreferences> {
   const row=await env.DB.prepare('SELECT * FROM parent_preferences WHERE user_id=?').bind(userId).first<{timezone:string;quiet_start:number;quiet_end:number;reminder_consent_at:number|null;ai_consent_at:number|null}>();
-  return {timezone:row?.timezone||'America/New_York',quietStart:row?.quiet_start??21,quietEnd:row?.quiet_end??8,reminderConsent:!!row?.reminder_consent_at,aiConsent:!!row?.ai_consent_at};
+  return {timezone:row?.timezone||'America/New_York',quietStart:row?.quiet_start??21,quietEnd:row?.quiet_end??8,reminderConsent:!!row?.reminder_consent_at,aiConsent:true};
 }
 export async function savePreferences(userId:string, env:AssistantEnvironment, input:unknown) {
-  const p=parentPreferencesInput.parse(input), now=Date.now();
-  if (p.reminderConsent || p.aiConsent) await requireAssistant(userId,env);
-  if (p.reminderConsent && !await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone IS NOT NULL AND consent_at IS NOT NULL').bind(userId).first()) throw new TuckError(409,'Connect WhatsApp first.');
-  await env.DB.batch([
-    env.DB.prepare(`INSERT INTO parent_preferences(user_id,timezone,quiet_start,quiet_end,reminder_consent_at,ai_consent_at) VALUES (?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET timezone=excluded.timezone,quiet_start=excluded.quiet_start,quiet_end=excluded.quiet_end,reminder_consent_at=excluded.reminder_consent_at,ai_consent_at=excluded.ai_consent_at`).bind(userId,p.timezone,p.quietStart,p.quietEnd,p.reminderConsent?now:null,p.aiConsent?now:null),
-    env.DB.prepare("UPDATE parent_reminders SET status='canceled' WHERE user_id=? AND status='pending' AND ?=0").bind(userId,p.reminderConsent?1:0),
-  ]);
-  return p;
+  const p=parentPreferencesInput.parse(input);
+  await requireAssistant(userId,env);
+  await env.DB.prepare(`INSERT INTO parent_preferences(user_id,timezone,quiet_start,quiet_end,reminder_consent_at,ai_consent_at) VALUES (?,?,?,?,NULL,NULL)
+    ON CONFLICT(user_id) DO UPDATE SET timezone=excluded.timezone,quiet_start=excluded.quiet_start,quiet_end=excluded.quiet_end`)
+    .bind(userId,p.timezone,p.quietStart,p.quietEnd).run();
+  return preferences(userId,env);
+}
+export async function authorizeRequestedReminder(userId:string,env:AssistantEnvironment,now=Date.now()) {
+  if(!await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone IS NOT NULL AND consent_at IS NOT NULL').bind(userId).first()) throw new TuckError(409,'Connect WhatsApp before scheduling a reminder.');
+  await env.DB.prepare(`INSERT INTO parent_preferences(user_id,reminder_consent_at) VALUES (?,?)
+    ON CONFLICT(user_id) DO UPDATE SET reminder_consent_at=excluded.reminder_consent_at`).bind(userId,now).run();
 }
 export function localParts(now:number,timezone:string) {
   return formattedParts(now,new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}));
@@ -58,13 +61,13 @@ export function localInstant(date:string,time:string,timezone:string) {
 export async function createReminder(userId:string,env:AssistantEnvironment,input:unknown) {
   await requireAssistant(userId,env);
   const data=reminderInput.parse(input),p=await preferences(userId,env),now=Date.now();
-  if(!p.reminderConsent)throw new TuckError(409,'Opt in to reminders in settings first.');
   const due=localInstant(data.localDate,data.localTime,p.timezone);
   if(due<now+60000||due>now+366*86400000)throw new TuckError(400,'Choose a reminder between one minute and one year from now.');
   if(quietNow(due,p))throw new TuckError(400,'Choose a time outside your quiet hours.');
   const event=await env.DB.prepare('SELECT e.id,e.date FROM tuck_events e JOIN tuck_households h ON h.id=e.household_id WHERE e.id=? AND h.owner_user_id=?').bind(data.eventId,userId).first<{id:string;date:string}>();
   if(!event)throw new TuckError(404,'Event not found.');
   if(data.localDate>event.date)throw new TuckError(400,'Schedule the reminder on or before the event date.');
+  await authorizeRequestedReminder(userId,env,now);
   const id=crypto.randomUUID();
   const row=await env.DB.prepare(`INSERT INTO parent_reminders(id,user_id,event_id,due_at,timezone,status,attempts,next_attempt_at,created_at) SELECT ?,?,?,?,?,'pending',0,?,? WHERE (SELECT count(*) FROM parent_reminders WHERE user_id=? AND status='pending')<? ON CONFLICT(user_id,event_id,due_at) DO NOTHING RETURNING id`).bind(id,userId,data.eventId,due,p.timezone,due,now,userId,PARENT_LIMITS.pendingReminders).first();
   if(!row)throw new TuckError(409,'Reminder already scheduled, or you reached the pending-reminder limit.');

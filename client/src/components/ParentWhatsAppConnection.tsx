@@ -18,7 +18,7 @@ export function ParentWhatsAppConnection({ userId }: { userId: string }) {
   } });
   if (status.data?.preview === false) return null;
   return <Card><CardHeader><CardTitle>Connect WhatsApp</CardTitle></CardHeader><CardContent className="space-y-4">
-    <p className="text-sm text-muted-foreground">Dedicated NYC School Ratings number: +1 917-473-0386. Link your own WhatsApp phone to your account. Linking does not start a subscription or opt you into reminders. {status.data?.assistantEnabled?'Use the assistant preferences below to control AI and reminders.':'Connection preview only; AI and proactive delivery are not enabled yet.'}</p>
+    <p className="text-sm text-muted-foreground">Dedicated NYC School Ratings number: +1 917-473-0386. Link your own WhatsApp phone to your account. Linking does not start a subscription or marketing messages. {status.data?.assistantEnabled?'Paid access enables assistant questions immediately; only reminders you explicitly schedule or confirm are sent.':'Connection preview only; AI and proactive delivery are not enabled yet.'}</p>
     {status.isLoading ? <p role="status">Checking connection…</p> : status.isError ? <p role="alert">Could not check WhatsApp setup.</p> : <>
       {!status.data?.configured && <p role="status">Waiting for secure Twilio configuration. Linking is disabled until setup is complete.</p>}
       {status.data?.connected ? <><p>Connected: {status.data.phone}. Send <strong>EVENTS</strong> for your next five dates, <strong>STATUS</strong> to check, or <strong>STOP</strong> to disconnect.</p><Button variant="outline" disabled={disconnect.isPending} onClick={() => disconnect.mutate()}>Disconnect WhatsApp</Button></> : <>

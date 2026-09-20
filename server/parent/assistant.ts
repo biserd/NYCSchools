@@ -3,7 +3,7 @@ import {getSchoolSlug,calculateOverallScore,isEarlyChildhoodOnly,type School} fr
 import {tuckEventInput} from '../../shared/tuck';
 import {parentMessageInput,PARENT_LIMITS} from '../../shared/parent-assistant';
 import {TuckError} from '../tuck/store';
-import {requireAssistant,preferences,localParts,localInstant,quietNow,type AssistantEnvironment} from './service';
+import {requireAssistant,preferences,authorizeRequestedReminder,localParts,localInstant,quietNow,type AssistantEnvironment} from './service';
 import {calendarSuggestions,CALENDAR_SCOPE} from './calendar';
 
 const intentSchema=z.object({intent:z.enum(['event','events','schools','clarify']),title:z.string().max(160).nullish(),date:z.string().nullish(),reminderDate:z.string().nullish(),reminderTime:z.string().nullish(),schoolQuery:z.string().max(100).nullish(),clarification:z.string().max(300).nullish()}).strict();
@@ -41,9 +41,10 @@ export async function confirmDraft(userId:string,env:AssistantEnvironment,id:str
   if(row.confirmed_at)return {eventId:id,message:'Already saved.'};
   if(row.expires_at<=Date.now())throw new TuckError(409,'Draft expired. Please make a new request.');
   const d=draftSchema.parse(JSON.parse(row.payload)),p=await preferences(userId,env),now=Date.now();
-  if(d.reminderAt&&(!p.reminderConsent||d.reminderAt<=now||quietNow(d.reminderAt,p)))throw new TuckError(409,'Reminder consent or timing has changed. Create a new request.');
+  if(d.reminderAt&&(d.reminderAt<=now||quietNow(d.reminderAt,p)))throw new TuckError(409,'Reminder timing has changed. Create a new request.');
   const h=await env.DB.prepare('SELECT id FROM tuck_households WHERE owner_user_id=?').bind(userId).first<string>('id');
   if(!h)throw new TuckError(409,'Create your family calendar first.');
+  if(d.reminderAt)await authorizeRequestedReminder(userId,env,now);
   // All effects use the immutable draft ID and one D1 transaction. Concurrent
   // confirmations cannot create duplicate events or duplicate reminders.
   await env.DB.batch([
@@ -68,7 +69,6 @@ export async function suggestCalendarEvent(userId:string,env:AssistantEnvironmen
 export async function answerParent(userId:string,env:AssistantEnvironment,input:unknown,parser:IntentParser=(m,t,z)=>parseIntent(env,m,t,z)) {
   await requireAssistant(userId,env);
   const {message}=parentMessageInput.parse(input),p=await preferences(userId,env),today=localParts(Date.now(),p.timezone).date;
-  if(!p.aiConsent)throw new TuckError(409,'Enable AI assistance in preferences first. Your request is processed by Cloudflare AI.');
   const budget=env.ENVIRONMENT==='staging'?100:5000;
   const usage=await env.DB.prepare(`INSERT INTO parent_usage(user_id,day,count) SELECT ?,?,1 WHERE (SELECT coalesce(sum(count),0) FROM parent_usage WHERE day>=?)<? ON CONFLICT(user_id,day) DO UPDATE SET count=count+1 WHERE count<? RETURNING count`).bind(userId,today,new Date(Date.now()-86400000).toISOString().slice(0,10),budget,PARENT_LIMITS.questionsPerDay).first();
   if(!usage)throw new TuckError(429,'Daily assistant limit reached. Your calendar remains available.');
@@ -83,7 +83,7 @@ export async function answerParent(userId:string,env:AssistantEnvironment,input:
     if(!intent.title||!intent.date||!intent.reminderDate||!intent.reminderTime)return {message:'Please include the event title, exact event date, reminder date and time.'};
     const due=localInstant(intent.reminderDate,intent.reminderTime,p.timezone);
     if(intent.date<today||intent.reminderDate>intent.date||due<=Date.now()||due>Date.now()+366*86400000)throw new TuckError(400,'Use a future reminder on or before the event, within one year.');
-    if(!p.reminderConsent||quietNow(due,p))throw new TuckError(409,'Enable reminder consent and choose a time outside quiet hours.');
+    if(quietNow(due,p))throw new TuckError(409,'Choose a reminder time outside quiet hours.');
     return stageDraft(userId,env,{title:intent.title,date:intent.date,detail:'Entered by you via Parent Assistant; not a verified school announcement.',reminderAt:due,timezone:p.timezone});
   }
   if(intent.intent==='events') {

@@ -114,7 +114,7 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
     const linked = await env.DB.prepare(`UPDATE parent_whatsapp_links SET phone=?, consent_at=?, last_inbound_at=?, token_hash=NULL, token_expires_at=NULL
       WHERE token_hash=? AND token_expires_at>? AND NOT EXISTS (SELECT 1 FROM parent_whatsapp_links WHERE phone=?) RETURNING user_id`)
       .bind(from, now, now, await hashLinkToken(token.toLowerCase()), now, from).first();
-    return xml(linked ? (assistantOn?`Connected to NYC School Ratings. Send EVENTS for your dates or HELP for commands. Configure AI and reminder consent in ${env.APP_URL}/family. Linking alone does not enable reminders. STOP disconnects.`:'Connected to NYC School Ratings preview. Send EVENTS for your family dates, STATUS to check the connection, or STOP to disconnect. Automatic reminders and AI are not enabled yet.') :
+    return xml(linked ? (assistantOn?`Connected to NYC School Ratings. Send EVENTS for your dates or ask a school question. Only reminders you explicitly schedule or confirm will be sent. STOP disconnects.`:'Connected to NYC School Ratings preview. Send EVENTS for your family dates, STATUS to check the connection, or STOP to disconnect. Automatic reminders and AI are not enabled yet.') :
       'Link expired, already used, or this phone is already linked. Check My Family, disconnect there if needed, and create a new link.');
   }
   const linked = await env.DB.prepare('SELECT user_id FROM parent_whatsapp_links WHERE phone=? AND consent_at IS NOT NULL').bind(from).first<{ user_id: string }>();
@@ -141,7 +141,7 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
       .bind(linked.user_id, from, today).all<{ title: string; date: string }>();
     return xml(events.results.length ? `Your next family dates (entered by you, not verified school announcements):\n${events.results.map(e => `${e.date}: ${e.title}`).join('\n')}` : 'No upcoming family dates. Add them in My Family. These are your manually entered dates, not an imported school calendar.');
   }
-  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. AI and reminders depend on your paid access and saved preferences. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With an active paid plan and AI consent, ask about a school or give an event date and reminder date/time. Active Research Pass customers are grandfathered through their original expiry. Review the draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
+  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. Assistant access depends on your active paid plan. Only requested reminders are sent. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With an active paid plan, ask about a school or give an event date and reminder date/time. Active Research Pass customers are grandfathered through their original expiry. Sending a question submits it to our AI interpreter; review any draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
   return xml(command === 'STATUS' ? 'Connected to NYC School Ratings preview. Automatic reminders and AI are not enabled. Send STOP to disconnect.' :
     'NYC School Ratings preview commands: EVENTS (your next 5 family dates), STATUS, HELP, STOP. This is a connection test, not the full Parent Assistant yet.');
 }
