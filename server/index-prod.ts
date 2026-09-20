@@ -14,7 +14,7 @@ const KNOWN_STATIC_ROUTES = new Set([
   "/private-schools", "/settings", "/privacy", "/terms", "/faq",
   "/features", "/benefits", "/release-notes", "/blog", "/pricing",
   "/developers", "/developers/docs", "/contact", "/safety-methodology",
-  "/safe-and-strong", "/admin/api-usage", "/thanks",
+  "/safe-and-strong", "/admin/api-usage", "/admin/parent-agent", "/thanks",
   "/auth/magic-link/callback",
 ]);
 

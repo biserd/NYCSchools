@@ -939,6 +939,7 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
   "/settings": { title: "Settings | NYC School Ratings", description: "Configure your private NYC School Ratings account settings.", heading: "Settings", noindex: true },
   "/family": { title: "My Family | NYC School Ratings", description: "Your private family calendar within NYC School Ratings.", heading: "My Family", noindex: true },
   "/admin/api-usage": { title: "API Usage Admin | NYC School Ratings", description: "Private administration page.", heading: "API Usage Admin", noindex: true },
+  "/admin/parent-agent": { title: "Parent Assistant Admin | NYC School Ratings", description: "Private administration page.", heading: "Parent Assistant Admin", noindex: true },
   "/admin/early-childhood": { title: "Early Childhood Data Review | NYC School Ratings", description: "Private administration page.", heading: "Early Childhood Data Review", noindex: true },
   "/thanks": { title: "Thank You | NYC School Ratings", description: "Payment confirmation.", heading: "Thank You", noindex: true },
   "/auth/magic-link/callback": { title: "Signing In | NYC School Ratings", description: "Secure sign-in callback.", heading: "Signing In", noindex: true },
