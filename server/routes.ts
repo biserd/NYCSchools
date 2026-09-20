@@ -137,17 +137,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return adminEmails.includes(email);
   }
 
-  app.get('/api/admin/parent-agent/overview', isAuthenticated, async (req:any,res:Response)=>{
-    if(!await isRequestFromAdmin(req))return res.status(403).json({error:'Admin access required'});
-    try {
-      const overview=await parentAgentAdminOverview(workerEnv as unknown as AssistantEnvironment);
-      return res.set('Cache-Control','private, no-store').json(overview);
-    } catch(error) {
-      console.error('[PARENT_AGENT_ADMIN] overview error',error);
-      return res.status(500).json({error:'Could not load Parent Assistant telemetry'});
-    }
-  });
-
   // CORS middleware for ChatGPT/OpenAI integration
   const allowedOrigins = [
     'https://chat.openai.com',
@@ -210,6 +199,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth middleware
   setupAuth(app);
+  app.get('/api/admin/parent-agent/overview', isAuthenticated, async (req:any,res:Response)=>{
+    if(!await isRequestFromAdmin(req))return res.status(403).json({error:'Admin access required'});
+    try {
+      const overview=await parentAgentAdminOverview(workerEnv as unknown as AssistantEnvironment);
+      return res.set('Cache-Control','private, no-store').json(overview);
+    } catch(error) {
+      console.error('[PARENT_AGENT_ADMIN] overview error',error);
+      return res.status(500).json({error:'Could not load Parent Assistant telemetry'});
+    }
+  });
   app.use('/api/tuck', tuckRouter(isAuthenticated, getAppUrl));
   app.get('/tuck', (_req, res) => res.redirect(301, '/family'));
   app.get('/api/plans', async (_req, res) => {
