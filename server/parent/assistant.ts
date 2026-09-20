@@ -93,8 +93,16 @@ export async function answerParent(userId:string,env:AssistantEnvironment,input:
   // The model selects intent, not facts. Every statistic below is rendered from
   // canonical records. No demographic fields, children or other users enter AI.
   const query=(intent.schoolQuery||'').trim();
-  const rows=query?await env.DB.prepare("SELECT * FROM schools WHERE dbn=? OR name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 5").bind(query.toUpperCase(),`%${query.replace(/[\\%_]/g,'\\$&')}%`).all<School>():await env.DB.prepare('SELECT s.* FROM schools s WHERE s.dbn IN (SELECT school_dbn FROM favorites WHERE user_id=? UNION SELECT c.school_dbn FROM tuck_children c JOIN tuck_households h ON h.id=c.household_id WHERE h.owner_user_id=?) ORDER BY s.name LIMIT 5').bind(userId,userId).all<School>();
+  const districtMatch=/\bdistrict\s+(3[0-2]|[12]\d|[1-9])\b/i.exec(`${query} ${message}`);
+  const district=districtMatch?Number(districtMatch[1]):null;
+  const rows=district!==null
+    ? await env.DB.prepare('SELECT * FROM schools WHERE district=? ORDER BY name LIMIT 250').bind(district).all<School>()
+    : query?await env.DB.prepare("SELECT * FROM schools WHERE dbn=? OR name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 5").bind(query.toUpperCase(),`%${query.replace(/[\\%_]/g,'\\$&')}%`).all<School>()
+      : await env.DB.prepare('SELECT s.* FROM schools s WHERE s.dbn IN (SELECT school_dbn FROM favorites WHERE user_id=? UNION SELECT c.school_dbn FROM tuck_children c JOIN tuck_households h ON h.id=c.household_id WHERE h.owner_user_id=?) ORDER BY s.name LIMIT 5').bind(userId,userId).all<School>();
+  if(district!==null) rows.results=rows.results.map(s=>({school:s,score:calculateOverallScore(s)})).filter(x=>x.score>=0).sort((a,b)=>b.score-a.score||a.school.name.localeCompare(b.school.name)).slice(0,5).map(x=>x.school);
   const sources=rows.results.map(s=>({name:s.name,url:`${env.APP_URL}/school/${getSchoolSlug(s)}`}));
   const lines=rows.results.map(s=>{const score=calculateOverallScore(s);return `${s.name} (${s.dbn}) · ${s.grade_band}\n${isEarlyChildhoodOnly(s)?'K–12 academic scoring does not apply.':`Site overall score: ${score>=0?score:'not available'}; this is our rating, not an official DOE rating.\nAssessment year: ${s.assessment_year||'not supplied'}. ELA: ${s.ela_proficiency??'not available'}; math: ${s.math_proficiency??'not available'} (reported proficiency percentages).`}\n${env.APP_URL}/school/${getSchoolSlug(s)}`;});
-  return {message:lines.join('\n\n')||'No matching school found. Try its DBN or save schools to your account.',sources,attribution:'NYC School Ratings canonical database. Missing data is not a low score. See profiles for methodology and original sources; no admission probabilities or guaranteed placement.'};
+  const ranking=district!==null?`Top District ${district} schools by NYC School Ratings overall score (not an official DOE ranking):\n\n`:'';
+  const empty=district!==null?`No District ${district} schools currently have enough data for a site overall score.`:'No matching school found. Try its DBN or save schools to your account.';
+  return {message:lines.length?ranking+lines.join('\n\n'):empty,sources,attribution:'NYC School Ratings canonical database. Missing data is not a low score. See profiles for methodology and original sources; no admission probabilities or guaranteed placement.'};
 }

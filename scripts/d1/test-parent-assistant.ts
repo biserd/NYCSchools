@@ -56,6 +56,11 @@ try {
   const school=await answerParent('a',env,{message:'Tell me about Little Center'},async()=>({intent:'schools',schoolQuery:'01G001'}));
   assert.match(school.message,/scoring does not apply/);
   assert.ok(!school.message.includes('score: -1'));
+  await DB.prepare("INSERT INTO schools(dbn,name,district,address,grade_band,ela_proficiency,math_proficiency,climate_score,progress_score) VALUES ('02M001','District Two Leader',2,'Test','K-5',90,90,90,90),('02M002','District Two Runner Up',2,'Test','K-5',70,70,70,70),('03M001','Other District School',3,'Test','K-5',99,99,99,99)").run();
+  const district=await answerParent('a',env,{message:'Give me top schools in district 2'},async()=>({intent:'schools',schoolQuery:'district 2'}));
+  assert.match(district.message,/Top District 2 schools by NYC School Ratings overall score/);
+  assert.ok(district.message.indexOf('District Two Leader')<district.message.indexOf('District Two Runner Up'));
+  assert.ok(!district.message.includes('Other District School'));
   const due=Date.parse('2027-01-18T14:00:00Z');
   // Production entitlement for simulated future dispatch.
   await DB.prepare("UPDATE family_subscriptions SET current_period_end=? WHERE user_id='a'").bind(due+86400000).run();
