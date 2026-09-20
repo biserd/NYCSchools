@@ -34,8 +34,14 @@
     }
   ],
   "queues": {
-    "producers": [{"binding":"SAFETY_QUEUE","queue":"nyc-schools-production-safety"}],
-    "consumers": [{"queue":"nyc-schools-production-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-production-safety-failed"}]
+    "producers": [
+      {"binding":"SAFETY_QUEUE","queue":"nyc-schools-production-safety"},
+      {"binding":"PARENT_AGENT_QUEUE","queue":"nyc-schools-production-parent-agent"}
+    ],
+    "consumers": [
+      {"queue":"nyc-schools-production-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-production-safety-failed"},
+      {"queue":"nyc-schools-production-parent-agent","max_batch_size":1,"max_batch_timeout":1,"max_concurrency":10,"max_retries":3,"retry_delay":10,"dead_letter_queue":"nyc-schools-production-parent-agent-failed"}
+    ]
   },
   "send_email": [
     {
@@ -53,6 +59,7 @@
     "FAMILY_CHECKOUT_ENABLED": "true",
     "PARENT_LAUNCH_VERIFIED": "true",
     "PARENT_REMINDER_CONTENT_SID": "HXcb3d96c071bada2d611b06b8498796e8",
+    "PARENT_AGENT_QUEUE_NAME": "nyc-schools-production-parent-agent",
     "TWILIO_WHATSAPP_FROM": "whatsapp:+19174730386",
     "MAINTENANCE_MODE": "false",
     "NODE_ENV": "production",

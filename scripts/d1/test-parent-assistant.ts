@@ -64,6 +64,12 @@ try {
   assert.match(district.message,/Top District 2 schools by NYC School Ratings overall score/);
   assert.ok(district.message.indexOf('District Two Leader')<district.message.indexOf('District Two Runner Up'));
   assert.ok(!district.message.includes('Other District School'));
+  let fastPlannerCalls=0;
+  const fastEnv={...env,AI:{run:async()=>{fastPlannerCalls++;throw new Error('The deterministic path must not invoke AI');}} as Ai};
+  const deterministicDistrict=await answerParent('a',fastEnv,{message:'Give me top elementary schools in district 2'});
+  assert.match(deterministicDistrict.message,/District 2/);
+  assert.equal(fastPlannerCalls,0,'Clear district/grade searches bypass the LLM planner');
+  assert.equal(await DB.prepare('SELECT model FROM parent_agent_runs ORDER BY created_at DESC,rowid DESC LIMIT 1').first('model'),'deterministic');
   const ues=await answerParent('a',env,{message:'Give me the best schools on the UES'},async()=>({intent:'schools',schoolQuery:'UES'}));
   assert.match(ues.message,/Upper East Side/);
   assert.ok(ues.message.includes('District Two Leader'));

@@ -185,6 +185,11 @@ export default {
   },
   async queue(batch,workerEnv):Promise<void>{
     if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true'){batch.retryAll({delaySeconds:60});return;}
+    if(batch.queue===workerEnv.PARENT_AGENT_QUEUE_NAME){
+      const {consumeParentAgentQueue}=await import('./parent/whatsapp');
+      await consumeParentAgentQueue(batch,workerEnv);
+      return;
+    }
     const {consumeSafetyRefresh}=await import('./services/safetyQueue');
     await consumeSafetyRefresh(batch,workerEnv);
   },

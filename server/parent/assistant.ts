@@ -51,11 +51,47 @@ function deterministicPlanHints(plan:AgentPlan,message:string):AgentPlan {
   if(/\b3-?k\b/i.test(message))programs.add('3k');
   if(/\bpre-?k\b/i.test(message))programs.add('prek');
   if(/\bgifted|g\s*&\s*t\b/i.test(message))programs.add('gifted');
-  if(/\bdual[ -]language\b/i.test(message))programs.add('dual_language');
+  if(/\bspanish(?:\s+dual[ -]language)?\b/i.test(message))programs.add('spanish_dual_language');
+  else if(/\bmandarin(?:\s+dual[ -]language)?\b/i.test(message))programs.add('mandarin_dual_language');
+  else if(/\bdual[ -]language\b/i.test(message))programs.add('dual_language');
+  if(/\bspecialized\b/i.test(message))programs.add('specialized');
+  if(/\bscreened\b/i.test(message))programs.add('screened');
   const sort=/\bsafest|safety\b/i.test(message)?'safety':/\bacademic/i.test(message)?'academics':/\bclimate\b/i.test(message)?'climate':/\bprogress\b/i.test(message)?'progress':plan.sort;
   const locationSearch=plan.action==='school_detail'&&/\b(best|top|schools?\s+(?:in|on|near)|district|ues|uws|upper\s+(?:east|west)\s+side|neighborhood|borough)\b/i.test(message);
   const action=/\bcompare\b/i.test(message)?'school_compare':locationSearch?'school_search':plan.action;
   return {...plan,action,schoolQuery:locationSearch?null:plan.schoolQuery,gradeLevel:grade,programs:[...programs],sort};
+}
+
+const emptySchoolPlan=():AgentPlan=>({action:'school_search',schoolQuery:null,schoolQueries:[],location:null,gradeLevel:null,programs:[],sort:null,title:null,date:null,reminderDate:null,reminderTime:null,clarification:null});
+
+/**
+ * Handles the common, unambiguous school requests without an LLM round trip.
+ * Location resolution still uses the official alias tables and every result is
+ * still produced by the validated D1 school tool.
+ */
+export function deterministicParentPlan(message:string,context:ParentAgentContext|null=null):AgentPlan|null {
+  const text=message.trim();
+  if(!text)return null;
+  if(/\b(remind|reminder|schedule|add|create)\b.*\b(event|calendar|visit|tour|deadline|date)\b/i.test(text)||/\b(?:today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.*\b(?:at|remind)\b/i.test(text))return null;
+  if(/^(?:show\s+)?(?:my\s+)?(?:events|calendar|upcoming dates?)\??$/i.test(text))return {...emptySchoolPlan(),action:'events'};
+  if(/\b(?:saved|favorite|favourite) schools?\b/i.test(text))return {...emptySchoolPlan(),action:'saved_schools'};
+
+  const dbns=[...text.matchAll(/\b\d{2}[A-Z]\d{3}\b/gi)].map(match=>match[0].toUpperCase()).slice(0,4);
+  const namedComparison=/\bcompare\s+(.+?)\s+(?:versus|vs\.?|and)\s+(.+?)(?:[?.!]|$)/i.exec(text);
+  const contextualComparison=!!context&&context.resultDbns.length>=2&&/\b(?:compare|which (?:one|school)|best of (?:those|them)|among (?:those|them))\b/i.test(text);
+  if(namedComparison||dbns.length>=2||contextualComparison){
+    const queries=namedComparison?[namedComparison[1].trim(),namedComparison[2].trim()]:dbns;
+    return deterministicPlanHints({...emptySchoolPlan(),action:'school_compare',schoolQueries:queries.slice(0,4)},text);
+  }
+  if(dbns.length===1)return deterministicPlanHints({...emptySchoolPlan(),action:'school_detail',schoolQuery:dbns[0]},text);
+  const detail=/^(?:tell me about|show(?: me)?(?: the)? (?:profile|details?) (?:for|of)|profile for)\s+(.+?)(?:[?.!]|$)/i.exec(text)?.[1]?.trim();
+  if(detail)return deterministicPlanHints({...emptySchoolPlan(),action:'school_detail',schoolQuery:detail},text);
+
+  const schoolSignal=/\b(schools?|district|dbn|ues|uws|upper\s+(?:east|west)\s+side|elementary|middle|high school|2-?k|3-?k|pre-?k|gifted|g\s*&\s*t|dual[ -]language|spanish|mandarin|specialized|screened)\b/i.test(text);
+  const listSignal=/\b(best|top|find|show|list|near|nearby|in|on|around|offer|have|with|which|what)\b/i.test(text);
+  const contextSignal=!!context&&shouldUseAgentContext(text);
+  if((schoolSignal&&listSignal)||contextSignal)return deterministicPlanHints(emptySchoolPlan(),text);
+  return null;
 }
 
 export function isComplexParentRequest(message:string):boolean {
@@ -161,10 +197,11 @@ export async function answerParent(userId:string,env:AssistantEnvironment,input:
   const usage=await env.DB.prepare(`INSERT INTO parent_usage(user_id,day,count) SELECT ?,?,1 WHERE (SELECT coalesce(sum(count),0) FROM parent_usage WHERE day>=?)<? ON CONFLICT(user_id,day) DO UPDATE SET count=count+1 WHERE count<? RETURNING count`).bind(userId,today,new Date(Date.now()-86400000).toISOString().slice(0,10),budget,PARENT_LIMITS.questionsPerDay).first();
   if(!usage)throw new TuckError(429,'Daily assistant limit reached. Your calendar remains available.');
   const started=Date.now(),context=await loadAgentContext(userId,env),useContext=!!context&&shouldUseAgentContext(message);
-  const model=parentAgentModel(message);
+  const deterministic=!parser?deterministicParentPlan(message,useContext?context:null):null;
+  const model:string=deterministic?'deterministic':parentAgentModel(message);
   let plan:AgentPlan;
   try {
-    const raw=parser?await parser(message,today,p.timezone):await parseIntent(env,message,today,p.timezone,useContext?context:null);
+    const raw=parser?await parser(message,today,p.timezone):deterministic??await parseIntent(env,message,today,p.timezone,useContext?context:null);
     plan=deterministicPlanHints(agentPlanSchema.parse(normalizeLegacyPlan(raw)),message);
   }catch(error) {
     // Diagnostics deliberately omit prompts, model content and private identifiers.

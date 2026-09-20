@@ -926,6 +926,15 @@ export const parentWhatsappReceipts = sqliteTable('parent_whatsapp_receipts', {
   messageSid: text('message_sid').primaryKey(),
   receivedAt: integer('received_at').notNull(),
 }, table => [index('parent_whatsapp_receipts_received_idx').on(table.receivedAt)]);
+// Delivery state contains no message text, phone number, prompt or response.
+// The inbound request body exists only in the short-lived Cloudflare Queue job.
+export const parentAgentDeliveries = sqliteTable('parent_agent_deliveries', {
+  inboundSid:text('inbound_sid').primaryKey(),
+  userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+  createdAt:integer('created_at').notNull(), status:text('status').notNull().default('pending'),
+  attempts:integer('attempts').notNull().default(0), claimAt:integer('claim_at'), completedAt:integer('completed_at'),
+  providerSid:text('provider_sid').unique(), failureCode:text('failure_code'),
+},t=>[index('parent_agent_deliveries_status_idx').on(t.status,t.createdAt),index('parent_agent_deliveries_created_idx').on(t.createdAt)]);
 
 export const tuckHouseholds = sqliteTable("tuck_households", {
   id: text("id").primaryKey(),

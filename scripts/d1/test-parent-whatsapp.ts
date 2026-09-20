@@ -4,7 +4,7 @@ import { mkdtemp, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { getPlatformProxy } from 'wrangler';
-import { parentWhatsappWebhook, PARENT_WEBHOOK_PATH, parentWhatsappReady, verifyTwilioSignature, type ParentWhatsappEnvironment } from '../../server/parent/whatsapp';
+import { consumeParentAgentQueue, parentWhatsappWebhook, PARENT_WEBHOOK_PATH, parentWhatsappReady, verifyTwilioSignature, type ParentAgentQueueJob, type ParentWhatsappEnvironment } from '../../server/parent/whatsapp';
 import { createParentWhatsappLink, disconnectParentWhatsapp, parentWhatsappStatus } from '../../server/parent/account';
 
 const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.d1-test.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-parent-whatsapp-')) } });
@@ -77,6 +77,30 @@ try {
   const dates = await send('EVENTS');
   assert.match(dates, /Visit &lt;school&gt; &amp; ask questions/);
   assert.ok(!dates.includes('OTHER PARENT SECRET'), 'Cross-account calendar isolation');
+  let queuedJob:ParentAgentQueueJob|null=null;
+  const metrics={backlogCount:0,backlogBytes:0};
+  env.PARENT_ASSISTANT_ENABLED='true';
+  env.PARENT_AGENT_QUEUE_NAME='synthetic-parent-agent';
+  env.PARENT_AGENT_QUEUE={
+    metrics:async()=>metrics,
+    send:async job=>{queuedJob=job;return {metadata:{metrics}};},
+    sendBatch:async()=>({metadata:{metrics}}),
+  };
+  const queuedXml=await send('Give me top elementary schools in district 2');
+  assert.equal(queuedXml,'<?xml version="1.0" encoding="UTF-8"?><Response></Response>','Slow assistant work is acknowledged immediately');
+  assert.ok(queuedJob&&queuedJob.message.includes('district 2'));
+  assert.equal(await db.prepare('SELECT status FROM parent_agent_deliveries WHERE inbound_sid=?').bind(queuedJob!.inboundSid).first('status'),'pending');
+  let outbound=0,acked=0,retried=0;
+  const queuedMessage:Message<ParentAgentQueueJob>={id:'queue-message-1',timestamp:new Date(),body:queuedJob!,attempts:1,ack:()=>{acked++;},retry:()=>{retried++;}};
+  const queueBatch:MessageBatch<ParentAgentQueueJob>={messages:[queuedMessage],queue:env.PARENT_AGENT_QUEUE_NAME,metadata:{metrics},ackAll:()=>{},retryAll:()=>{}};
+  await consumeParentAgentQueue(queueBatch,env,(async(_url,init)=>{outbound++;assert.match(String(init?.body),/Body=/);return Response.json({sid:`SM${'c'.repeat(32)}`});}) as typeof fetch);
+  assert.equal(outbound,1);assert.equal(acked,1);assert.equal(retried,0);
+  assert.equal(await db.prepare('SELECT status FROM parent_agent_deliveries WHERE inbound_sid=?').bind(queuedJob!.inboundSid).first('status'),'accepted');
+  await consumeParentAgentQueue(queueBatch,env,(async()=>{outbound++;return Response.json({sid:`SM${'d'.repeat(32)}`});}) as typeof fetch);
+  assert.equal(outbound,1,'An at-least-once queue redelivery cannot send a duplicate WhatsApp answer');assert.equal(acked,2);
+  const deliveryColumns=(await db.prepare('PRAGMA table_info(parent_agent_deliveries)').all<{name:string}>()).results.map(row=>row.name);
+  assert.ok(!deliveryColumns.some(name=>/message|prompt|response|phone|email|body/i.test(name)),'Delivery state cannot store private message content');
+  env.PARENT_ASSISTANT_ENABLED='false';
   const bLink = await createParentWhatsappLink('wa-parent-b', env, true);
   assert.match(await send(new URL(bLink.url).searchParams.get('text')!), /already linked/);
   assert.equal((await parentWhatsappStatus('wa-parent-b', env)).connected, false, 'Phone cannot be silently moved to another account');

@@ -13,8 +13,14 @@
   "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-d1-staging","database_id":"e48a9ae9-4948-4dae-863a-06f6b026b436","migrations_dir":"migrations-d1"}],
   "triggers":{"crons":[]},
   "queues":{
-    "producers":[{"binding":"SAFETY_QUEUE","queue":"nyc-schools-d1-stage-safety"}],
-    "consumers":[{"queue":"nyc-schools-d1-stage-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-d1-stage-safety-failed"}]
+    "producers":[
+      {"binding":"SAFETY_QUEUE","queue":"nyc-schools-d1-stage-safety"},
+      {"binding":"PARENT_AGENT_QUEUE","queue":"nyc-schools-d1-stage-parent-agent"}
+    ],
+    "consumers":[
+      {"queue":"nyc-schools-d1-stage-safety","max_batch_size":1,"max_concurrency":1,"max_retries":3,"retry_delay":60,"dead_letter_queue":"nyc-schools-d1-stage-safety-failed"},
+      {"queue":"nyc-schools-d1-stage-parent-agent","max_batch_size":1,"max_batch_timeout":1,"max_concurrency":3,"max_retries":3,"retry_delay":10,"dead_letter_queue":"nyc-schools-d1-stage-parent-agent-failed"}
+    ]
   },
   "vars":{
     "ENVIRONMENT":"staging",
@@ -24,6 +30,7 @@
     "FAMILY_CHECKOUT_ENABLED":"true",
     "PARENT_LAUNCH_VERIFIED":"false",
     "PARENT_REMINDER_CONTENT_SID":"HXcb3d96c071bada2d611b06b8498796e8",
+    "PARENT_AGENT_QUEUE_NAME":"nyc-schools-d1-stage-parent-agent",
     "TWILIO_WHATSAPP_FROM":"whatsapp:+19174730386",
     "NODE_ENV":"production",
     "APP_URL":"https://nyc-schools-ratings-d1-staging.biser-d.workers.dev",

@@ -1,11 +1,22 @@
 // Signed ingress shared by the connection preview and gated Parent Assistant.
 export const PARENT_WEBHOOK_PATH = '/api/parent/whatsapp/inbound';
+export interface ParentAgentQueueJob {
+  version:1;
+  inboundSid:string;
+  userId:string;
+  phone:string;
+  message:string;
+  receivedAt:number;
+}
 export type ParentWhatsappEnvironment = Pick<Env, 'DB' | 'ENVIRONMENT' | 'APP_URL'> & {
   STAGING_EXPIRES_AT?: string;
   PARENT_WHATSAPP_ENABLED?: string;
   TWILIO_ACCOUNT_SID?: string;
   TWILIO_WHATSAPP_FROM?: string;
   TWILIO_AUTH_TOKEN?: string;
+  PARENT_ASSISTANT_ENABLED?:string;
+  PARENT_AGENT_QUEUE?:Queue<ParentAgentQueueJob>;
+  PARENT_AGENT_QUEUE_NAME?:string;
 };
 const phonePattern = /^whatsapp:\+[1-9]\d{7,14}$/;
 const sidPattern = /^SM[a-f0-9]{32}$/i;
@@ -120,11 +131,26 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
   const linked = await env.DB.prepare('SELECT user_id FROM parent_whatsapp_links WHERE phone=? AND consent_at IS NOT NULL').bind(from).first<{ user_id: string }>();
   if (!linked) return xml(`NYC School Ratings. Sign in at ${env.APP_URL}/family to link your account. No automated reminders are enabled for this phone.`);
   await env.DB.prepare('UPDATE parent_whatsapp_links SET last_inbound_at=? WHERE user_id=? AND phone=?').bind(now, linked.user_id, from).run();
-  if (Reflect.get(env,'PARENT_ASSISTANT_ENABLED')==='true' && !['EVENTS','STATUS','HELP'].includes(command)) {
-    const {answerParent,confirmDraft,rejectDraft}=await import('./assistant');
+  if (env.PARENT_ASSISTANT_ENABLED==='true' && !['EVENTS','STATUS','HELP'].includes(command)) {
+    const {confirmDraft,rejectDraft}=await import('./assistant');
     const confirmation=/^(CONFIRM|DISCARD) ([a-f0-9-]{36})$/i.exec(text);
+    if(!confirmation){
+      if(!env.PARENT_AGENT_QUEUE)return xml('Assistant temporarily unavailable. Please try again shortly.');
+      await env.DB.prepare(`INSERT INTO parent_agent_deliveries(inbound_sid,user_id,created_at,status)
+        VALUES (?,?,?,'pending') ON CONFLICT(inbound_sid) DO NOTHING`).bind(sid,linked.user_id,now).run();
+      try {
+        await env.PARENT_AGENT_QUEUE.send({version:1,inboundSid:sid,userId:linked.user_id,phone:from,message:text,receivedAt:now});
+        // Twilio receives an immediate successful acknowledgement. The Queue
+        // sends the requested answer as a separate WhatsApp message.
+        return xml();
+      } catch(error) {
+        console.error(JSON.stringify({message:'Parent Agent enqueue failed',kind:error instanceof Error?error.name:'unknown'}));
+        await env.DB.prepare("UPDATE parent_agent_deliveries SET status='failed',completed_at=?,failure_code='enqueue_failed' WHERE inbound_sid=? AND status='pending'").bind(Date.now(),sid).run();
+        return xml('Assistant temporarily unavailable. Please try again shortly.');
+      }
+    }
     try {
-      const result=confirmation ? await (confirmation[1].toUpperCase()==='CONFIRM'?confirmDraft:rejectDraft)(linked.user_id,env,confirmation[2]) : await answerParent(linked.user_id,env,{message:text});
+      const result=await (confirmation[1].toUpperCase()==='CONFIRM'?confirmDraft:rejectDraft)(linked.user_id,env,confirmation[2]);
       const draft='draftId' in result && 'summary' in result ? `\n${result.summary}\nReply CONFIRM ${result.draftId} to save, or DISCARD ${result.draftId}. Expires in 10 minutes.` : '';
       const reply=result.message+draft;
       return xml(reply.length>1500?`${reply.slice(0,1380)}\nMore details: ${env.APP_URL}/family`:reply);
@@ -144,4 +170,76 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
   if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. Assistant access depends on your active paid plan. Only requested reminders are sent. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With an active paid plan, ask about a school or give an event date and reminder date/time. Active Research Pass customers are grandfathered through their original expiry. Sending a question submits it to our AI interpreter; review any draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
   return xml(command === 'STATUS' ? 'Connected to NYC School Ratings preview. Automatic reminders and AI are not enabled. Send STOP to disconnect.' :
     'NYC School Ratings preview commands: EVENTS (your next 5 family dates), STATUS, HELP, STOP. This is a connection test, not the full Parent Assistant yet.');
+}
+
+function validParentAgentJob(value:unknown):value is ParentAgentQueueJob {
+  if(!value||typeof value!=='object')return false;
+  const job=value as Partial<ParentAgentQueueJob>;
+  return job.version===1&&typeof job.userId==='string'&&job.userId.length>0&&job.userId.length<=128&&
+    typeof job.inboundSid==='string'&&sidPattern.test(job.inboundSid)&&typeof job.phone==='string'&&phonePattern.test(job.phone)&&
+    typeof job.message==='string'&&job.message.length>0&&job.message.length<=2000&&typeof job.receivedAt==='number'&&Number.isFinite(job.receivedAt);
+}
+
+function queuedReply(result:Record<string,unknown>,appUrl:string) {
+  const message=typeof result.message==='string'?result.message:'Assistant temporarily unavailable. Please try again.';
+  const draft=typeof result.draftId==='string'&&typeof result.summary==='string'
+    ? `\n${result.summary}\nReply CONFIRM ${result.draftId} to save, or DISCARD ${result.draftId}. Expires in 10 minutes.`:'';
+  const reply=message+draft;
+  return reply.length>1500?`${reply.slice(0,1380)}\nMore details: ${appUrl}/family`:reply;
+}
+
+async function markDelivery(env:ParentWhatsappEnvironment,sid:string,status:string,failureCode:string|null,providerSid:string|null=null) {
+  await env.DB.prepare(`UPDATE parent_agent_deliveries SET status=?,completed_at=?,failure_code=?,provider_sid=?
+    WHERE inbound_sid=? AND status='processing'`).bind(status,Date.now(),failureCode,providerSid,sid).run();
+}
+
+/** Durable, privacy-minimized consumer for slow assistant work. */
+export async function consumeParentAgentQueue(batch:MessageBatch<unknown>,env:ParentWhatsappEnvironment,transport:typeof fetch=fetch):Promise<void> {
+  for(const queued of batch.messages){
+    if(!validParentAgentJob(queued.body)){queued.ack();continue;}
+    const job=queued.body,now=Date.now();
+    let claimedDelivery=false;
+    try {
+      const existing=await env.DB.prepare('SELECT status,claim_at FROM parent_agent_deliveries WHERE inbound_sid=? AND user_id=?').bind(job.inboundSid,job.userId).first<{status:string;claim_at:number|null}>();
+      if(!existing){queued.ack();continue;}
+      if(existing.status==='processing'){
+        if((existing.claim_at||0)<now-300000)await env.DB.prepare("UPDATE parent_agent_deliveries SET status='uncertain',completed_at=?,failure_code='worker_interrupted' WHERE inbound_sid=? AND status='processing'").bind(now,job.inboundSid).run();
+        queued.ack();continue;
+      }
+      if(existing.status!=='pending'){queued.ack();continue;}
+      const claim=await env.DB.prepare("UPDATE parent_agent_deliveries SET status='processing',claim_at=?,attempts=attempts+1 WHERE inbound_sid=? AND user_id=? AND status='pending' RETURNING attempts").bind(now,job.inboundSid,job.userId).first();
+      if(!claim){queued.ack();continue;}
+      claimedDelivery=true;
+      const linked=await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(job.userId,job.phone).first();
+      if(!linked){await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;}
+
+      let reply:string;
+      try {
+        const {answerParent}=await import('./assistant');
+        reply=queuedReply(await answerParent(job.userId,env,{message:job.message}) as Record<string,unknown>,env.APP_URL);
+      } catch(error) {
+        const {TuckError}=await import('../tuck/store');
+        reply=error instanceof TuckError?error.message:'Assistant temporarily unavailable. Please try again. Your calendar was not changed unless you already confirmed a draft.';
+      }
+      // Re-check STOP/disconnect immediately before the provider handoff.
+      if(!await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(job.userId,job.phone).first()){
+        await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;
+      }
+      const form=new URLSearchParams({From:env.TWILIO_WHATSAPP_FROM!,To:job.phone,Body:reply});
+      try {
+        const response=await transport(`https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`,{method:'POST',headers:{Authorization:`Basic ${btoa(env.TWILIO_ACCOUNT_SID+':'+env.TWILIO_AUTH_TOKEN)}`,'Content-Type':'application/x-www-form-urlencoded'},body:form.toString(),signal:AbortSignal.timeout(10000)});
+        if(!response.ok){await markDelivery(env,job.inboundSid,response.status===429?'failed':'uncertain',`http_${response.status}`);queued.ack();continue;}
+        const result=await response.json() as {sid?:string};
+        if(!sidPattern.test(result.sid||'')){await markDelivery(env,job.inboundSid,'uncertain','invalid_provider_response');queued.ack();continue;}
+        await markDelivery(env,job.inboundSid,'accepted',null,result.sid!);
+      } catch {await markDelivery(env,job.inboundSid,'uncertain','transport_uncertain');}
+      queued.ack();
+    } catch(error) {
+      console.error(JSON.stringify({message:'Parent Agent queue processing failed',kind:error instanceof Error?error.name:'unknown',attempt:queued.attempts}));
+      if(claimedDelivery){
+        try {await markDelivery(env,job.inboundSid,'uncertain','worker_error');} catch { /* best effort; never risk a duplicate reply */ }
+        queued.ack();
+      } else queued.retry({delaySeconds:Math.min(300,10*2**Math.max(0,queued.attempts-1))});
+    }
+  }
 }
