@@ -4,7 +4,7 @@ export const agentLocationKind=z.enum(['neighborhood','district','borough','zip'
 export const agentGradeLevel=z.enum(['2k','3k','prek','elementary','middle','high','any']);
 export const agentSort=z.enum(['overall','academics','climate','progress','safety','name']);
 export const agentProgram=z.enum(['2k','3k','prek','gifted','dual_language','spanish_dual_language','mandarin_dual_language','specialized','screened']);
-export const agentAction=z.enum(['event','events','school_search','school_detail','school_compare','saved_schools','clarify']);
+export const agentAction=z.enum(['conversation','event','events','school_search','school_detail','school_compare','saved_schools','clarify']);
 
 export const agentPlanSchema=z.object({
   action:agentAction,
