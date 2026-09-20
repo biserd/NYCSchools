@@ -4,7 +4,7 @@ export const agentLocationKind=z.enum(['neighborhood','district','borough','zip'
 export const agentGradeLevel=z.enum(['2k','3k','prek','elementary','middle','high','any']);
 export const agentSort=z.enum(['overall','academics','climate','progress','safety','name']);
 export const agentProgram=z.enum(['2k','3k','prek','gifted','dual_language','spanish_dual_language','mandarin_dual_language','specialized','screened']);
-export const agentAction=z.enum(['conversation','event','events','school_search','school_detail','school_compare','saved_schools','clarify']);
+export const agentAction=z.enum(['event','events','school_search','school_detail','school_compare','saved_schools','clarify']);
 
 export const agentPlanSchema=z.object({
   action:agentAction,
@@ -32,5 +32,6 @@ export interface ParentAgentRunRow {
 }
 
 export const PARENT_AGENT_CONTEXT_TTL_MS=60*60*1000;
-export const PARENT_AGENT_FAST_MODEL='@cf/zai-org/glm-4.7-flash' as const;
+export const PARENT_AGENT_FAST_MODEL='@cf/meta/llama-3.3-70b-instruct-fp8-fast' as const;
+export const PARENT_AGENT_CONVERSATION_MODEL='@cf/meta/llama-3.2-3b-instruct' as const;
 export const PARENT_AGENT_COMPLEX_MODEL='@cf/openai/gpt-oss-120b' as const;
