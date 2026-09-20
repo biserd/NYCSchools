@@ -72,6 +72,26 @@ export const NEIGHBORHOOD_LANDINGS: SeoLanding[] = NEIGHBORHOODS.map(({ slug, na
   ],
 }));
 
+const NEIGHBORHOOD_ALIASES: Record<string, string[]> = {
+  "upper-east-side": ["ues"],
+  "upper-west-side": ["uws"],
+  "lower-east-side": ["les"],
+  "long-island-city": ["lic"],
+};
+
+function normalizedLocationText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+/** Resolve only locations for which the site has an explicit ZIP-based scope. */
+export function resolveNeighborhoodLanding(value: string): SeoLanding | undefined {
+  const normalized = ` ${normalizedLocationText(value)} `;
+  return NEIGHBORHOOD_LANDINGS.find((landing) => {
+    const phrases = [landing.name, landing.slug, ...(NEIGHBORHOOD_ALIASES[landing.slug] ?? [])];
+    return phrases.some((phrase) => normalized.includes(` ${normalizedLocationText(phrase)} `));
+  });
+}
+
 const PROGRAM_CONFIG: Array<{ slug: string; name: string; program: NonNullable<SeoLanding["program"]>; relatedRefs: SeoLandingRef[] }> = [
   { slug: "gifted-talented", name: "Gifted & Talented", program: "gifted", relatedRefs: ["program:dual-language", "program:prek", "program:3k"] },
   { slug: "dual-language", name: "Dual-language", program: "dual", relatedRefs: ["program:spanish-dual-language", "program:mandarin-dual-language", "program:gifted-talented"] },
