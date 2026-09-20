@@ -11,7 +11,7 @@ export async function loadAgentContext(userId:string,env:AssistantEnvironment,no
 }
 
 export function shouldUseAgentContext(message:string):boolean {
-  return /\b(those|them|these|the first|the second|which (?:one|ones)|what about|of these|among them|closer|safest|best|elementary|middle|high school|2-?k|3-?k|pre-?k)\b/i.test(message);
+  return /\b(those|them|these|the first|the second|which (?:one|ones)|what about|how about|of these|among them|closer|safest|best|elementary|middle|high school|2-?k|3-?k|pre-?k|explain (?:more|that)|tell me more|what else|how do i apply)\b/i.test(message);
 }
 
 export async function saveAgentContext(userId:string,env:AssistantEnvironment,plan:AgentPlan,location:ResolvedAgentLocation|null,resultDbns:string[],now=Date.now()) {

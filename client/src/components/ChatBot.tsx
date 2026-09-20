@@ -603,7 +603,7 @@ export function ChatBot() {
               <div className="text-left bg-muted/50 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <MessageCircle className="w-4 h-4 text-primary" />
-                  <span>Unlimited AI questions</span>
+                  <span>Full Parent Assistant access</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Sparkles className="w-4 h-4 text-primary" />
@@ -737,7 +737,7 @@ export function ChatBot() {
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-500" />
-              Premium: Unlimited AI questions
+              Premium Parent Assistant
             </p>
             <p className="text-xs text-muted-foreground">
               Press Enter to send

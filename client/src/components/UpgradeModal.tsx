@@ -45,7 +45,7 @@ const triggerContent: Record<UpgradeModalTrigger, { title: string; description: 
     icon: Heart,
   },
   ai_chat_limit: {
-    title: "Unlimited AI Questions",
+    title: "Parent Assistant Access",
     description: "You've used your 5 free questions today. Upgrade for unlimited access to our AI assistant who knows everything about NYC schools.",
     icon: MessageCircle,
   },
@@ -82,7 +82,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
   const buttonText = isReady ? "Subscribe — $19.99/month" : "View pricing and availability";
 
   const premiumFeatures = [
-    { icon: MessageCircle, text: "Unlimited AI questions" },
+    { icon: MessageCircle, text: "Full Parent Assistant access" },
     { icon: Clock, text: "Commute time calculator" },
     { icon: Target, text: "Smart recommendations" },
     { icon: Brain, text: "Early childhood insights" },

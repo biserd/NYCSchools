@@ -9,6 +9,8 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
+import { TuckError } from "./tuck/store";
+import { answerParent } from "./parent/assistant";
 import { accountAccess } from './familyBilling';
 import { RESEARCH_PASS, FAMILY_PREMIUM } from '@shared/plans';
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
@@ -2291,6 +2293,41 @@ Only recommend schools from the provided data. Use exact DBN codes.`;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Compatibility adapter for the established website chat UI. In enabled
+      // environments, web and WhatsApp use the same entitlement check, planner,
+      // grounded D1 tools, safety rules and short-lived structured context.
+      // The older implementation remains below only as an emergency fallback if
+      // Parent Assistant is deliberately disabled.
+      if (workerEnv.PARENT_ASSISTANT_ENABLED === 'true') {
+        let currentSessionId = sessionId;
+        if (currentSessionId) {
+          const existingSession = await storage.getChatSession(currentSessionId);
+          if (!existingSession || existingSession.userId !== userId) return res.status(403).json({ error: "Access denied to this chat session" });
+        } else {
+          const session = await storage.createChatSession({userId,title:message.substring(0,100)});
+          currentSessionId = session.id;
+        }
+        await storage.addChatMessage({sessionId:currentSessionId,role:'user',content:message});
+        try {
+          const safeCurrentSchoolDbn=typeof currentSchoolDbn==='string'&&/^\d{2}[A-Z]\d{3}$/i.test(currentSchoolDbn)
+            ?currentSchoolDbn.toUpperCase():undefined;
+          const result=await answerParent(userId,workerEnv,{message,currentSchoolDbn:safeCurrentSchoolDbn});
+          const summary='summary' in result&&typeof result.summary==='string'?`\n\n${result.summary}`:'';
+          const draft='draftId' in result&&typeof result.draftId==='string'?`\n\nReview and confirm this draft in My Family: ${getAppUrl()}/family`:'';
+          const attribution='attribution' in result&&typeof result.attribution==='string'?`\n\n${result.attribution}`:'';
+          const content=result.message+summary+draft+attribution;
+          await storage.addChatMessage({sessionId:currentSessionId,role:'assistant',content});
+          res.set({'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});
+          if(!sessionId)res.write(`data: ${JSON.stringify({sessionId:currentSessionId})}\n\n`);
+          res.write(`data: ${JSON.stringify({content})}\n\n`);
+          res.write('data: [DONE]\n\n');
+          return res.end();
+        } catch(error) {
+          if(error instanceof TuckError)return res.status(error.status).json({error:error.message,message:error.message,code:error.status===429?'AI_QUESTION_LIMIT_REACHED':'PARENT_ASSISTANT_UNAVAILABLE'});
+          throw error;
+        }
       }
 
       // Check daily question limit for free users

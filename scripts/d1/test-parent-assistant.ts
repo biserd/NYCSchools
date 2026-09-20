@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {getPlatformProxy} from 'wrangler';
 import {localInstant,quietNow,savePreferences,preferences,hasAssistantAccess,createReminder,cancelReminder,assistantOverview,type AssistantEnvironment} from '../../server/parent/service';
-import {answerParent,confirmDraft,stageDraft,suggestCalendarEvent,parentAgentModel} from '../../server/parent/assistant';
+import {answerParent,confirmDraft,stageDraft,suggestCalendarEvent,parentAgentModel,withCurrentSchoolContext} from '../../server/parent/assistant';
 import {PARENT_AGENT_COMPLEX_MODEL,PARENT_AGENT_FAST_MODEL,type AgentPlan} from '../../shared/parent-agent';
 import {processReminders,reminderStatusWebhook,PARENT_STATUS_PATH} from '../../server/parent/delivery';
 import {disconnectParentWhatsapp} from '../../server/parent/account';
@@ -59,6 +59,9 @@ try {
   const school=await answerParent('a',env,{message:'Tell me about Little Center'},async()=>({intent:'schools',schoolQuery:'01G001'}));
   assert.match(school.message,/scoring does not apply/);
   assert.ok(!school.message.includes('score: -1'));
+  assert.equal(withCurrentSchoolContext('Show schools in Queens','01G001'),'Show schools in Queens','Explicit searches must not be contaminated by the open profile');
+  const currentSchool=await answerParent('a',env,{message:'What programs does this school offer?',currentSchoolDbn:'01g001'});
+  assert.match(currentSchool.message,/Little Center/,'Web profile context uses the shared grounded school tool');
   await DB.prepare("INSERT INTO schools(dbn,name,district,address,grade_band,zip_code,ela_proficiency,math_proficiency,climate_score,progress_score) VALUES ('02M001','District Two Leader',2,'Test','K-5','10028',90,90,90,90),('02M002','District Two Runner Up',2,'Test','K-5','10028',70,70,70,70),('03M001','Other District School',3,'Test','K-5','10023',99,99,99,99)").run();
   const district=await answerParent('a',env,{message:'Give me top schools in district 2'},async()=>({intent:'schools',schoolQuery:'district 2'}));
   assert.match(district.message,/Top District 2 schools by NYC School Ratings overall score/);

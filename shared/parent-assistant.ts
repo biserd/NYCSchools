@@ -9,7 +9,12 @@ export const parentPreferencesInput = z.object({
   reminderConsent: z.boolean().optional(), aiConsent: z.boolean().optional(),
 }).strict().refine(p => p.quietStart !== p.quietEnd, 'Quiet hours must leave a delivery window');
 export const reminderInput = z.object({eventId:z.string().uuid(), localDate:z.string().regex(/^20\d{2}-\d{2}-\d{2}$/), localTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)}).strict();
-export const parentMessageInput = z.object({message:z.string().trim().min(1).max(1500)}).strict();
+export const parentMessageInput = z.object({
+  message:z.string().trim().min(1).max(1500),
+  // The web channel may identify the profile currently on screen. WhatsApp
+  // omits it; both channels still use the same planner, tools and context.
+  currentSchoolDbn:z.string().trim().toUpperCase().regex(/^\d{2}[A-Z]\d{3}$/).optional(),
+}).strict();
 export const PARENT_LIMITS = { questionsPerDay: 30, remindersPerMonth: 100, pendingReminders: 100 } as const;
 
 export interface ParentPreferences { timezone:string; quietStart:number; quietEnd:number; reminderConsent:boolean; aiConsent:boolean }

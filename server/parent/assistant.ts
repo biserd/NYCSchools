@@ -102,6 +102,13 @@ export function parentAgentModel(message:string):typeof PARENT_AGENT_FAST_MODEL|
   return isComplexParentRequest(message)?PARENT_AGENT_COMPLEX_MODEL:PARENT_AGENT_FAST_MODEL;
 }
 
+export function withCurrentSchoolContext(message:string,currentSchoolDbn?:string):string {
+  if(!currentSchoolDbn)return message;
+  const explicitReference=/\b(this school|the school|current school|it|its|here)\b/i.test(message);
+  const implicitProfileQuestion=!/\bschools\b/i.test(message)&&/\b(scores?|rating|programs?|enrollment|safety|survey|attendance|academics?|climate|progress|test results?|trends?)\b/i.test(message);
+  return explicitReference||implicitProfileQuestion?`${message}\nCurrent school DBN: ${currentSchoolDbn}`:message;
+}
+
 function fallbackSchoolPlan(message:string):AgentPlan|null {
   if(!/\b(school|dbn|district|ues|uws|2-?k|3-?k|pre-?k|elementary|middle|high school|gifted|dual[ -]language)\b/i.test(message))return null;
   const dbns=[...message.matchAll(/\b\d{2}[A-Z]\d{3}\b/gi)].map(match=>match[0].toUpperCase()).slice(0,4);
@@ -192,7 +199,7 @@ async function composeGroundedSchoolAnswer(env:AssistantEnvironment,message:stri
 
 export async function answerParent(userId:string,env:AssistantEnvironment,input:unknown,parser?:IntentParser) {
   await requireAssistant(userId,env);
-  const {message}=parentMessageInput.parse(input),p=await preferences(userId,env),today=localParts(Date.now(),p.timezone).date;
+  const parsed=parentMessageInput.parse(input),message=withCurrentSchoolContext(parsed.message,parsed.currentSchoolDbn),p=await preferences(userId,env),today=localParts(Date.now(),p.timezone).date;
   const budget=env.ENVIRONMENT==='staging'?100:5000;
   const usage=await env.DB.prepare(`INSERT INTO parent_usage(user_id,day,count) SELECT ?,?,1 WHERE (SELECT coalesce(sum(count),0) FROM parent_usage WHERE day>=?)<? ON CONFLICT(user_id,day) DO UPDATE SET count=count+1 WHERE count<? RETURNING count`).bind(userId,today,new Date(Date.now()-86400000).toISOString().slice(0,10),budget,PARENT_LIMITS.questionsPerDay).first();
   if(!usage)throw new TuckError(429,'Daily assistant limit reached. Your calendar remains available.');

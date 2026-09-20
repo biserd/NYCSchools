@@ -515,7 +515,7 @@ export default function Settings() {
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li className="flex items-center gap-2">
                       <Crown className="w-3 h-3 text-amber-500" />
-                      Unlimited AI questions
+                      Full Parent Assistant access
                     </li>
                     <li className="flex items-center gap-2">
                       <Crown className="w-3 h-3 text-amber-500" />
