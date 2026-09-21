@@ -4,6 +4,8 @@ import {maintenanceResponse} from './maintenanceResponse';
 import {parentWhatsappWebhook, PARENT_WEBHOOK_PATH} from './parent/whatsapp';
 import {processReminders, pruneParentData, reminderStatusWebhook, PARENT_STATUS_PATH} from './parent/delivery';
 
+export {ParentAssistantAgent} from './parent/agent-sdk';
+
 type WorkerHandler = ReturnType<typeof httpServerHandler>;
 
 let expressHandlerPromise: Promise<WorkerHandler> | undefined;

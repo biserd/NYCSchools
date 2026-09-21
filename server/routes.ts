@@ -10,7 +10,7 @@ import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
 import { TuckError } from "./tuck/store";
-import { answerParent } from "./parent/assistant";
+import { answerParent, clearParentConversation } from "./parent/assistant-gateway";
 import { accountAccess } from './familyBilling';
 import { RESEARCH_PASS, FAMILY_PREMIUM } from '@shared/plans';
 import { generateApiKey, setIsPremiumChecker } from "./apiKeyAuth";
@@ -1130,7 +1130,7 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
       });
       
       if (!parsed.success) {
-        return res.status(400).json({ error: "Invalid review data", details: parsed.error.errors });
+        return res.status(400).json({ error: "Invalid review data", details: parsed.error.issues });
       }
       
       // Check if user already has a review for this center
@@ -2898,6 +2898,16 @@ When answering:
       error: 'The Research Pass is no longer sold. Existing purchases are unchanged. Review Family Premium pricing to start a new monthly subscription.',
       code: 'RESEARCH_PASS_RETIRED', pricingUrl: '/pricing',
     });
+  });
+
+  app.delete("/api/chat/context", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      await clearParentConversation(req.session.userId, workerEnv);
+      return res.sendStatus(204);
+    } catch (error) {
+      console.error(JSON.stringify({message:'Could not clear Parent Assistant context',kind:error instanceof Error?error.name:'unknown'}));
+      return res.status(500).json({message:'Could not clear the assistant conversation.'});
+    }
   });
 
   // Verify checkout session and auto-login (for /thanks page)

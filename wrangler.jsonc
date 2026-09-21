@@ -25,6 +25,12 @@
   "ai": {
     "binding": "AI"
   },
+  "durable_objects": {
+    "bindings": [{"name":"PARENT_ASSISTANT_AGENT","class_name":"ParentAssistantAgent"}]
+  },
+  "migrations": [
+    {"tag":"parent-assistant-sdk-v1","new_sqlite_classes":["ParentAssistantAgent"]}
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -55,6 +61,7 @@
     "ENVIRONMENT": "production",
     "PARENT_WHATSAPP_ENABLED": "true",
     "PARENT_ASSISTANT_ENABLED": "true",
+    "PARENT_AGENT_SDK_ENABLED": "false",
     "PARENT_REMINDERS_ENABLED": "true",
     "FAMILY_CHECKOUT_ENABLED": "true",
     "PARENT_LAUNCH_VERIFIED": "true",

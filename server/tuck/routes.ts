@@ -4,7 +4,8 @@ import { addChild, addEvent, createHousehold, getOverview, removeChild, removeEv
 import { createParentWhatsappLink, disconnectParentWhatsapp, parentWhatsappStatus } from '../parent/account';
 import type { ParentWhatsappEnvironment } from '../parent/whatsapp';
 import { assistantOverview, savePreferences, createReminder, cancelReminder, localParts, preferences } from '../parent/service';
-import { answerParent, confirmDraft, rejectDraft, suggestCalendarEvent } from '../parent/assistant';
+import { confirmDraft, rejectDraft, suggestCalendarEvent } from '../parent/assistant';
+import { answerParent, clearParentConversation } from '../parent/assistant-gateway';
 import { calendarSuggestions, CALENDAR_SCOPE } from '../parent/calendar';
 import { familyCheckout, familyCheckoutAvailable } from '../parent/checkout';
 import { getUncachableStripeClient } from '../stripeClient';
@@ -35,6 +36,7 @@ export function tuckRouter(authenticate: RequestHandler, appOrigin: () => string
   router.get('/assistant', async (req,res) => res.json(await assistantOverview(userId(req),await parentEnvironment())));
   router.put('/assistant/preferences', async (req,res) => res.json(await savePreferences(userId(req),await parentEnvironment(),req.body)));
   router.post('/assistant/message', async (req,res) => res.json(await answerParent(userId(req),await parentEnvironment(),req.body)));
+  router.delete('/assistant/context', async (req,res) => {await clearParentConversation(userId(req),await parentEnvironment());res.sendStatus(204);});
   router.post('/assistant/drafts/:id/confirm', async (req,res) => res.json(await confirmDraft(userId(req),await parentEnvironment(),req.params.id)));
   router.delete('/assistant/drafts/:id', async (req,res) => res.json(await rejectDraft(userId(req),await parentEnvironment(),req.params.id)));
   router.post('/assistant/reminders', async (req,res) => res.status(201).json(await createReminder(userId(req),await parentEnvironment(),req.body)));

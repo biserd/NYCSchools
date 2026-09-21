@@ -2,7 +2,7 @@ import { parentPreferencesInput, reminderInput, type ParentPreferences, PARENT_L
 import { TuckError } from '../tuck/store';
 import type { ParentWhatsappEnvironment } from './whatsapp';
 
-export type AssistantEnvironment = ParentWhatsappEnvironment & { AI?: Ai; PARENT_ASSISTANT_ENABLED?:string; PARENT_REMINDERS_ENABLED?:string; PARENT_REMINDER_CONTENT_SID?:string; FAMILY_CHECKOUT_ENABLED?:string; PARENT_LAUNCH_VERIFIED?:string; STRIPE_FAMILY_PREMIUM_PRICE_ID?:string };
+export type AssistantEnvironment = ParentWhatsappEnvironment & { AI?: Ai; PARENT_ASSISTANT_AGENT?:DurableObjectNamespace<any>; PARENT_AGENT_SDK_ENABLED?:string; PARENT_ASSISTANT_ENABLED?:string; PARENT_REMINDERS_ENABLED?:string; PARENT_REMINDER_CONTENT_SID?:string; FAMILY_CHECKOUT_ENABLED?:string; PARENT_LAUNCH_VERIFIED?:string; STRIPE_FAMILY_PREMIUM_PRICE_ID?:string };
 export function assistantEnabled(env:AssistantEnvironment) { return env.PARENT_ASSISTANT_ENABLED === 'true'; }
 export async function hasAssistantAccess(userId:string, env:AssistantEnvironment, now=Date.now()) {
   // Preview access is restricted to the separate staging database, never production.

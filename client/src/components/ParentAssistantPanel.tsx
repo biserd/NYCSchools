@@ -21,7 +21,7 @@ export function ParentAssistantPanel({userId,events,onSaved}:{userId:string;even
   const action=useMutation({mutationFn:async({path,method='POST',body}:{path:string;method?:string;body?:unknown})=>{
     const response=await apiRequest(method,`/api/tuck/assistant${path}`,body);
     return response.status===204?null:await response.json() as Answer;
-  },onSuccess:async(result)=>{if(result?.message)setAnswer(result);await status.refetch();onSaved();}});
+  },onSuccess:async(result,variables)=>{if(variables.path==='/context')setAnswer(null);else if(result?.message)setAnswer(result);await status.refetch();onSaved();}});
   const enabled=status.data?.enabled&&status.data.entitled,busy=action.isPending;
   const asking=busy&&action.variables?.path==='/message';
   useEffect(()=>{
@@ -37,16 +37,17 @@ export function ParentAssistantPanel({userId,events,onSaved}:{userId:string;even
   return <section className="space-y-6" aria-label="Parent Assistant">
     <Card className="border-teal-300"><CardHeader><CardTitle>Parent Assistant</CardTitle></CardHeader><CardContent className="space-y-5">
       <p>Plan a school visit, ask about your saved schools, or set a reminder. Every calendar change needs your confirmation.</p>
+      <Button variant="ghost" className="min-h-11" disabled={busy} onClick={()=>action.mutate({path:'/context',method:'DELETE'})}>Start a new assistant conversation</Button>
       {!status.data?.deliveryEnabled&&<p role="status" className="rounded-lg border border-amber-300 bg-amber-50 text-amber-950 p-3">Preview: WhatsApp reminder delivery is not enabled yet. You can prepare your calendar and test assistant requests. Do not rely on queued reminders until delivery is enabled.</p>}
       <form className="space-y-3" aria-busy={asking} onSubmit={e=>{e.preventDefault();setAnswer(null);action.mutate({path:'/message',body:{message}});}}>
         <Label htmlFor="parent-request">What can I help with?</Label>
-        <textarea id="parent-request" className="w-full min-h-28 rounded-md border bg-background p-3" maxLength={1500} required value={message} onChange={e=>setMessage(e.target.value)} placeholder={'Examples: “Tell me about my saved schools” or “Add a school visit on 2026-10-12; remind me on 2026-10-11 at 09:00.”'} />
+        <textarea id="parent-request" className="w-full min-h-28 rounded-md border bg-background p-3" maxLength={1500} required value={message} onChange={e=>setMessage(e.target.value)} placeholder={'Talk naturally: “Find top elementary schools on the UES” or “Remind me tomorrow at 8am to drop off Noah.”'} />
         <Button disabled={busy}>{asking?'Working…':'Ask Parent Assistant'}</Button>
         {asking&&<div role="status" aria-live="polite" className="flex min-h-11 items-center gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 text-sm text-teal-950">
           <span aria-hidden="true" className="flex gap-1"><span className="h-2 w-2 animate-bounce rounded-full bg-teal-600"/><span className="h-2 w-2 animate-bounce rounded-full bg-teal-600 [animation-delay:150ms]"/><span className="h-2 w-2 animate-bounce rounded-full bg-teal-600 [animation-delay:300ms]"/></span>
           <span>{progress}</span>
         </div>}
-        <p className="text-xs text-muted-foreground">Submitting sends this request, today's date and your timezone to Cloudflare AI for interpretation. Saved family records are not sent to the model. Up to {status.data?.limits.questionsPerDay} requests/day. School statistics come from our database. Avoid sensitive child, medical or financial details.</p>
+        <p className="text-xs text-muted-foreground">Submitting sends this request, recent assistant messages, today's date and your timezone to Cloudflare AI so the conversation can stay coherent. Calendar and school tools return only the records needed for your request. Up to {status.data?.limits.questionsPerDay} requests/day. Avoid sensitive child, medical or financial details.</p>
       </form>
       {answer&&<div aria-live="polite" className="rounded-xl border bg-muted/30 p-4 space-y-3"><p className="whitespace-pre-wrap">{answer.message}</p>{answer.summary&&<p className="font-medium whitespace-pre-wrap">{answer.summary}</p>}{answer.attribution&&<p className="text-sm text-muted-foreground">{answer.attribution}</p>}{answer.sources?.map(s=><a key={s.url} className="block underline min-h-11" href={s.url}>{s.name} — view data &amp; sources</a>)}{answer.draftId&&<><p className="text-sm">Check all dates. This draft expires in 10 minutes; nothing has been added yet.</p><div className="flex flex-wrap gap-3"><Button disabled={busy} onClick={()=>action.mutate({path:`/drafts/${answer.draftId}/confirm`})}>Confirm &amp; save</Button><Button variant="outline" disabled={busy} onClick={()=>action.mutate({path:`/drafts/${answer.draftId}`,method:'DELETE'})}>Discard</Button></div></>}</div>}
       {action.isError&&<p role="alert" className="text-destructive">{action.error.message}</p>}

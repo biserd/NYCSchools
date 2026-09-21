@@ -4,6 +4,8 @@ import { startSafetyRefresh } from './services/safetyQueue';
 import { parentWhatsappWebhook, PARENT_WEBHOOK_PATH } from './parent/whatsapp';
 import {familyCheckoutAvailable} from './parent/checkout';
 
+export {ParentAssistantAgent} from './parent/agent-sdk';
+
 // Private RPC only: this entrypoint has no HTTP route and can only be reached
 // through an explicitly configured same-account service binding.
 export class StagingMaintenance extends WorkerEntrypoint<Env> {

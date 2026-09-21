@@ -17,6 +17,9 @@ export type ParentWhatsappEnvironment = Pick<Env, 'DB' | 'ENVIRONMENT' | 'APP_UR
   PARENT_ASSISTANT_ENABLED?:string;
   PARENT_AGENT_QUEUE?:Queue<ParentAgentQueueJob>;
   PARENT_AGENT_QUEUE_NAME?:string;
+  AI?:Ai;
+  PARENT_AGENT_SDK_ENABLED?:string;
+  PARENT_ASSISTANT_AGENT?:DurableObjectNamespace<any>;
 };
 const phonePattern = /^whatsapp:\+[1-9]\d{7,14}$/;
 const sidPattern = /^SM[a-f0-9]{32}$/i;
@@ -167,7 +170,7 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
       .bind(linked.user_id, from, today).all<{ title: string; date: string }>();
     return xml(events.results.length ? `Your next family dates (entered by you, not verified school announcements):\n${events.results.map(e => `${e.date}: ${e.title}`).join('\n')}` : 'No upcoming family dates. Add them in My Family. These are your manually entered dates, not an imported school calendar.');
   }
-  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. Assistant access depends on your active paid plan. Only requested reminders are sent. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Send EVENTS for your next dates. With an active paid plan, ask about a school or give an event date and reminder date/time. Active Research Pass customers are grandfathered through their original expiry. Sending a question submits it to our AI interpreter; review any draft, then reply CONFIRM with its ID. STOP disconnects. Settings: ${env.APP_URL}/family`);
+  if(assistantOn)return xml(command==='STATUS'?`Connected to NYC School Ratings. Assistant access depends on your active paid plan. Only requested reminders are sent. Check ${env.APP_URL}/family. Send STOP to disconnect.`:`Ask naturally about NYC schools, comparisons, family dates, or reminders. You can say “remind me tomorrow at 8am to…” and review the draft; reply YES to save it or NO to discard it. Active Research Pass customers are grandfathered through their original expiry. Send EVENTS for your next dates or STOP to disconnect. Settings: ${env.APP_URL}/family`);
   return xml(command === 'STATUS' ? 'Connected to NYC School Ratings preview. Automatic reminders and AI are not enabled. Send STOP to disconnect.' :
     'NYC School Ratings preview commands: EVENTS (your next 5 family dates), STATUS, HELP, STOP. This is a connection test, not the full Parent Assistant yet.');
 }
@@ -183,7 +186,7 @@ function validParentAgentJob(value:unknown):value is ParentAgentQueueJob {
 function queuedReply(result:Record<string,unknown>,appUrl:string) {
   const message=typeof result.message==='string'?result.message:'Assistant temporarily unavailable. Please try again.';
   const draft=typeof result.draftId==='string'&&typeof result.summary==='string'
-    ? `\n${result.summary}\nReply CONFIRM ${result.draftId} to save, or DISCARD ${result.draftId}. Expires in 10 minutes.`:'';
+    ? `\n${result.summary}\nReply YES to save it, or NO to discard it. Expires in 10 minutes.`:'';
   const reply=message+draft;
   return reply.length>1500?`${reply.slice(0,1380)}\nMore details: ${appUrl}/family`:reply;
 }
@@ -230,7 +233,7 @@ export async function consumeParentAgentQueue(batch:MessageBatch<unknown>,env:Pa
 
       let reply:string,typing:Promise<void>=Promise.resolve();
       try {
-        const {answerParent,deterministicParentPlan,isComplexParentRequest}=await import('./assistant');
+        const [{answerParent},{deterministicParentPlan,isComplexParentRequest}]=await Promise.all([import('./assistant-gateway'),import('./assistant')]);
         // Twilio recommends presence for work that takes more than a few seconds.
         // Start it alongside slow planning so it cannot add a network round trip
         // before the answer. Common deterministic searches remain sub-second.

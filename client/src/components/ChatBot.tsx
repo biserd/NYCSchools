@@ -470,6 +470,7 @@ export function ChatBot() {
   };
 
   const resetConversation = () => {
+    void fetch('/api/chat/context',{method:'DELETE'}).catch(()=>undefined);
     setMessages([getInitialMessage()]);
     setSessionId(null);
     setShowQuickActions(true);

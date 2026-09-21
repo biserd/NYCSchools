@@ -9,6 +9,8 @@
   "preview_urls":false,
   "routes":[],
   "ai":{"binding":"AI"},
+  "durable_objects":{"bindings":[{"name":"PARENT_ASSISTANT_AGENT","class_name":"ParentAssistantAgent"}]},
+  "migrations":[{"tag":"parent-assistant-sdk-v1","new_sqlite_classes":["ParentAssistantAgent"]}],
   "assets":{"directory":"./dist/public","binding":"ASSETS","run_worker_first":true},
   "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-d1-staging","database_id":"e48a9ae9-4948-4dae-863a-06f6b026b436","migrations_dir":"migrations-d1"}],
   "triggers":{"crons":[]},
@@ -26,6 +28,7 @@
     "ENVIRONMENT":"staging",
     "PARENT_WHATSAPP_ENABLED":"true",
     "PARENT_ASSISTANT_ENABLED":"true",
+    "PARENT_AGENT_SDK_ENABLED":"true",
     "PARENT_REMINDERS_ENABLED":"false",
     "FAMILY_CHECKOUT_ENABLED":"true",
     "PARENT_LAUNCH_VERIFIED":"false",
@@ -41,7 +44,7 @@
     "STRIPE_FAMILY_PREMIUM_PRICE_ID":"price_1UHTA7RwvWaTf8xfT3VzOnbm",
     "STRIPE_SEASON_PASS_PRODUCT_ID":"",
     "STRIPE_SEASON_PASS_PRICE_ID":"",
-    "STAGING_EXPIRES_AT":"2026-09-22T16:58:00Z"
+    "STAGING_EXPIRES_AT":"2026-09-28T16:58:00Z"
   },
   "observability":{"enabled":true}
 }
