@@ -61,7 +61,7 @@
     "ENVIRONMENT": "production",
     "PARENT_WHATSAPP_ENABLED": "true",
     "PARENT_ASSISTANT_ENABLED": "true",
-    "PARENT_AGENT_SDK_ENABLED": "false",
+    "PARENT_AGENT_SDK_ENABLED": "true",
     "PARENT_REMINDERS_ENABLED": "true",
     "FAMILY_CHECKOUT_ENABLED": "true",
     "PARENT_LAUNCH_VERIFIED": "true",
