@@ -46,6 +46,14 @@ type ParentAgentRuntimeEnvironment=AssistantEnvironment&{
 
 type StoredMetadata={parentPersistedAt?:number};
 type ToolOutput=Record<string,unknown>;
+type AgentExecutionTiming={
+  traceId:string;
+  modelStartedAt:number|null;
+  firstOutputMs:number|null;
+  streamSetupMs:number;
+  toolMs:number;
+  toolCalls:number;
+};
 
 const locationKind=z.enum(['neighborhood','district','borough','zip']);
 const gradeLevel=z.enum(['2k','3k','prek','elementary','middle','high','any']);
@@ -135,6 +143,18 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
   maxPersistedMessages=HISTORY_LIMIT;
   messageConcurrency='queue' as const;
   chatStreamStallTimeoutMs=45_000;
+  private activeTiming:AgentExecutionTiming|null=null;
+
+  private async measureTool<T>(work:()=>Promise<T>):Promise<T> {
+    const started=Date.now();
+    try{return await work();}
+    finally {
+      if(this.activeTiming){
+        this.activeTiming.toolMs+=Date.now()-started;
+        this.activeTiming.toolCalls+=1;
+      }
+    }
+  }
 
   protected sanitizeMessageForPersistence(message:UIMessage):UIMessage {
     const metadata=message.metadata&&typeof message.metadata==='object'?message.metadata as Record<string,unknown>:{};
@@ -155,6 +175,7 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
   }
 
   async onChatMessage(_onFinish:Parameters<AIChatAgent<Cloudflare.Env>['onChatMessage']>[0],options?:Parameters<AIChatAgent<Cloudflare.Env>['onChatMessage']>[1]) {
+    const streamSetupStarted=Date.now();
     const userId=this.userId(),now=Date.now(),p=await preferences(userId,this.env);
     const pending=await latestPendingDraft(userId,this.env,now);
     let pendingSummary:string|null=null;
@@ -181,7 +202,7 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
           programs:z.array(program).max(6).default([]),
           sort:ranking.nullable().default(null),
         }),
-        execute:async input=>{
+        execute:async input=>this.measureTool(async()=>{
           try {
             const action:AgentPlan['action']=input.mode==='detail'?'school_detail':input.mode==='compare'?'school_compare':input.mode==='saved'?'saved_schools':'school_search';
             const plan:AgentPlan={
@@ -201,18 +222,18 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
               schools:schoolEvidence(this.env,result),sources:schoolToolSources(this.env,result),
             };
           }catch(error){return friendlyToolError(error);}
-        },
+        }),
       }),
       listCalendarEvents:tool({
         description:'List the parent’s upcoming saved family calendar dates when they ask about their calendar or events.',
         inputSchema:z.object({limit:z.number().int().min(1).max(10).default(10)}),
-        execute:async({limit})=>{
+        execute:async({limit})=>this.measureTool(async()=>{
           const today=localParts(Date.now(),p.timezone).date;
           const rows=await this.env.DB.prepare(`SELECT e.title,e.date FROM tuck_events e
             JOIN tuck_households h ON h.id=e.household_id
             WHERE h.owner_user_id=? AND e.date>=? ORDER BY e.date,e.id LIMIT ?`).bind(userId,today,limit).all<{title:string;date:string}>();
           return {kind:'calendar-events',events:rows.results,attribution:'The parent’s saved calendar; not a live school feed.'};
-        },
+        }),
       }),
       draftCalendarEvent:tool({
         description:'Prepare, but do not save, one calendar event and requested reminder. Dates must be normalized from the parent’s natural language. The parent must confirm in a later turn.',
@@ -222,7 +243,7 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
           reminderDate:z.string().regex(/^20\d{2}-\d{2}-\d{2}$/),
           reminderTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
         }),
-        execute:async({title,eventDate,reminderDate,reminderTime})=>{
+        execute:async({title,eventDate,reminderDate,reminderTime})=>this.measureTool(async()=>{
           try {
             const today=localParts(Date.now(),p.timezone).date;
             const due=localInstant(reminderDate,reminderTime,p.timezone);
@@ -231,28 +252,32 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
             const staged=await stageDraft(userId,this.env,{title,date:eventDate,detail:'Entered by you via Parent Assistant; not a verified school announcement.',reminderAt:due,timezone:p.timezone});
             return {kind:'calendar-draft',status:'awaiting-confirmation',...staged};
           }catch(error){return friendlyToolError(error);}
-        },
+        }),
       }),
       ...(pending?{
         confirmPendingDraft:tool({
           description:'Save the pending calendar draft only when the parent clearly confirms it in this later turn.',
           inputSchema:z.object({}),
-          execute:async()=>{
+          execute:async()=>this.measureTool(async()=>{
             try{return {kind:'calendar-confirmed',...(await confirmDraft(userId,this.env,pending.id))};}
             catch(error){return friendlyToolError(error);}
-          },
+          }),
         }),
         discardPendingDraft:tool({
           description:'Discard the pending calendar draft when the parent clearly declines or cancels it.',
           inputSchema:z.object({}),
-          execute:async()=>{
+          execute:async()=>this.measureTool(async()=>{
             try{return {kind:'calendar-discarded',...(await rejectDraft(userId,this.env,pending.id))};}
             catch(error){return friendlyToolError(error);}
-          },
+          }),
         }),
       }:{}),
     };
     const history=this.messages.slice(-HISTORY_LIMIT);
+    if(this.activeTiming){
+      this.activeTiming.streamSetupMs=Date.now()-streamSetupStarted;
+      this.activeTiming.modelStartedAt=Date.now();
+    }
     const result=streamText({
       model:workersai(PARENT_AGENT_SDK_MODEL,{sessionAffinity:this.sessionAffinity}),
       system:systemPrompt({now,timezone:p.timezone,pendingSummary}),
@@ -262,56 +287,85 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
       temperature:0.2,
       maxOutputTokens:900,
       abortSignal:options?.abortSignal,
+      onChunk:({chunk})=>{
+        const timing=this.activeTiming;
+        if(!timing||timing.firstOutputMs!==null||timing.modelStartedAt===null)return;
+        if(!['start','start-step'].includes(chunk.type))timing.firstOutputMs=Date.now()-timing.modelStartedAt;
+      },
     });
     return result.toUIMessageStreamResponse();
   }
 
-  async chat(input:unknown):Promise<ParentAgentAnswer> {
+  async chat(input:unknown,traceId:string=crypto.randomUUID()):Promise<ParentAgentAnswer> {
     const userId=this.userId(),started=Date.now();
-    await requireAssistant(userId,this.env);
-    const parsed=parentMessageInput.parse(input);
-    const p=await preferences(userId,this.env),today=localParts(Date.now(),p.timezone).date;
-    const dailyLimit=this.env.ENVIRONMENT==='staging'?100:PARENT_LIMITS.questionsPerDay;
-    const usage=await this.env.DB.prepare(`INSERT INTO parent_usage(user_id,day,count)
-      SELECT ?,?,1 WHERE (SELECT coalesce(sum(count),0) FROM parent_usage WHERE day>=?)<?
-      ON CONFLICT(user_id,day) DO UPDATE SET count=count+1 WHERE count<? RETURNING count`)
-      .bind(userId,today,new Date(Date.now()-86400000).toISOString().slice(0,10),dailyLimit,dailyLimit).first();
-    if(!usage)throw new TuckError(429,'Daily assistant limit reached. Your calendar remains available.');
+    const safeTraceId=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(traceId)?traceId:crypto.randomUUID();
+    const timing:AgentExecutionTiming={traceId:safeTraceId,modelStartedAt:null,firstOutputMs:null,streamSetupMs:0,toolMs:0,toolCalls:0};
+    let outcome='error',modelFinishedAt=started,extractMs=0,telemetryStoreMs=0;
+    this.activeTiming=timing;
+    try {
+      await requireAssistant(userId,this.env);
+      const parsed=parentMessageInput.parse(input);
+      const p=await preferences(userId,this.env),today=localParts(Date.now(),p.timezone).date;
+      const dailyLimit=this.env.ENVIRONMENT==='staging'?100:PARENT_LIMITS.questionsPerDay;
+      const usage=await this.env.DB.prepare(`INSERT INTO parent_usage(user_id,day,count)
+        SELECT ?,?,1 WHERE (SELECT coalesce(sum(count),0) FROM parent_usage WHERE day>=?)<?
+        ON CONFLICT(user_id,day) DO UPDATE SET count=count+1 WHERE count<? RETURNING count`)
+        .bind(userId,today,new Date(Date.now()-86400000).toISOString().slice(0,10),dailyLimit,dailyLimit).first();
+      if(!usage)throw new TuckError(429,'Daily assistant limit reached. Your calendar remains available.');
 
-    const content=withCurrentSchoolContext(parsed.message,parsed.currentSchoolDbn);
-    const messageId=crypto.randomUUID(),cutoff=Date.now()-HISTORY_RETENTION_MS;
-    const turn=await this.saveMessages(current=>[
-      ...current.filter(message=>{
-        const timestamp=metadataTimestamp(message);
-        return timestamp===null||timestamp>=cutoff;
-      }),
-      {id:messageId,role:'user',parts:[{type:'text',text:content}],metadata:{parentPersistedAt:Date.now()}},
-    ] as ChatMessage[]);
-    if(turn.status!=='completed')throw new TuckError(503,'The assistant could not finish that reply. Please try again; no calendar change was saved unless you explicitly confirmed it.');
+      const content=withCurrentSchoolContext(parsed.message,parsed.currentSchoolDbn);
+      const messageId=crypto.randomUUID(),cutoff=Date.now()-HISTORY_RETENTION_MS;
+      const turn=await this.saveMessages(current=>[
+        ...current.filter(message=>{
+          const timestamp=metadataTimestamp(message);
+          return timestamp===null||timestamp>=cutoff;
+        }),
+        {id:messageId,role:'user',parts:[{type:'text',text:content}],metadata:{parentPersistedAt:Date.now()}},
+      ] as ChatMessage[]);
+      modelFinishedAt=Date.now();
+      if(turn.status!=='completed')throw new TuckError(503,'The assistant could not finish that reply. Please try again; no calendar change was saved unless you explicitly confirmed it.');
 
-    const start=this.messages.findIndex(message=>message.id===messageId);
-    const responseMessages=start>=0?this.messages.slice(start+1):this.messages.slice(-2);
-    const assistant=[...responseMessages].reverse().find(message=>message.role==='assistant');
-    const message=textFromMessage(assistant)||'I’m here. Could you say that one more way so I can help?';
-    const outputs=toolOutputs(responseMessages);
-    const draft=[...outputs].reverse().find(output=>output.kind==='calendar-draft');
-    const school=[...outputs].reverse().find(output=>output.kind==='school-results');
-    const sources=school&&Array.isArray(school.sources)?school.sources.filter((source):source is {name:string;url:string}=>{
-      return !!source&&typeof source==='object'&&typeof (source as {name?:unknown}).name==='string'&&typeof (source as {url?:unknown}).url==='string';
-    }):undefined;
-    const answer:ParentAgentAnswer={message};
-    if(draft&&typeof draft.draftId==='string'&&typeof draft.summary==='string'){
-      answer.draftId=draft.draftId;
-      answer.summary=draft.summary;
-      if(typeof draft.expiresAt==='number')answer.expiresAt=draft.expiresAt;
+      const extractStarted=Date.now();
+      const start=this.messages.findIndex(message=>message.id===messageId);
+      const responseMessages=start>=0?this.messages.slice(start+1):this.messages.slice(-2);
+      const assistant=[...responseMessages].reverse().find(message=>message.role==='assistant');
+      const message=textFromMessage(assistant)||'I’m here. Could you say that one more way so I can help?';
+      const outputs=toolOutputs(responseMessages);
+      const draft=[...outputs].reverse().find(output=>output.kind==='calendar-draft');
+      const school=[...outputs].reverse().find(output=>output.kind==='school-results');
+      const sources=school&&Array.isArray(school.sources)?school.sources.filter((source):source is {name:string;url:string}=>{
+        return !!source&&typeof source==='object'&&typeof (source as {name?:unknown}).name==='string'&&typeof (source as {url?:unknown}).url==='string';
+      }):undefined;
+      const answer:ParentAgentAnswer={message};
+      if(draft&&typeof draft.draftId==='string'&&typeof draft.summary==='string'){
+        answer.draftId=draft.draftId;
+        answer.summary=draft.summary;
+        if(typeof draft.expiresAt==='number')answer.expiresAt=draft.expiresAt;
+      }
+      if(sources?.length){
+        answer.sources=sources;
+        answer.attribution='NYC School Ratings canonical database. Missing data is not a low score. Neighborhood boundaries are not school zones; verify eligibility with NYC Public Schools. No admission probabilities or guaranteed placement.';
+      }
+      extractMs=Date.now()-extractStarted;
+      const toolName=outputs.length?String(outputs.at(-1)?.kind||'agent-tool'):'conversation';
+      const telemetryStoreStarted=Date.now();
+      await recordAgentRun(this.env,{userId,model:PARENT_AGENT_SDK_MODEL,action:'agent',tool:toolName,outcome:'ok',durationMs:Date.now()-started,location:null,gradeLevel:null,resultCount:sources?.length||0,usedContext:start>0});
+      telemetryStoreMs=Date.now()-telemetryStoreStarted;
+      outcome='ok';
+      return answer;
+    } finally {
+      const completedAt=Date.now();
+      const modelRuntimeMs=timing.modelStartedAt===null?0:Math.max(0,modelFinishedAt-timing.modelStartedAt);
+      console.log(JSON.stringify({
+        message:'Parent Agent timing',stage:'agent_runtime',trace_id:timing.traceId,outcome,
+        request_setup_ms:timing.modelStartedAt===null?completedAt-started:Math.max(0,timing.modelStartedAt-started-timing.streamSetupMs),
+        stream_setup_ms:timing.streamSetupMs,first_output_ms:timing.firstOutputMs,
+        tool_ms:timing.toolMs,tool_calls:timing.toolCalls,
+        model_sdk_ms:Math.max(0,modelRuntimeMs-timing.toolMs),response_extract_ms:extractMs,
+        telemetry_store_ms:telemetryStoreMs,total_ms:completedAt-started,
+      }));
+      this.activeTiming=null;
     }
-    if(sources?.length){
-      answer.sources=sources;
-      answer.attribution='NYC School Ratings canonical database. Missing data is not a low score. Neighborhood boundaries are not school zones; verify eligibility with NYC Public Schools. No admission probabilities or guaranteed placement.';
-    }
-    const toolName=outputs.length?String(outputs.at(-1)?.kind||'agent-tool'):'conversation';
-    await recordAgentRun(this.env,{userId,model:PARENT_AGENT_SDK_MODEL,action:'agent',tool:toolName,outcome:'ok',durationMs:Date.now()-started,location:null,gradeLevel:null,resultCount:sources?.length||0,usedContext:start>0});
-    return answer;
   }
 
   async clearConversation():Promise<void> {
@@ -320,11 +374,11 @@ export class ParentAssistantAgent extends AIChatAgent<Cloudflare.Env> {
   }
 }
 
-export async function answerParentAgent(userId:string,env:ParentAgentRuntimeEnvironment,input:unknown):Promise<ParentAgentAnswer> {
+export async function answerParentAgent(userId:string,env:ParentAgentRuntimeEnvironment,input:unknown,telemetry?:{traceId:string}):Promise<ParentAgentAnswer> {
   if(!env.PARENT_ASSISTANT_AGENT)throw new TuckError(503,'The new assistant runtime is not configured.');
   const namespace=env.PARENT_ASSISTANT_AGENT as unknown as DurableObjectNamespace<ParentAssistantAgent>;
   const agent=await getAgentByName(namespace,userId,{locationHint:'enam'});
-  return agent.chat(input);
+  return agent.chat(input,telemetry?.traceId);
 }
 
 export async function clearParentAgentConversation(userId:string,env:ParentAgentRuntimeEnvironment):Promise<void> {

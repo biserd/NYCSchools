@@ -7,6 +7,8 @@ export interface ParentAgentQueueJob {
   phone:string;
   message:string;
   receivedAt:number;
+  /** Random per-delivery correlation only; never derived from parent data. */
+  traceId?:string;
 }
 export type ParentWhatsappEnvironment = Pick<Env, 'DB' | 'ENVIRONMENT' | 'APP_URL'> & {
   STAGING_EXPIRES_AT?: string;
@@ -72,7 +74,9 @@ export async function verifyTwilioSignature(url: string, form: URLSearchParams, 
   return crypto.subtle.verify('HMAC', key, Uint8Array.from(atob(signature), char => char.charCodeAt(0)), encoder.encode(input));
 }
 
-export async function parentWhatsappWebhook(request: Request, env: ParentWhatsappEnvironment): Promise<Response> {
+type ParentWaitUntil=Pick<ExecutionContext,'waitUntil'>;
+
+export async function parentWhatsappWebhook(request: Request, env: ParentWhatsappEnvironment, ctx?:ParentWaitUntil, transport:typeof fetch=fetch): Promise<Response> {
   const now = Date.now();
   if (!parentWhatsappReady(env, now)) return new Response('WhatsApp preview is not configured', { status: 503 });
   const url = new URL(request.url);
@@ -139,10 +143,20 @@ export async function parentWhatsappWebhook(request: Request, env: ParentWhatsap
     const confirmation=/^(CONFIRM|DISCARD) ([a-f0-9-]{36})$/i.exec(text);
     if(!confirmation){
       if(!env.PARENT_AGENT_QUEUE)return xml('Assistant temporarily unavailable. Please try again shortly.');
+      const traceId=crypto.randomUUID();
       await env.DB.prepare(`INSERT INTO parent_agent_deliveries(inbound_sid,user_id,created_at,status)
         VALUES (?,?,?,'pending') ON CONFLICT(inbound_sid) DO NOTHING`).bind(sid,linked.user_id,now).run();
       try {
-        await env.PARENT_AGENT_QUEUE.send({version:1,inboundSid:sid,userId:linked.user_id,phone:from,message:text,receivedAt:now});
+        await env.PARENT_AGENT_QUEUE.send({version:1,inboundSid:sid,userId:linked.user_id,phone:from,message:text,receivedAt:now,traceId});
+        // Presence begins from the signed ingress instead of waiting behind the
+        // Queue. waitUntil keeps Twilio's acknowledgement on the fast path.
+        const typingStartedAt=Date.now();
+        if(ctx)ctx.waitUntil(sendTypingIndicator(env,sid,transport).then(result=>{
+          console.log(JSON.stringify({
+            message:'Parent Agent timing',stage:'typing_handoff',trace_id:traceId,
+            start_delay_ms:typingStartedAt-now,provider_ms:result.durationMs,outcome:result.outcome,
+          }));
+        }));
         // Twilio receives an immediate successful acknowledgement. The Queue
         // sends the requested answer as a separate WhatsApp message.
         return xml();
@@ -180,7 +194,8 @@ function validParentAgentJob(value:unknown):value is ParentAgentQueueJob {
   const job=value as Partial<ParentAgentQueueJob>;
   return job.version===1&&typeof job.userId==='string'&&job.userId.length>0&&job.userId.length<=128&&
     typeof job.inboundSid==='string'&&sidPattern.test(job.inboundSid)&&typeof job.phone==='string'&&phonePattern.test(job.phone)&&
-    typeof job.message==='string'&&job.message.length>0&&job.message.length<=2000&&typeof job.receivedAt==='number'&&Number.isFinite(job.receivedAt);
+    typeof job.message==='string'&&job.message.length>0&&job.message.length<=2000&&typeof job.receivedAt==='number'&&Number.isFinite(job.receivedAt)&&
+    (job.traceId===undefined||/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(job.traceId));
 }
 
 function queuedReply(result:Record<string,unknown>,appUrl:string) {
@@ -197,7 +212,8 @@ async function markDelivery(env:ParentWhatsappEnvironment,sid:string,status:stri
 }
 
 /** Best-effort WhatsApp presence; answer delivery must never depend on this beta API. */
-async function sendTypingIndicator(env:ParentWhatsappEnvironment,messageId:string,transport:typeof fetch):Promise<void> {
+async function sendTypingIndicator(env:ParentWhatsappEnvironment,messageId:string,transport:typeof fetch):Promise<{outcome:'accepted'|'rejected'|'error';durationMs:number}> {
+  const started=Date.now();
   try {
     const response=await transport('https://messaging.twilio.com/v3/Indicators/Typing.json',{
       method:'POST',
@@ -206,8 +222,10 @@ async function sendTypingIndicator(env:ParentWhatsappEnvironment,messageId:strin
       signal:AbortSignal.timeout(3000),
     });
     if(!response.ok)console.warn(JSON.stringify({message:'WhatsApp typing indicator unavailable',status:response.status}));
+    return {outcome:response.ok?'accepted':'rejected',durationMs:Date.now()-started};
   } catch(error) {
     console.warn(JSON.stringify({message:'WhatsApp typing indicator unavailable',kind:error instanceof Error?error.name:'unknown'}));
+    return {outcome:'error',durationMs:Date.now()-started};
   }
 }
 
@@ -215,8 +233,11 @@ async function sendTypingIndicator(env:ParentWhatsappEnvironment,messageId:strin
 export async function consumeParentAgentQueue(batch:MessageBatch<unknown>,env:ParentWhatsappEnvironment,transport:typeof fetch=fetch):Promise<void> {
   for(const queued of batch.messages){
     if(!validParentAgentJob(queued.body)){queued.ack();continue;}
-    const job=queued.body,now=Date.now();
+    const job=queued.body,now=Date.now(),traceId=jobTraceId(job);
+    const queueStarted=Date.now();
     let claimedDelivery=false;
+    let claimMs=0,assistantMs=0,providerMs=0,finalizeMs=0;
+    let deliveryOutcome='unknown';
     try {
       const existing=await env.DB.prepare('SELECT status,claim_at FROM parent_agent_deliveries WHERE inbound_sid=? AND user_id=?').bind(job.inboundSid,job.userId).first<{status:string;claim_at:number|null}>();
       if(!existing){queued.ack();continue;}
@@ -228,41 +249,61 @@ export async function consumeParentAgentQueue(batch:MessageBatch<unknown>,env:Pa
       const claim=await env.DB.prepare("UPDATE parent_agent_deliveries SET status='processing',claim_at=?,attempts=attempts+1 WHERE inbound_sid=? AND user_id=? AND status='pending' RETURNING attempts").bind(now,job.inboundSid,job.userId).first();
       if(!claim){queued.ack();continue;}
       claimedDelivery=true;
+      claimMs=Date.now()-queueStarted;
       const linked=await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(job.userId,job.phone).first();
-      if(!linked){await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;}
+      if(!linked){deliveryOutcome='canceled';await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;}
 
-      let reply:string,typing:Promise<void>=Promise.resolve();
+      let reply:string;
+      const assistantStarted=Date.now();
       try {
-        const [{answerParent},{deterministicParentPlan,isComplexParentRequest}]=await Promise.all([import('./assistant-gateway'),import('./assistant')]);
-        // Twilio recommends presence for work that takes more than a few seconds.
-        // Start it alongside slow planning so it cannot add a network round trip
-        // before the answer. Common deterministic searches remain sub-second.
-        typing=deterministicParentPlan(job.message)===null||isComplexParentRequest(job.message)
-          ?sendTypingIndicator(env,job.inboundSid,transport):Promise.resolve();
-        reply=queuedReply(await answerParent(job.userId,env,{message:job.message}) as Record<string,unknown>,env.APP_URL);
+        const {answerParent}=await import('./assistant-gateway');
+        reply=queuedReply(await answerParent(job.userId,env,{message:job.message},{traceId}) as Record<string,unknown>,env.APP_URL);
       } catch(error) {
         const {TuckError}=await import('../tuck/store');
         reply=error instanceof TuckError?error.message:'Assistant temporarily unavailable. Please try again. Your calendar was not changed unless you already confirmed a draft.';
-      } finally {await typing;}
+      } finally {assistantMs=Date.now()-assistantStarted;}
       // Re-check STOP/disconnect immediately before the provider handoff.
       if(!await env.DB.prepare('SELECT 1 FROM parent_whatsapp_links WHERE user_id=? AND phone=? AND consent_at IS NOT NULL').bind(job.userId,job.phone).first()){
+        deliveryOutcome='canceled';
         await markDelivery(env,job.inboundSid,'canceled','connection_ended');queued.ack();continue;
       }
       const form=new URLSearchParams({From:env.TWILIO_WHATSAPP_FROM!,To:job.phone,Body:reply});
+      const providerStarted=Date.now();
       try {
         const response=await transport(`https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`,{method:'POST',headers:{Authorization:`Basic ${btoa(env.TWILIO_ACCOUNT_SID+':'+env.TWILIO_AUTH_TOKEN)}`,'Content-Type':'application/x-www-form-urlencoded'},body:form.toString(),signal:AbortSignal.timeout(10000)});
-        if(!response.ok){await markDelivery(env,job.inboundSid,response.status===429?'failed':'uncertain',`http_${response.status}`);queued.ack();continue;}
+        providerMs=Date.now()-providerStarted;
+        if(!response.ok){deliveryOutcome=response.status===429?'failed':'uncertain';const finalizeStarted=Date.now();await markDelivery(env,job.inboundSid,deliveryOutcome,`http_${response.status}`);finalizeMs=Date.now()-finalizeStarted;queued.ack();continue;}
         const result=await response.json() as {sid?:string};
-        if(!sidPattern.test(result.sid||'')){await markDelivery(env,job.inboundSid,'uncertain','invalid_provider_response');queued.ack();continue;}
+        if(!sidPattern.test(result.sid||'')){deliveryOutcome='uncertain';const finalizeStarted=Date.now();await markDelivery(env,job.inboundSid,'uncertain','invalid_provider_response');finalizeMs=Date.now()-finalizeStarted;queued.ack();continue;}
+        deliveryOutcome='accepted';
+        const finalizeStarted=Date.now();
         await markDelivery(env,job.inboundSid,'accepted',null,result.sid!);
-      } catch {await markDelivery(env,job.inboundSid,'uncertain','transport_uncertain');}
+        finalizeMs=Date.now()-finalizeStarted;
+      } catch {
+        providerMs=Date.now()-providerStarted;
+        deliveryOutcome='uncertain';
+        const finalizeStarted=Date.now();
+        await markDelivery(env,job.inboundSid,'uncertain','transport_uncertain');
+        finalizeMs=Date.now()-finalizeStarted;
+      }
       queued.ack();
     } catch(error) {
       console.error(JSON.stringify({message:'Parent Agent queue processing failed',kind:error instanceof Error?error.name:'unknown',attempt:queued.attempts}));
       if(claimedDelivery){
+        deliveryOutcome='uncertain';
         try {await markDelivery(env,job.inboundSid,'uncertain','worker_error');} catch { /* best effort; never risk a duplicate reply */ }
         queued.ack();
       } else queued.retry({delaySeconds:Math.min(300,10*2**Math.max(0,queued.attempts-1))});
+    } finally {
+      if(claimedDelivery)console.log(JSON.stringify({
+        message:'Parent Agent timing',stage:'whatsapp_delivery',trace_id:traceId,outcome:deliveryOutcome,
+        queue_wait_ms:Math.max(0,now-job.receivedAt),claim_ms:claimMs,assistant_ms:assistantMs,
+        twilio_api_ms:providerMs,finalize_ms:finalizeMs,total_ms:Math.max(0,Date.now()-job.receivedAt),
+      }));
     }
   }
+}
+
+function jobTraceId(job:ParentAgentQueueJob):string {
+  return job.traceId&&/^[0-9a-f-]{36}$/i.test(job.traceId)?job.traceId:crypto.randomUUID();
 }

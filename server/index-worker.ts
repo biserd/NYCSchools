@@ -135,7 +135,7 @@ export default {
         catch { return new Response('Callback temporarily unavailable',{status:503}); }
       }
     if (pathname === PARENT_WEBHOOK_PATH) {
-      try { return await parentWhatsappWebhook(request, workerEnv); }
+      try { return await parentWhatsappWebhook(request, workerEnv, ctx); }
       catch { return new Response('WhatsApp temporarily unavailable', {status: 503, headers: {'Cache-Control': 'no-store'}}); }
     }
     if (shouldServeAsset(pathname)) return workerEnv.ASSETS.fetch(request);

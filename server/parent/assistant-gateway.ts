@@ -6,10 +6,12 @@ type AgentGatewayEnvironment=AssistantEnvironment&{
   PARENT_ASSISTANT_AGENT?:DurableObjectNamespace<any>;
 };
 
-export async function answerParent(userId:string,env:AgentGatewayEnvironment,input:unknown) {
+export type ParentAgentTelemetryContext={traceId:string};
+
+export async function answerParent(userId:string,env:AgentGatewayEnvironment,input:unknown,telemetry?:ParentAgentTelemetryContext) {
   if(env.PARENT_AGENT_SDK_ENABLED==='true'&&env.PARENT_ASSISTANT_AGENT){
     const {answerParentAgent}=await import('./agent-sdk');
-    return answerParentAgent(userId,env,input);
+    return answerParentAgent(userId,env,input,telemetry);
   }
   return answerParentLegacy(userId,env,input);
 }

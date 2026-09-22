@@ -34,7 +34,7 @@ export default {
     // middleware. The handler enforces Twilio signature, account and recipient.
     // Calendar reads additionally require account linking. Other preview delivery remains disabled.
     if (path === PARENT_WEBHOOK_PATH) {
-      try { return await parentWhatsappWebhook(request, env); }
+      try { return await parentWhatsappWebhook(request, env, ctx); }
       catch { console.error('Parent WhatsApp staging webhook failed'); return new Response('Webhook unavailable', { status: 503 }); }
     }
     if (path === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n');
