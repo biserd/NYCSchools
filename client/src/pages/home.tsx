@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock, AlertCircle, RefreshCw, CalendarDays, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { FEATURED_SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
 
@@ -644,6 +644,7 @@ export default function Home() {
             </div>
             
             <div className="hidden md:flex shrink-0 items-center gap-2 [&_button]:min-h-11 [&_button]:min-w-11">
+              <Button variant="default" size="sm" asChild className="hidden xl:inline-flex" data-testid="button-family-nav"><Link href="/family"><CalendarDays className="w-4 h-4 mr-2" />Family &amp; Reminders</Link></Button>
               <Button variant="outline" size="sm" asChild data-testid="button-recommendations-nav" aria-label="Find My Match">
                 <Link href="/recommendations">
                   <Sparkles className="w-4 h-4 2xl:mr-2" />
@@ -785,6 +786,7 @@ export default function Home() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/family" data-testid="menu-item-family"><CalendarDays className="w-4 h-4 mr-2" />Family &amp; Reminders</Link></DropdownMenuItem>
                   {isAuthenticated && user && (
                     <DropdownMenuItem asChild>
                       <Link href="/favorites" data-testid="menu-item-favorites">
@@ -808,6 +810,13 @@ export default function Home() {
         </div>
       </header>
 
+      <section className="max-w-7xl mx-auto px-4 md:px-8 pt-5" aria-labelledby="family-home-title">
+        <div className="rounded-2xl border border-teal-300 bg-gradient-to-br from-teal-50 via-background to-sky-50 dark:from-teal-950/40 dark:to-sky-950/20 p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5"><div className="max-w-2xl"><p className="text-sm uppercase tracking-widest font-semibold text-teal-700 dark:text-teal-300">Find a school. Then stay ahead.</p><h2 id="family-home-title" className="text-2xl md:text-3xl font-bold mt-2">Your family calendar and school helper</h2><p className="mt-2 text-muted-foreground">See the full published NYCPS 2026–27 calendar, add dates for each child, and keep important school plans together.</p></div><div className="flex flex-wrap gap-2"><Button asChild size="lg" className="min-h-11"><Link href="/family"><CalendarDays className="w-5 h-5 mr-2" />Explore Family Calendar</Link></Button><Button asChild size="lg" variant="outline" className="min-h-11"><Link href="/pricing">See Family Premium</Link></Button></div></div>
+          <div className="grid sm:grid-cols-3 gap-3 mt-6 text-sm"><div className="flex gap-2 rounded-xl border bg-background/80 p-3"><CalendarDays className="w-5 h-5 text-sky-700 shrink-0" /><span><strong>Plan by child</strong><br />Private visits, deadlines and family events.</span></div><div className="flex gap-2 rounded-xl border bg-background/80 p-3"><Bell className="w-5 h-5 text-amber-700 shrink-0" /><span><strong>Never miss a date</strong><br />Set confirmed WhatsApp reminders.</span></div><div className="flex gap-2 rounded-xl border bg-background/80 p-3"><MessageCircle className="w-5 h-5 text-teal-700 shrink-0" /><span><strong>Ask Parent Assistant</strong><br />School questions and calendar help on web or WhatsApp.</span></div></div>
+          <p className="text-xs text-muted-foreground mt-4">NYCPS dates apply to district schools, not every provider. WhatsApp assistance and reminders require active paid access, a connected phone and consent.</p>
+        </div>
+      </section>
       <FilterBar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}

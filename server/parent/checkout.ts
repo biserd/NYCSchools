@@ -9,19 +9,45 @@ export function familyCheckoutAvailable(environment:object) {
   if(env.ENVIRONMENT==='staging')return Date.now()<Date.parse(String(env.STAGING_EXPIRES_AT||''))&&String(env.STRIPE_TEST_SECRET_KEY||'').startsWith('sk_test_')&&String(env.STRIPE_TEST_PUBLISHABLE_KEY||'').startsWith('pk_test_');
   return env.ENVIRONMENT==='production'&&env.PARENT_LAUNCH_VERIFIED==='true'&&env.PARENT_REMINDERS_ENABLED==='true'&&/^HX[a-f0-9]{32}$/i.test(String(env.PARENT_REMINDER_CONTENT_SID||''))&&!!env.TWILIO_AUTH_TOKEN&&!!env.TWILIO_ACCOUNT_SID&&env.PARENT_WHATSAPP_ENABLED==='true';
 }
-export async function familyCheckout(userId:string,env:AssistantEnvironment,stripe:Stripe) {
+export function guestFamilyCheckoutAvailable(environment:object) {
+  const env=environment as Record<string,unknown>;
+  if(!familyCheckoutAvailable(environment)||env.EMAIL_DELIVERY_ENABLED!=='true'||!env.EMAIL)return false;
+  if(env.ENVIRONMENT==='staging')return typeof env.STAGING_GUEST_EMAIL==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.STAGING_GUEST_EMAIL);
+  return env.ENVIRONMENT==='production';
+}
+async function validatedOffer(env:AssistantEnvironment,stripe:Stripe) {
   if(!familyCheckoutAvailable(env))throw new TuckError(503,'Monthly checkout is not available yet. No payment was taken.');
-  const now=Date.now(),production=env.ENVIRONMENT==='production';
-  const user=await env.DB.prepare('SELECT email,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,subscription_expires_at FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null;stripe_subscription_id:string|null;subscription_status:string|null;subscription_plan:string|null;subscription_expires_at:number|null}>();
-  if(!user)throw new TuckError(401,'Sign in again.');
-  if(user.subscription_status==='active'&&['season_pass','premium'].includes(user.subscription_plan||'')&&(user.subscription_expires_at===null||user.subscription_expires_at>now)) {
-    throw new TuckError(409,'Your active paid plan already includes Parent Assistant at no extra charge. Use My Family; subscribe after your existing access ends if you want to continue.');
-  }
+  const production=env.ENVIRONMENT==='production';
   const price=await stripe.prices.retrieve(env.STRIPE_FAMILY_PREMIUM_PRICE_ID!);
   if(!price.active||price.livemode!==production||price.currency!==FAMILY_PREMIUM.currency||price.unit_amount!==FAMILY_PREMIUM.amount||price.recurring?.interval!=='month'||price.recurring.interval_count!==1||price.recurring.usage_type!=='licensed')throw new TuckError(503,'Monthly offer configuration does not match the advertised price.');
   const portals=await stripe.billingPortal.configurations.list({active:true,is_default:true,limit:1});
   const cancel=portals.data[0]?.features.subscription_cancel;
   if(!cancel?.enabled||cancel.mode!=='at_period_end')throw new TuckError(503,'Self-service cancellation must be configured before monthly checkout opens.');
+  return price;
+}
+export async function guestFamilyCheckout(env:AssistantEnvironment,stripe:Stripe, testEmail?:string) {
+  if(!guestFamilyCheckoutAvailable(env))throw new TuckError(503,'Guest checkout requires email delivery and is unavailable in this environment. No payment was taken.');
+  const price=await validatedOffer(env,stripe);
+  const staging=env.ENVIRONMENT==='staging';
+  const allowedTestEmail=String((env as unknown as Record<string,unknown>).STAGING_GUEST_EMAIL||'').trim().toLowerCase();
+  if(staging&&testEmail?.trim().toLowerCase()!==allowedTestEmail)throw new TuckError(403,'This temporary test checkout is limited to the designated staging email. No payment was taken.');
+  // Stripe collects the email in hosted Checkout and creates the Customer for
+  // subscription mode. Do not create an account or grant access here.
+  // Staging uses a fresh test-mode Customer with an immutable Checkout email.
+  // Its restricted email binding can deliver a claim link only to the tester.
+  const stageCustomer=staging?await stripe.customers.create({email:allowedTestEmail,metadata:{source:'staging_guest_checkout'}}):null;
+  const session=await stripe.checkout.sessions.create({...(stageCustomer?{customer:stageCustomer.id}:{}),mode:'subscription',line_items:[{price:price.id,quantity:1}],metadata:{plan:'family_premium',source:'guest_checkout'},subscription_data:{metadata:{plan:'family_premium',source:'guest_checkout'}},success_url:`${env.APP_URL}/family?checkout=success`,cancel_url:`${env.APP_URL}/pricing?canceled=true`,custom_text:{submit:{message:staging?'TEST MODE ONLY. No real charge. A secure sign-in link will be emailed to the staging tester after payment confirmation.':'$19.99 per month, charged now and renewed monthly until canceled. No free trial. We will email a secure sign-in link after payment is confirmed.'}}});
+  if(session.status!=='open'||!session.url)throw new TuckError(503,'Could not open secure checkout. No payment was taken.');
+  return {url:session.url};
+}
+export async function familyCheckout(userId:string,env:AssistantEnvironment,stripe:Stripe) {
+  const price=await validatedOffer(env,stripe);
+  const now=Date.now();
+  const user=await env.DB.prepare('SELECT email,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,subscription_expires_at FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null;stripe_subscription_id:string|null;subscription_status:string|null;subscription_plan:string|null;subscription_expires_at:number|null}>();
+  if(!user)throw new TuckError(401,'Sign in again.');
+  if(user.subscription_status==='active'&&['season_pass','premium'].includes(user.subscription_plan||'')&&(user.subscription_expires_at===null||user.subscription_expires_at>now)) {
+    throw new TuckError(409,'Your active paid plan already includes Parent Assistant at no extra charge. Use My Family; subscribe after your existing access ends if you want to continue.');
+  }
   let customerId=user.stripe_customer_id;
   if(!customerId) {
     const customer=await stripe.customers.create({email:user.email,metadata:{userId}}, {idempotencyKey:`family-customer-${userId}`});

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarDays, MessageCircle, ShieldCheck } from "lucide-react";
+import { Bell, CalendarDays, MessageCircle, ShieldCheck } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -14,9 +14,11 @@ import { apiRequest } from "@/lib/queryClient";
 import type { TuckOverview } from "@shared/tuck";
 import { ParentWhatsAppConnection } from '@/components/ParentWhatsAppConnection';
 import { ParentAssistantPanel } from '@/components/ParentAssistantPanel';
+import { FamilyCalendar } from '@/components/FamilyCalendar';
 
 export default function TuckPage() {
   const { user, isLoading } = useAuth();
+  const returnedFromCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
   // Scope React Query to the signed-in account as well as server-side ownership.
   const overview = useQuery<TuckOverview>({ queryKey: ["tuck-overview", user?.id], enabled: !!user,
     queryFn: async () => (await apiRequest("GET", "/api/tuck/overview")).json(), gcTime: 0 });
@@ -37,17 +39,20 @@ export default function TuckPage() {
   return <div className="min-h-screen flex flex-col bg-background">
     <SEOHead title="My Family" description="Your private family calendar within NYC School Ratings." canonicalPath="/family" noindex />
     <AppHeader stackOnMobile />
-    <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-8 space-y-6">
+    <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-8 space-y-8">
       <section className="rounded-2xl border bg-teal-50 dark:bg-teal-950/30 p-6 md:p-8">
         <p className="text-sm font-semibold text-teal-800 dark:text-teal-300">NYC SCHOOL RATINGS · FAMILY SPACE</p>
         <h1 className="text-3xl font-bold mt-2">My Family</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Keep your children’s school links and important dates together. One account, alongside your school research.</p>
-        <p className="mt-4 flex items-start gap-2 text-sm"><ShieldCheck className="w-5 h-5 shrink-0" />Private to your account. Family sharing is not enabled yet.</p>
+        <p className="mt-3 max-w-2xl text-muted-foreground">One clear view of NYCPS school dates, closures, schedule changes and your own family plans. Keep school research and the Parent Assistant close by.</p>
+        <p className="mt-4 flex items-start gap-2 text-sm"><ShieldCheck className="w-5 h-5 shrink-0" />Your saved family dates are private to your account. Family sharing is not enabled yet.</p>
+        <div className="grid gap-3 sm:grid-cols-3 mt-6 text-sm"><div className="rounded-xl bg-background/80 border p-3"><CalendarDays className="w-5 h-5 text-sky-700" /><strong className="block mt-2">Plan by child</strong><span>Official NYCPS dates plus your own private events.</span></div><div className="rounded-xl bg-background/80 border p-3"><Bell className="w-5 h-5 text-amber-700" /><strong className="block mt-2">Set reminders</strong><span>Confirm a date and choose when WhatsApp should remind you.</span></div><div className="rounded-xl bg-background/80 border p-3"><MessageCircle className="w-5 h-5 text-teal-700" /><strong className="block mt-2">Ask Parent Assistant</strong><span>School and calendar help on the website or WhatsApp.</span></div></div>
       </section>
-      {isLoading ? <p role="status">Checking your account…</p> : !user ? <Card><CardContent className="pt-6 space-y-4"><h2 className="font-semibold">Use your NYC School Ratings account</h2><p>Use the same account as your school research. This manual calendar is a preview.</p><Button asChild><Link href="/login?redirect=/family">Sign in to My Family</Link></Button></CardContent></Card> : <>
+      {returnedFromCheckout && <p role="status" className="rounded-xl border border-teal-300 bg-teal-50 dark:bg-teal-950/30 p-4">Thanks for checking out. Paid access begins after Stripe confirms payment. If you checked out as a guest, we’ll email a secure one-time sign-in link to the address you entered at Stripe. <Link href="/login?redirect=/family" className="underline">Sign in or request a fresh link</Link>.</p>}
+      {isLoading ? <p role="status">Checking your account…</p> : !user ? <><FamilyCalendar /><Card><CardContent className="pt-6 space-y-4"><h2 className="font-semibold">Make the calendar yours</h2><p>Sign in to add private family events, save schools and use your paid Parent Assistant. The NYCPS dates above are visible to everyone. You can subscribe first without registering; Stripe collects your email and we send a secure sign-in link after payment.</p><div className="flex flex-wrap gap-3"><Button asChild><Link href="/pricing#checkout">Explore Family Premium</Link></Button><Button asChild variant="outline"><Link href="/login?redirect=/family">Already have an account? Sign in</Link></Button></div></CardContent></Card></> : <>
         <nav className="flex flex-wrap gap-4 text-sm underline"><Link href="/favorites">Saved schools</Link><Link href="/application-tracker">Application tracker</Link><Link href="/settings">Account &amp; subscription</Link></nav>
+        <FamilyCalendar privateEvents={data?.events || []} children={data?.children || []} onSelectDate={(selectedDate, selectedChildId) => { setDate(selectedDate); setChildId(selectedChildId || ''); }} />
         <ParentWhatsAppConnection key={user.id} userId={user.id} />
-        {overview.isLoading ? <p role="status">Loading your family space…</p> : overview.isError ? <p role="alert">Could not load your family space. <button className="underline min-h-11" onClick={() => void overview.refetch()}>Try again</button></p> : !data?.household ? <Card><CardHeader><CardTitle>Start your family calendar</CardTitle></CardHeader><CardContent className="space-y-4"><p>Use nicknames; no birth dates or sensitive details are required. School calendars are not automatically imported.</p><Button disabled={busy} onClick={() => change.mutate({ path: "household" })}>Create my family space</Button></CardContent></Card> : <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
+        {overview.isLoading ? <p role="status">Loading your family space…</p> : overview.isError || !data?.household ? <p role="alert">Could not load your family space. <button className="underline min-h-11" onClick={() => void overview.refetch()}>Try again</button></p> : <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
           <Card><CardHeader><CardTitle>Your children</CardTitle></CardHeader><CardContent className="space-y-5">
             {data.children.length === 0 && <p className="text-sm text-muted-foreground">Add a nickname to organize dates by child.</p>}
             {data.children.map(child => <div key={child.id} className="border-b pb-3"><p className="font-medium">{child.nickname}</p>{child.schoolUrl && <Link className="text-sm text-primary underline" href={child.schoolUrl}>{child.schoolName}</Link>}<div><button className="text-sm underline min-h-11" disabled={busy} onClick={() => { if (window.confirm(`Remove ${child.nickname} and their calendar events?`)) change.mutate({ method: "DELETE", path: `children/${child.id}` }); }}>Remove child</button></div></div>)}
@@ -57,11 +62,11 @@ export default function TuckPage() {
               <Button type="submit" disabled={busy}>Add child</Button>
             </form>
           </CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex gap-2"><CalendarDays className="w-5 h-5" />Family calendar</CardTitle></CardHeader><CardContent className="space-y-5">
+          <Card><CardHeader><CardTitle className="flex gap-2"><CalendarDays className="w-5 h-5" />Your private family dates</CardTitle></CardHeader><CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground">All-day dates you enter, not verified school announcements. Adding a date alone does not schedule a reminder.</p>
             {data.events.length === 0 && <p>No dates yet. Add a school visit, deadline or family event.</p>}
             <ol className="space-y-3">{data.events.map(event => <li key={event.id} className="border-l-4 border-teal-600 pl-4"><time className="text-sm font-medium" dateTime={event.date}>{new Date(`${event.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</time><p className="font-semibold">{event.title}</p><p className="text-xs text-muted-foreground">{data.children.find(child => child.id === event.childId)?.nickname || "Whole family"}</p>{event.detail && <p className="text-sm whitespace-pre-wrap">{event.detail}</p>}<button className="min-h-11 underline text-sm" disabled={busy} onClick={() => { if (window.confirm("Remove this event?")) change.mutate({ method: "DELETE", path: `events/${event.id}` }); }}>Remove event</button></li>)}</ol>
-            <form className="space-y-3 border-t pt-4" onSubmit={e => { e.preventDefault(); change.mutate({ path: "events", body: { title, date, childId: childId || null, detail } }, { onSuccess: () => { setTitle(""); setDetail(""); } }); }}>
+            <form id="family-event-form" className="space-y-3 border-t pt-4" onSubmit={e => { e.preventDefault(); change.mutate({ path: "events", body: { title, date, childId: childId || null, detail } }, { onSuccess: () => { setTitle(""); setDetail(""); } }); }}>
               <h3 className="font-semibold">Add an important date</h3>
               <div><Label htmlFor="tuck-title">Event title</Label><Input id="tuck-title" value={title} onChange={e => setTitle(e.target.value)} maxLength={160} required /></div>
               <div><Label htmlFor="tuck-date">Date</Label><Input id="tuck-date" type="date" min="2000-01-01" max="2099-12-31" value={date} onChange={e => setDate(e.target.value)} required /></div>

@@ -212,8 +212,12 @@ export async function confirmDraft(userId:string,env:AssistantEnvironment,id:str
   if(row.expires_at<=Date.now())throw new TuckError(409,'Draft expired. Please make a new request.');
   const d=draftSchema.parse(JSON.parse(row.payload)),p=await preferences(userId,env),now=Date.now();
   if(d.reminderAt&&(d.reminderAt<=now||quietNow(d.reminderAt,p)))throw new TuckError(409,'Reminder timing has changed. Create a new request.');
+  // A confirmed reminder is itself the user's decision to use the calendar.
+  // Create the private household idempotently instead of making them perform
+  // an unrelated setup step on the website.
+  await env.DB.prepare('INSERT OR IGNORE INTO tuck_households(id,owner_user_id) VALUES (?,?)').bind(crypto.randomUUID(),userId).run();
   const h=await env.DB.prepare('SELECT id FROM tuck_households WHERE owner_user_id=?').bind(userId).first<string>('id');
-  if(!h)throw new TuckError(409,'Create your family calendar first.');
+  if(!h)throw new TuckError(503,'Could not open your family calendar. Please try again.');
   if(d.reminderAt)await authorizeRequestedReminder(userId,env,now);
   // All effects use the immutable draft ID and one D1 transaction. Concurrent
   // confirmations cannot create duplicate events or duplicate reminders.

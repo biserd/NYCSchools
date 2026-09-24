@@ -53,11 +53,13 @@ try {
   assert.ok(await binding.prepare("SELECT token_hash FROM parent_whatsapp_links WHERE user_id='parent-a'").first('token_hash'), 'Other account cannot revoke token');
   const empty = await request('overview');
   assert.equal(empty.headers.get('cache-control'), 'private, no-store');
-  assert.equal((await empty.json()).household, null);
-  assert.equal(await binding.prepare('SELECT count(*) n FROM tuck_households').first('n'), 0, 'GET must not create a household');
+  const opened = (await empty.json()).household;
+  assert.ok(opened?.id, 'The first Family visit opens a private calendar without a setup step');
+  assert.equal(await binding.prepare('SELECT count(*) n FROM tuck_households').first('n'), 1);
   const household = await (await request('household', 'parent-a', 'POST')).json();
   const retry = await (await request('household', 'parent-a', 'POST')).json();
   assert.equal(household.id, retry.id, 'Idempotent onboarding');
+  assert.equal(household.id, opened.id);
   await request('household', 'parent-b', 'POST');
   assert.equal((await request('children', 'parent-a', 'POST', { nickname: 'A', householdId: 'injected' })).status, 400);
   assert.equal((await request('children', 'parent-a', 'POST', { nickname: 'A', schoolDbn: '99Z999' })).status, 400);

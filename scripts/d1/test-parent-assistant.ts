@@ -9,7 +9,7 @@ import {answerParent,confirmDraft,stageDraft,suggestCalendarEvent,parentAgentMod
 import {PARENT_AGENT_COMPLEX_MODEL,PARENT_AGENT_CONVERSATION_MODEL,PARENT_AGENT_FAST_MODEL,type AgentPlan} from '../../shared/parent-agent';
 import {processReminders,reminderStatusWebhook,PARENT_STATUS_PATH} from '../../server/parent/delivery';
 import {disconnectParentWhatsapp} from '../../server/parent/account';
-import {familyCheckout,familyCheckoutAvailable} from '../../server/parent/checkout';
+import {familyCheckout,familyCheckoutAvailable,guestFamilyCheckout,guestFamilyCheckoutAvailable} from '../../server/parent/checkout';
 import type Stripe from 'stripe';
 
 const platform=await getPlatformProxy<Env>({configPath:'wrangler.d1-test.jsonc',persist:{path:await mkdtemp(join(tmpdir(),'nyc-assistant-'))}});
@@ -79,6 +79,9 @@ try {
   assert.equal(await DB.prepare('SELECT count(*) n FROM tuck_events').first('n'),1);
   assert.equal(await DB.prepare('SELECT count(*) n FROM parent_reminders').first('n'),1);
   assert.equal((await preferences('a',env)).reminderConsent,true,'Confirming a requested reminder records its authorization');
+  const noSetupDraft=await stageDraft('c',env,{title:'School tour',date:'2027-01-19',detail:'',reminderAt:null,timezone:prefs.timezone});
+  await confirmDraft('c',env,noSetupDraft.draftId);
+  assert.ok(await DB.prepare("SELECT id FROM tuck_households WHERE owner_user_id='c'").first('id'),'Confirming a family date opens its private calendar automatically');
   await assert.rejects(()=>createReminder('b',env,{eventId:id,localDate:'2027-01-18',localTime:'10:00'}),/Event not found/);
   await assert.rejects(()=>createReminder('a',env,{eventId:id,localDate:'2027-01-18',localTime:'09:00'}),/already scheduled/);
   await assert.rejects(()=>suggestCalendarEvent('a',env,'nycps-2026-27-2026-09-21',false),/Confirm your school/);
@@ -163,9 +166,20 @@ try {
   assert.equal(familyCheckoutAvailable({...env,ENVIRONMENT:'production',FAMILY_CHECKOUT_ENABLED:'true',STRIPE_FAMILY_PREMIUM_PRICE_ID:'price_family'}),false,'Launch verification required');
   const checkoutEnv={...production,FAMILY_CHECKOUT_ENABLED:'true',PARENT_LAUNCH_VERIFIED:'true',STRIPE_FAMILY_PREMIUM_PRICE_ID:'price_family'};
   const sessions:Stripe.Checkout.SessionCreateParams[]=[],keys:string[]=[];
-  const stripe={prices:{retrieve:async()=>({id:'price_family',active:true,livemode:true,currency:'usd',unit_amount:1999,recurring:{interval:'month',interval_count:1,usage_type:'licensed'}})},customers:{create:async()=>({id:'cus_test'})},subscriptions:{list:async()=>({data:[],has_more:false})},checkout:{sessions:{create:async(params:Stripe.Checkout.SessionCreateParams,options:{idempotencyKey:string})=>{sessions.push(params);keys.push(options.idempotencyKey);return {status:'open',url:'https://checkout.stripe.com/test'};}}}} as unknown as Stripe;
+  const stripe={prices:{retrieve:async()=>({id:'price_family',active:true,livemode:true,currency:'usd',unit_amount:1999,recurring:{interval:'month',interval_count:1,usage_type:'licensed'}})},customers:{create:async()=>({id:'cus_test'})},subscriptions:{list:async()=>({data:[],has_more:false})},checkout:{sessions:{create:async(params:Stripe.Checkout.SessionCreateParams,options?:{idempotencyKey:string})=>{sessions.push(params);if(options)keys.push(options.idempotencyKey);return {status:'open',url:'https://checkout.stripe.com/test'};}}}} as unknown as Stripe;
   Object.assign(stripe,{billingPortal:{configurations:{list:async()=>({data:[{features:{subscription_cancel:{enabled:true,mode:'at_period_end'}}}]})}}});
   await assert.rejects(()=>familyCheckout('a',checkoutEnv,stripe),/already includes Parent Assistant/);
+  assert.equal(guestFamilyCheckoutAvailable(checkoutEnv),false,'No guest charges when email is unavailable');
+  await assert.rejects(()=>guestFamilyCheckout(checkoutEnv,stripe),/requires email delivery/);
+  const guestEnv={...checkoutEnv,EMAIL_DELIVERY_ENABLED:'true',EMAIL:{}};
+  assert.equal(guestFamilyCheckoutAvailable(guestEnv),true);
+  const userCount=await DB.prepare('SELECT count(*) n FROM users').first('n');
+  await guestFamilyCheckout(guestEnv,stripe);
+  assert.equal(sessions[0].mode,'subscription');
+  assert.equal(sessions[0].customer,undefined,'Stripe collects the anonymous buyer email');
+  assert.equal(sessions[0].metadata?.source,'guest_checkout');
+  assert.equal(await DB.prepare('SELECT count(*) n FROM users').first('n'),userCount,'Checkout alone cannot create a user or entitlement');
+  sessions.length=0;
   assert.equal(sessions.length,0,'Grandfathered Pass cannot create an unnecessary second checkout');
   await Promise.all([familyCheckout('b',checkoutEnv,stripe),familyCheckout('b',checkoutEnv,stripe)]);
   assert.equal(keys[0],keys[1]);assert.deepEqual(sessions[0],sessions[1]);

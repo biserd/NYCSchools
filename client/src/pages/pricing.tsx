@@ -1,5 +1,6 @@
 import { Link } from 'wouter';
-import { Check, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, CalendarDays, Check, MessageCircle } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Footer } from '@/components/Footer';
 import { SEOHead } from '@/components/SEOHead';
@@ -21,6 +22,7 @@ const questions = [
   ['What happens to my existing paid plan?', 'Your price, expiry date and billing terms do not change. As a grandfathered benefit, active paid customers can use Parent Assistant at no extra charge while their existing plan remains active. A prepaid Research Pass still ends on its original expiry date and does not renew.'],
   ['Can I still buy the $29 Research Pass?', 'No. It is closed to new purchases. Family Premium at $19.99/month is the only paid plan available to new customers when checkout opens.'],
   ['Is there a free trial?', 'No. Your first monthly payment is charged at checkout, then the subscription renews monthly until canceled.'],
+  ['Do I need an account before paying?', 'No. Secure Stripe Checkout collects your email. After payment is confirmed, we email a one-time sign-in link to that address. Already have paid access? Sign in first so you do not buy a duplicate plan.'],
   ['What happens when I cancel?', 'Cancel in account settings. Monthly benefits continue through the paid billing period. Any separately held, unexpired legacy Research Pass remains valid through its original expiry.'],
   ['Does connecting WhatsApp subscribe me?', 'No. A paid subscription requires a separate checkout. Reminder delivery also requires a connected phone and explicit consent. Reply STOP to stop WhatsApp reminders; this does not cancel billing.'],
   ['Are school calendars updated automatically?', 'The assistant offers reviewed official NYCPS calendar dates for you to confirm. This is not a live school-announcement feed. Check applicability and dates with your provider.'],
@@ -28,6 +30,7 @@ const questions = [
 
 export default function PricingPage() {
   const checkout = useCheckout();
+  const [testEmail, setTestEmail] = useState('');
   const returned = new URLSearchParams(window.location.search).get('success') === 'true';
   return <div className="min-h-screen flex flex-col bg-background">
     <SEOHead title="Family Premium — $19.99/month" description="Family Premium is $19.99/month: school research and a WhatsApp Parent Assistant in one plan. No free trial. Existing paid customers keep their original terms." canonicalPath="/pricing" />
@@ -38,9 +41,10 @@ export default function PricingPage() {
         <h1 className="text-4xl md:text-5xl font-bold">Find the right school.<br />Stay on top of school life.</h1>
         <p className="text-lg text-muted-foreground">School research and ongoing help from a Parent Assistant, together in Family Premium.</p>
       </header>
-      {returned && <p role="status">Checkout returned. Access updates after payment is confirmed. Check your account for its status.</p>}
+      <section className="grid gap-3 md:grid-cols-3" aria-label="What Family Premium helps you do"><div className="rounded-xl border bg-card p-4"><CalendarDays className="text-sky-700" /><h2 className="font-semibold mt-2">Plan each child’s school year</h2><p className="text-sm text-muted-foreground mt-1">Start with published NYCPS dates, then add private visits, deadlines and family events.</p></div><div className="rounded-xl border bg-card p-4"><Bell className="text-amber-700" /><h2 className="font-semibold mt-2">Get requested reminders</h2><p className="text-sm text-muted-foreground mt-1">Confirm important dates and schedule opted-in WhatsApp reminders with quiet hours.</p></div><div className="rounded-xl border bg-card p-4"><MessageCircle className="text-teal-700" /><h2 className="font-semibold mt-2">Ask on web or WhatsApp</h2><p className="text-sm text-muted-foreground mt-1">The Parent Assistant helps with school research and calendar planning using the same account.</p></div></section>
+      {returned && <p role="status">Checkout returned. Access is activated after Stripe confirms payment. If you checked out without signing in, check the email you entered at Stripe for a secure sign-in link (including spam). If it does not arrive, use the sign-in link below.</p>}
       {checkout.isPremium && <p className="rounded-lg border p-4 bg-muted" role="status">Your paid access is active and Parent Assistant is included while it remains active. You do not need to buy another plan now. <Link className="underline" href="/family">Use Parent Assistant</Link>.</p>}
-      <Card className="max-w-xl mx-auto border-teal-600 bg-teal-50/60 dark:bg-teal-950/20" data-testid="card-family-premium">
+      <Card id="checkout" className="max-w-xl mx-auto border-teal-600 bg-teal-50/60 dark:bg-teal-950/20" data-testid="card-family-premium">
         <CardHeader className="space-y-3">
           <MessageCircle className="text-teal-700" />
           <Badge variant="secondary" className="w-fit">{checkout.isReady ? 'School research + parent support' : 'Coming soon · Not for sale yet'}</Badge>
@@ -51,8 +55,11 @@ export default function PricingPage() {
         <CardContent className="space-y-6">
           <ul className="space-y-3">{features.map(feature => <li className="flex gap-2" key={feature}><Check className="w-5 h-5 text-teal-700 shrink-0" />{feature}</li>)}</ul>
           <p className="text-sm text-muted-foreground">No free trial. Charged at checkout, then $19.99 monthly until canceled. Cancel in account settings; access continues through the paid billing period.</p>
+          {!checkout.isPremium && <p className="text-sm">No registration required. {checkout.stagingTestEmailRequired ? 'This preview uses a restricted tester email at Stripe; ' : 'Secure Stripe Checkout collects your email; '}we email a one-time sign-in link after payment confirmation. Already paying? <Link className="underline" href="/login?redirect=/family">Sign in first</Link> to avoid a second charge.</p>}
+          {!checkout.guestReady && !checkout.isSignedIn && <p role="status" className="text-sm rounded-lg border border-amber-400 bg-amber-50 p-3">Guest checkout is temporarily unavailable because secure sign-in email cannot be delivered. No payment will be taken from a guest until this is resolved.</p>}
+          {checkout.stagingTestEmailRequired && !checkout.isSignedIn && <div className="rounded-lg border border-amber-400 bg-amber-50 p-3 space-y-2 text-sm"><p className="font-semibold">Staging test checkout · no real charge</p><p>For this temporary public preview, enter the designated tester email. Stripe will show a test-mode checkout with that email fixed, and only that inbox can receive the sign-in link. Do not enter a real card.</p><label htmlFor="stage-guest-email" className="block font-medium">Tester email</label><input id="stage-guest-email" type="email" autoComplete="email" required value={testEmail} onChange={e => setTestEmail(e.target.value)} className="w-full min-h-11 rounded-md border bg-background px-3" /></div>}
           {!checkout.isReady && <p role="status" className="text-sm">Monthly checkout is closed while launch testing is completed. No payment will be taken.</p>}
-          {checkout.monthlyActive ? <Button asChild className="w-full"><Link href="/settings">Manage Family Premium</Link></Button> : checkout.assistantActive ? <Button asChild className="w-full"><Link href="/family">Use your included Parent Assistant</Link></Button> : <Button className="w-full min-h-11" disabled={!checkout.isReady || checkout.isPending} onClick={checkout.startCheckout} data-testid="button-family-checkout">{checkout.isPending ? 'Opening secure checkout…' : checkout.isReady ? 'Subscribe — $19.99/month' : 'Family Premium — Coming soon'}</Button>}
+          {checkout.monthlyActive ? <Button asChild className="w-full"><Link href="/settings">Manage Family Premium</Link></Button> : checkout.assistantActive ? <Button asChild className="w-full"><Link href="/family">Use your included Parent Assistant</Link></Button> : <Button className="w-full min-h-11" disabled={!checkout.isReady || checkout.isPending || (!checkout.guestReady && !checkout.isSignedIn) || (checkout.stagingTestEmailRequired && !checkout.isSignedIn && !testEmail.trim())} onClick={() => checkout.startCheckout(testEmail)} data-testid="button-family-checkout">{checkout.isPending ? 'Opening secure checkout…' : checkout.isReady ? checkout.isSignedIn ? 'Subscribe — $19.99/month' : checkout.stagingTestEmailRequired ? 'Open test checkout without an account' : 'Subscribe without an account — $19.99/month' : 'Family Premium — Coming soon'}</Button>}
           <Link className="block text-center underline min-h-11 py-2" href="/family">Explore My Family</Link>
           <p className="text-xs text-muted-foreground">Reminder delivery requires a connected WhatsApp phone and an explicitly scheduled or confirmed reminder. Calendar dates require your review. The assistant is not a live school-announcement feed.</p>
         </CardContent>

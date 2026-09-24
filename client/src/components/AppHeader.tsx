@@ -39,8 +39,8 @@ export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean }
 
   return (
     <header className="bg-background border-b" data-testid="header-main">
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4">
-        <div className={`flex min-h-11 items-center justify-between gap-4 ${stackOnMobile ? 'flex-col lg:flex-row' : 'flex-nowrap'}`}>
+      <div className={`max-w-[1600px] mx-auto px-4 md:px-8 ${stackOnMobile ? 'py-4' : 'py-3 lg:py-4'}`}>
+        <div className="flex min-h-11 flex-col lg:flex-row items-center justify-between gap-3 lg:gap-4">
           <div className="flex shrink-0 items-center gap-3">
             <Link href="/">
               <div className="flex min-h-11 items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
@@ -58,7 +58,7 @@ export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean }
             )}
           </div>
           
-          <div className={`flex items-center gap-2 flex-nowrap [&_button]:min-h-11 [&_button]:min-w-11 ${stackOnMobile ? 'max-w-full overflow-x-auto' : 'shrink-0'}`}>
+          <nav aria-label="Main navigation" className="flex w-full lg:w-auto max-w-full items-center gap-2 flex-nowrap overflow-x-auto lg:overflow-visible [&_button]:min-h-11 [&_button]:min-w-11">
             {isAuthenticated ? (
               <>
                 <Link href="/recommendations">
@@ -119,9 +119,9 @@ export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean }
                   </Link>
                 )}
                 <Link href="/family">
-                  <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" data-testid="button-family-nav">
-                    <CalendarDays className="w-4 h-4 2xl:mr-2" />
-                    <span className="sr-only 2xl:not-sr-only">My Family</span>
+                  <Button variant="default" size="sm" className="sm:px-3" data-testid="button-family-nav">
+                    <CalendarDays className="w-4 h-4 mr-2" />
+                    <span>Family &amp; Reminders</span>
                   </Button>
                 </Link>
                 <Link href="/settings">
@@ -146,6 +146,7 @@ export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean }
               </>
             ) : (
               <>
+                <Link href="/family"><Button variant="default" size="sm" data-testid="button-family-nav"><CalendarDays className="w-4 h-4 mr-2" /><span>Family &amp; Reminders</span></Button></Link>
                 <Link href="/recommendations">
                   <Button variant="outline" size="sm" data-testid="button-recommendations-nav" aria-label="Find My Match">
                     <Sparkles className="w-4 h-4 2xl:mr-2" />
@@ -191,7 +192,7 @@ export function AppHeader({ stackOnMobile = false }: { stackOnMobile?: boolean }
               </>
             )}
             <ThemeToggle />
-          </div>
+          </nav>
         </div>
       </div>
     </header>

@@ -9,6 +9,8 @@ import { createDatabase, withDatabaseInstance } from '../../server/db';
 import { accountAccess, matchesFamilyPrice, recordFamilySubscription } from '../../server/familyBilling';
 import { users } from '../../shared/schema';
 import { resolveAccess, sixMonthsFrom, RESEARCH_PASS, FAMILY_PREMIUM } from '../../shared/plans';
+import { familyCheckoutAvailable, guestFamilyCheckoutAvailable } from '../../server/parent/checkout';
+import { NYCPS_2026_27_EVENTS } from '../../shared/family-calendar';
 
 // Synthetic data in a new local D1 database; never calls Stripe or production.
 const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.d1-test.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-family-billing-')) } });
@@ -24,6 +26,14 @@ try {
     const original = await read('pass');
     assert.equal(RESEARCH_PASS.available, false, 'Legacy sales retired, not legacy access');
     assert.equal(FAMILY_PREMIUM.amount, 1999);
+    const stageCheckout = { ENVIRONMENT:'staging', FAMILY_CHECKOUT_ENABLED:'true', PARENT_ASSISTANT_ENABLED:'true', STRIPE_FAMILY_PREMIUM_PRICE_ID:'price_test', STAGING_EXPIRES_AT:new Date(Date.now()+86400000).toISOString(), STRIPE_TEST_SECRET_KEY:'sk_test_example', STRIPE_TEST_PUBLISHABLE_KEY:'pk_test_example', EMAIL_DELIVERY_ENABLED:'true', EMAIL:{ send: async () => ({messageId:'test'}) }, STAGING_GUEST_EMAIL:'tester@example.com' };
+    assert.equal(familyCheckoutAvailable(stageCheckout), true);
+    assert.equal(guestFamilyCheckoutAvailable(stageCheckout), true, 'Stage guest flow requires restricted email delivery');
+    assert.equal(guestFamilyCheckoutAvailable({...stageCheckout, EMAIL_DELIVERY_ENABLED:'false'}), false);
+    assert.equal(guestFamilyCheckoutAvailable({...stageCheckout, EMAIL:undefined}), false);
+    assert.equal(NYCPS_2026_27_EVENTS.length, 36, 'Include all dated rows, splitting the two June Regents ranges');
+    assert.equal(new Set(NYCPS_2026_27_EVENTS.map(event => event.id)).size, NYCPS_2026_27_EVENTS.length);
+    assert.equal(NYCPS_2026_27_EVENTS.some(event => event.date==='2027-06-21'&&event.endDate==='2027-06-25'), true);
     assert.equal((await accountAccess(original)).researchPass.active, true);
     assert.equal(resolveAccess(original, null, new Date(), true).parentAssistant, true, 'Active Pass is grandfathered into Parent Assistant');
     const legacy = { id: 'legacy', email: 'legacy@example.invalid', password: 'test', subscriptionStatus: 'active', subscriptionPlan: 'premium', subscriptionExpiresAt: expiry, stripeSubscriptionId: 'sub_legacy' };

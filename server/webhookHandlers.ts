@@ -1,13 +1,16 @@
 // Stripe webhook handlers for NYC School Ratings
 import { getUncachableStripeClient, getStripeMode } from './stripeClient';
 import { storage } from './storage';
-import { sendAdminNewCustomerNotification, sendWelcomeEmail, sendMagicLinkEmail } from './emailService';
+import { sendAdminNewCustomerNotification, sendWelcomeEmail, sendMagicLinkEmail, sendFamilyPremiumAccessLink } from './emailService';
 import { invalidateUserCaches } from './cache';
 import Stripe from 'stripe';
 import crypto from 'crypto';
 import { getAppUrl } from './runtimeConfig';
 import { matchesFamilyPrice, recordFamilySubscription } from './familyBilling';
 import { sixMonthsFrom } from '@shared/plans';
+import { db } from './db';
+import { familySubscriptions, users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 // Enhanced logging for webhook debugging
 function logWebhook(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any) {
@@ -90,7 +93,16 @@ export class WebhookHandlers {
       });
       
       // Find user by Stripe customer ID
-      const user = await storage.getUserByStripeCustomerId(customerId);
+      let user = await storage.getUserByStripeCustomerId(customerId);
+      if (!user && matchesFamilyPrice(subscription, process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID)) {
+        // Guest checkout can create a second Stripe Customer for an existing
+        // account. Preserve its legacy Customer ID and resolve renewals by the
+        // already-recorded subscription instead.
+        const [linked] = await db.select({ user: users }).from(familySubscriptions)
+          .innerJoin(users, eq(familySubscriptions.userId, users.id))
+          .where(eq(familySubscriptions.stripeSubscriptionId, subscription.id)).limit(1);
+        user = linked?.user;
+      }
       
       if (!user) {
         logWebhook('WARN', `No user found for Stripe customer`, { customerId });
@@ -196,6 +208,7 @@ export class WebhookHandlers {
         logWebhook('WARN', `No customer ID in checkout session`, { sessionId: session.id });
         return;
       }
+      if (session.mode === 'subscription' && isGuestCheckout && !customerEmail) throw new Error('Paid guest subscription has no customer email');
       
       // Try to find existing user by Stripe customer ID first
       let user = await storage.getUserByStripeCustomerId(customerId);
@@ -212,7 +225,7 @@ export class WebhookHandlers {
             email: customerEmail,
             customerId
           });
-          await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
+          if (!user.stripeCustomerId) await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
         } else if (isGuestCheckout) {
           // Guest checkout - create new user with name from Stripe
           logWebhook('INFO', `Creating new user for guest checkout`, {
@@ -256,6 +269,13 @@ export class WebhookHandlers {
         if (matchesFamilyPrice(subscription, process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID)) {
           await recordFamilySubscription(user.id, subscription, event.created);
           invalidateUserCaches(user.id);
+          if (isGuestCheckout) {
+            const magicToken = crypto.randomBytes(32).toString('hex');
+            const tokenHash = crypto.createHash('sha256').update(magicToken).digest('hex');
+            await storage.createMagicLinkToken(user.id, tokenHash, new Date(Date.now() + 24 * 60 * 60 * 1000));
+            const link = `${getAppUrl()}/auth/magic-link/callback?token=${magicToken}&returnTo=%2Ffamily`;
+            if (!await sendFamilyPremiumAccessLink(user.email, link)) throw new Error('Could not email guest subscription sign-in link');
+          }
           return;
         }
         if (session.metadata?.plan === 'family_premium' || subscription.metadata?.plan === 'family_premium') throw new Error('Family Premium price is not configured or does not match');

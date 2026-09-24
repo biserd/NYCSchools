@@ -14,7 +14,7 @@ interface OutboundEmail {
 }
 
 async function sendEmail(message: OutboundEmail): Promise<EmailSendResult> {
-  if (env.ENVIRONMENT === 'staging' || env.EMAIL_DELIVERY_ENABLED !== "true") {
+  if (env.EMAIL_DELIVERY_ENABLED !== "true") {
     logEmail("WARN", "Email delivery disabled", {
       subject: message.subject,
       to: message.to,
@@ -493,6 +493,27 @@ export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string
     return true;
   } catch (error: any) {
     logEmail('ERROR', 'Failed to send magic link email', { error: error.message, userEmail });
+    return false;
+  }
+}
+
+export async function sendFamilyPremiumAccessLink(userEmail: string, magicLinkUrl: string): Promise<boolean> {
+  try {
+    await sendEmail({
+      to: userEmail,
+      subject: 'Your Family Premium subscription and secure sign-in',
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#172d32">
+        <h1>Welcome to Family Premium</h1>
+        <p>Stripe confirmed your $19.99/month subscription. Your school research, Family Calendar and Parent Assistant are now available.</p>
+        <p><a href="${magicLinkUrl}" style="display:inline-block;background:#0d746b;color:white;padding:12px 18px;border-radius:8px;text-decoration:none">Open your Family Calendar</a></p>
+        <p>This one-time sign-in link expires in 24 hours. If it expires, request a fresh link on the sign-in page using this email address. Never share the link.</p>
+        <p>You can review or cancel the monthly subscription in account settings after signing in. Canceling retains access through the paid period. This purchase does not alter any separate legacy Research Pass.</p>
+        <p>Questions? Contact <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
+      </div>`,
+    });
+    return true;
+  } catch (error) {
+    logEmail('ERROR', 'Failed to send Family Premium sign-in link', { error: error instanceof Error ? error.message : String(error), userEmail });
     return false;
   }
 }

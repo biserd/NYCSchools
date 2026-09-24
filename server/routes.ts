@@ -4,8 +4,8 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
-import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, familySubscriptions, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
@@ -212,10 +212,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   app.use('/api/tuck', tuckRouter(isAuthenticated, getAppUrl));
+  // Hosted Checkout collects the buyer's email. The signed webhook provisions
+  // access; this endpoint never creates a user or accepts an email to impersonate.
+  app.post('/api/family/checkout/guest', async (req, res) => {
+    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    const origin=req.get('origin');
+    if(!origin||origin!==new URL(getAppUrl()).origin||req.get('sec-fetch-site')==='cross-site')return res.status(403).json({message:'Start checkout on NYC School Ratings.'});
+    try {
+      const {guestFamilyCheckout}=await import('./parent/checkout');
+      return res.json(await guestFamilyCheckout(workerEnv as unknown as AssistantEnvironment,await getUncachableStripeClient(),typeof req.body?.testEmail==='string'?req.body.testEmail:undefined));
+    } catch(error) {
+      if(error instanceof TuckError)return res.status(error.status).json({message:error.message});
+      console.error('Guest Family Checkout unavailable',error);
+      return res.status(503).json({message:'Checkout is temporarily unavailable. No payment was taken.'});
+    }
+  });
   app.get('/tuck', (_req, res) => res.redirect(301, '/family'));
   app.get('/api/plans', async (_req, res) => {
-    const {familyCheckoutAvailable}=await import('./parent/checkout');
-    res.set('Cache-Control','no-store').json({ researchPass: RESEARCH_PASS, familyPremium: { ...FAMILY_PREMIUM, available: familyCheckoutAvailable(process.env) } });
+    const {familyCheckoutAvailable,guestFamilyCheckoutAvailable}=await import('./parent/checkout');
+    res.set('Cache-Control','no-store').json({ researchPass: RESEARCH_PASS, familyPremium: { ...FAMILY_PREMIUM, available: familyCheckoutAvailable(workerEnv), guestAvailable: guestFamilyCheckoutAvailable(workerEnv), stagingTestEmailRequired: workerEnv.ENVIRONMENT==='staging'&&guestFamilyCheckoutAvailable(workerEnv) } });
   });
   
   // OAuth 2.1 endpoints for ChatGPT
@@ -2910,7 +2925,8 @@ When answering:
     }
   });
 
-  // Verify checkout session and auto-login (for /thanks page)
+  // Legacy receipt status only. A Checkout Session ID is not an identity
+  // credential; never create an authenticated session from it.
   app.get("/api/checkout/verify-session", async (req: Request, res: Response) => {
     try {
       const sessionId = req.query.session_id as string;
@@ -2927,6 +2943,10 @@ When answering:
       if (session.payment_status !== 'paid') {
         return res.status(400).json({ error: "Payment not completed", status: session.payment_status });
       }
+      const signedInUserId=req.session?.userId;
+      if(!signedInUserId)return res.set('Cache-Control','no-store').status(202).json({status:'check_email',message:'Payment received. Use the secure sign-in link sent to your email.'});
+      const currentUser=await storage.getUser(signedInUserId);
+      if(!currentUser)return res.status(401).json({error:'Sign in again.'});
       
       // Get customer email from session
       const customerEmail = session.customer_details?.email || 
@@ -2946,35 +2966,17 @@ When answering:
         return res.status(400).json({ error: "Customer ID not found" });
       }
       
-      // Find or wait for user (webhook should have created them)
-      let user = await storage.getUserByEmail(customerEmail.toLowerCase());
+      if(currentUser.email.toLowerCase()!==customerEmail.toLowerCase())return res.status(403).json({error:'This payment belongs to a different account.'});
+      if(currentUser.stripeCustomerId!==customerId)return res.status(202).json({status:'processing',message:'Payment received; entitlement is being confirmed.'});
       
-      // If user doesn't exist yet, webhook might not have processed
-      // Try by Stripe customer ID as fallback
-      if (!user) {
-        user = await storage.getUserByStripeCustomerId(customerId);
-      }
-      
-      if (!user) {
-        // User should exist by now (created by webhook), but if not, inform client to retry
-        return res.status(202).json({ 
-          status: 'processing', 
-          message: 'Your account is being set up. Please wait a moment.',
-          email: customerEmail,
-        });
-      }
-      
-      // Auto-login the user by creating session
-      (req as any).session.userId = user.id;
-      
-      res.json({ 
+      res.set('Cache-Control','no-store').json({
         success: true, 
         purchase: { amount: session.amount_total, currency: session.currency },
         user: {
-          id: user.id,
-          email: user.email,
-          subscriptionStatus: user.subscriptionStatus,
-          subscriptionPlan: user.subscriptionPlan,
+          id: currentUser.id,
+          email: currentUser.email,
+          subscriptionStatus: currentUser.subscriptionStatus,
+          subscriptionPlan: currentUser.subscriptionPlan,
         }
       });
     } catch (error: any) {
@@ -3173,13 +3175,26 @@ When answering:
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
-      if (!user?.stripeCustomerId) {
+      if (!user) {
         return res.status(400).json({ error: "No subscription found" });
       }
 
+      // A guest purchase by an existing user may have a new Stripe Customer.
+      // Open the portal for the active monthly subscription, not the legacy
+      // Customer retained on the Research Pass account.
+      const [monthly]=await db.select().from(familySubscriptions)
+        .where(eq(familySubscriptions.userId,userId))
+        .orderBy(desc(familySubscriptions.currentPeriodEnd)).limit(1);
+      let portalCustomer=user.stripeCustomerId;
+      if(monthly && ['active','trialing'].includes(monthly.status) && monthly.currentPeriodEnd>new Date()) {
+        const subscription=await (await getUncachableStripeClient()).subscriptions.retrieve(monthly.stripeSubscriptionId);
+        portalCustomer=typeof subscription.customer==='string' ? subscription.customer : subscription.customer.id;
+      }
+      if(!portalCustomer)return res.status(400).json({error:'No subscription found'});
+
       const baseUrl = getAppUrl(req);
       const session = await stripeService.createCustomerPortalSession(
-        user.stripeCustomerId,
+        portalCustomer,
         `${baseUrl}/settings`
       );
 

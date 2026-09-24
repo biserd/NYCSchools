@@ -13,6 +13,7 @@
   "migrations":[{"tag":"parent-assistant-sdk-v1","new_sqlite_classes":["ParentAssistantAgent"]}],
   "assets":{"directory":"./dist/public","binding":"ASSETS","run_worker_first":true},
   "d1_databases":[{"binding":"DB","database_name":"nyc-schools-ratings-d1-staging","database_id":"e48a9ae9-4948-4dae-863a-06f6b026b436","migrations_dir":"migrations-d1"}],
+  "send_email":[{"name":"EMAIL","allowed_sender_addresses":["hello@nycschoolsratings.com"],"allowed_destination_addresses":["biserd@gmail.com"],"remote":true}],
   "triggers":{"crons":[]},
   "queues":{
     "producers":[
@@ -38,7 +39,8 @@
     "NODE_ENV":"production",
     "APP_URL":"https://nyc-schools-ratings-d1-staging.biser-d.workers.dev",
     "ADMIN_EMAILS":"",
-    "EMAIL_DELIVERY_ENABLED":"false",
+    "EMAIL_DELIVERY_ENABLED":"true",
+    "STAGING_GUEST_EMAIL":"biserd@gmail.com",
     "EMAIL_FROM":"hello@nycschoolsratings.com",
     "EMAIL_FROM_NAME":"NYC Schools D1 staging",
     "STRIPE_FAMILY_PREMIUM_PRICE_ID":"price_1UHTA7RwvWaTf8xfT3VzOnbm",

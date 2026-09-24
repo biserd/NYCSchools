@@ -975,6 +975,11 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
       </ul>
     </section>
     <section>
+      <h2>Family Calendar and Parent Assistant</h2>
+      <p>Plan beyond the school search: view NYCPS district-school closures and key dates in a month-by-month calendar, add private family events, and keep school research and family reminders together. Confirm dates with your school; private, charter, 2-K, NYCEEC and family-childcare calendars may differ.</p>
+      <p><a href="/family">Explore the Family Calendar</a></p>
+    </section>
+    <section>
       <h2>Explore schools by borough</h2>
       <nav aria-label="NYC school guides by borough">
         <a href="/nyc-schools/manhattan">Manhattan</a>

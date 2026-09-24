@@ -9,6 +9,7 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-foreground mb-3">Explore</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/family" className="font-medium text-primary hover:underline">Family Calendar, WhatsApp &amp; Reminders</Link></li>
               <li>
                 <Link href="/" className="hover:text-foreground transition-colors" data-testid="footer-link-home">
                   Browse Schools
