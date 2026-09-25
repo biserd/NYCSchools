@@ -1,6 +1,6 @@
 # NYC School Ratings public research connector for Meta Muse — first release
 
-Status: deployed to production on September 25, 2026. The public research endpoint is `https://nycschoolsratings.com/mcp/muse`. The isolated staging endpoint is `https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/mcp/muse` and expires on September 28, 2026 unless renewed. Meta submission and approval are separate from deployment.
+Status: deployed to production and submitted for Meta Muse review on September 25, 2026. Meta displayed “Thank you for your submission!” and said it would review the connector and get in touch; no submission ID or approval was shown. The public research endpoint is `https://nycschoolsratings.com/mcp/muse`. The isolated staging endpoint is `https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/mcp/muse` and expires on September 28, 2026 unless renewed.
 
 ## Inventory and gap assessment
 
@@ -87,7 +87,7 @@ Staging Worker version `63915d0f-4688-4d36-8b5a-dfecbccd4b9c`. `npm run check`, 
 Submission and owner checklist:
 
 1. The production release is complete. Review the legal/source-use notes and add a shared abuse limit before broad promotion; the existing per-isolate throttle remains active.
-2. Open Meta's [Muse Connector Platform](https://muse.ai/platform) using an authorized Meta login and select **Submit a connector**. The form accepts an existing MCP connection and separately requests a company work email. Supply the packet above, the live production endpoint, and a 512×512 PNG or SVG icon no larger than 256 KiB. Follow any additional fields or technical instructions shown in the owner flow.
+2. Completed September 25: submitted through Meta's [Muse Connector Platform](https://muse.ai/platform) using an authorized existing Meta login, with a company work contact. The form accepted the live MCP endpoint and a 512×512 PNG icon under 256 KiB. Meta's review is pending.
 3. Give Meta test prompts and an explanation that there is no account linkage, payment, address zoning, or write action in v1. Confirm with Meta whether its review client accepts this JSON-RPC MCP endpoint and protocol version.
 4. Separately, if desired, [sign up for the Meta AI Connectors developer preview](https://developers.meta.com/blog/meta-connect-recap-ai-glasses/). Meta says that program can connect a service via API or MCP, but it is a distinct onboarding path; the same read-only endpoint is a candidate, not a confirmed integration.
 5. Await Meta's security/legal review and end-to-end testing. Approval and directory placement are Meta decisions.
