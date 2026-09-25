@@ -1,6 +1,6 @@
 # NYC School Ratings public research connector for Meta Muse — first release
 
-Status: staging candidate only. This branch does **not** submit anything to Meta or deploy to production. The public research endpoint is `https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/mcp/muse`; production would be `https://nycschoolsratings.com/mcp/muse` only after an approved release. Staging expires on September 28, 2026 unless renewed.
+Status: deployed to production on September 25, 2026. The public research endpoint is `https://nycschoolsratings.com/mcp/muse`. The isolated staging endpoint is `https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/mcp/muse` and expires on September 28, 2026 unless renewed. Meta submission and approval are separate from deployment.
 
 ## Inventory and gap assessment
 
@@ -57,7 +57,7 @@ The `structuredContent.schools[]` entries use the same serializer and definition
 
 ## Safety and source-use review
 
-- This lane is read-only and accepts only three tool names. Request JSON is capped at 4 KB, list output at 20 rows, offset at 500, and comparison at four distinct DBNs. It uses the existing best-effort per-IP throttle of 30 calls/minute on each Worker isolate. For a broad launch, add a Cloudflare account-level WAF rate-limit rule because in-memory throttling is not a global quota.
+- This lane is read-only and accepts only three tool names. Request JSON is capped at 4 KB, list output at 20 rows, offset at 500, and comparison at four distinct DBNs. It uses the existing best-effort per-IP throttle of 30 calls/minute on each Worker isolate. In-memory throttling is not a global quota. A separate global limiter remains an operational follow-up; the zone's one free-plan rate-limit slot is currently occupied by its leaked-credential rule and must not be replaced silently.
 - Logs contain method, bounded tool name, and error status only. Request arguments, children, email, token, and full home address are not logged. There is no address tool in this release.
 - NYC Open Data's [FAQ](https://www.nyc.gov/opendata/get-started/FAQs) says public Open Data has no use restrictions; [Open NY terms](https://data.ny.gov/api/views/77gx-ii52/files/ef0c1840-ad54-4240-92fd-6397c49fde46?filename=OPEN-NY_20Terms_20of_20Use.pdf) permit lawful reuse, subject to any dataset-specific terms. NYCPS describes school-level data as [publicly available](https://www.schools.nyc.gov/about-us/working-with-us/how-to-research-new-york-city-public-schools) and publishes [2026 survey results](https://www.schools.nyc.gov/about-us/reports/school-quality/nyc-school-survey). We found no explicit third-party-platform redistribution permission for the InfoHub and MySchools-specific extracts in those pages. The connector therefore returns bounded derived facts already displayed publicly on the site, with source links and dates, not raw bulk files. The account owner should review each source's current terms and Meta's legal requirements before submission; this is not legal clearance.
 - Canonical methodology: `https://nycschoolsratings.com/methodology`. Source pointers: NYCPS test results and School Quality pages, NYC School Survey releases, and each available canonical 2-K source URL. Site ratings are proprietary, not NYCPS ratings. Survey blanks stay null, never zero.
@@ -68,7 +68,7 @@ The `structuredContent.schools[]` entries use the same serializer and definition
 2. Connect with the standard MCP SDK client (`node scripts/test-muse-sdk.mjs`), then POST `server/discover`, `tools/list`, and each of the three tool calls from a separate HTTP client against staging. Check no favorites/address action in the list and that a forbidden tool call fails.
 3. Check ambiguous names, a verified 2-K provider, a K–12 school, absent metrics, distinct comparison values, invalid/duplicate DBNs, 21-row rejection, and 429 after the throttle limit. Confirm a sample of canonical profile URLs returns HTTP 200.
 4. Compare a sample score and source year against the corresponding production school profile. Staging uses an isolated D1 snapshot and may lag production; do not silently treat a mismatch as fresh production data.
-5. Before launch: confirm a global Cloudflare WAF limit, source-use review, and Meta's actual technical and legal contract. Do not infer approval from successful MCP tests.
+5. Before a broad launch: establish a shared abuse limit, complete source-use review, and verify Meta's actual technical and legal contract. Do not infer Meta approval from successful MCP tests or production deployment.
 
 ### September 25 staging evidence
 
@@ -80,14 +80,14 @@ Staging Worker version `63915d0f-4688-4d36-8b5a-dfecbccd4b9c`. `npm run check`, 
 - **Description:** Find, inspect, and compare NYC schools using dated public-source facts and clearly labeled independent ratings, without requiring a parent account.
 - **Three example Muse prompts:** “Find District 2 schools with pre-K and kindergarten.” “What do the 2026 family and teacher surveys say about 02M545?” “Compare 02M545 with 02M234 and show where metrics are missing.”
 - **Staging endpoint:** `https://nyc-schools-ratings-d1-staging.biser-d.workers.dev/mcp/muse` (temporary, expires September 28, 2026).
-- **Proposed production endpoint:** `https://nycschoolsratings.com/mcp/muse` (not deployed by this branch).
+- **Production endpoint:** `https://nycschoolsratings.com/mcp/muse` (live).
 - **Authentication:** none for public read-only research. The existing `/mcp` favorites OAuth is outside this connector. The Premium `/api/v1` key is not required or embedded.
 - **Privacy:** `https://nycschoolsratings.com/privacy`; **Terms:** `https://nycschoolsratings.com/terms`; **Support:** `hello@nycschoolsratings.com`.
 
-Manual owner checklist (not performed here):
+Submission and owner checklist:
 
-1. Review staging test evidence and legal/source-use notes; decide whether to approve a production release and set a global abuse rule.
-2. Open Meta's [Muse Connector Platform](https://muse.ai/platform) using the account owner's Meta login and select **Submit a connector**. Meta currently describes “describe your product,” “submit for review,” and review for functional, security and legal requirements. Supply the packet above and the production endpoint only once it exists. Follow any additional fields or technical instructions actually shown in the owner flow; no manifest or auth requirement is assumed here.
+1. The production release is complete. Review the legal/source-use notes and add a shared abuse limit before broad promotion; the existing per-isolate throttle remains active.
+2. Open Meta's [Muse Connector Platform](https://muse.ai/platform) using an authorized Meta login and select **Submit a connector**. The form accepts an existing MCP connection and separately requests a company work email. Supply the packet above, the live production endpoint, and a 512×512 PNG or SVG icon no larger than 256 KiB. Follow any additional fields or technical instructions shown in the owner flow.
 3. Give Meta test prompts and an explanation that there is no account linkage, payment, address zoning, or write action in v1. Confirm with Meta whether its review client accepts this JSON-RPC MCP endpoint and protocol version.
 4. Separately, if desired, [sign up for the Meta AI Connectors developer preview](https://developers.meta.com/blog/meta-connect-recap-ai-glasses/). Meta says that program can connect a service via API or MCP, but it is a distinct onboarding path; the same read-only endpoint is a candidate, not a confirmed integration.
 5. Await Meta's security/legal review and end-to-end testing. Approval and directory placement are Meta decisions.
