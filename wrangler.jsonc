@@ -28,9 +28,9 @@
   "durable_objects": {
     "bindings": [{"name":"PARENT_ASSISTANT_AGENT","class_name":"ParentAssistantAgent"}]
   },
-  "migrations": [
-    {"tag":"parent-assistant-sdk-v1","new_sqlite_classes":["ParentAssistantAgent"]}
-  ],
+  "exports": {
+    "ParentAssistantAgent": {"type":"durable-object","storage":"sqlite"}
+  },
   "d1_databases": [
     {
       "binding": "DB",
