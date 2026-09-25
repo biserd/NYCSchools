@@ -130,6 +130,15 @@ export default {
   async fetch(request, workerEnv, ctx): Promise<Response> {
     if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true')return maintenanceResponse(request);
       const pathname = new URL(request.url).pathname;
+      if (pathname === '/.well-known/openai-apps-challenge') {
+        const token = Reflect.get(workerEnv, 'OPENAI_APPS_CHALLENGE_TOKEN');
+        if (typeof token !== 'string' || !token || !['GET', 'HEAD'].includes(request.method)) {
+          return new Response('Not Found', { status: 404 });
+        }
+        return new Response(request.method === 'HEAD' ? null : token, {
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      }
       if (pathname === PARENT_STATUS_PATH) {
         try { return await reminderStatusWebhook(request,workerEnv); }
         catch { return new Response('Callback temporarily unavailable',{status:503}); }

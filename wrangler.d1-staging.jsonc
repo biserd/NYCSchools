@@ -43,6 +43,7 @@
     "STAGING_GUEST_EMAIL":"biserd@gmail.com",
     "EMAIL_FROM":"hello@nycschoolsratings.com",
     "EMAIL_FROM_NAME":"NYC Schools D1 staging",
+    "OPENAI_APPS_CHALLENGE_TOKEN":"Qvq2ikzRmjiVGZnkbAZajBl-m7GTdZ5zb5eM53bKSOQ",
     "STRIPE_FAMILY_PREMIUM_PRICE_ID":"price_1UHTA7RwvWaTf8xfT3VzOnbm",
     "STRIPE_SEASON_PASS_PRODUCT_ID":"",
     "STRIPE_SEASON_PASS_PRICE_ID":"",

@@ -77,6 +77,7 @@
     "EMAIL_FROM": "hello@nycschoolsratings.com",
     "EMAIL_FROM_NAME": "NYC School Ratings",
     "EMAIL_DELIVERY_ENABLED": "true",
+    "OPENAI_APPS_CHALLENGE_TOKEN": "Qvq2ikzRmjiVGZnkbAZajBl-m7GTdZ5zb5eM53bKSOQ",
     "INDEXNOW_KEY": "a4c2f27e06d54a0fa8bd43b93fe6bc72"
   },
   "triggers": {
