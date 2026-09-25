@@ -289,6 +289,17 @@ export default function DevelopersDocsPage() {
               </p>
             </div>
 
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Public school research via MCP</CardTitle>
+                <CardDescription>The read-only connector is separate from the Premium Developer REST API below.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p>Search, view, and compare canonical schools without a parent account or API key at <code>/mcp/muse</code>. Results include DBNs, source years, methodology links, and canonical school pages. This connector does not expose favorites, payments, reminders, or address-to-zone claims.</p>
+                <p>The <code>/api/v1</code> endpoints documented below continue to require a subscriber API key. Public MCP calls are bounded and rate limited.</p>
+              </CardContent>
+            </Card>
+
             {hasApiAccess ? (
               <Card className="mb-8 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
                 <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">

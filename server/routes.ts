@@ -25,7 +25,8 @@ import { getCached, setCache, deleteCache, invalidateUserCaches, CACHE_TTL_SHORT
 import { getSafetyIndex, getSafetySyncStatus } from "./services/safetyIndex";
 import { startSafetyRefresh } from "./services/safetyQueue";
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
-import { flushApiLogsNow } from "./apiObservability";
+import { checkIpThrottle, flushApiLogsNow } from "./apiObservability";
+import { MUSE_RESEARCH_TOOLS } from './museResearch';
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 import { CANONICAL_SCHOOL_GUIDES } from "@shared/school-guides";
 import { env as workerEnv } from "cloudflare:workers";
@@ -3569,6 +3570,33 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
         }
       });
     }
+  });
+
+  // Public research-only lane for Meta Muse and other reviewed MCP clients.
+  // It reuses the existing server and canonical database; private tools and
+  // account OAuth are deliberately unavailable on this endpoint.
+  app.get('/mcp/muse', (_req: Request, res: Response) => res.set('Cache-Control','no-store').json({
+    name:'NYC School Ratings public research connector',protocolVersion:'2025-11-25',
+    endpoint:`${getAppUrl()}/mcp/muse`,tools:MUSE_RESEARCH_TOOLS,
+    privacy:`${getAppUrl()}/privacy`,terms:`${getAppUrl()}/terms`,
+  }));
+  app.post('/mcp/muse', async (req: Request, res: Response) => {
+    res.set({'Cache-Control':'no-store','MCP-Protocol-Version':'2025-11-25'});
+    const ip=req.header('cf-connecting-ip') || req.ip || req.socket?.remoteAddress || undefined;
+    const rate=checkIpThrottle(ip);
+    if(!rate.allowed){res.set('Retry-After',String(rate.retryAfterSeconds));return res.status(429).json({jsonrpc:'2.0',id:req.body?.id??null,error:{code:-32000,message:'Public research rate limit reached. Try again shortly.'}});}
+    const request=req.body;
+    if(!request || JSON.stringify(request).length>4096 || request.jsonrpc!=='2.0' || !['server/discover','initialize','notifications/initialized','tools/list','tools/call','ping'].includes(request.method))
+      return res.status(400).json({jsonrpc:'2.0',id:request?.id??null,error:{code:-32600,message:'Invalid or oversized MCP request.'}});
+    const requestedProtocol=req.header('MCP-Protocol-Version');
+    if(requestedProtocol && !['2025-11-25','2025-06-18','2025-03-26','2024-11-05'].includes(requestedProtocol))
+      return res.status(400).json({jsonrpc:'2.0',id:request.id??null,error:{code:-32600,message:'Unsupported MCP protocol version.'}});
+    if(request.method==='notifications/initialized')return res.status(202).end();
+    const response=await handleMCPRequest(request,{allowedTools:MUSE_RESEARCH_TOOLS});
+    // Log only action and result class. Never log arguments (which could hold
+    // a school search phrase), child details, tokens, or a home address.
+    console.log('[MUSE_MCP]',JSON.stringify({method:request.method,tool:request.method==='tools/call'?String(request.params?.name||'').slice(0,40):null,error:!!response.error}));
+    return res.json(response);
   });
 
   // MCP Server-Sent Events endpoint for streaming (optional, for future use)

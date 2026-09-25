@@ -3,6 +3,9 @@ import { isEarlyChildhoodOnly } from "@shared/schema";
 import { storage } from "./storage";
 import { getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 import { getAppUrl } from "./runtimeConfig";
+import { ZodError } from 'zod';
+import { MUSE_TOOL_DEFINITIONS, museCompareSchema, museComparison, museDetailSchema, museSchoolProfile, searchMuseSchools } from './museResearch';
+import { getSchoolSurveys } from './schoolSurveys';
 
 // MCP (Model Context Protocol) Server for OpenAI ChatGPT Apps SDK
 // This implements the JSON-RPC 2.0 protocol that ChatGPT uses to communicate with apps
@@ -763,6 +766,24 @@ async function handleGetFavorites(userId: string) {
 // Context for authenticated MCP requests
 interface MCPContext {
   userId?: string;
+  allowedTools?: readonly string[];
+}
+
+async function researchSurveys(school: Awaited<ReturnType<typeof storage.getSchool>>) {
+  if (!school) return [];
+  const schoolResults = await getSchoolSurveys(school.dbn);
+  const source = school.early_childhood_source;
+  if (source?.status !== 'verified' || !source.legacyCenterCode) return schoolResults;
+  // Only an exact, verified canonical center-code match may add Birth-to-5
+  // feedback. Its response remains labeled center-wide, never 2-K-specific.
+  const centerResults = await getSchoolSurveys(source.legacyCenterCode, 'center');
+  const combined=[...schoolResults,...centerResults.filter(item => item.instrument.startsWith('b5-'))];
+  return [...new Map(combined.map(item=>[`${item.year}:${item.instrument}:${item.sourceId}`,item])).values()];
+}
+async function latestGraduation(school: Awaited<ReturnType<typeof storage.getSchool>>) {
+  if(!school || !isHighSchool(school)) return null;
+  const latest=(await storage.getHSGraduation(school.dbn))[0];
+  return latest?{cohort_year:latest.cohort_year,cohort_label:latest.cohort_label ?? null,source:latest.data_source ?? null}:null;
 }
 
 // Main MCP request handler
@@ -775,7 +796,7 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
     switch (method) {
       case "server/discover":
         result = {
-          protocolVersion: SERVER_INFO.protocolVersion,
+          protocolVersion: context.allowedTools ? '2025-11-25' : SERVER_INFO.protocolVersion,
           serverInfo: SERVER_INFO,
           capabilities: SERVER_CAPABILITIES,
           instructions: "Use the canonical URLs and reporting years returned by tools. Treat ratings as independent comparison aids, not official NYC Public Schools ratings.",
@@ -784,29 +805,53 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
 
       case "initialize":
         result = {
-          protocolVersion: SERVER_INFO.protocolVersion,
+          protocolVersion: context.allowedTools ? '2025-11-25' : SERVER_INFO.protocolVersion,
           serverInfo: SERVER_INFO,
           capabilities: SERVER_CAPABILITIES
         };
         break;
 
       case "tools/list":
-        result = { tools: TOOLS, _meta: { source: sourceMetadata() } };
+        result = { tools: context.allowedTools
+          ? TOOLS.filter(tool => context.allowedTools!.includes(tool.name)).map(tool => MUSE_TOOL_DEFINITIONS[tool.name as keyof typeof MUSE_TOOL_DEFINITIONS] ?? tool)
+          : TOOLS, _meta: { source: context.allowedTools
+            ? {...sourceMetadata(), methodology:'For grade 3–8 schools with sufficient inputs: 40% academics, 30% climate, 30% progress. High schools use graduation and college-readiness outcomes. Early-childhood-only providers are not K–12 rated.'}
+            : sourceMetadata() } };
         break;
 
       case "tools/call":
         const toolName = params.name;
         const toolParams = params.arguments || {};
+        if (context.allowedTools && !context.allowedTools.includes(String(toolName))) throw new Error(`Tool not available on this connector: ${String(toolName)}`);
         
         switch (toolName) {
           case "search_schools":
-            result = await handleSearchSchools(toolParams);
+            result = context.allowedTools
+              ? searchMuseSchools(await storage.getSchools(),toolParams,'https://nycschoolsratings.com')
+              : await handleSearchSchools(toolParams);
             break;
           case "get_school_details":
-            result = await handleGetSchoolDetails(toolParams);
+            {
+              if (!context.allowedTools) { result = await handleGetSchoolDetails(toolParams); break; }
+              const {dbn}=museDetailSchema.parse(toolParams);
+              const school=await storage.getSchool(dbn);
+              if(!school)throw new Error(`School ${dbn} was not found. Search by name to resolve the identifier.`);
+              const [surveys,graduation]=await Promise.all([researchSurveys(school),latestGraduation(school)]);
+              result=museSchoolProfile(school,surveys,'https://nycschoolsratings.com',graduation);
+            }
             break;
           case "compare_schools":
-            result = await handleCompareSchools(toolParams);
+            {
+              if (!context.allowedTools) { result = await handleCompareSchools(toolParams); break; }
+              const {dbns}=museCompareSchema.parse(toolParams);
+              const schools=await Promise.all(dbns.map(dbn=>storage.getSchool(dbn)));
+              const missing=dbns.filter((_,index)=>!schools[index]);
+              if(missing.length)throw new Error(`Unknown school identifier(s): ${missing.join(', ')}. Search by name first.`);
+              const found=schools.filter((school): school is NonNullable<typeof school>=>!!school);
+              const surveys=await Promise.all(found.map(school=>researchSurveys(school)));
+              const graduation=await Promise.all(found.map(school=>latestGraduation(school)));
+              result=museComparison(found,Object.fromEntries(found.map((school,index)=>[school.dbn,surveys[index]])),'https://nycschoolsratings.com',Object.fromEntries(found.map((school,index)=>[school.dbn,graduation[index]])));
+            }
             break;
           case "get_school_history":
             result = await handleGetSchoolHistory(toolParams);
@@ -832,12 +877,14 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
           content: [
             {
               type: "text",
-              text: JSON.stringify(result, null, 2)
+              text: JSON.stringify(result, null, context.allowedTools ? 0 : 2)
             }
           ],
           structuredContent: result,
           _meta: {
-            source: sourceMetadata(),
+            source: context.allowedTools
+              ? {...sourceMetadata(), methodology:'For grade 3–8 schools with sufficient inputs: 40% academics, 30% climate, 30% progress. High schools use graduation and college-readiness outcomes. Early-childhood-only providers are not K–12 rated.'}
+              : sourceMetadata(),
             "openai/widgetDomain": widgetBaseUrl,
             "openai/widgetPath": "/widget/index.html",
             "openai/widgetCSP": {
@@ -873,8 +920,8 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
       jsonrpc: "2.0",
       id,
       error: {
-        code: -32000,
-        message: error.message || "Internal error"
+        code: error instanceof ZodError ? -32602 : -32000,
+        message: error instanceof ZodError ? `Invalid tool arguments: ${error.issues.map(issue=>`${issue.path.join('.')||'input'} ${issue.message}`).join('; ')}` : error.message || "Internal error"
       }
     };
   }
