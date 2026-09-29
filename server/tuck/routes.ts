@@ -29,9 +29,17 @@ export function tuckRouter(authenticate: RequestHandler, appOrigin: () => string
   });
   router.use(authenticate);
   router.post('/family-checkout', async (req,res) => {
-    const env=await parentEnvironment();
-    if(!familyCheckoutAvailable(env))throw new TuckError(503,'Monthly checkout is not available yet.');
-    res.json(await familyCheckout(userId(req),env,await getUncachableStripeClient()));
+    try {
+      const env=await parentEnvironment();
+      if(!familyCheckoutAvailable(env))throw new TuckError(503,'Monthly checkout is not available yet.');
+      const session=await familyCheckout(userId(req),env,await getUncachableStripeClient());
+      console.info(JSON.stringify({event:'family_checkout_session_created',channel:'account'}));
+      res.json(session);
+    } catch(error) {
+      if(error instanceof TuckError)console.warn(JSON.stringify({event:'family_checkout_blocked',channel:'account',status:error.status,reason:error.message}));
+      else console.error(JSON.stringify({event:'family_checkout_failed',channel:'account',error_type:error instanceof Error?error.name:'unknown'}));
+      throw error;
+    }
   });
   router.get('/assistant', async (req,res) => res.json(await assistantOverview(userId(req),await parentEnvironment())));
   router.put('/assistant/preferences', async (req,res) => res.json(await savePreferences(userId(req),await parentEnvironment(),req.body)));

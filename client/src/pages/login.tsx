@@ -62,9 +62,9 @@ export default function LoginPage() {
       const response = await apiRequest("POST", "/api/login", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (signedInUser) => {
       trackEvent("login", { method: "password" });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.setQueryData(["/api/auth/user"], signedInUser);
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",

@@ -150,6 +150,10 @@ export function setupAuth(app: Express) {
       });
 
       req.session.userId = user.id;
+      // Purchase intent is diagnostic only; it never grants access or starts billing.
+      if (req.body.planIntent === 'family_premium') {
+        console.info(JSON.stringify({ event: 'family_premium_signup_completed' }));
+      }
       
       runInBackground(Promise.all([
         sendAdminNewUserRegistrationNotification(email, firstName, lastName),

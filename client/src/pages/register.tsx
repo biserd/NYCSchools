@@ -13,6 +13,7 @@ import { AuthPageHeader } from "@/components/AuthPageHeader";
 import { SEOHead } from "@/components/SEOHead";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
+import { isFamilyPremiumRegistration, registrationRedirect } from "@/lib/checkout-intent";
 
 const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -31,10 +32,8 @@ export default function RegisterPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Get redirect URL from query params (sanitized to same-origin paths only)
-  const params = new URLSearchParams(window.location.search);
-  const rawRedirect = params.get("redirect") || "/";
-  const redirectUrl = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/";
+  const familyPremiumIntent = isFamilyPremiumRegistration(window.location.search);
+  const redirectUrl = registrationRedirect(window.location.search);
 
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -50,12 +49,18 @@ export default function RegisterPage() {
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterForm) => {
       const { confirmPassword, ...registerData } = data;
-      const response = await apiRequest("POST", "/api/register", registerData);
+      const response = await apiRequest("POST", "/api/register", {
+        ...registerData,
+        ...(familyPremiumIntent ? { planIntent: "family_premium" } : {}),
+      });
       return response.json();
     },
-    onSuccess: () => {
-      trackEvent("sign_up", { method: "password" });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: (newUser) => {
+      trackEvent("sign_up", { method: "password", plan_intent: familyPremiumIntent ? "family_premium" : "free" });
+      if (familyPremiumIntent) trackEvent("subscription_signup_completed", { plan: "family_premium" });
+      // The session is already established by /api/register. Update the cached
+      // account before rendering the checkout continuation page.
+      queryClient.setQueryData(["/api/auth/user"], newUser);
       toast({
         title: "Account created!",
         description: "Welcome to NYC School Ratings.",
@@ -90,10 +95,11 @@ export default function RegisterPage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
             <CardDescription className="text-center">
-              Sign up to save your favorite schools and write reviews
+              {familyPremiumIntent ? "Create your account, then continue to secure Family Premium checkout" : "Sign up to save your favorite schools and write reviews"}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {familyPremiumIntent && <p className="mb-5 rounded-lg border border-teal-300 bg-teal-50 p-3 text-sm text-teal-950">Creating an account is free. Your $19.99/month subscription starts only if you confirm payment in Stripe Checkout.</p>}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -200,7 +206,7 @@ export default function RegisterPage() {
                   ) : (
                     <>
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Create Account
+                      {familyPremiumIntent ? "Create account and continue" : "Create Account"}
                     </>
                   )}
                 </Button>

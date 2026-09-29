@@ -221,10 +221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if(!origin||origin!==new URL(getAppUrl()).origin||req.get('sec-fetch-site')==='cross-site')return res.status(403).json({message:'Start checkout on NYC School Ratings.'});
     try {
       const {guestFamilyCheckout}=await import('./parent/checkout');
-      return res.json(await guestFamilyCheckout(workerEnv as unknown as AssistantEnvironment,await getUncachableStripeClient(),typeof req.body?.testEmail==='string'?req.body.testEmail:undefined));
+      const session=await guestFamilyCheckout(workerEnv as unknown as AssistantEnvironment,await getUncachableStripeClient(),typeof req.body?.testEmail==='string'?req.body.testEmail:undefined);
+      console.info(JSON.stringify({event:'family_checkout_session_created',channel:'guest'}));
+      return res.json(session);
     } catch(error) {
-      if(error instanceof TuckError)return res.status(error.status).json({message:error.message});
-      console.error('Guest Family Checkout unavailable',error);
+      if(error instanceof TuckError){
+        console.warn(JSON.stringify({event:'family_checkout_blocked',channel:'guest',status:error.status,reason:error.message}));
+        return res.status(error.status).json({message:error.message});
+      }
+      console.error(JSON.stringify({event:'family_checkout_failed',channel:'guest',error_type:error instanceof Error?error.name:'unknown'}));
       return res.status(503).json({message:'Checkout is temporarily unavailable. No payment was taken.'});
     }
   });

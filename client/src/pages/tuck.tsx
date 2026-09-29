@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Bell, CalendarDays, MessageCircle, ShieldCheck } from "lucide-react";
@@ -15,10 +15,18 @@ import type { TuckOverview } from "@shared/tuck";
 import { ParentWhatsAppConnection } from '@/components/ParentWhatsAppConnection';
 import { ParentAssistantPanel } from '@/components/ParentAssistantPanel';
 import { FamilyCalendar } from '@/components/FamilyCalendar';
+import { trackEvent } from '@/lib/analytics';
 
 export default function TuckPage() {
   const { user, isLoading } = useAuth();
-  const returnedFromCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
+  const [returnedFromCheckout] = useState(() => new URLSearchParams(window.location.search).get('checkout') === 'success');
+  useEffect(() => {
+    if (!returnedFromCheckout) return;
+    // A success redirect is not proof of payment; Stripe's signed webhook is
+    // still the authority for subscription activation.
+    trackEvent('subscription_checkout_returned', { plan: 'family_premium', result: 'success_return' });
+    window.history.replaceState(window.history.state, '', '/family');
+  }, [returnedFromCheckout]);
   // Scope React Query to the signed-in account as well as server-side ownership.
   const overview = useQuery<TuckOverview>({ queryKey: ["tuck-overview", user?.id], enabled: !!user,
     queryFn: async () => (await apiRequest("GET", "/api/tuck/overview")).json(), gcTime: 0 });
