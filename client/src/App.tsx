@@ -60,6 +60,7 @@ const SeoLandingPage = lazy(() => import("@/pages/seo-landing"));
 const MethodologyPage = lazy(() => import("@/pages/methodology"));
 const AboutPage = lazy(() => import("@/pages/about"));
 const SurveyInsightPage = lazy(() => import("@/pages/survey-insight"));
+const KinderLearnerPage = lazy(() => import("@/pages/kinderlearner"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -96,6 +97,13 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
+        <Route path="/kinderlearner" component={KinderLearnerPage} />
+        <Route path="/kinderlearner/privacy" component={KinderLearnerPage} />
+        <Route path="/kinderlearner/terms" component={KinderLearnerPage} />
+        <Route path="/kinderlearner/support" component={KinderLearnerPage} />
+        <Route path="/kinderlearner/delete-data" component={KinderLearnerPage} />
+        <Route path="/kinderlearner/pre-k-learning-app" component={KinderLearnerPage} />
+        <Route path="/kinderlearner/kindergarten-learning-app" component={KinderLearnerPage} />
         <Route path="/insights/:slug">{params => getSurveyInsight(params.slug) ? <Redirect to={`/blog/${params.slug}`} replace /> : <NotFound />}</Route>
         <Route path="/">
           <Home />

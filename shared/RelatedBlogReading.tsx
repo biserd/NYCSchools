@@ -1,4 +1,5 @@
 import React from 'react';
+import { KinderLearnerResourceLink } from './KinderLearnerResourceLink';
 import { getBlogPost } from './blog-data';
 
 // Editorial, reciprocal links: connect complementary evidence, not rankings to survey scores.
@@ -22,5 +23,5 @@ export function relatedBlogLinks(slug: string) {
 export function RelatedBlogReading({slug}: {slug:string}) {
   const links=relatedBlogLinks(slug);
   if (!links.length) return null;
-  return <section className="my-10 border-t pt-8" aria-label="Related blog reading"><h2 className="text-2xl font-bold mb-4">Put the findings in context</h2><ul className="space-y-5">{links.map(({post,context})=><li key={post.slug}><a className="font-semibold underline underline-offset-4" href={`/blog/${post.slug}`}>{post.title}</a><p className="text-sm text-muted-foreground mt-2 leading-7">{context}</p></li>)}</ul></section>;
+  return <><section className="my-10 border-t pt-8" aria-label="Related blog reading"><h2 className="text-2xl font-bold mb-4">Put the findings in context</h2><ul className="space-y-5">{links.map(({post,context})=><li key={post.slug}><a className="font-semibold underline underline-offset-4" href={`/blog/${post.slug}`}>{post.title}</a><p className="text-sm text-muted-foreground mt-2 leading-7">{context}</p></li>)}</ul></section>{slug==='best-nyc-kindergartens-2026'&&<KinderLearnerResourceLink stage="kindergarten"/>}{slug==='nyc-prek-3k-kindergarten-admissions-demand-2025'&&<KinderLearnerResourceLink/>}</>;
 }

@@ -2,7 +2,11 @@ import type { Express } from "express";
 import { env } from "cloudflare:workers";
 import { getCanonicalRedirectPath, renderSeoHtml } from "./seoRenderer";
 
+import { KINDERLEARNER_PAGES } from '../shared/kinderlearner';
+import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
 const KNOWN_STATIC_ROUTES = new Set([
+  ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
+  ...Object.values(KINDERLEARNER_PAGES).map(page => page.path),
   "/", "/login", "/register", "/forgot-password", "/reset-password",
   "/favorites", "/application-tracker", "/recommendations", "/compare",
   "/map", "/lottery-simulator", "/chances-calculator", "/early-childhood",

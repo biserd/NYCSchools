@@ -1,0 +1,64 @@
+import React, { type ReactNode } from 'react';
+import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react';
+import { KINDERLEARNER } from './kinderlearner';
+import { KINDERLEARNER_INFO_PAGES, type KinderLearnerInfoPage } from './kinderlearner-info';
+import { KinderLearnerPrivacy } from './KinderLearnerPrivacy';
+
+// Matches the app's existing account-service privacy/support contact.
+const EMAIL = 'hello@bigappledigital.nyc';
+function Contact({ subject = 'KinderLearner support' }: { subject?: string }) {
+  return <a href={`mailto:${EMAIL}?subject=${encodeURIComponent(subject)}`}>{EMAIL}</a>;
+}
+function Topic({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="kl-policy-topic"><h2>{title}</h2>{children}</section>;
+}
+function Terms() {
+  return <>
+    <Topic title="About these terms"><p>KinderLearner is provided by Big Apple Digital LLC. These terms describe use of the learning app, optional parent-account service, preview website and support. Parents and guardians are responsible for supervising their children’s use and for managing online-account choices. Public iPhone and iPad availability is coming soon.</p><p>These service terms do not replace Apple’s standard end-user license agreement for an app distributed through the App Store. See <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="nofollow noopener noreferrer">Apple’s Standard EULA</a>. Any future custom app license must be separately supplied and reviewed.</p></Topic>
+    <Topic title="Parent accounts and responsible use"><p>Accounts are optional. Only use a parent email address you control and protect verification codes from disclosure. Use child nicknames and provide only information you have authority to share. The parent is responsible for choosing whether guest learning records are uploaded for sync.</p><p>Practice can work offline. Sync requires internet access and can be delayed or interrupted. Keep device date and time settings accurate, and check sync status before relying on another device’s copy. Do not attempt unauthorized access, disrupt the service or misuse another family’s information.</p></Topic>
+    <Topic title="Learning information, not a guaranteed outcome"><p>KinderLearner is intended to complement parent participation and classroom learning. The preview describes the planned learning experience; illustrations and sample progress cards are examples, not results for a real child or a promise of achievement.</p><p>Content is not a diagnostic, medical or developmental assessment, an admissions service, or a substitute for advice from your child’s teacher or a qualified professional. Children learn at different paces. Adults should supervise activities and choose safe, age-appropriate objects.</p></Topic>
+    <Topic title="Using the preview responsibly"><p>You may browse and share links to these pages for personal, non-commercial purposes. Do not misuse the site, attempt unauthorized access, interfere with its operation, copy product materials for resale or submit information you do not have permission to share. Respect applicable intellectual-property rights.</p></Topic>
+    <Topic title="Availability, stars and payments"><p>The current app targets iOS 18 and iPadOS 18 or later. A public release date and App Store download link have not been announced. Features may change before release. Viewing these pages does not create an account, start a trial, initiate a subscription or authorize a charge.</p><p>The current app’s Treasure Room uses stars earned through activities, not real-money purchases. Stars and treasures are virtual learning rewards, not currency or a cash balance. No real-money in-app purchasing is implemented in the reviewed build.</p><p>Existing NYC School Ratings purchases remain governed by their original terms. A website subscription should not be assumed to include an app entitlement unless expressly offered. Any future paid app offering must show its price and applicable terms before purchase.</p></Topic>
+    <Topic title="Privacy and support"><p>Please read the <a href="/kinderlearner/privacy">KinderLearner Privacy Policy</a> before contacting us. For availability, accessibility or technical questions, visit <a href="/kinderlearner/support">Support</a> or email <Contact/>.</p></Topic>
+    <Topic title="Changes and your rights"><p>We may update the preview content and these terms as the product develops. The date on this page identifies the current version. Nothing in these terms excludes consumer rights that cannot lawfully be excluded. These pages do not promise uninterrupted service or Apple approval.</p></Topic>
+  </>;
+}
+function Support() {
+  return <>
+    <div className="kl-support-contact"><Mail aria-hidden="true"/><div><h2>Talk to a real person</h2><p><Contact/></p><p>Availability, accessibility, feedback and privacy questions are welcome.</p></div></div>
+    <Topic title="Is KinderLearner available now?"><p>The iPhone (iOS) and iPad (iPadOS) apps are coming soon. We have not published a release date or download link. There is no purchase or waitlist form on these preview pages.</p></Topic>
+    <div id="current-build"><Topic title="What’s in the current build?"><p>The current build includes letter recognition, first-written-letter word matching, counting through ten, number comparison and ordering, addition, subtraction, tracing and social-choice activities. It also includes adaptive practice, spaced review, parent progress views, off-screen activity suggestions and optional parent-account sync.</p><p>Phonics, spoken sound blending and additional executive-function games remain planned work. Marketing illustrations show the broader product vision, not a guarantee that every illustrated activity is included in the current build.</p></Topic></div>
+    <Topic title="Signing in to a test build"><p>Open Parent Mode → Parent account &amp; sync. Enter your parent email, then the six-digit code from KinderLearner. Codes expire after ten minutes; use the newest code and check spam if it is missing. Never share a code with support. Guest play does not require an account.</p></Topic>
+    <Topic title="Restoring or syncing progress"><p>Use the same parent email on each device. Practice works offline; reconnect and open the app to sync. Parent account &amp; sync shows the status and a Sync now button. A parent must authorize attaching existing guest profiles before they upload. Sign in again if the session expires.</p></Topic>
+    <Topic title="Audio and device compatibility"><p>The current build supports iOS 18 and iPadOS 18 or later. Parent Mode lets you choose the included Marin or Cedar narrator and speech pace. Check the app’s mute setting and your device volume if you cannot hear instructions. Narration is bundled and does not need a live AI connection.</p></Topic>
+    <Topic title="What should I include in a support request?"><p>Tell us what you were trying to do, the page or feature involved, and what happened. For a technical issue, include your device model and OS version if known. Screenshots can help, but remove children’s names and other personal information first. Never send passwords, login codes or full payment details.</p></Topic>
+    <Topic title="Privacy or deletion help"><p>Use <a href="/kinderlearner/delete-data">Data &amp; deletion requests</a> for the correct contact and scope. You do not need a paid subscription to contact support.</p></Topic>
+    <Topic title="Website subscriptions and the app"><p>Tell us whether your question concerns the school-research website or KinderLearner so we can help with the right service. The current app uses optional parent accounts and earned virtual stars; it does not implement real-money in-app purchases. Existing school-research subscriptions are separate.</p></Topic>
+    <Topic title="Helpful links"><ul><li><a href="/kinderlearner">Explore KinderLearner</a></li><li><a href="/kinderlearner/privacy">Privacy Policy</a></li><li><a href="/kinderlearner/terms">Terms of Use</a></li></ul></Topic>
+  </>;
+}
+function Deletion() {
+  return <>
+    <Topic title="Delete a parent account in the app"><ol><li>Open Parent Mode and enter the parent gate.</li><li>Open Parent account &amp; sync and select Delete account.</li><li>Verify your parent email with a fresh six-digit code.</li><li>Review and confirm the deletion. Wait for the app’s confirmation.</li></ol><p>This deletes your account, associated cloud family records and sessions, and that account’s local records on the device completing deletion. Guest profiles and other accounts are not deleted.</p></Topic>
+    <Topic title="Remove copies on other devices"><p>Downloaded copies on other devices are not remotely erased by deleting your account. Delete the app and its data on those devices to remove those local copies; offloading an app may keep its data. Manage Apple/iCloud backups separately in your Apple settings. Deleting the app alone does not delete a cloud account.</p><p>For guest-only play, deleting the app and its data removes the local learning store. This can also remove other local profiles, so review what you need to keep first.</p></Topic>
+    <Topic title="Contact us about your information"><p>A parent or guardian can request access, correction or deletion by emailing <Contact subject="KinderLearner data deletion request"/>. State that the request concerns KinderLearner and whether it concerns a support message or other information you supplied.</p><p>Where possible, send the request from the address you originally used. We may need to verify your authority before disclosing or deleting information. Do not send children’s full names, identity documents, passwords or payment details in your initial email.</p></Topic>
+    <Topic title="Which service does your request concern?"><p>KinderLearner accounts and NYC School Ratings website accounts are separate. Deleting one does not automatically delete the other. For an existing school-research website account, use the procedures in the <a href="/privacy">NYC School Ratings Privacy Policy</a> and identify that account in your request.</p></Topic>
+    <Topic title="Deletion, retention and billing"><p>We will explain the scope of your request, any verification needed and any records that must be retained for legal obligations or an unresolved dispute. Do not assume information has been deleted until you receive confirmation.</p><p>A data request does not itself cancel a paid subscription. Manage any existing website subscription separately through its billing controls.</p></Topic>
+    <Topic title="Backups and support"><p>Cloudflare recovery backups may retain deleted database records until the configured recovery period expires. If deletion fails or you cannot access your parent email, contact support. Do not send a password, verification code or child’s full personal details.</p></Topic>
+  </>;
+}
+
+export function KinderLearnerInfoContent({ page }: { page: KinderLearnerInfoPage }) {
+  const meta = KINDERLEARNER_INFO_PAGES[page];
+  return <div className="kl-site">
+    <a className="kl-skip" href="#kl-info-main">Skip to content</a>
+    <header className="kl-header"><div className="kl-container"><a className="kl-brand" href="/kinderlearner"><ShieldCheck aria-hidden="true"/>KinderLearner</a><a className="kl-back" href="/kinderlearner"><ArrowLeft size={16} aria-hidden="true"/>Back to KinderLearner</a></div></header>
+    <main id="kl-info-main" className="kl-container kl-policy">
+      <nav className="kl-breadcrumb" aria-label="Breadcrumb"><a href="/">NYC School Ratings</a><span aria-hidden="true">/</span><a href="/kinderlearner">KinderLearner</a><span aria-hidden="true">/</span><span aria-current="page">{meta.title.replace('KinderLearner ', '')}</span></nav>
+      <p className="kl-eyebrow">Parent information</p><h1>{meta.title}</h1><p className="kl-policy-date">{page === 'privacy' ? 'Effective: September 26, 2026' : 'Updated September 26, 2026 · Pre-launch information'}</p>
+      <aside className="kl-policy-notice"><strong>{KINDERLEARNER.availability}</strong><p>App information below describes the current pre-release build, including optional parent accounts and cloud sync. No public release date or App Store download link has been announced.</p></aside>
+      {page === 'privacy' ? <KinderLearnerPrivacy/> : page === 'terms' ? <Terms/> : page === 'support' ? <Support/> : <Deletion/>}
+    </main>
+    <footer className="kl-footer"><div className="kl-container"><a className="kl-brand" href="/kinderlearner">KinderLearner</a><nav aria-label="KinderLearner information">{Object.entries(KINDERLEARNER_INFO_PAGES).map(([key, item]) => <a key={key} aria-current={key === page ? 'page' : undefined} href={item.path}>{item.title.replace('KinderLearner ', '')}</a>)}</nav></div></footer>
+  </div>;
+}

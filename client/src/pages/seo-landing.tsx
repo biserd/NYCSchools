@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { KinderLearnerResourceLink } from '@shared/KinderLearnerResourceLink';
 import { Link, useParams } from "wouter";
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
@@ -46,6 +47,7 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
           <p className="text-sm text-muted-foreground mb-4">These guides share districts, neighborhoods, programs, or schools with this collection.</p>
           <div className="flex flex-wrap gap-2">{related.map((item) => <Button asChild key={`${item.kind}-${item.slug}`} variant="outline" size="sm"><Link href={getSeoLandingPath(item)}>{item.name}</Link></Button>)}</div>
         </section>
+        {kind === 'program' && slug === 'prek' && <KinderLearnerResourceLink/>}
       </main>
       <Footer />
     </div>

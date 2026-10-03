@@ -1,4 +1,5 @@
 import { Link, useRoute } from "wouter";
+import { KinderLearnerResourceLink } from '@shared/KinderLearnerResourceLink';
 import { ArrowRight, CheckCircle2, Search } from "lucide-react";
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { AppHeader } from "@/components/AppHeader";
@@ -85,6 +86,7 @@ export default function SchoolGuidePage() {
               </div>
             </section>
           )}
+          {guide.slug === 'elementary-schools' && <KinderLearnerResourceLink stage="kindergarten"/>}
         </section>
       </main>
       <Footer />

@@ -29,7 +29,12 @@ import { isEarlyChildhoodOnly } from "@shared/schema";
 
 import { storage } from "./storage";
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { KINDERLEARNER, KINDERLEARNER_PAGES, getKinderLearnerPage, kinderLearnerSchemas } from '../shared/kinderlearner';
+import { KINDERLEARNER_INFO_PAGES, getKinderLearnerInfoPage, kinderLearnerInfoSchemas } from '../shared/kinderlearner-info';
+import { KinderLearnerInfoContent } from '../shared/KinderLearnerInfoContent';
+import { KinderLearnerContent } from '../shared/KinderLearnerContent';
+import { KinderLearnerResourceLink } from '../shared/KinderLearnerResourceLink';
+import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
@@ -1032,7 +1037,7 @@ function renderSchoolGuide(slug: string, baseHtml: string): string | null {
     description: guide.description,
     canonical,
     jsonLd: [collectionPage, breadcrumb],
-    serverHtml: content,
+    serverHtml: content + (slug === 'elementary-schools' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink, {stage:'kindergarten'})) : ''),
   });
 }
 
@@ -1060,7 +1065,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
     ] },
   ];
   const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
-  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, serverHtml });
+  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, serverHtml: serverHtml + (kind === 'program' && slug === 'prek' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '') });
 }
 
 /**
@@ -1131,7 +1136,25 @@ export async function renderSeoHtml(
   try {
     let result: string | null = renderStaticRoute(path, baseHtml);
     let m: RegExpMatchArray | null;
-    if (result) {
+    const kinderLearnerPage = getKinderLearnerPage(path);
+    const kinderLearnerInfoPage = getKinderLearnerInfoPage(path);
+    if (kinderLearnerInfoPage) {
+      const meta = KINDERLEARNER_INFO_PAGES[kinderLearnerInfoPage];
+      result = applyMeta(baseHtml, {
+        title: meta.title, description: meta.description, canonical: `${SITE_ORIGIN}${meta.path}`,
+        jsonLd: kinderLearnerInfoSchemas(kinderLearnerInfoPage),
+        serverHtml: renderToString(React.createElement(KinderLearnerInfoContent, {page:kinderLearnerInfoPage})),
+      }).replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" content="width=device-width, initial-scale=1.0" />')
+        .replace('</head>', `<link rel="stylesheet" href="${KINDERLEARNER.stylesheet}" data-kinderlearner="true" /></head>`);
+    } else if (kinderLearnerPage) {
+      const meta = KINDERLEARNER_PAGES[kinderLearnerPage];
+      result = applyMeta(baseHtml, {
+        title: meta.title, description: meta.description, canonical: `${SITE_ORIGIN}${meta.path}`,
+        jsonLd: kinderLearnerSchemas(kinderLearnerPage),
+        serverHtml: renderToString(React.createElement(KinderLearnerContent, {page:kinderLearnerPage})),
+      }).replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" content="width=device-width, initial-scale=1.0" />')
+        .replace('</head>', `<link rel="stylesheet" href="${KINDERLEARNER.stylesheet}" data-kinderlearner="true" /></head>`);
+    } else if (result) {
       // Static landing page metadata is complete.
     } else if ((m = path.match(/^\/blog\/([^/]+)$/)) && getSurveyInsight(m[1])) {
       const page = getSurveyInsight(m[1]);
