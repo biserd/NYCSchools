@@ -1,5 +1,11 @@
 # KinderLearner product pages
 
+## Production release (October 3, 2026)
+
+The seven public pages were deployed with NYC School Ratings Worker version `c76c5897-eb3b-4e4b-aad6-886f58c1eb37`. All seven apex-domain pages returned HTTP 200 with their expected server-rendered headings; the `www` URLs returned HTTP 200 with apex canonical URLs. The homepage, pricing page and static sitemap also returned HTTP 200.
+
+An older `kinderlearner-site` Worker still owns the `/kinderlearner/*` wildcard on both hosts. The production `wrangler.jsonc` therefore assigns only the seven exact page paths to `nyc-schools-ratings`; Cloudflare's more-specific route wins. The legacy wildcard and the still-more-specific `kinderlearner-accounts` Apple-notification routes remain unchanged. Keep these exact routes in the production configuration for future deployments. This website release is not an App Store submission; complete the separate release checks in [App Store handoff](kinderlearner-app-store.md).
+
 ## Blue-theme and App Store preparation update
 
 The product now uses the school site's blue/white visual language, with restrained domain accent colors inside activity illustrations. The CSS remains entirely scoped to KinderLearner. The banner, primary CTAs and availability section clearly say the iPhone/iPad apps are coming soon. Current versus planned features are distinguished after reviewing the native app repository.
@@ -53,4 +59,4 @@ For the installed local workerd runtime, preview required a command-line compati
 
 ## Release boundary
 
-No production or remote staging deployment, database migration, account change, billing change or product launch occurred in this task. The existing unrelated `artifacts/` directory was left untouched.
+The October 3 website deployment changed page routing and content only. It did not migrate a database, change accounts or billing, launch the native app, or submit to Apple. The existing unrelated `artifacts/` directory was left untouched.

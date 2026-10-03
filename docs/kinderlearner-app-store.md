@@ -1,12 +1,12 @@
 # KinderLearner App Store handoff
 
-Prepared September 26, 2026. Website changes are local only; nothing was submitted to Apple or deployed by this task.
+Prepared September 26, 2026. The website pages were deployed October 3, 2026; nothing was submitted to Apple by this task. The release checks below remain open.
 
 ## Owner-supplied replacement policy
 
-The privacy page now renders the owner's 21-section replacement policy, effective September 26, 2026, in `shared/KinderLearnerPrivacy.tsx`. The owner confirmed **Big Apple Digital LLC** as the legal operator and **Cloudflare** for email delivery. The Terms page operator was aligned. The owner selected `hello@bigappledigital.nyc` as the contact; address and telephone placeholders were omitted, not invented. Review whether additional operator-contact disclosures are required before publication.
+The privacy page now renders the owner's 21-section replacement policy, effective September 26, 2026, in `shared/KinderLearnerPrivacy.tsx`. The owner confirmed **Big Apple Digital LLC** as the legal operator and **Cloudflare** for email delivery. The Terms page operator was aligned. The owner selected `hello@bigappledigital.nyc` as the contact; address and telephone placeholders were omitted, not invented. Review whether additional operator-contact disclosures are required for continued publication and App Store submission.
 
-The owner subsequently confirmed no use of children's learning records for generative-AI training, the 24-month inactivity policy, recovery copies expiring within seven days, and no Google Analytics in the app. These now appear as definitive policy text, without editorial notes. Website-only Google Analytics disclosure is retained, with plain browser-storage controls language; no unverified consent banner or opt-in mechanism is claimed. Review website consent requirements separately before release. The policy's authorization notices, sync controls and retention commitments must match the released native app and operational practices. This text replacement does not implement or independently audit those features. Internal policy/deletion links use the existing canonical paths instead of production-URL placeholders.
+The owner subsequently confirmed no use of children's learning records for generative-AI training, the 24-month inactivity policy, recovery copies expiring within seven days, and no Google Analytics in the app. These now appear as definitive policy text, without editorial notes. Website-only Google Analytics disclosure is retained, with plain browser-storage controls language; no unverified consent banner or opt-in mechanism is claimed. Review website consent requirements promptly. The policy's authorization notices, sync controls and retention commitments must match the released native app and operational practices. This text replacement does not implement or independently audit those features. Internal policy/deletion links use the existing canonical paths instead of production-URL placeholders.
 
 ## URLs to use after website deployment
 

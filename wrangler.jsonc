@@ -13,7 +13,21 @@
     {
       "pattern": "www.nycschoolsratings.com/*",
       "zone_name": "nycschoolsratings.com"
-    }
+    },
+    { "pattern": "nycschoolsratings.com/kinderlearner", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "nycschoolsratings.com/kinderlearner/pre-k-learning-app", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner/pre-k-learning-app", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "nycschoolsratings.com/kinderlearner/kindergarten-learning-app", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner/kindergarten-learning-app", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "nycschoolsratings.com/kinderlearner/privacy", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner/privacy", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "nycschoolsratings.com/kinderlearner/terms", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner/terms", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "nycschoolsratings.com/kinderlearner/support", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner/support", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "nycschoolsratings.com/kinderlearner/delete-data", "zone_name": "nycschoolsratings.com" },
+    { "pattern": "www.nycschoolsratings.com/kinderlearner/delete-data", "zone_name": "nycschoolsratings.com" }
   ],
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
