@@ -12,9 +12,17 @@ export async function accountAccess(user: User) {
 }
 
 export function matchesFamilyPrice(subscription: Stripe.Subscription, priceId: string | undefined) {
-  if (!priceId) return false;
-  return subscription.items.data.some(({ price }) => price.id === priceId && price.currency === 'usd' &&
-    price.unit_amount === FAMILY_PREMIUM.amount && price.recurring?.interval === 'month' && price.recurring.interval_count === 1);
+  // The old monthly Price remains attached to existing subscriptions. Never
+  // change their billing terms or stop processing their renewal/cancel events.
+  const grandfatheredPrices = new Map([
+    ['price_1UHTbBRwvWaTf8xfau7pgSYS', 1999], // former live offer
+    ['price_1UHTA7RwvWaTf8xfT3VzOnbm', 1999], // former staging offer
+  ]);
+  return subscription.items.data.some(({ price }) => {
+    const expectedAmount = grandfatheredPrices.get(price.id) ?? (price.id === priceId ? FAMILY_PREMIUM.amount : undefined);
+    return expectedAmount !== undefined && price.currency === 'usd' && price.unit_amount === expectedAmount &&
+      price.recurring?.interval === 'month' && price.recurring.interval_count === 1;
+  });
 }
 
 export async function recordFamilySubscription(userId: string, subscription: Stripe.Subscription, eventCreated: number, deleted = false) {

@@ -25,7 +25,7 @@ try {
     const read = async (id: string) => (await db.select().from(users).where(eq(users.id, id)))[0];
     const original = await read('pass');
     assert.equal(RESEARCH_PASS.available, false, 'Legacy sales retired, not legacy access');
-    assert.equal(FAMILY_PREMIUM.amount, 1999);
+    assert.equal(FAMILY_PREMIUM.amount, 999);
     const stageCheckout = { ENVIRONMENT:'staging', FAMILY_CHECKOUT_ENABLED:'true', PARENT_ASSISTANT_ENABLED:'true', STRIPE_FAMILY_PREMIUM_PRICE_ID:'price_test', STAGING_EXPIRES_AT:new Date(Date.now()+86400000).toISOString(), STRIPE_TEST_SECRET_KEY:'sk_test_example', STRIPE_TEST_PUBLISHABLE_KEY:'pk_test_example', EMAIL_DELIVERY_ENABLED:'true', EMAIL:{ send: async () => ({messageId:'test'}) }, STAGING_GUEST_EMAIL:'tester@example.com' };
     assert.equal(familyCheckoutAvailable(stageCheckout), true);
     assert.equal(guestFamilyCheckoutAvailable(stageCheckout), true, 'Stage guest flow requires restricted email delivery');
@@ -43,10 +43,15 @@ try {
     assert.equal((await accountAccess(originalLegacy)).familyPremium.active, false, 'No forced monthly enrollment');
     assert.equal(resolveAccess(originalLegacy, null, new Date(), true).parentAssistant, true, 'Active legacy paid plan is grandfathered into Parent Assistant');
     const period = Math.floor(Date.now() / 1000) + 30 * 86400;
-    const subscription = { id: 'sub_family', status: 'active', cancel_at_period_end: false, items: { data: [{ current_period_end: period, price: { id: 'price_family', currency: 'usd', unit_amount: 1999, recurring: { interval: 'month', interval_count: 1 } } }] } } as unknown as Stripe.Subscription;
+    const subscription = { id: 'sub_family', status: 'active', cancel_at_period_end: false, items: { data: [{ current_period_end: period, price: { id: 'price_family', currency: 'usd', unit_amount: 999, recurring: { interval: 'month', interval_count: 1 } } }] } } as unknown as Stripe.Subscription;
     assert.equal(matchesFamilyPrice(subscription, 'price_family'), true);
     assert.equal(matchesFamilyPrice(subscription, 'wrong_price'), false);
     assert.equal(matchesFamilyPrice(subscription, undefined), false);
+    const oldPrice = { ...subscription, items: { ...subscription.items, data: [{ ...subscription.items.data[0], price: { ...subscription.items.data[0].price, id: 'price_1UHTbBRwvWaTf8xfau7pgSYS', unit_amount: 1999 } }] } } as Stripe.Subscription;
+    assert.equal(matchesFamilyPrice(oldPrice, 'price_family'), true, 'Grandfathered live monthly renewals retain access');
+    assert.equal(matchesFamilyPrice(oldPrice, 'price_1UHTbBRwvWaTf8xfau7pgSYS'), true, 'Grandfathered renewal survives rollout before the Worker price ID changes');
+    assert.equal(matchesFamilyPrice(oldPrice, undefined), true, 'Grandfathered monthly renewals survive a missing new-price setting');
+    assert.equal(matchesFamilyPrice({ ...oldPrice, items: { ...oldPrice.items, data: [{ ...oldPrice.items.data[0], price: { ...oldPrice.items.data[0].price, unit_amount: 999 } }] } }, 'price_family'), false, 'Old Price ID cannot have a new amount');
     assert.equal(matchesFamilyPrice({ ...subscription, items: { ...subscription.items, data: [{ ...subscription.items.data[0], price: { ...subscription.items.data[0].price, unit_amount: 2999 } }] } }, 'price_family'), false);
     assert.equal((await accountAccess(await read('free'))).research, false);
     await recordFamilySubscription('pass', subscription, 10);

@@ -99,7 +99,7 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {familyPremiumIntent && <p className="mb-5 rounded-lg border border-teal-300 bg-teal-50 p-3 text-sm text-teal-950">Creating an account is free. Your $19.99/month subscription starts only if you confirm payment in Stripe Checkout.</p>}
+            {familyPremiumIntent && <p className="mb-5 rounded-lg border border-teal-300 bg-teal-50 p-3 text-sm text-teal-950">Creating an account is free. Your $9.99/month subscription starts only if you confirm payment in Stripe Checkout.</p>}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">

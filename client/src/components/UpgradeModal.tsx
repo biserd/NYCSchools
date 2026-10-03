@@ -79,7 +79,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
   const priceLabel = "/month";
   const priceDescription = "Renews monthly until canceled. No free trial.";
   const badgeText = "Family Premium";
-  const buttonText = isReady ? "Subscribe — $19.99/month" : "View pricing and availability";
+  const buttonText = isReady ? "Subscribe — $9.99/month" : "View pricing and availability";
 
   const premiumFeatures = [
     { icon: MessageCircle, text: "Full Parent Assistant access" },

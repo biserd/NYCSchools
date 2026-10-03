@@ -28,7 +28,7 @@ const plans = (await call('/api/plans')).value;
 assert.equal(plans.researchPass.amount, 2900);
 assert.equal(plans.researchPass.available, false);
 assert.equal(plans.researchPass.legacy, true);
-assert.equal(plans.familyPremium.amount, 1999);
+assert.equal(plans.familyPremium.amount, 999);
 assert.equal(plans.familyPremium.available, true);
 for (const path of ['/api/checkout', '/api/checkout/guest']) {
   const retired = await call(path, undefined, 'POST', { priceId: 'price_retired', mode: 'payment' });
@@ -39,10 +39,10 @@ const products=(await call('/api/products')).value.data;
 assert.equal(products.length,1,'Only the new monthly offer is advertised');
 assert.equal(products[0].id,'family_premium');
 assert.equal(products[0].prices.length,1);
-assert.equal(products[0].prices[0].unit_amount,1999);
+assert.equal(products[0].prices[0].unit_amount,999);
 assert.equal(products[0].prices[0].recurring.interval,'month');
 const pricing = await call('/pricing');
-assert.match(pricing.value, /Family Premium — \$19\.99\/month/);
+assert.match(pricing.value, /Family Premium — \$9\.99\/month/);
 assert.ok(!pricing.value.includes('School Research Pass &amp; Family Premium'));
 try {
   for (const account of identities) {

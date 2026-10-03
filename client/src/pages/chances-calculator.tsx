@@ -234,7 +234,7 @@ export default function ChancesCalculatorPage() {
               <Link href="/pricing">
                 <Button data-testid="button-upgrade-chances">
                   <Star className="w-4 h-4 mr-2" />
-                  Family Premium - $19.99/month
+                  Family Premium - $9.99/month
                 </Button>
               </Link>
             </CardContent>

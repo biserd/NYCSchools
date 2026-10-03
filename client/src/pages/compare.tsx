@@ -863,7 +863,7 @@ export default function ComparePage() {
                       data-testid="button-upgrade-compare"
                     >
                       <Lock className="w-4 h-4 mr-2" />
-                      Family Premium - $19.99/month
+                      Family Premium - $9.99/month
                     </Button>
                   )}
                 </div>

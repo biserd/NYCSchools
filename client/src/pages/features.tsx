@@ -205,7 +205,7 @@ export default function FeaturesPage() {
             </h2>
             <Link href="/pricing">
               <Button variant="default" size="sm" data-testid="button-view-pricing">
-                Explore Family Premium - $19.99/month
+                Explore Family Premium - $9.99/month
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>

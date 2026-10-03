@@ -244,7 +244,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
             <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Explore Family Premium</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
-              School research and parent assistance in one plan — <strong>$19.99/month</strong> when available. No free trial; renews until canceled. Check current availability on our pricing page.
+              School research and parent assistance in one plan — <strong>$9.99/month</strong> for new subscribers when available. No free trial; renews until canceled. Check current availability on our pricing page.
             </p>
             <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
               <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
@@ -504,7 +504,7 @@ export async function sendFamilyPremiumAccessLink(userEmail: string, magicLinkUr
       subject: 'Your Family Premium subscription and secure sign-in',
       html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#172d32">
         <h1>Welcome to Family Premium</h1>
-        <p>Stripe confirmed your $19.99/month subscription. Your school research, Family Calendar and Parent Assistant are now available.</p>
+        <p>Stripe confirmed your Family Premium subscription. Your school research, Family Calendar and Parent Assistant are now available. Your Stripe receipt shows the price you agreed to at checkout.</p>
         <p><a href="${magicLinkUrl}" style="display:inline-block;background:#0d746b;color:white;padding:12px 18px;border-radius:8px;text-decoration:none">Open your Family Calendar</a></p>
         <p>This one-time sign-in link expires in 24 hours. If it expires, request a fresh link on the sign-in page using this email address. Never share the link.</p>
         <p>You can review or cancel the monthly subscription in account settings after signing in. Canceling retains access through the paid period. This purchase does not alter any separate legacy Research Pass.</p>
@@ -699,7 +699,7 @@ export async function sendDripAiSpotlight(userEmail: string, userId: string, fir
           
           <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #f59e0b;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>Explore Family Premium</strong> — $19.99/month when available. No free trial; renews until canceled. Existing paid plans keep their benefits.
+              <strong>Explore Family Premium</strong> — $9.99/month for new subscribers when available. No free trial; renews until canceled. Existing paid plans keep their benefits.
             </p>
           </div>
           
@@ -799,7 +799,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           </p>
           
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
-            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">Family Premium: $19.99/month</h2>
+            <h2 style="color: #92400e; margin-top: 0; font-size: 20px;">Family Premium: $9.99/month for new subscribers</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
               Built by a NYC parent, for NYC parents. Get everything you need for your school search:
             </p>

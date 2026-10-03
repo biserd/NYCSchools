@@ -73,7 +73,7 @@
     "ADMIN_EMAILS": "biserd@gmail.com",
     "STRIPE_SEASON_PASS_PRODUCT_ID": "prod_Tc0wGwu3FOifBE",
     "STRIPE_SEASON_PASS_PRICE_ID": "price_1SemubRwvWaTf8xfAYvh2qJl",
-    "STRIPE_FAMILY_PREMIUM_PRICE_ID": "price_1UHTbBRwvWaTf8xfau7pgSYS",
+    "STRIPE_FAMILY_PREMIUM_PRICE_ID": "price_1UMWzERwvWaTf8xfeAtTh8IC",
     "EMAIL_FROM": "hello@nycschoolsratings.com",
     "EMAIL_FROM_NAME": "NYC School Ratings",
     "EMAIL_DELIVERY_ENABLED": "true",

@@ -535,7 +535,7 @@ export default function Settings() {
                 <Link href="/pricing">
                   <Button data-testid="button-upgrade-premium">
                     <Crown className="mr-2 h-4 w-4" />
-                    Explore Family Premium - $19.99/month
+                    Explore Family Premium - $9.99/month
                   </Button>
                 </Link>
               </div>

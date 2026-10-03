@@ -1,7 +1,7 @@
 // One source for public prices; Stripe's configured offer must match before checkout.
 // Historical offer only: retain for receipts, delayed webhooks and existing access.
 export const RESEARCH_PASS = { id: 'season_pass', name: 'School Research Pass', amount: 2900, currency: 'usd', months: 6, available: false, legacy: true } as const;
-export const FAMILY_PREMIUM = { id: 'family_premium', name: 'Family Premium', amount: 1999, currency: 'usd', interval: 'month' } as const;
+export const FAMILY_PREMIUM = { id: 'family_premium', name: 'Family Premium', amount: 999, currency: 'usd', interval: 'month' } as const;
 // Safe default; server-owned environment flags control actual availability.
 export const PARENT_ASSISTANT_AVAILABLE = false;
 
