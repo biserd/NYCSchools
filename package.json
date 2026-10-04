@@ -35,6 +35,7 @@
     "import:twok:dry-run": "tsx scripts/reconcile-twok.ts",
     "test:seo-linking": "tsx scripts/seo-linking.test.ts",
     "test:kinderlearner": "tsx scripts/kinderlearner.test.ts",
+    "test:pricing-value": "tsx scripts/pricing-value.test.ts",
     "import:assessment-counts": "tsx scripts/d1/run.ts scripts/import-assessment-tested-counts.ts --d1-staging",
     "db:push": "node scripts/d1/guard-production-deploy.mjs",
     "db:generate:d1": "drizzle-kit generate --config drizzle.d1.config.ts",
