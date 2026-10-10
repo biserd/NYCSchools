@@ -15,12 +15,6 @@ import { Button } from "@/components/ui/button";
 import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock, AlertCircle, RefreshCw, CalendarDays, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { FEATURED_SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
-
-interface UserZones {
-  elementary: string | null;
-  middle: string | null;
-  high: string | null;
-}
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +22,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+interface UserZones {
+  elementary: string | null;
+  middle: string | null;
+  high: string | null;
+}
+
+function StatCount({ value, loading, error = false }: { value?: number; loading: boolean; error?: boolean }) {
+  return (
+    <span className="inline-flex w-[5ch] shrink-0 justify-end font-medium tabular-nums text-foreground">
+      {loading ? <Skeleton className="h-4 w-full" aria-hidden="true" /> : error ? "—" : (value ?? 0).toLocaleString()}
+    </span>
+  );
+}
 
 function getInitialFiltersFromURL(): {
   search: string;
@@ -845,79 +853,63 @@ export default function Home() {
         hasZonedSchools={hasZonedSchools}
       />
 
-      {/* Reserve the measured rendered height while counts are loading. */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 min-h-[140px] md:min-h-[100px]" data-testid="section-school-stats">
-        {schoolCounts && (
+      {/* Render the full strip during loading: its wrapping height depends on
+          viewport width, so a fixed minimum leaves a large mobile gap. */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6" data-testid="section-school-stats" aria-busy={isLoading}>
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 text-sm">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full" data-testid="stat-total">
               <Building2 className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-primary">{schoolCounts.total.toLocaleString()}</span>
+              <StatCount value={schoolCounts?.total} loading={isLoading} error={schoolsError} />
               <span className="text-muted-foreground">Total Schools</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-elementary">
               <SchoolIcon className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.elementary}</span>
+              <StatCount value={schoolCounts?.elementary} loading={isLoading} error={schoolsError} />
               <span>Elementary</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-middle">
               <SchoolIcon className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.middle}</span>
+              <StatCount value={schoolCounts?.middle} loading={isLoading} error={schoolsError} />
               <span>Middle</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-high">
               <GraduationCap className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.highSchool}</span>
+              <StatCount value={schoolCounts?.highSchool} loading={isLoading} error={schoolsError} />
               <span>High School</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-improving">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-              {trendsLoading ? (
-                <Skeleton className="h-4 w-8" />
-              ) : (
-                <span className="font-medium text-foreground">{schoolCounts.improving}</span>
-              )}
+              <StatCount value={schoolCounts?.improving} loading={isLoading || trendsLoading} error={schoolsError} />
               <span>Improving</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-early">
               <Baby className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.earlyChildhood}</span>
+              <StatCount value={schoolCounts?.earlyChildhood} loading={isLoading} error={schoolsError} />
               <span>3-K/Pre-K</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-gt">
               <Award className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.giftedTalented}</span>
+              <StatCount value={schoolCounts?.giftedTalented} loading={isLoading} error={schoolsError} />
               <span>G&T</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="stat-dl">
               <Languages className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{schoolCounts.dualLanguage}</span>
+              <StatCount value={schoolCounts?.dualLanguage} loading={isLoading} error={schoolsError} />
               <span>Dual Language</span>
             </div>
             <Link href="/early-childhood" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-nyceec">
               <HomeIcon className="w-3.5 h-3.5 text-orange-500" />
-              {nyceecLoading ? (
-                <Skeleton className="h-4 w-8" />
-              ) : (
-                <span className="font-medium text-foreground">{schoolCounts.nyceecCenters.toLocaleString()}</span>
-              )}
+              <StatCount value={nyceecStats?.totalCenters} loading={nyceecLoading} />
               <span>Early Ed Centers</span>
             </Link>
             <Link href="/map?source=twok&district=all" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-twok">
               <Baby className="w-3.5 h-3.5 text-pink-500" />
-              {twokLoading ? (
-                <Skeleton className="h-4 w-8" />
-              ) : (
-                <span className="font-medium text-foreground">{schoolCounts.twokCenters.toLocaleString()}</span>
-              )}
+              <StatCount value={twokStats?.totalCenters} loading={twokLoading} />
               <span>2-K Programs</span>
             </Link>
             <Link href="/private-schools" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors" data-testid="stat-private">
               <Building2 className="w-3.5 h-3.5 text-purple-500" />
-              {privateSchoolsLoading ? (
-                <Skeleton className="h-4 w-8" />
-              ) : (
-                <span className="font-medium text-foreground">{schoolCounts.privateSchools.toLocaleString()}</span>
-              )}
+              <StatCount value={privateSchoolsStats?.totalSchools} loading={privateSchoolsLoading} />
               <span>Private Schools</span>
             </Link>
             <a
@@ -931,11 +923,10 @@ export default function Home() {
               data-testid="stat-charter"
             >
               <SchoolIcon className="w-3.5 h-3.5 text-amber-500" />
-              <span className="font-medium text-foreground">{schoolCounts.charters.toLocaleString()}</span>
+              <StatCount value={schoolCounts?.charters} loading={isLoading} error={schoolsError} />
               <span>Charter Schools</span>
             </a>
           </div>
-        )}
       </div>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">

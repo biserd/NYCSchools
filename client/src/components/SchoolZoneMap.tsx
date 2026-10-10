@@ -144,36 +144,13 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude, addr
     return null;
   }
 
-  if (isLoading) {
-    return (
-      <Card data-testid="card-school-zone-map">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <MapPin className="w-5 h-5" />
-            {schoolName} location and zone boundary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 rounded-lg bg-muted animate-pulse flex items-center justify-center">
-            <span className="text-muted-foreground">Loading map...</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card data-testid="card-school-zone-map">
+    <Card data-testid="card-school-zone-map" aria-busy={isLoading}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <MapPin className="w-5 h-5" />
           {schoolName} location and zone boundary
         </CardTitle>
-        {zoneData && (
-          <p className="text-sm text-muted-foreground">
-            The highlighted area shows this school's official catchment zone for {zoneData.gradeLevel === "elementary" ? "elementary" : zoneData.gradeLevel === "middle" ? "middle school" : "high school"} enrollment.
-          </p>
-        )}
       </CardHeader>
       <CardContent>
         <div
@@ -181,7 +158,7 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude, addr
           className="h-64 rounded-lg border"
           data-testid="map-school-zone"
         />
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 min-h-12 sm:min-h-5">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb] border border-white shadow-sm" />
             <span>Current School</span>
@@ -193,10 +170,12 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude, addr
             </div>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          {zoneData 
-            ? "Zone boundaries from NYC Department of Education. Verify with DOE for official enrollment eligibility."
-            : "School location shown. This school may not have geographic zone restrictions."}
+        <p className="text-xs text-muted-foreground mt-2 min-h-16 sm:min-h-8">
+          {zoneData
+            ? `The highlighted area shows this school's official catchment zone for ${zoneData.gradeLevel === "elementary" ? "elementary" : zoneData.gradeLevel === "middle" ? "middle school" : "high school"} enrollment. Verify eligibility with NYC Public Schools.`
+            : isLoading
+              ? "Checking school zone boundaries. The school location is shown on the map."
+              : "School location shown. This school may not have geographic zone restrictions."}
         </p>
         
         {/* Address & Commute Section */}
@@ -208,7 +187,7 @@ export function SchoolZoneMap({ schoolDbn, schoolName, latitude, longitude, addr
                 <span className="text-sm">{address}</span>
               </div>
             )}
-            {children}
+            {children && <div className="min-h-[144px] sm:min-h-[72px]">{children}</div>}
           </div>
         )}
       </CardContent>
