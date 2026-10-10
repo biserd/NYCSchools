@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { getSurveyInsight } from '@shared/survey-insights';
 import { queryClient } from "./lib/queryClient";
@@ -212,6 +212,12 @@ function Router() {
 }
 
 function App() {
+  useLayoutEffect(() => {
+    // The SEO-only HTML stays hidden until React's first commit, then the
+    // real page becomes visible without a plain-text flash.
+    document.getElementById("root")?.removeAttribute("data-server-rendered");
+  }, []);
+
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>

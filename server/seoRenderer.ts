@@ -143,6 +143,9 @@ interface Meta {
   ogImage?: string;
   jsonLd?: object | object[];
   serverHtml?: string;
+  hydrate?: boolean;
+  bootHeading?: string;
+  bootDescription?: string;
   noindex?: boolean;
 }
 
@@ -242,9 +245,10 @@ function applyMeta(baseHtml: string, meta: Meta): string {
   // Real semantic fallback content. React createRoot replaces these children
   // for JS-capable browsers; crawlers and readers without JS receive the same facts.
   if (meta.serverHtml) {
+    const bootHeader = meta.hydrate ? '' : `<div data-boot-header aria-hidden="true"><span class="boot-brand">NYC School Ratings</span><p class="boot-title">${escapeHtml(meta.bootHeading ?? meta.title)}</p>${meta.bootDescription ? `<p class="boot-description">${escapeHtml(meta.bootDescription)}</p>` : ''}</div>`;
     html = html.replace(
       /<div id="root"><\/div>/i,
-      `<div id="root" data-server-rendered="true">${meta.serverHtml}</div>`,
+      `<div id="root" data-server-rendered="true"${meta.hydrate ? ' data-hydrate="true"' : ''}>${bootHeader}${meta.serverHtml}</div>`,
     );
   }
 
@@ -560,6 +564,7 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     description,
     canonical,
     jsonLd: [educationalOrg, breadcrumb, faq],
+    bootHeading: schoolDisplayName(school),
     serverHtml: noscriptHtml + await surveyServerHtml(school.dbn),
   });
 }
@@ -621,6 +626,7 @@ async function renderPrivateSchool(slug: string, baseHtml: string): Promise<stri
     description,
     canonical,
     jsonLd: [schoolSchema, breadcrumb],
+    bootHeading: schoolDisplayName(school),
     serverHtml: noscriptHtml,
   });
 }
@@ -675,6 +681,7 @@ async function renderNyceec(slug: string, baseHtml: string): Promise<string | nu
     description,
     canonical,
     jsonLd: [childcareSchema, breadcrumb],
+    bootHeading: center.name,
     serverHtml: noscriptHtml + await surveyServerHtml(center.locCode, 'center'),
   });
 }
@@ -732,6 +739,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     canonical,
     ogImage,
     jsonLd: [article, breadcrumb],
+    bootHeading: post.title,
     serverHtml: noscriptHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
   });
 }
@@ -783,6 +791,7 @@ async function renderCompare(slug: string, baseHtml: string): Promise<string | n
     description,
     canonical,
     jsonLd: breadcrumb,
+    bootHeading: names,
     serverHtml: noscriptHtml,
   });
 }
@@ -1011,6 +1020,8 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
     canonical,
     jsonLd,
     noindex: meta.noindex,
+    bootHeading: meta.heading,
+    bootDescription: path === '/' ? 'Compare official data, admissions context, programs, and commute fit' : undefined,
     serverHtml: crawlerHtml,
   });
 }
@@ -1042,6 +1053,7 @@ function renderSchoolGuide(slug: string, baseHtml: string): string | null {
     description: guide.description,
     canonical,
     jsonLd: [collectionPage, breadcrumb],
+    bootHeading: guide.heading,
     serverHtml: content + (slug === 'elementary-schools' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink, {stage:'kindergarten'})) : ''),
   });
 }
@@ -1070,7 +1082,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
     ] },
   ];
   const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
-  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, serverHtml: serverHtml + (kind === 'program' && slug === 'prek' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '') });
+  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, bootHeading: landing.title, serverHtml: serverHtml + (kind === 'program' && slug === 'prek' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '') });
 }
 
 /**
@@ -1148,6 +1160,7 @@ export async function renderSeoHtml(
       result = applyMeta(baseHtml, {
         title: meta.title, description: meta.description, canonical: `${SITE_ORIGIN}${meta.path}`,
         jsonLd: kinderLearnerInfoSchemas(kinderLearnerInfoPage),
+        hydrate: true,
         serverHtml: renderToString(React.createElement(KinderLearnerInfoContent, {page:kinderLearnerInfoPage})),
       }).replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" content="width=device-width, initial-scale=1.0" />')
         .replace('</head>', `<link rel="stylesheet" href="${KINDERLEARNER.stylesheet}" data-kinderlearner="true" /></head>`);
@@ -1156,6 +1169,7 @@ export async function renderSeoHtml(
       result = applyMeta(baseHtml, {
         title: meta.title, description: meta.description, canonical: `${SITE_ORIGIN}${meta.path}`,
         jsonLd: kinderLearnerSchemas(kinderLearnerPage),
+        hydrate: true,
         serverHtml: renderToString(React.createElement(KinderLearnerContent, {page:kinderLearnerPage})),
       }).replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" content="width=device-width, initial-scale=1.0" />')
         .replace('</head>', `<link rel="stylesheet" href="${KINDERLEARNER.stylesheet}" data-kinderlearner="true" /></head>`);
@@ -1167,6 +1181,7 @@ export async function renderSeoHtml(
       const canonical = `${SITE_ORIGIN}/blog/${page.slug}`;
       result = applyMeta(baseHtml, {
         title: `${page.title} | NYC School Ratings`, description: page.description, canonical,
+        bootHeading: page.title,
         serverHtml: renderToStaticMarkup(React.createElement(SurveyInsightContent, {page})),
         jsonLd: surveyBlogSchema(page),
       }).replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:type" content="article" />');
