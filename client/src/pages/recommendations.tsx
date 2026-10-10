@@ -901,7 +901,7 @@ I focused on schools with strong academics and Dual Language programs in Brookly
             <DialogDescription className="text-center">
               Personalized school recommendations are included with a Premium subscription ($
               {priceAmount}
-              {isSeasonPass ? " School Research Pass" : "/mo"}). Sign in or create an account, then review the monthly subscription. No free trial; renews until canceled.
+              {isSeasonPass ? " School Research Pass" : "/mo"}). Sign in or create an account, then review the payment details. {isSeasonPass ? "Charged once at checkout." : "Charged at checkout and renewed monthly until canceled."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-col gap-2">

@@ -259,7 +259,7 @@ export default function BenefitsPage() {
                   Explore Family Premium - $9.99/month
                 </Button>
               </Link>
-              <p className="text-xs text-muted-foreground mt-2">Renews monthly until canceled. No free trial.</p>
+              <p className="text-xs text-muted-foreground mt-2">Charged at checkout; renews monthly until canceled.</p>
             </div>
           </CardContent>
         </Card>

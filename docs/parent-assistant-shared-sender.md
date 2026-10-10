@@ -32,4 +32,4 @@ Keep the working $29.99 Research Pass pricing, Stripe IDs and checkout unchanged
 
 At inspection, Ratings staging has only SESSION_SECRET. No Twilio or Stripe test credentials are configured. Existing live webhook, sender, production applications and Stripe pricing have not been changed. Provider integration must use Cloudflare secrets or a tightly scoped private service bridge; do not paste credentials in chat or commit them.
 
-Remaining: actual private ingress/outbound bridge, verified linking, durable reminders/quiet hours/usage limits, assistant actions with confirmation, calendar integrations, approved template, real provider tests and monthly checkout activation. The monthly offer must remain unavailable until its promised features work. No free trial.
+Remaining: actual private ingress/outbound bridge, verified linking, durable reminders/quiet hours/usage limits, assistant actions with confirmation, calendar integrations, approved template, real provider tests and monthly checkout activation. The monthly offer must remain unavailable until its promised features work. Payment begins at signup.

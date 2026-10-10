@@ -14,7 +14,7 @@ expired accounts remain ineligible.
 ### Pricing decision update — 2026-09-19
 
 The owner has retired the $29 Research Pass from new sales. Family Premium at
-$19.99/month, with no free trial, is now the sole new paid offer. Existing
+$19.99/month, charged at signup, is now the sole new paid offer. Existing
 prepaid customers retain their original benefits and expiry; existing recurring
 customers retain their existing price and terms. No customer data migration,
 Stripe subscription update, forced enrollment or cancellation is performed.
@@ -44,13 +44,13 @@ $19.99/month card plus the grandfathering notice. Synthetic staging test
 accounts were removed. Twilio approval remains Pending and staging Stripe
 test credentials are still absent; checkout and reminder delivery remain off.
 
-Implemented on `feature/parent-assistant-launch`, deployed to the D1 staging Worker only. Production and the existing $29 one-time, six-month Research Pass are unchanged. No free trial is configured. This is not yet a completed paid launch.
+Implemented on `feature/parent-assistant-launch`, deployed to the D1 staging Worker only. Production and the existing $29 one-time, six-month Research Pass are unchanged. Payment begins at signup. This is not yet a completed paid launch.
 
 1. Reminders: explicit consent, linked WhatsApp account, timezone/DST validation, quiet hours, cancellation, atomic claims, signed status callbacks, bounded retries and uncertain-send quarantine.
 2. Assistant: Workers AI structured intent parsing, calendar drafts and explicit confirmation, calendar listing, clarification, canonical school answers. No arbitrary model tools, generated SQL, automatic event edits, or invented admissions percentages.
 3. Calendar: 15 reviewed common NYCPS 2026–27 dates with source attribution and scope confirmation. Not a live announcement feed or a comprehensive school-specific calendar; NYCPS district 3-K–12 scope does not automatically cover 2-K/community providers, charter or private schools.
 4. Personalization: saved/child-linked canonical schools and explicit school queries, linked profile sources. Early-childhood-only providers do not receive K–12 academic scores.
-5. Billing implementation: separate $19.99/month hosted Checkout, exact price validation, duplicate-subscription protection, idempotent checkout creation, no trial, period-end cancellation portal guard. Actual Stripe checkout and live WhatsApp end-to-end delivery remain untested.
+5. Billing implementation: separate $19.99/month hosted Checkout, exact price validation, duplicate-subscription protection, idempotent checkout creation, immediate billing, period-end cancellation portal guard. Actual Stripe checkout and live WhatsApp end-to-end delivery remain untested.
 
 ## Operational limits
 

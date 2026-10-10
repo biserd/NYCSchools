@@ -36,6 +36,19 @@ assert.ok(!markup.includes('160+ NYC families'));
 assert.ok(!markup.includes('A broader view of NYC schools'));
 assert.ok(!html.includes('A broader view of NYC schools'));
 assert.ok(!/no free trial/i.test(`${markup} ${html} ${pageSource}`));
+for (const path of [
+  'client/src/components/ChatBot.tsx',
+  'client/src/components/UpgradeModal.tsx',
+  'client/src/pages/benefits.tsx',
+  'client/src/pages/compare.tsx',
+  'client/src/pages/developers-docs.tsx',
+  'client/src/pages/recommendations.tsx',
+  'client/src/pages/terms.tsx',
+  'server/emailService.ts',
+  'server/parent/checkout.ts',
+]) {
+  assert.ok(!/no free trial/i.test(readFileSync(path, 'utf8')), `${path} must not use that phrase`);
+}
 for (const removed of ['Explore school guides', 'What your membership changes', 'Already a paying customer? Your plan stays intact.', 'Explore My Family', 'Preview KinderLearner']) {
   assert.ok(!`${markup} ${html} ${pageSource}`.includes(removed), `${removed} should not be on the pricing page`);
 }

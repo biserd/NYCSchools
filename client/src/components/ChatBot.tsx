@@ -535,7 +535,7 @@ export function ChatBot() {
               Get Premium
             </Button>
             <p className="text-xs text-muted-foreground">
-              $9.99/month. Renews until canceled. No free trial.
+              $9.99 charged at checkout, then monthly until canceled.
             </p>
           </div>
         </CardContent>

@@ -244,7 +244,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
             <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Explore Family Premium</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
-              School research and parent assistance in one plan — <strong>$9.99/month</strong> for new subscribers when available. No free trial; renews until canceled. Check current availability on our pricing page.
+              School research and parent assistance in one plan — <strong>$9.99/month</strong> for new subscribers when available. Charged at checkout; renews until canceled. Check current availability on our pricing page.
             </p>
             <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
               <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
@@ -699,7 +699,7 @@ export async function sendDripAiSpotlight(userEmail: string, userId: string, fir
           
           <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #f59e0b;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>Explore Family Premium</strong> — $9.99/month for new subscribers when available. No free trial; renews until canceled. Existing paid plans keep their benefits.
+              <strong>Explore Family Premium</strong> — $9.99/month for new subscribers when available. Charged at checkout; renews until canceled. Existing paid plans keep their benefits.
             </p>
           </div>
           
@@ -833,7 +833,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           </div>
           
           <p style="font-size: 16px; line-height: 1.6; text-align: center; color: #6b7280;">
-            No free trial. Charged at checkout and renewed monthly until canceled. Check current availability before subscribing. Existing paid plans remain unchanged.
+            Charged at checkout and renewed monthly until canceled. Check current availability before subscribing. Existing paid plans remain unchanged.
           </p>
           
           <div style="text-align: center; margin: 30px 0;">

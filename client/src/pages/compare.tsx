@@ -868,7 +868,7 @@ export default function ComparePage() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Full access while subscribed. Renews monthly until canceled. No free trial.
+                  Full access while subscribed. Charged at checkout; renews monthly until canceled.
                 </p>
               </CardContent>
             </Card>

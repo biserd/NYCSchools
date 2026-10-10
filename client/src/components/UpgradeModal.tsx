@@ -77,7 +77,7 @@ export function UpgradeModal({ open, onOpenChange, trigger = "general" }: Upgrad
   const IconComponent = content.icon;
 
   const priceLabel = "/month";
-  const priceDescription = "Renews monthly until canceled. No free trial.";
+  const priceDescription = "Charged at checkout; renews monthly until canceled.";
   const badgeText = "Family Premium";
   const buttonText = isReady ? "Subscribe — $9.99/month" : "View pricing and availability";
 
