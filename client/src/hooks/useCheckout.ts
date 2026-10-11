@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { trackEvent } from '@/lib/analytics';
+import { checkoutAttribution, trackEvent } from '@/lib/analytics';
 import { FAMILY_PREMIUM, type AccountAccess } from '@shared/plans';
 
 // Only explicit monthly checkout creates new purchases. Retired Pass endpoints
@@ -23,11 +23,11 @@ export function useCheckout() {
   const monthlyActive = subscription.data?.access.familyPremium.active === true;
   const assistantActive = subscription.data?.access.parentAssistant === true;
   const checkout = useMutation({
-    mutationFn: async (testEmail?: string) => {
-      const result = await (await apiRequest('POST', user ? '/api/tuck/family-checkout' : '/api/family/checkout/guest', !user && testEmail ? { testEmail } : undefined)).json();
+    mutationFn: async ({ testEmail, placement }: { testEmail?: string; placement: string }) => {
+      const result = await (await apiRequest('POST', user ? '/api/tuck/family-checkout' : '/api/family/checkout/guest', { ...(testEmail ? {testEmail} : {}), attribution: checkoutAttribution(placement) })).json();
       if (new URL(result.url).origin !== 'https://checkout.stripe.com') throw new Error('Unexpected checkout destination.');
-      trackEvent('checkout_session_created', { plan: 'family_premium', checkout_type: 'monthly', channel: user ? 'account' : 'guest' });
-      trackEvent('begin_checkout', { currency: 'USD', value: FAMILY_PREMIUM.amount / 100, checkout_type: 'monthly', channel: user ? 'account' : 'guest' });
+      trackEvent('checkout_session_created', { plan: 'family_premium', checkout_type: 'monthly', channel: user ? 'account' : 'guest', placement });
+      trackEvent('begin_checkout', { currency: 'USD', value: FAMILY_PREMIUM.amount / 100, checkout_type: 'monthly', channel: user ? 'account' : 'guest', placement });
       window.location.href = result.url;
     },
     onError: (error: Error) => {
@@ -35,14 +35,14 @@ export function useCheckout() {
       toast({ title: 'Checkout unavailable', description: error.message, variant: 'destructive' });
     },
   });
-  const startCheckout = (testEmail?: unknown, source: 'click' | 'registration_continue' = 'click') => {
+  const startCheckout = (testEmail?: unknown, source: 'click' | 'registration_continue' = 'click', placement = 'unspecified') => {
     if (checkout.isPending) return;
-    trackEvent(source === 'click' ? 'subscription_cta_click' : 'subscription_signup_to_checkout', { plan: 'family_premium', channel: user ? 'account' : 'guest', page_path: window.location.pathname });
+    trackEvent(source === 'click' ? 'subscription_cta_click' : 'subscription_signup_to_checkout', { plan: 'family_premium', channel: user ? 'account' : 'guest', page_path: window.location.pathname, placement });
     if (!isReady) { window.location.href = '/pricing'; return; }
     if (!user && !guestReady) { window.location.href = '/pricing#checkout'; toast({ title: 'Guest checkout unavailable', description: 'We cannot take payment until email sign-in links can be delivered.', variant: 'destructive' }); return; }
     if (!user && stagingTestEmailRequired && typeof testEmail !== 'string') { window.location.href = '/pricing#checkout'; return; }
     if (assistantActive) { window.location.href = '/family'; return; }
-    checkout.mutate(typeof testEmail === 'string' ? testEmail : undefined);
+    checkout.mutate({testEmail:typeof testEmail === 'string' ? testEmail : undefined,placement});
   };
   return {
     startCheckout, isLoading: plans.isLoading || checkout.isPending,

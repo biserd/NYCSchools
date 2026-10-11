@@ -991,9 +991,9 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
       </ul>
     </section>
     <section>
-      <h2>Family Calendar and Parent Assistant</h2>
-      <p>Plan beyond the school search: view NYCPS district-school closures and key dates in a month-by-month calendar, add private family events, and keep school research and family reminders together. Confirm dates with your school; private, charter, 2-K, NYCEEC and family-childcare calendars may differ.</p>
-      <p><a href="/family">Explore the Family Calendar</a></p>
+      <h2>Find your schools. Plan the next step.</h2>
+      <p>Family Premium helps parents compare schools, view NYCPS district-school dates, add private visits and deadlines, and ask Parent Assistant on the web or WhatsApp. Opt in to reminders after connecting your phone. Confirm dates with your school; private, charter, 2-K, NYCEEC and family-childcare calendars may differ.</p>
+      <p><a href="/pricing#checkout">Start Family Premium — $9.99/month</a></p>
     </section>
     <section>
       <h2>Explore schools by borough</h2>

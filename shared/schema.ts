@@ -1019,6 +1019,22 @@ export const parentCheckoutAttempts = sqliteTable('parent_checkout_attempts', {
   expiresAt: integer('expires_at').notNull(),
 });
 
+export const subscriptionFunnelSessions = sqliteTable('subscription_funnel_sessions', {
+  stripeSessionId: text('stripe_session_id').primaryKey(),
+  createdAt: integer('created_at').notNull(),
+  confirmedPaidAt: integer('confirmed_paid_at'),
+  channel: text('channel').notNull(),
+  placement: text('placement').notNull().default('unknown'),
+  firstLandingPath: text('first_landing_path'),
+  utmSource: text('utm_source'),
+  utmMedium: text('utm_medium'),
+  utmCampaign: text('utm_campaign'),
+  utmContent: text('utm_content'),
+  utmTerm: text('utm_term'),
+  amountCents: integer('amount_cents'),
+  currency: text('currency'),
+});
+
 export const parentPreferences = sqliteTable('parent_preferences', {
   userId:text('user_id').primaryKey().references(()=>users.id,{onDelete:'cascade'}),
   timezone:text('timezone').notNull().default('America/New_York'),

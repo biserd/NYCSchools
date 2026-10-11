@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { useCheckout } from "@/hooks/useCheckout";
 
 function ComparisonCell({ value, districtAvg, unit = "", higherIsBetter = true }: { 
   value: number | null | undefined; 
@@ -318,6 +319,7 @@ function PTACell({ total, perStudent }: { total: number | null | undefined; perS
 export default function ComparePage() {
   const { comparedSchools, addToComparison, removeFromComparison, clearComparison, setComparedSchools, maxCompare } = useComparison();
   const { user, isLoading: authLoading } = useAuth();
+  const checkout = useCheckout();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -822,10 +824,10 @@ export default function ComparePage() {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold mb-2" data-testid="text-premium-gate-title">
-                  Unlock Full Comparison Details
+                  Take your comparison further
                 </h3>
                 <p className="text-muted-foreground mb-4 max-w-md mx-auto" data-testid="text-premium-gate-description">
-                  Get detailed metrics, district averages, admissions data, demographics, and more to make confident enrollment decisions.
+                  Compare these {validComparedSchools.length} schools side by side with district context, admissions data, surveys and demographics—then keep visits and deadlines in your family calendar.
                 </p>
                 
                 <div className="flex flex-wrap gap-4 justify-center mb-6">
@@ -847,26 +849,10 @@ export default function ComparePage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 justify-center">
-                  {!user ? (
-                    <Button 
-                      size="lg"
-                      onClick={() => navigate("/login")}
-                      data-testid="button-login-compare"
-                    >
-                      Login to Get Started
-                    </Button>
-                  ) : (
-                    <Button 
-                      size="lg"
-                      onClick={() => navigate("/pricing")}
-                      data-testid="button-upgrade-compare"
-                    >
-                      <Lock className="w-4 h-4 mr-2" />
-                      Family Premium - $9.99/month
-                    </Button>
-                  )}
-                </div>
+                <Button size="lg" disabled={checkout.isPending} onClick={() => checkout.startCheckout(undefined,'click','comparison_gate')} data-testid="button-upgrade-compare">
+                  <Lock className="w-4 h-4 mr-2" />
+                  {checkout.isPending ? 'Opening checkout…' : 'Continue with Family Premium — $9.99/month'}
+                </Button>
                 <p className="text-xs text-muted-foreground mt-3">
                   Full access while subscribed. Charged at checkout; renews monthly until canceled.
                 </p>

@@ -34,7 +34,7 @@ export default function PricingPage() {
   }, [continueRequested, checkout.isSignedIn, checkout.isAccessReady, checkout.isReady, checkout.assistantActive, checkout.startCheckout]);
   const startPricingCheckout = () => {
     if (continueRequested) window.history.replaceState(window.history.state, '', '/pricing#checkout');
-    checkout.startCheckout(testEmail);
+    checkout.startCheckout(testEmail, 'click', 'pricing');
   };
   return <div className="min-h-screen flex flex-col bg-background">
     <SEOHead title="Family Premium — $9.99/month" description={PRICING_DESCRIPTION} canonicalPath="/pricing" />

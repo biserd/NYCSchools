@@ -212,6 +212,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({error:'Could not load Parent Assistant telemetry'});
     }
   });
+  app.get('/api/admin/subscription-funnel/overview', isAuthenticated, async (req:any,res:Response)=>{
+    if(!await isRequestFromAdmin(req))return res.status(403).json({error:'Admin access required'});
+    const days=Math.min(90,Math.max(1,Number.parseInt(String(req.query.days || '28'),10) || 28));
+    const since=Date.now()-days*86400000;
+    try {
+      const rows=await (workerEnv as unknown as AssistantEnvironment).DB.prepare(`SELECT channel,placement,COALESCE(utm_source,'direct_or_unknown') AS utm_source,
+        COUNT(*) AS checkout_sessions,
+        SUM(CASE WHEN confirmed_paid_at IS NOT NULL THEN 1 ELSE 0 END) AS confirmed_paid,
+        SUM(CASE WHEN confirmed_paid_at IS NOT NULL THEN COALESCE(amount_cents,0) ELSE 0 END) AS confirmed_amount_cents
+        FROM subscription_funnel_sessions WHERE created_at>=?
+        GROUP BY channel,placement,COALESCE(utm_source,'direct_or_unknown')
+        ORDER BY checkout_sessions DESC`).bind(since).all();
+      const segments=rows.results as Array<{channel:string;placement:string;utm_source:string;checkout_sessions:number;confirmed_paid:number;confirmed_amount_cents:number}>;
+      const checkoutSessions=segments.reduce((sum,row)=>sum+row.checkout_sessions,0);
+      const confirmedPaid=segments.reduce((sum,row)=>sum+row.confirmed_paid,0);
+      return res.set('Cache-Control','private, no-store').json({days,since,checkoutSessions,confirmedPaid,checkoutToPaidRate:checkoutSessions?confirmedPaid/checkoutSessions:null,segments,note:'Cohort by Checkout session creation time. Confirmed paid requires a signed Stripe webhook. Instrumentation began with migration 0011; historical sessions are not backfilled.'});
+    } catch(error) {
+      console.error('[SUBSCRIPTION_FUNNEL] overview error',error);
+      return res.status(500).json({error:'Could not load subscription funnel'});
+    }
+  });
   app.use('/api/tuck', tuckRouter(isAuthenticated, getAppUrl));
   // Hosted Checkout collects the buyer's email. The signed webhook provisions
   // access; this endpoint never creates a user or accepts an email to impersonate.
@@ -221,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if(!origin||origin!==new URL(getAppUrl()).origin||req.get('sec-fetch-site')==='cross-site')return res.status(403).json({message:'Start checkout on NYC School Ratings.'});
     try {
       const {guestFamilyCheckout}=await import('./parent/checkout');
-      const session=await guestFamilyCheckout(workerEnv as unknown as AssistantEnvironment,await getUncachableStripeClient(),typeof req.body?.testEmail==='string'?req.body.testEmail:undefined);
+      const session=await guestFamilyCheckout(workerEnv as unknown as AssistantEnvironment,await getUncachableStripeClient(),typeof req.body?.testEmail==='string'?req.body.testEmail:undefined,req.body?.attribution);
       console.info(JSON.stringify({event:'family_checkout_session_created',channel:'guest'}));
       return res.json(session);
     } catch(error) {
@@ -231,6 +252,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error(JSON.stringify({event:'family_checkout_failed',channel:'guest',error_type:error instanceof Error?error.name:'unknown'}));
       return res.status(503).json({message:'Checkout is temporarily unavailable. No payment was taken.'});
+    }
+  });
+  app.get('/api/family/checkout/status', async (req,res)=>{
+    res.set({'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow'});
+    const sessionId=String(req.query.session_id || '');
+    if(!/^cs_(?:test_|live_)?[A-Za-z0-9]{12,200}$/.test(sessionId))return res.status(400).json({error:'Invalid checkout session'});
+    try {
+      const row=await (workerEnv as unknown as AssistantEnvironment).DB.prepare('SELECT confirmed_paid_at,amount_cents,currency FROM subscription_funnel_sessions WHERE stripe_session_id=?').bind(sessionId).first<{confirmed_paid_at:number|null;amount_cents:number|null;currency:string|null}>();
+      return res.json({status:row?.confirmed_paid_at?'paid':'pending',...(row?.confirmed_paid_at?{value:(row.amount_cents || 0)/100,currency:row.currency || 'usd'}:{})});
+    } catch(error) {
+      console.error('[SUBSCRIPTION_FUNNEL] status error',error);
+      return res.status(503).json({error:'Checkout confirmation is temporarily unavailable'});
     }
   });
   app.get('/tuck', (_req, res) => res.redirect(301, '/family'));

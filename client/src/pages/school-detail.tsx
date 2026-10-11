@@ -447,6 +447,10 @@ export default function SchoolDetail() {
             {schoolWithScore.early_childhood_source?.status === "needs_verification" && <p>Program listing needs verification. This does not indicate closure.</p>}
             {schoolWithScore.early_childhood_source?.legacyCenterCode && <a className="underline" href={`/early-childhood/${schoolWithScore.early_childhood_source.legacyCenterCode}`}>Early childhood reviews and details</a>}
           </section>}
+          {isEarlyChildhoodOnly(schoolWithScore) && !hasPaidPremium && !authLoading && <section className="rounded-xl border border-sky-200 bg-sky-50 dark:bg-sky-950/20 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" aria-label="Plan your early-childhood search">
+            <div><h2 className="font-semibold">Keep this provider in your family plan</h2><p className="text-sm text-muted-foreground mt-1">Track visits and deadlines and ask Parent Assistant about your early-childhood options. K–12 academic scores do not apply here.</p></div>
+            <Button className="min-h-11 shrink-0" disabled={checkoutPending} onClick={() => startCheckout(undefined,'click','early_childhood_profile')}>Plan with Family Premium · $9.99/month</Button>
+          </section>}
           {/* School Prose Introduction — applies to all schools */}
           {schoolWithScore && (() => {
             const boroughLabel = schoolBorough(schoolWithScore) || "New York";
@@ -857,7 +861,7 @@ export default function SchoolDetail() {
                       <p className="text-sm text-muted-foreground mb-4">
                         See how {schoolDisplayName(schoolWithScore)} compares to District {schoolWithScore.district} across all key metrics
                       </p>
-                        <Button data-testid="button-unlock-snapshot" onClick={startCheckout} disabled={checkoutPending}>
+                        <Button data-testid="button-unlock-snapshot" onClick={() => startCheckout(undefined,'click','school_score_gate')} disabled={checkoutPending}>
                           {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
                           {checkoutPending ? "Loading..." : "Family Premium - $9.99/month"}
                         </Button>

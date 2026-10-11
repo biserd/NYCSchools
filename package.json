@@ -19,6 +19,7 @@
     "test:parent-assistant": "tsx scripts/d1/test-parent-assistant.ts",
     "test:parent-whatsapp": "tsx scripts/d1/test-parent-whatsapp.ts",
     "test:family-billing": "tsx scripts/d1/test-family-billing.ts",
+    "test:subscription-funnel": "tsx scripts/d1/test-subscription-funnel.ts",
     "test:d1:safety": "tsx scripts/d1/test-safety-queue.ts",
     "test:d1:parity": "node scripts/d1/compare-public.mjs",
     "import:surveys:d1": "tsx scripts/d1/import-surveys.ts",

@@ -819,10 +819,13 @@ export default function Home() {
       </header>
 
       <section className="max-w-7xl mx-auto px-4 md:px-8 pt-5" aria-labelledby="family-home-title">
-        <div className="rounded-2xl border border-teal-300 bg-gradient-to-br from-teal-50 via-background to-sky-50 dark:from-teal-950/40 dark:to-sky-950/20 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5"><div className="max-w-2xl"><p className="text-sm uppercase tracking-widest font-semibold text-teal-700 dark:text-teal-300">Find a school. Then stay ahead.</p><h2 id="family-home-title" className="text-2xl md:text-3xl font-bold mt-2">Your family calendar and school helper</h2><p className="mt-2 text-muted-foreground">See the full published NYCPS 2026–27 calendar, add dates for each child, and keep important school plans together.</p></div><div className="flex flex-wrap gap-2"><Button asChild size="lg" className="min-h-11"><Link href="/family"><CalendarDays className="w-5 h-5 mr-2" />Explore Family Calendar</Link></Button><Button asChild size="lg" variant="outline" className="min-h-11"><Link href="/pricing">See Family Premium</Link></Button></div></div>
-          <div className="grid sm:grid-cols-3 gap-3 mt-6 text-sm"><div className="flex gap-2 rounded-xl border bg-background/80 p-3"><CalendarDays className="w-5 h-5 text-sky-700 shrink-0" /><span><strong>Plan by child</strong><br />Private visits, deadlines and family events.</span></div><div className="flex gap-2 rounded-xl border bg-background/80 p-3"><Bell className="w-5 h-5 text-amber-700 shrink-0" /><span><strong>Never miss a date</strong><br />Set confirmed WhatsApp reminders.</span></div><div className="flex gap-2 rounded-xl border bg-background/80 p-3"><MessageCircle className="w-5 h-5 text-teal-700 shrink-0" /><span><strong>Ask Parent Assistant</strong><br />School questions and calendar help on web or WhatsApp.</span></div></div>
-          <p className="text-xs text-muted-foreground mt-4">NYCPS dates apply to district schools, not every provider. WhatsApp assistance and reminders require active paid access, a connected phone and consent.</p>
+        <div className="rounded-2xl border border-sky-300 bg-gradient-to-br from-blue-50 via-background to-sky-50 dark:from-blue-950/40 dark:to-sky-950/20 p-6 md:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="max-w-2xl"><p className="text-sm uppercase tracking-widest font-semibold text-blue-700 dark:text-sky-300">One place for the school journey</p><h2 id="family-home-title" className="text-2xl md:text-3xl font-bold mt-2">Find your schools. Plan the next step.</h2><p className="mt-2 text-muted-foreground">Compare options, put visits and deadlines on your family calendar, and ask Parent Assistant for help along the way.</p></div>
+            {!authLoading && (isPremium ? <Button asChild size="lg" className="min-h-11 shrink-0"><Link href="/family">Open My Family</Link></Button> : <Button size="lg" className="min-h-11 shrink-0" disabled={checkoutPending} onClick={() => startCheckout(undefined,'click','home_journey')}>{checkoutPending ? 'Opening checkout…' : 'Start Family Premium — $9.99/month'}</Button>)}
+          </div>
+          <ol className="grid sm:grid-cols-3 gap-3 mt-6 text-sm"><li className="flex gap-3 rounded-xl border bg-background/90 p-4"><SchoolIcon className="w-5 h-5 text-blue-700 shrink-0" /><span><strong className="block">1. Explore schools</strong>Review profiles and compare choices.</span></li><li className="flex gap-3 rounded-xl border bg-background/90 p-4"><CalendarDays className="w-5 h-5 text-sky-700 shrink-0" /><span><strong className="block">2. Make a family plan</strong>See NYCPS dates and add your own visits and deadlines.</span></li><li className="flex gap-3 rounded-xl border bg-background/90 p-4"><MessageCircle className="w-5 h-5 text-teal-700 shrink-0" /><span><strong className="block">3. Stay on track</strong>Ask on web or WhatsApp; opt in to reminders.</span></li></ol>
+          <p className="text-xs text-muted-foreground mt-4">$9.99 charged at checkout, then monthly until canceled. NYCPS dates apply to district schools; confirm dates with your provider. WhatsApp requires phone connection and consent.</p>
         </div>
       </section>
       <FilterBar
@@ -997,6 +1000,13 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {!isLoading && filteredAndSortedSchools.length > 0 && !isPremium && (show2K || selectedGradeBand === '3K' || selectedGradeBand === 'PreK' || earlyChildhoodFilter === '3-K' || earlyChildhoodFilter === 'Pre-K') && (
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 dark:bg-sky-950/20 p-4" data-testid="early-childhood-upgrade">
+            <div><h3 className="font-semibold">Found early-childhood options? Plan what comes next.</h3><p className="text-sm text-muted-foreground">Keep visits and application dates together, then ask Parent Assistant about your shortlist. Academic K–12 ratings do not apply to 2-K-only providers.</p></div>
+            <Button className="min-h-11 shrink-0" disabled={checkoutPending} onClick={() => startCheckout(undefined,'click','early_childhood_results')}>Plan with Family Premium · $9.99/month</Button>
+          </div>
+        )}
 
         {schoolsError ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 py-16 px-4" data-testid="schools-load-error">

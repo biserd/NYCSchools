@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import {FAMILY_PREMIUM} from '../../shared/plans';
 import {TuckError} from '../tuck/store';
 import type {AssistantEnvironment} from './service';
+import {cleanFunnelAttribution, recordCheckoutSession, type FunnelAttribution} from './funnel';
 
 export function familyCheckoutAvailable(environment:object) {
   const env=environment as Record<string,unknown>;
@@ -25,7 +26,7 @@ async function validatedOffer(env:AssistantEnvironment,stripe:Stripe) {
   if(!cancel?.enabled||cancel.mode!=='at_period_end')throw new TuckError(503,'Self-service cancellation must be configured before monthly checkout opens.');
   return price;
 }
-export async function guestFamilyCheckout(env:AssistantEnvironment,stripe:Stripe, testEmail?:string) {
+export async function guestFamilyCheckout(env:AssistantEnvironment,stripe:Stripe, testEmail?:string, inputAttribution?:FunnelAttribution) {
   if(!guestFamilyCheckoutAvailable(env))throw new TuckError(503,'Guest checkout requires email delivery and is unavailable in this environment. No payment was taken.');
   const price=await validatedOffer(env,stripe);
   const staging=env.ENVIRONMENT==='staging';
@@ -36,11 +37,13 @@ export async function guestFamilyCheckout(env:AssistantEnvironment,stripe:Stripe
   // Staging uses a fresh test-mode Customer with an immutable Checkout email.
   // Its restricted email binding can deliver a claim link only to the tester.
   const stageCustomer=staging?await stripe.customers.create({email:allowedTestEmail,metadata:{source:'staging_guest_checkout'}}):null;
-  const session=await stripe.checkout.sessions.create({...(stageCustomer?{customer:stageCustomer.id}:{}),mode:'subscription',line_items:[{price:price.id,quantity:1}],metadata:{plan:'family_premium',source:'guest_checkout'},subscription_data:{metadata:{plan:'family_premium',source:'guest_checkout'}},success_url:`${env.APP_URL}/family?checkout=success`,cancel_url:`${env.APP_URL}/pricing?canceled=true`,custom_text:{submit:{message:staging?'TEST MODE ONLY. No real charge. A secure sign-in link will be emailed to the staging tester after payment confirmation.':'$9.99 per month, charged now and renewed monthly until canceled. We will email a secure sign-in link after payment is confirmed.'}}});
+  const attribution=cleanFunnelAttribution(inputAttribution);
+  const session=await stripe.checkout.sessions.create({...(stageCustomer?{customer:stageCustomer.id}:{}),mode:'subscription',line_items:[{price:price.id,quantity:1}],metadata:{plan:'family_premium',source:'guest_checkout',...attribution},subscription_data:{metadata:{plan:'family_premium',source:'guest_checkout'}},success_url:`${env.APP_URL}/family?checkout=success&session_id={CHECKOUT_SESSION_ID}`,cancel_url:`${env.APP_URL}/pricing?canceled=true`,custom_text:{submit:{message:staging?'TEST MODE ONLY. No real charge. A secure sign-in link will be emailed to the staging tester after payment confirmation.':'$9.99 per month, charged now and renewed monthly until canceled. We will email a secure sign-in link after payment is confirmed.'}}});
   if(session.status!=='open'||!session.url)throw new TuckError(503,'Could not open secure checkout. No payment was taken.');
+  await recordCheckoutSession(env.DB,session,'guest',attribution);
   return {url:session.url};
 }
-export async function familyCheckout(userId:string,env:AssistantEnvironment,stripe:Stripe) {
+export async function familyCheckout(userId:string,env:AssistantEnvironment,stripe:Stripe,inputAttribution?:FunnelAttribution) {
   const price=await validatedOffer(env,stripe);
   const now=Date.now();
   const user=await env.DB.prepare('SELECT email,stripe_customer_id,stripe_subscription_id,subscription_status,subscription_plan,subscription_expires_at FROM users WHERE id=?').bind(userId).first<{email:string;stripe_customer_id:string|null;stripe_subscription_id:string|null;subscription_status:string|null;subscription_plan:string|null;subscription_expires_at:number|null}>();
@@ -62,7 +65,9 @@ export async function familyCheckout(userId:string,env:AssistantEnvironment,stri
   await env.DB.prepare(`INSERT INTO parent_checkout_attempts(user_id,attempt_id,expires_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET attempt_id=excluded.attempt_id,expires_at=excluded.expires_at WHERE expires_at<?`).bind(userId,crypto.randomUUID(),now+3600000,now).run();
   const attempt=await env.DB.prepare('SELECT attempt_id,expires_at FROM parent_checkout_attempts WHERE user_id=?').bind(userId).first<{attempt_id:string;expires_at:number}>();
   if(!attempt)throw new TuckError(503,'Could not prepare checkout.');
-  const session=await stripe.checkout.sessions.create({customer:customerId,mode:'subscription',line_items:[{price:price.id,quantity:1}],client_reference_id:userId,metadata:{plan:'family_premium',userId},subscription_data:{metadata:{plan:'family_premium',userId}},success_url:`${env.APP_URL}/family?checkout=success`,cancel_url:`${env.APP_URL}/pricing?canceled=true`,expires_at:Math.floor(attempt.expires_at/1000),custom_text:{submit:{message:'$9.99 per month, charged now and renewed monthly until canceled. Includes school research while subscribed; your separate Research Pass stays unchanged.'}}},{idempotencyKey:`family-checkout-${attempt.attempt_id}-${price.id}`});
+  const attribution=cleanFunnelAttribution(inputAttribution);
+  const session=await stripe.checkout.sessions.create({customer:customerId,mode:'subscription',line_items:[{price:price.id,quantity:1}],client_reference_id:userId,metadata:{plan:'family_premium',userId,...attribution},subscription_data:{metadata:{plan:'family_premium',userId}},success_url:`${env.APP_URL}/family?checkout=success&session_id={CHECKOUT_SESSION_ID}`,cancel_url:`${env.APP_URL}/pricing?canceled=true`,expires_at:Math.floor(attempt.expires_at/1000),custom_text:{submit:{message:'$9.99 per month, charged now and renewed monthly until canceled. Includes school research while subscribed; your separate Research Pass stays unchanged.'}}},{idempotencyKey:`family-checkout-${attempt.attempt_id}-${price.id}`});
   if(session.status!=='open'||!session.url)throw new TuckError(409,'Checkout already completed or expired. Check your account before trying again.');
+  await recordCheckoutSession(env.DB,session,'account',attribution);
   return {url:session.url};
 }

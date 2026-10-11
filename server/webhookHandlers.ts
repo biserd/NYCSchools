@@ -11,6 +11,8 @@ import { sixMonthsFrom } from '@shared/plans';
 import { db } from './db';
 import { familySubscriptions, users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { env as workerEnv } from 'cloudflare:workers';
+import { confirmPaidCheckout } from './parent/funnel';
 
 // Enhanced logging for webhook debugging
 function logWebhook(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: any) {
@@ -268,6 +270,7 @@ export class WebhookHandlers {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         if (matchesFamilyPrice(subscription, process.env.STRIPE_FAMILY_PREMIUM_PRICE_ID)) {
           await recordFamilySubscription(user.id, subscription, event.created);
+          await confirmPaidCheckout(workerEnv.DB, session);
           invalidateUserCaches(user.id);
           if (isGuestCheckout) {
             const magicToken = crypto.randomBytes(32).toString('hex');

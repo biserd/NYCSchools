@@ -20,6 +20,7 @@ import { trackEvent } from '@/lib/analytics';
 export default function TuckPage() {
   const { user, isLoading } = useAuth();
   const [returnedFromCheckout] = useState(() => new URLSearchParams(window.location.search).get('checkout') === 'success');
+  const [checkoutSessionId] = useState(() => new URLSearchParams(window.location.search).get('session_id'));
   useEffect(() => {
     if (!returnedFromCheckout) return;
     // A success redirect is not proof of payment; Stripe's signed webhook is
@@ -27,6 +28,29 @@ export default function TuckPage() {
     trackEvent('subscription_checkout_returned', { plan: 'family_premium', result: 'success_return' });
     window.history.replaceState(window.history.state, '', '/family');
   }, [returnedFromCheckout]);
+  useEffect(() => {
+    if (!returnedFromCheckout || !checkoutSessionId || !/^cs_(?:test_|live_)?[A-Za-z0-9]{12,200}$/.test(checkoutSessionId)) return;
+    let active = true;
+    let attempts = 0;
+    const check = async () => {
+      try {
+        const response = await fetch(`/api/family/checkout/status?session_id=${encodeURIComponent(checkoutSessionId)}`, {cache:'no-store'});
+        if (!response.ok) return;
+        const result = await response.json() as {status:string;value?:number;currency?:string};
+        if (result.status === 'paid' && active && ['nycschoolsratings.com','www.nycschoolsratings.com'].includes(window.location.hostname)) {
+          const key = `nycsr_paid_checkout_${checkoutSessionId}`;
+          if (!window.localStorage.getItem(key)) {
+            window.localStorage.setItem(key, '1');
+            trackEvent('purchase', {transaction_id:checkoutSessionId,currency:(result.currency || 'usd').toUpperCase(),value:result.value || 0,items:[{item_id:'family_premium',item_name:'Family Premium',price:result.value || 0,quantity:1}],plan:'family_premium'});
+          }
+          return;
+        }
+      } catch { /* Webhook/D1 is authoritative even if browser measurement fails. */ }
+      if (active && ++attempts < 8) window.setTimeout(check, 2500);
+    };
+    void check();
+    return () => { active = false; };
+  }, [returnedFromCheckout, checkoutSessionId]);
   // Scope React Query to the signed-in account as well as server-side ownership.
   const overview = useQuery<TuckOverview>({ queryKey: ["tuck-overview", user?.id], enabled: !!user,
     queryFn: async () => (await apiRequest("GET", "/api/tuck/overview")).json(), gcTime: 0 });

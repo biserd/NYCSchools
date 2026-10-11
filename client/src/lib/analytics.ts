@@ -1,4 +1,4 @@
-type AnalyticsParams = Record<string, string | number | boolean | undefined>;
+type AnalyticsParams = Record<string, string | number | boolean | undefined | Array<Record<string, string | number>>>;
 
 const ATTRIBUTION_KEY = "nycsr_attribution_v1";
 
@@ -9,6 +9,16 @@ function readAttribution(): AnalyticsParams {
   } catch {
     return {};
   }
+}
+
+export function checkoutAttribution(placement: string): Record<string, string> {
+  const stored = readAttribution();
+  const result: Record<string, string> = { placement };
+  for (const key of ["first_landing_page", "source", "medium", "campaign", "content", "term"] as const) {
+    const value = stored[key];
+    if (typeof value === "string") result[key === "first_landing_page" ? "first_landing_path" : `utm_${key}`] = value;
+  }
+  return result;
 }
 
 export function initializeAttribution(): void {

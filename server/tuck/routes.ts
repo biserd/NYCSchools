@@ -32,7 +32,7 @@ export function tuckRouter(authenticate: RequestHandler, appOrigin: () => string
     try {
       const env=await parentEnvironment();
       if(!familyCheckoutAvailable(env))throw new TuckError(503,'Monthly checkout is not available yet.');
-      const session=await familyCheckout(userId(req),env,await getUncachableStripeClient());
+      const session=await familyCheckout(userId(req),env,await getUncachableStripeClient(),req.body?.attribution);
       console.info(JSON.stringify({event:'family_checkout_session_created',channel:'account'}));
       res.json(session);
     } catch(error) {
