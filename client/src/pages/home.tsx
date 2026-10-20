@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, LogIn, Heart, Sparkles, Map, Settings, MessageCircle, Menu, Shuffle, School as SchoolIcon, GraduationCap, Baby, Award, Languages, Building2, TrendingUp, Home as HomeIcon, Zap, Target, MapPin, Phone, Clock, AlertCircle, RefreshCw, CalendarDays, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { FEATURED_SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
+import { KINDERLEARNER_SITE } from "@shared/kinderlearner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1128,6 +1129,12 @@ export default function Home() {
               </Link>
             </Button>
           </div>
+        </div>
+      </section>
+      <section className="max-w-7xl mx-auto px-4 md:px-8 py-8" aria-labelledby="kinderlearner-home-title">
+        <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-5 dark:bg-sky-950/20 sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div><p className="text-sm font-semibold text-blue-700 dark:text-sky-300">Learning at home · Ages 3–6</p><h2 id="kinderlearner-home-title" className="mt-1 text-xl font-semibold">Meet KinderLearner</h2><p className="mt-1 text-sm text-muted-foreground">Short, parent-guided adventures in letters, numbers and thinking—made by the NYC School Ratings team.</p></div>
+          <a className="mt-3 inline-flex min-h-11 shrink-0 items-center font-medium text-primary underline sm:mt-0" href={KINDERLEARNER_SITE.home} target="_blank" rel="noopener">Explore KinderLearner ↗</a>
         </div>
       </section>
       

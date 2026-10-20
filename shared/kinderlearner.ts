@@ -1,10 +1,22 @@
 /** Shared by the browser and server: never invent a store listing or price. */
 export const KINDERLEARNER = {
-  launchUrl: '', // Set to the verified HTTPS App Store/onboarding URL when available.
+  launchUrl: 'https://kinderlearner.com/app/',
   origin: 'https://nycschoolsratings.com',
   stylesheet: '/kinderlearner.css?v=2',
-  availability: 'iPhone & iPad apps coming soon',
+  availability: 'Web app live · iPhone & iPad apps coming soon',
 };
+
+export const KINDERLEARNER_SITE = {
+  home: 'https://kinderlearner.com/',
+  app: 'https://kinderlearner.com/app/',
+  preKGuide: 'https://kinderlearner.com/guides/counting-games-at-home/',
+  kindergartenGuide: 'https://kinderlearner.com/guides/kindergarten-readiness-without-pressure/',
+} as const;
+
+/** Only the old overview has an exact standalone replacement today. */
+export function kinderLearnerLegacyRedirect(path: string): string | undefined {
+  return path.replace(/\/+$/, '') === '/kinderlearner' ? KINDERLEARNER_SITE.home : undefined;
+}
 
 export function kinderLearnerStartHref(url = KINDERLEARNER.launchUrl): string {
   if (!url) return '#start-kinderlearner';
@@ -64,10 +76,10 @@ export const KL_FAQS: Record<KinderLearnerPage, {question: string; answer: strin
 export function kinderLearnerSchemas(page: KinderLearnerPage): object[] {
   const meta = KINDERLEARNER_PAGES[page];
   const url = KINDERLEARNER.origin + meta.path;
-  const crumbs = [{name:'NYC School Ratings', item:KINDERLEARNER.origin + '/'}, {name:'KinderLearner',item:KINDERLEARNER.origin + '/kinderlearner'}];
+  const crumbs = [{name:'NYC School Ratings', item:KINDERLEARNER.origin + '/'}, {name:'KinderLearner',item:KINDERLEARNER_SITE.home}];
   if (page !== 'home') crumbs.push({name:meta.label,item:url});
   return [
-    {'@context':'https://schema.org','@type':'SoftwareApplication','@id':KINDERLEARNER.origin + '/kinderlearner#app',name:'KinderLearner',applicationCategory:'EducationalApplication',url:KINDERLEARNER.origin + '/kinderlearner',description:KINDERLEARNER_PAGES.home.description,publisher:{'@type':'Organization',name:'NYC School Ratings',url:KINDERLEARNER.origin}},
+    {'@context':'https://schema.org','@type':'SoftwareApplication','@id':KINDERLEARNER_SITE.home + '#app',name:'KinderLearner',applicationCategory:'EducationalApplication',url:KINDERLEARNER_SITE.home,description:KINDERLEARNER_PAGES.home.description,publisher:{'@type':'Organization',name:'Big Apple Digital LLC',url:KINDERLEARNER_SITE.home}},
     {'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:crumbs.map((crumb,i)=>({'@type':'ListItem',position:i+1,...crumb}))},
     {'@context':'https://schema.org','@type':'FAQPage',mainEntity:KL_FAQS[page].map(faq=>({'@type':'Question',name:faq.question,acceptedAnswer:{'@type':'Answer',text:faq.answer}}))},
   ];

@@ -35,6 +35,7 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
         <section className="rounded-lg border bg-muted/30 p-4 mb-8 text-sm">
           <strong>How to use this guide:</strong> Rankings use the same published rating methodology across the site. Data comes from NYSED and NYC Public Schools; program availability, admissions rules, and zones should be verified with the official source. <Link className="text-primary underline" href="/methodology">Read the methodology</Link>.
         </section>
+        {kind === 'program' && (slug === 'prek' || slug === '3k') && <KinderLearnerResourceLink/>}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <h2 className="text-2xl font-semibold">{isLoading ? "Loading schools…" : `${matches.length} matching schools`}</h2>
           <div className="flex gap-2"><Button asChild variant="outline"><Link href="/compare">Compare</Link></Button><Button asChild><Link href="/recommendations">Find my match</Link></Button></div>
@@ -47,7 +48,6 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
           <p className="text-sm text-muted-foreground mb-4">These guides share districts, neighborhoods, programs, or schools with this collection.</p>
           <div className="flex flex-wrap gap-2">{related.map((item) => <Button asChild key={`${item.kind}-${item.slug}`} variant="outline" size="sm"><Link href={getSeoLandingPath(item)}>{item.name}</Link></Button>)}</div>
         </section>
-        {kind === 'program' && slug === 'prek' && <KinderLearnerResourceLink/>}
       </main>
       <Footer />
     </div>

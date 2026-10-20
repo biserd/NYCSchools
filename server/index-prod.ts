@@ -7,7 +7,7 @@ import runApp from "./app";
 import { getCanonicalRedirectPath, renderSeoHtml } from "./seoRenderer";
 
 
-import { KINDERLEARNER_PAGES } from '../shared/kinderlearner';
+import { KINDERLEARNER_PAGES, kinderLearnerLegacyRedirect } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
 const KNOWN_STATIC_ROUTES = new Set([
   ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
@@ -107,6 +107,8 @@ export async function serveStatic(app: Express, _server: Server) {
   const indexHtmlTemplate = fs.readFileSync(indexHtmlPath, "utf-8");
   app.use("/{*splat}", async (req, res) => {
     const pathname = normalizePath(req.originalUrl);
+    const kinderLearnerRedirect = kinderLearnerLegacyRedirect(pathname);
+    if (kinderLearnerRedirect) return res.redirect(301, kinderLearnerRedirect);
 
     try {
       if (!isKnownAppRoute(pathname)) {

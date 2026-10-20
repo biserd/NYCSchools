@@ -1005,7 +1005,12 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
         <a href="/nyc-schools/staten-island">Staten Island</a>
       </nav>
     </section>
-    <section><h2>Explore by district, neighborhood, and program</h2><ul>${FEATURED_SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><p><a href="/explore-schools">View all NYC school guides</a></p></section>` : "";
+    <section><h2>Explore by district, neighborhood, and program</h2><ul>${FEATURED_SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><p><a href="/explore-schools">View all NYC school guides</a></p></section>
+    <section>
+      <h2>Meet KinderLearner</h2>
+      <p>Short, parent-guided learning adventures in letters, numbers and thinking for ages 3–6, made by the NYC School Ratings team.</p>
+      <p><a href="https://kinderlearner.com/" target="_blank" rel="noopener">Explore KinderLearner</a></p>
+    </section>` : "";
   const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul></section>` : "";
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
   const blogSections = path === '/blog' ? `<section><h2>All articles</h2><ul>${blogPosts.map(post => `<li><h3><a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a></h3><p>${escapeHtml(post.description)}</p></li>`).join('')}</ul></section>` : '';
@@ -1081,8 +1086,9 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
       { "@type": "ListItem", position: 3, name: landing.name, item: canonical },
     ] },
   ];
-  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p><ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
-  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, bootHeading: landing.title, serverHtml: serverHtml + (kind === 'program' && slug === 'prek' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '') });
+  const kinderLearnerLink = kind === 'program' && (slug === 'prek' || slug === '3k') ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '';
+  const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p>${kinderLearnerLink}<ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
+  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, bootHeading: landing.title, serverHtml });
 }
 
 /**

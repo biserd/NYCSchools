@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import { KINDERLEARNER, KINDERLEARNER_PAGES, KL_FAQS, getKinderLearnerPage, kinderLearnerSchemas, kinderLearnerStartHref, type KinderLearnerPage } from '../shared/kinderlearner';
+import { KINDERLEARNER, KINDERLEARNER_PAGES, KINDERLEARNER_SITE, KL_FAQS, getKinderLearnerPage, kinderLearnerLegacyRedirect, kinderLearnerSchemas, kinderLearnerStartHref, type KinderLearnerPage } from '../shared/kinderlearner';
 import { KinderLearnerContent } from '../shared/KinderLearnerContent';
+import { KinderLearnerResourceLink } from '../shared/KinderLearnerResourceLink';
 import { KINDERLEARNER_INFO_PAGES, getKinderLearnerInfoPage, kinderLearnerInfoSchemas, type KinderLearnerInfoPage } from '../shared/kinderlearner-info';
 import { KinderLearnerInfoContent } from '../shared/KinderLearnerInfoContent';
 import { renderSeoHtml } from '../server/seoRenderer';
@@ -13,7 +14,7 @@ import { getSeoLanding } from '../shared/seo-landings';
 
 const base = readFileSync('client/index.html','utf8');
 const sitemap = await sitemapByName('static');
-const allowedLinks = new Set(['/', '/family','/privacy','/terms','/contact','/kinderlearner/support#current-build',...Object.values(KINDERLEARNER_PAGES).map(p=>p.path),...Object.values(KINDERLEARNER_INFO_PAGES).map(p=>p.path)]);
+const allowedLinks = new Set(['/', '/family','/privacy','/terms','/contact','/kinderlearner/support#current-build',KINDERLEARNER_SITE.home,KINDERLEARNER_SITE.app,...Object.values(KINDERLEARNER_PAGES).map(p=>p.path),...Object.values(KINDERLEARNER_INFO_PAGES).map(p=>p.path)]);
 for (const [key,meta] of Object.entries(KINDERLEARNER_PAGES)) {
   const page = key as KinderLearnerPage;
   const markup = renderToString(React.createElement(KinderLearnerContent,{page}));
@@ -21,8 +22,8 @@ for (const [key,meta] of Object.entries(KINDERLEARNER_PAGES)) {
   assert.ok(html?.includes(markup),'server must render identical complete React content');
   assert.equal((markup.match(/<h1[ >]/g)||[]).length,1);
   assert.ok(markup.includes(meta.heading));
-  assert.ok(markup.includes('iPhone &amp; iPad apps coming soon'));
-  assert.ok(markup.includes('iOS &amp; iPadOS · Coming soon'));
+  assert.ok(markup.includes('Web app live · iPhone &amp; iPad apps coming soon'));
+  assert.ok(markup.includes('href="https://kinderlearner.com/app/" target="_blank" rel="noopener"'));
   assert.ok(!/KinderQuest|Kinder Learner|Kinderlearner|TODO|Lorem ipsum/.test(markup.replace(/<[^>]+>/g,'')));
   assert.ok(html!.includes(`href="https://nycschoolsratings.com${meta.path}"`));
   const decode = (text:string) => text.replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&quot;','"');
@@ -34,7 +35,7 @@ for (const [key,meta] of Object.entries(KINDERLEARNER_PAGES)) {
   assert.deepEqual(schemaBlocks,kinderLearnerSchemas(page));
   assert.equal(schemaBlocks[2].mainEntity.length, KL_FAQS[page].length);
   assert.ok(!JSON.stringify(schemaBlocks).match(/aggregateRating|reviewCount|offers|price|downloadUrl/));
-  assert.ok(sitemap?.includes(`https://nycschoolsratings.com${meta.path}`));
+  assert.equal(sitemap?.includes(`<loc>https://nycschoolsratings.com${meta.path}</loc>`),page!=='home');
   assert.equal(getKinderLearnerPage(meta.path + '/'),page);
   const ids = [...markup.matchAll(/ id="([^"]+)"/g)].map(m=>m[1]);
   assert.equal(new Set(ids).size,ids.length);
@@ -48,6 +49,28 @@ for (const [key,meta] of Object.entries(KINDERLEARNER_PAGES)) {
   console.log(`${meta.path}: SSR, metadata, canonical, one H1, schema, copy, anchors, internal links and sitemap passed`);
 }
 assert.equal(getKinderLearnerPage('/kinderlearner/not-a-page'),undefined);
+assert.equal(kinderLearnerLegacyRedirect('/kinderlearner/'),KINDERLEARNER_SITE.home);
+assert.equal(kinderLearnerLegacyRedirect('/kinderlearner/pre-k-learning-app'),undefined);
+for (const [path, destination] of [
+  ['/', KINDERLEARNER_SITE.home],
+  ['/pricing', KINDERLEARNER_SITE.home],
+  ['/blog/best-nyc-kindergartens-2026', KINDERLEARNER_SITE.kindergartenGuide],
+  ['/blog/nyc-prek-3k-kindergarten-admissions-demand-2025', KINDERLEARNER_SITE.preKGuide],
+] as const) {
+  const html = await renderSeoHtml(path,base);
+  assert.ok(html?.includes(`href="${destination}"`),`${path} must expose a server-rendered KinderLearner link`);
+  assert.ok(!html?.includes(`href="${destination}" target="_blank" rel="nofollow`),`${path} must pass SEO value to the owned site`);
+}
+const homepageHtml = await renderSeoHtml('/',base);
+assert.ok(homepageHtml && homepageHtml.indexOf('Explore by district, neighborhood, and program') < homepageHtml.indexOf('Meet KinderLearner'),'the homepage must place school discovery before KinderLearner');
+const preKResource = renderToString(React.createElement(KinderLearnerResourceLink));
+const kindergartenResource = renderToString(React.createElement(KinderLearnerResourceLink,{stage:'kindergarten'}));
+assert.ok(preKResource.includes(`href="${KINDERLEARNER_SITE.preKGuide}"`));
+assert.ok(kindergartenResource.includes(`href="${KINDERLEARNER_SITE.kindergartenGuide}"`));
+const landingSource = readFileSync('client/src/pages/seo-landing.tsx','utf8');
+const rendererSource = readFileSync('server/seoRenderer.ts','utf8');
+assert.ok(landingSource.includes("slug === 'prek' || slug === '3k'"));
+assert.ok(rendererSource.includes("slug === 'prek' || slug === '3k'"));
 for (const [key, meta] of Object.entries(KINDERLEARNER_INFO_PAGES)) {
   const page = key as KinderLearnerInfoPage;
   const markup = renderToString(React.createElement(KinderLearnerInfoContent,{page}));
@@ -85,7 +108,7 @@ assert.ok(privacy.includes('mailto:hello@bigappledigital.nyc'));
 assert.ok(renderToString(React.createElement(KinderLearnerInfoContent,{page:'terms'})).includes('KinderLearner is provided by Big Apple Digital LLC.'));
 const deletion = renderToString(React.createElement(KinderLearnerInfoContent,{page:'deletion'}));
 assert.ok(deletion.includes('Delete account') && deletion.includes('other devices'));
-assert.equal(kinderLearnerStartHref(), '#start-kinderlearner');
+assert.equal(kinderLearnerStartHref(), KINDERLEARNER_SITE.app);
 assert.equal(kinderLearnerStartHref('javascript:alert(1)'), '#start-kinderlearner');
 assert.equal(kinderLearnerStartHref('http://example.com/app'), '#start-kinderlearner');
 assert.equal(kinderLearnerStartHref('https://example.com/app'), 'https://example.com/app');
@@ -96,7 +119,7 @@ try {
   KINDERLEARNER.launchUrl = 'https://example.com/app';
   const launched = renderToString(React.createElement(KinderLearnerContent, {page:'home'}));
   assert.ok(!launched.includes('id="start-kinderlearner"'));
-  assert.ok(launched.includes('href="https://example.com/app" target="_blank" rel="nofollow noopener noreferrer"'));
+  assert.ok(launched.includes('href="https://example.com/app" target="_blank" rel="noopener"'));
 } finally { KINDERLEARNER.launchUrl = originalLaunchUrl; }
 const css = readFileSync('client/public/kinderlearner.css','utf8');
 assert.ok(css.includes('prefers-reduced-motion'));

@@ -30,7 +30,7 @@ export function sitemapIndex(): string {
 export async function sitemapByName(name: string): Promise<string | null> {
   if (name === "static") return urlset([
     ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
-    ...Object.values(KINDERLEARNER_PAGES).map(page => page.path),
+    ...Object.entries(KINDERLEARNER_PAGES).filter(([key]) => key !== 'home').map(([, page]) => page.path),
     "/", "/map", "/compare", "/recommendations", "/early-childhood", "/private-schools", "/lottery-simulator", "/chances-calculator", "/safe-and-strong", "/blog", "/pricing", "/features", "/benefits", "/faq", "/contact", "/methodology", "/about", "/explore-schools", "/safety-methodology", "/developers", "/developers/docs", "/privacy", "/terms",
   ].map((path) => ({ path, changefreq: path === "/" ? "daily" : "monthly", priority: path === "/" ? "1.0" : "0.7" })));
   if (name === "guides") return urlset([

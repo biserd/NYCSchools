@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { FEATURED_SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
+import { KINDERLEARNER_SITE } from "@shared/kinderlearner";
 
 export function Footer() {
   return (
@@ -68,7 +69,7 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-foreground mb-3">Resources</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="/kinderlearner" className="hover:text-foreground transition-colors">KinderLearner</a></li>
+              <li><a href={KINDERLEARNER_SITE.home} target="_blank" rel="noopener" className="hover:text-foreground transition-colors">KinderLearner · ages 3–6 ↗</a></li>
               <li>
                 <Link href="/blog" className="hover:text-foreground transition-colors" data-testid="footer-link-blog">
                   Blog

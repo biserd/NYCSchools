@@ -4,7 +4,7 @@ export function installExternalLinkPolicy(root:HTMLElement) {
   const originals=new WeakMap<HTMLAnchorElement,{rel:string|null;target:string|null;appliedRel:string}>();
   function update(anchor:HTMLAnchorElement) {
     if(isExternalWebLink(anchor.getAttribute('href'),window.location.href)){
-      const rel=externalRel(anchor.getAttribute('rel'));
+      const rel=externalRel(anchor.getAttribute('rel'),anchor.href);
       if(!originals.has(anchor)) originals.set(anchor,{rel:anchor.getAttribute('rel'),target:anchor.getAttribute('target'),appliedRel:rel});
       if(anchor.getAttribute('rel')!==rel)anchor.setAttribute('rel',rel);
       if(anchor.getAttribute('target')!=='_blank')anchor.setAttribute('target','_blank');

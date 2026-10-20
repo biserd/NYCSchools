@@ -18,4 +18,4 @@ export const PRICING_COVERAGE = {
   ],
 } as const;
 
-export const PRICING_DESCRIPTION = 'Family Premium is $9.99/month for deeper NYC school research, comparison, a family calendar, and a Parent Assistant on web and WhatsApp. KinderLearner for iPhone and iPad is coming soon.';
+export const PRICING_DESCRIPTION = 'Family Premium is $9.99/month for NYC school research, a family calendar, and Parent Assistant on web and WhatsApp. KinderLearner learning access for members is coming soon; explore the live web app today.';

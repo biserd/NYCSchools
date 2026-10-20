@@ -181,7 +181,7 @@ export default {
       return new HTMLRewriter().on('a[href]', {
         element(element) {
           if(isExternalWebLink(element.getAttribute('href'),request.url)){
-            element.setAttribute('rel',externalRel(element.getAttribute('rel')));
+            element.setAttribute('rel',externalRel(element.getAttribute('rel'),element.getAttribute('href')));
             element.setAttribute('target','_blank');
           }
         },

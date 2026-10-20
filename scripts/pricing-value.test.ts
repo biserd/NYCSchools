@@ -28,8 +28,10 @@ for (const value of ['615', '965', '755', '1,051', '614', '532', '623', '1,885']
   assert.ok(html.includes(value), `server-rendered checklist must include ${value}`);
 }
 assert.ok(markup.includes('Family Premium features'));
-assert.ok(markup.includes('Coming soon on iPhone (iOS) and iPad'));
-assert.ok(markup.includes('KinderLearner for members'));
+assert.ok(markup.includes('iPhone and iPad apps are coming soon'));
+assert.ok(markup.includes('KinderLearner access included for members'));
+assert.ok(markup.includes('Member access is being connected'));
+assert.ok(markup.includes('href="https://kinderlearner.com/" target="_blank" rel="noopener"'));
 assert.ok(!markup.includes('KinderLearner is available now'));
 assert.ok(!/also planned|not available today/i.test(`${markup} ${html} ${pageSource}`));
 assert.ok(!markup.includes('160+ NYC families'));

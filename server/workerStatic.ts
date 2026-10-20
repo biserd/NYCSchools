@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { env } from "cloudflare:workers";
 import { getCanonicalRedirectPath, renderSeoHtml } from "./seoRenderer";
 
-import { KINDERLEARNER_PAGES } from '../shared/kinderlearner';
+import { KINDERLEARNER_PAGES, kinderLearnerLegacyRedirect } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
 const KNOWN_STATIC_ROUTES = new Set([
   ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
@@ -71,6 +71,8 @@ export function registerWorkerStaticRoutes(app: Express): void {
   app.use("/{*splat}", async (req, res) => {
     const pathname = normalizePath(req.originalUrl);
     const requestUrl = new URL(req.originalUrl, env.APP_URL).toString();
+    const kinderLearnerRedirect = kinderLearnerLegacyRedirect(pathname);
+    if (kinderLearnerRedirect) return res.redirect(301, kinderLearnerRedirect);
 
     try {
       const template = await loadIndexTemplate(requestUrl);
