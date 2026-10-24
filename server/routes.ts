@@ -3610,15 +3610,17 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     }
   });
 
-  // Public research-only lane for Meta Muse and other reviewed MCP clients.
+  // Public research-only lane for Meta Muse and ChatGPT. Both stable URLs
+  // share the same read-only tools and canonical school data.
   // It reuses the existing server and canonical database; private tools and
   // account OAuth are deliberately unavailable on this endpoint.
-  app.get('/mcp/muse', (_req: Request, res: Response) => res.set('Cache-Control','no-store').json({
+  const publicResearchMcpPaths = ['/mcp/muse', '/mcp/schools'];
+  app.get(publicResearchMcpPaths, (req: Request, res: Response) => res.set('Cache-Control','no-store').json({
     name:'NYC School Ratings public research connector',protocolVersion:'2025-11-25',
-    endpoint:`${getAppUrl()}/mcp/muse`,tools:MUSE_RESEARCH_TOOLS,
+    endpoint:`${getAppUrl()}${req.path}`,tools:MUSE_RESEARCH_TOOLS,
     privacy:`${getAppUrl()}/privacy`,terms:`${getAppUrl()}/terms`,
   }));
-  app.post('/mcp/muse', async (req: Request, res: Response) => {
+  app.post(publicResearchMcpPaths, async (req: Request, res: Response) => {
     res.set({'Cache-Control':'no-store','MCP-Protocol-Version':'2025-11-25'});
     const ip=req.header('cf-connecting-ip') || req.ip || req.socket?.remoteAddress || undefined;
     const rate=checkIpThrottle(ip);
