@@ -1,5 +1,5 @@
 {
-  "name": "nyc-school-ratings",
+  "name": "app-69442a811a748191a2a59383a0b7905c",
   "version": "1.0.1",
   "description": "Find and compare NYC schools using sourced, clearly labeled public school data.",
   "author": {
@@ -16,7 +16,7 @@
     "shortDescription": "Find and compare NYC schools",
     "longDescription": "Explore NYC schools by borough, district, grade, and recorded programs. Compare two to four schools using available academic and survey measures, with source years and missing-data caveats. NYC School Ratings is independent and is not an official NYC Public Schools rating or admissions service.",
     "developerName": "Big Apple Digital LLC",
-    "category": "Education",
+    "category": "Education & Research",
     "capabilities": ["Search schools", "Compare schools"],
     "websiteURL": "https://nycschoolsratings.com",
     "supportURL": "https://nycschoolsratings.com/contact",
