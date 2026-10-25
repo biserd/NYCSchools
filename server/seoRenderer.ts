@@ -550,6 +550,8 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
           <li>Grade band: ${escapeHtml(school.grade_band ?? "K-5")}</li>
           <li>Enrollment: ${school.enrollment ?? "n/a"}</li>
           <li>${overall < 0 ? escapeHtml(ratingSentence) : `Overall score: ${overall}/100`}</li>
+          <li>Assessment reporting year: ${escapeHtml(school.assessment_year || 'Not reported')}</li>
+          ${school.assessment_source ? `<li>Assessment source: ${escapeHtml(school.assessment_source)}</li>` : ''}
           ${school.ela_proficiency != null ? `<li>ELA proficiency: ${school.ela_proficiency}%</li>` : ""}
           ${school.math_proficiency != null ? `<li>Math proficiency: ${school.math_proficiency}%</li>` : ""}
           ${school.address ? `<li>Address: ${escapeHtml(school.address)}</li>` : ""}

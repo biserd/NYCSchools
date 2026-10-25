@@ -27,6 +27,7 @@ import { startSafetyRefresh } from "./services/safetyQueue";
 import { runAbuseDetection, pruneApiObservabilityData } from "./services/apiAbuseDetector";
 import { checkIpThrottle, flushApiLogsNow } from "./apiObservability";
 import { MUSE_RESEARCH_TOOLS } from './museResearch';
+import { registerAgentDiscovery } from './agentDiscovery';
 import { DEFAULT_SAFETY_RADIUS_METERS, SAFETY_RADIUS_OPTIONS } from "@shared/schema";
 import { CANONICAL_SCHOOL_GUIDES } from "@shared/school-guides";
 import { env as workerEnv } from "cloudflare:workers";
@@ -98,6 +99,7 @@ async function getUserLimits(userId: string | undefined): Promise<typeof FREE_TI
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  registerAgentDiscovery(app, () => getAppUrl());
   app.get('/api/surveys/:kind/:key', async (req, res) => {
     if (!['school','center'].includes(req.params.kind) || !/^[a-z0-9]{4,12}$/i.test(req.params.key)) return res.status(400).json({error:'Invalid survey profile identifier'});
     try {
@@ -3454,13 +3456,14 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
 
   // OAuth 2.0 Protected Resource Metadata (RFC 9728)
   // This tells ChatGPT where to find our authorization server
-  app.get("/.well-known/oauth-protected-resource", (req: Request, res: Response) => {
+  app.get(["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"], (req: Request, res: Response) => {
     const baseUrl = getAppUrl(req);
     
     res.json({
       resource: `${baseUrl}/mcp`,
       authorization_servers: [baseUrl],
       scopes_supported: ["favorites"],
+      bearer_methods_supported: ["header"],
       resource_documentation: `${baseUrl}/.well-known/openai-apps.json`
     });
   });

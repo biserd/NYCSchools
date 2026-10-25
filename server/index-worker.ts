@@ -161,7 +161,7 @@ export default {
     // API JSON responses from a completed buffer and let Workers calculate the
     // wire framing instead of forwarding Node's transport headers.
     const contentType = response.headers.get("content-type") || "";
-    if (response.body && contentType.toLowerCase().includes("application/json")) {
+    if (response.body && (contentType.toLowerCase().includes("application/json") || contentType.toLowerCase().includes("application/linkset+json") || contentType.toLowerCase().includes("text/markdown"))) {
       const body = await response.arrayBuffer();
       const headers = new Headers(response.headers);
       headers.delete("content-length");

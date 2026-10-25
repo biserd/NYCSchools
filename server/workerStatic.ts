@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { env } from "cloudflare:workers";
 import { getCanonicalRedirectPath, renderSeoHtml } from "./seoRenderer";
+import { isAgentPublicPage, prefersMarkdown, publicPageMarkdown } from './agentMarkdown';
 
 import { KINDERLEARNER_PAGES, kinderLearnerLegacyRedirect } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
@@ -97,6 +98,21 @@ export function registerWorkerStaticRoutes(app: Express): void {
       const html = enriched ?? (MAGIC_LINK_ROUTE.test(pathname)
         ? renderPrivateRouteHtml(template)
         : template);
+
+      // Vary on both representations so edge/browser caches cannot serve
+      // Markdown to people. No cookies, API responses or private pages enter
+      // the converter; it uses only our existing anonymous SSR content.
+      if (isAgentPublicPage(pathname)) {
+        res.vary('Accept');
+        if (['GET', 'HEAD'].includes(req.method) && prefersMarkdown(req.header('Accept')) && enriched) {
+          const markdown = publicPageMarkdown(pathname, enriched, new URL(env.APP_URL).origin);
+          if (markdown) return res.status(200).set({
+            'Content-Type': 'text/markdown; charset=utf-8',
+            'Cache-Control': 'public, max-age=0, must-revalidate',
+            'X-Content-Type-Options': 'nosniff',
+          }).send(markdown);
+        }
+      }
 
       return res.status(200).set({
         "Content-Type": "text/html; charset=utf-8",
