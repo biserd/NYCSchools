@@ -102,6 +102,7 @@ export function FavoriteButton({
           window.location.href = "/login";
         }}
         data-testid={`button-favorite-login-${schoolDbn}`}
+        aria-label={`Log in to save school ${schoolDbn}`}
       >
         <Heart className="w-4 h-4" />
         {showLabel && <span className="ml-2">Login to Save</span>}
@@ -122,6 +123,8 @@ export function FavoriteButton({
         }}
         disabled={toggleFavorite.isPending}
         data-testid={`button-favorite-${schoolDbn}`}
+        aria-label={`Save school ${schoolDbn}`}
+        aria-pressed={isFavorite}
       >
         <Heart 
           className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}

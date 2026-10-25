@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- No-JS readers see the complete SEO content. JS visitors see a stable,
          styled header while the interactive app replaces that content. -->
     <style>
@@ -70,6 +70,9 @@
       gtag('js', new Date());
       gtag('config', 'G-CFQMFS3K1N', { send_page_view: false });
       var __loadGa = function() {
+        // Preview/staging traffic must not pollute production analytics or
+        // attempt third-party requests blocked by the staging CSP.
+        if (!['nycschoolsratings.com', 'www.nycschoolsratings.com'].includes(window.location.hostname)) return;
         var s = document.createElement('script');
         s.async = true;
         s.src = 'https://www.googletagmanager.com/gtag/js?id=G-CFQMFS3K1N';

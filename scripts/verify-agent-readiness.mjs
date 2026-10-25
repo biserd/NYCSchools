@@ -3,6 +3,16 @@ import {createHash} from 'node:crypto';
 const origin = process.argv[2];
 assert.ok(origin && /^https?:\/\//.test(origin), 'Pass the origin to verify');
 const get = (path, options = {}) => fetch(new URL(path, origin), {...options, signal: AbortSignal.timeout(45000)});
+for (const path of ['/llms.txt', '/llms-full.txt']) {
+  const res = await get(path);
+  assert.equal(res.status, 200, path);
+  assert.match(res.headers.get('content-type') || '', /^text\/(plain|markdown)/);
+  const text = await res.text();
+  assert.match(text, /^# NYC School Ratings\n/);
+  assert.ok([...text.matchAll(/\[[^\]\n]+\]\(https:\/\/[^\s)]+\)/g)].length >= 11, path);
+  assert.doesNotMatch(text, /^- [^\n]*: https?:/m, path);
+  console.log('PASS', path, 'Markdown discovery links');
+}
 for (const [path, type] of [
   ['/.well-known/api-catalog', 'application/linkset+json'],
   ['/.well-known/mcp/server-card.json', 'application/json'],

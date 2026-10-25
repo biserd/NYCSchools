@@ -752,12 +752,13 @@ export default function Home() {
                     window.location.href = '/';
                   }}
                   data-testid="button-logout-mobile"
+                  aria-label="Log out"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>
               ) : (
                 <Button variant="default" size="sm" asChild data-testid="button-login-nav-mobile">
-                  <Link href="/login">
+                  <Link href="/login" aria-label="Log in">
                     <LogIn className="w-4 h-4" />
                   </Link>
                 </Button>
@@ -765,7 +766,7 @@ export default function Home() {
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" data-testid="button-mobile-menu">
+                  <Button variant="outline" size="icon" aria-label="Open navigation menu" data-testid="button-mobile-menu">
                     <Menu className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -819,11 +820,11 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="max-w-7xl mx-auto px-4 md:px-8 pt-5" aria-labelledby="family-home-title">
+      <section className="w-full min-w-0 max-w-7xl mx-auto px-4 md:px-8 pt-5" aria-labelledby="family-home-title">
         <div className="rounded-2xl border border-sky-300 bg-gradient-to-br from-blue-50 via-background to-sky-50 dark:from-blue-950/40 dark:to-sky-950/20 p-6 md:p-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div className="max-w-2xl"><p className="text-sm uppercase tracking-widest font-semibold text-blue-700 dark:text-sky-300">One place for the school journey</p><h2 id="family-home-title" className="text-2xl md:text-3xl font-bold mt-2">Find your schools. Plan the next step.</h2><p className="mt-2 text-muted-foreground">Compare options, put visits and deadlines on your family calendar, and ask Parent Assistant for help along the way.</p></div>
-            {!authLoading && (isPremium ? <Button asChild size="lg" className="min-h-11 shrink-0"><Link href="/family">Open My Family</Link></Button> : <Button size="lg" className="min-h-11 shrink-0" disabled={checkoutPending} onClick={() => startCheckout(undefined,'click','home_journey')}>{checkoutPending ? 'Opening checkout…' : 'Start Family Premium — $9.99/month'}</Button>)}
+            {!authLoading && (isPremium ? <Button asChild size="lg" className="min-h-11 shrink-0"><Link href="/family">Open My Family</Link></Button> : <Button size="lg" className="min-h-11 h-auto max-w-full whitespace-normal px-4 py-3 sm:px-8 shrink-0" disabled={checkoutPending} onClick={() => startCheckout(undefined,'click','home_journey')}>{checkoutPending ? 'Opening checkout…' : 'Start Family Premium — $9.99/month'}</Button>)}
           </div>
           <ol className="grid sm:grid-cols-3 gap-3 mt-6 text-sm"><li className="flex gap-3 rounded-xl border bg-background/90 p-4"><SchoolIcon className="w-5 h-5 text-blue-700 shrink-0" /><span><strong className="block">1. Explore schools</strong>Review profiles and compare choices.</span></li><li className="flex gap-3 rounded-xl border bg-background/90 p-4"><CalendarDays className="w-5 h-5 text-sky-700 shrink-0" /><span><strong className="block">2. Make a family plan</strong>See NYCPS dates and add your own visits and deadlines.</span></li><li className="flex gap-3 rounded-xl border bg-background/90 p-4"><MessageCircle className="w-5 h-5 text-teal-700 shrink-0" /><span><strong className="block">3. Stay on track</strong>Ask on web or WhatsApp; opt in to reminders.</span></li></ol>
           <p className="text-xs text-muted-foreground mt-4">$9.99 charged at checkout, then monthly until canceled. NYCPS dates apply to district schools; confirm dates with your provider. WhatsApp requires phone connection and consent.</p>
@@ -933,7 +934,7 @@ export default function Home() {
           </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
+      <main className="w-full min-w-0 max-w-7xl mx-auto px-4 md:px-8 py-8" data-testid="main-content">
         {/* min-h reserves the banner slot to prevent CLS. */}
         <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-primary/20 rounded-lg p-6 min-h-[180px] md:min-h-[108px]" data-testid="banner-ai-assistant">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -1079,7 +1080,7 @@ export default function Home() {
                   <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                     <Baby className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded">2026</span>
+                  <span className="text-xs font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded">2026</span>
                 </div>
                 <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Kindergartens</h3>
                 <p className="text-sm text-muted-foreground mt-1">Top-rated K programs by borough with enrollment tips</p>
@@ -1091,7 +1092,7 @@ export default function Home() {
                   <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                     <SchoolIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">2026</span>
+                  <span className="text-xs font-medium text-blue-800 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">2026</span>
                 </div>
                 <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Elementary Schools</h3>
                 <p className="text-sm text-muted-foreground mt-1">Complete K-5 rankings by performance and climate</p>
@@ -1115,7 +1116,7 @@ export default function Home() {
                   <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                     <Building2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">2026</span>
+                  <span className="text-xs font-medium text-orange-800 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">2026</span>
                 </div>
                 <h3 className="font-semibold group-hover:text-primary transition-colors">Best NYC Charter Schools</h3>
                 <p className="text-sm text-muted-foreground mt-1">Top charter networks and lottery strategies</p>

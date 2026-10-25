@@ -141,7 +141,7 @@ export function FilterBar({
   const filterDropdownsContent = (
     <>
       <Select value={selectedDistrict} onValueChange={onDistrictChange}>
-        <SelectTrigger data-testid="select-district" className="w-full md:w-48 h-11">
+        <SelectTrigger aria-label="Filter by district" data-testid="select-district" className="w-full md:w-48 h-11">
           <SelectValue placeholder="All Districts" />
         </SelectTrigger>
         <SelectContent>
@@ -154,7 +154,7 @@ export function FilterBar({
         </SelectContent>
       </Select>
       <Select value={selectedGradeBand} onValueChange={onGradeBandChange}>
-        <SelectTrigger data-testid="select-grade-band" className="w-full md:w-52 h-11">
+        <SelectTrigger aria-label="Filter by grade level" data-testid="select-grade-band" className="w-full md:w-52 h-11">
           <SelectValue placeholder="All Grade Levels" />
         </SelectTrigger>
         <SelectContent>
@@ -167,7 +167,7 @@ export function FilterBar({
       </Select>
       {onEarlyChildhoodFilterChange && (
         <Select value={earlyChildhoodFilter} onValueChange={onEarlyChildhoodFilterChange}>
-          <SelectTrigger data-testid="select-early-childhood" className="w-full md:w-44 h-11">
+          <SelectTrigger aria-label="Filter by early childhood program" data-testid="select-early-childhood" className="w-full md:w-44 h-11">
             <SelectValue placeholder="Programs" />
           </SelectTrigger>
           <SelectContent>
@@ -179,7 +179,7 @@ export function FilterBar({
       )}
       {onGiftedTalentedFilterChange && (
         <Select value={giftedTalentedFilter} onValueChange={onGiftedTalentedFilterChange}>
-          <SelectTrigger data-testid="select-gifted-talented" className="w-full md:w-40 h-11">
+          <SelectTrigger aria-label="Filter by gifted and talented program" data-testid="select-gifted-talented" className="w-full md:w-40 h-11">
             <SelectValue placeholder="G&T" />
           </SelectTrigger>
           <SelectContent>
@@ -192,7 +192,7 @@ export function FilterBar({
       )}
       {onTrendFilterChange && (
         <Select value={trendFilter} onValueChange={onTrendFilterChange}>
-          <SelectTrigger data-testid="select-trend" className="w-full md:w-36 h-11">
+          <SelectTrigger aria-label="Filter by rating trend" data-testid="select-trend" className="w-full md:w-36 h-11">
             <SelectValue placeholder="Trends" />
           </SelectTrigger>
           <SelectContent>
@@ -205,7 +205,7 @@ export function FilterBar({
       )}
       {onDualLanguageFilterChange && (
         <Select value={dualLanguageFilter} onValueChange={onDualLanguageFilterChange}>
-          <SelectTrigger data-testid="select-dual-language" className="w-full md:w-48 h-11">
+          <SelectTrigger aria-label="Filter by dual language program" data-testid="select-dual-language" className="w-full md:w-48 h-11">
             <SelectValue placeholder="Dual Language" />
           </SelectTrigger>
           <SelectContent>
@@ -219,7 +219,7 @@ export function FilterBar({
       )}
       {onPtaFilterChange && (
         <Select value={ptaFilter} onValueChange={onPtaFilterChange}>
-          <SelectTrigger data-testid="select-pta" className="w-full md:w-40 h-11">
+          <SelectTrigger aria-label="Filter by PTA fundraising" data-testid="select-pta" className="w-full md:w-40 h-11">
             <SelectValue placeholder="PTA Fundraising" />
           </SelectTrigger>
           <SelectContent>
@@ -233,7 +233,7 @@ export function FilterBar({
       )}
       {onIepFilterChange && (
         <Select value={iepFilter} onValueChange={onIepFilterChange}>
-          <SelectTrigger data-testid="select-iep" className="w-full md:w-44 h-11">
+          <SelectTrigger aria-label="Filter by special education enrollment" data-testid="select-iep" className="w-full md:w-44 h-11">
             <SelectValue placeholder="Special Ed (IEP)" />
           </SelectTrigger>
           <SelectContent>
@@ -250,6 +250,7 @@ export function FilterBar({
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             data-testid="input-zip-code"
+            aria-label="Filter by ZIP code"
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
@@ -268,7 +269,7 @@ export function FilterBar({
       {onZonedFilterChange && (
         <div className={!hasZonedSchools ? "invisible pointer-events-none" : undefined}>
           <Select value={zonedFilter} onValueChange={onZonedFilterChange}>
-            <SelectTrigger data-testid="select-zoned" className="w-full md:w-44 h-11">
+            <SelectTrigger aria-label="Filter by school zone" data-testid="select-zoned" className="w-full md:w-44 h-11">
               <Home className="h-4 w-4 mr-2 text-primary" />
               <SelectValue placeholder="My Zoned Schools" />
             </SelectTrigger>
@@ -368,6 +369,7 @@ export function FilterBar({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 data-testid="input-search"
+                aria-label="Search schools"
                 type="search"
                 placeholder="Search schools..."
                 value={searchQuery}
@@ -381,6 +383,7 @@ export function FilterBar({
               className="md:hidden h-11 gap-2"
               onClick={() => setFiltersOpen(!filtersOpen)}
               data-testid="button-toggle-filters"
+              aria-expanded={filtersOpen}
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filters

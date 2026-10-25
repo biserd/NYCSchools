@@ -580,7 +580,7 @@ export const SchoolCard = memo(function SchoolCard({ school, trend }: SchoolCard
         </div>
 
         }
-        <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground pt-2 border-t">
           <div className="flex items-center gap-4 flex-wrap">
             {borough && (
               <span className="flex items-center gap-1" data-testid={`text-borough-${school.dbn}`}>

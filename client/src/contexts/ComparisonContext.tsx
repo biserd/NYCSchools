@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { School } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/hooks/useAuth";
 
 // Premium tier limits
 const FREE_MAX_COMPARE = 2;
@@ -21,6 +22,7 @@ interface ComparisonContextType {
 const ComparisonContext = createContext<ComparisonContextType | undefined>(undefined);
 
 export function ComparisonProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [comparedSchools, setComparedSchools] = useState<School[]>(() => {
     if (typeof window === 'undefined' || !window.localStorage) return [];
     try {
@@ -35,11 +37,12 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
   // Check subscription status
   const { data: subscriptionData } = useQuery<{ isSubscribed: boolean }>({
     queryKey: ["/api/subscription-status"],
+    enabled: !authLoading && isAuthenticated,
     retry: false,
     staleTime: 60000, // Cache for 1 minute
   });
 
-  const isPremium = subscriptionData?.isSubscribed ?? false;
+  const isPremium = isAuthenticated && (subscriptionData?.isSubscribed ?? false);
   const maxCompare = isPremium ? PREMIUM_MAX_COMPARE : FREE_MAX_COMPARE;
 
   useEffect(() => {
