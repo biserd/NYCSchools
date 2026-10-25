@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import { Switch, Route, useLocation, Redirect } from "wouter";
-import { getSurveyInsight } from '@shared/survey-insights';
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ComparisonProvider } from "@/contexts/ComparisonContext";
 import { CompareBar } from "@/components/CompareBar";
-import { ChatBot } from "@/components/ChatBot";
+import { DeferredChatBot } from "@/components/DeferredChatBot";
 import { Skeleton } from "@/components/ui/skeleton";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
@@ -34,7 +33,7 @@ const FavoritesPage = lazy(() => import("@/pages/favorites"));
 const SchoolDetail = lazy(() => import("@/pages/school-detail"));
 const ComparePage = lazy(() => import("@/pages/compare"));
 const BlogPage = lazy(() => import("@/pages/blog"));
-const BlogPostPage = lazy(() => import("@/pages/blog-post"));
+const BlogRoute = lazy(() => import("@/pages/blog-route"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
 const DevelopersDocsPage = lazy(() => import("@/pages/developers-docs"));
 const RecommendationsPage = lazy(() => import("@/pages/recommendations"));
@@ -59,7 +58,6 @@ const ExploreSchoolsPage = lazy(() => import("@/pages/explore-schools"));
 const SeoLandingPage = lazy(() => import("@/pages/seo-landing"));
 const MethodologyPage = lazy(() => import("@/pages/methodology"));
 const AboutPage = lazy(() => import("@/pages/about"));
-const SurveyInsightPage = lazy(() => import("@/pages/survey-insight"));
 const KinderLearnerPage = lazy(() => import("@/pages/kinderlearner"));
 
 // Loading component for lazy routes
@@ -104,7 +102,7 @@ function Router() {
         <Route path="/kinderlearner/delete-data" component={KinderLearnerPage} />
         <Route path="/kinderlearner/pre-k-learning-app" component={KinderLearnerPage} />
         <Route path="/kinderlearner/kindergarten-learning-app" component={KinderLearnerPage} />
-        <Route path="/insights/:slug">{params => getSurveyInsight(params.slug) ? <Redirect to={`/blog/${params.slug}`} replace /> : <NotFound />}</Route>
+        <Route path="/insights/:slug">{params => <BlogRoute slug={params.slug} legacy />}</Route>
         <Route path="/">
           <Home />
         </Route>
@@ -161,7 +159,7 @@ function Router() {
           <BlogPage />
         </Route>
         <Route path="/blog/:slug">
-          {params => getSurveyInsight(params.slug) ? <SurveyInsightPage /> : <BlogPostPage />}
+          {params => <BlogRoute slug={params.slug} />}
         </Route>
         <Route path="/pricing">
           <PricingPage />
@@ -226,7 +224,7 @@ function App() {
             <Toaster />
             <AnalyticsPageView />
             <Router />
-            <ChatBot />
+            <DeferredChatBot />
             <CompareBar />
           </TooltipProvider>
         </ComparisonProvider>

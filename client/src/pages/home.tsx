@@ -1,13 +1,14 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { lazy, Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
 import { SchoolList } from "@/components/SchoolList";
-import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
+const SchoolDetailPanel = lazy(() => import("@/components/SchoolDetailPanel").then(module => ({ default: module.SchoolDetailPanel })));
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
-import { School, SchoolWithOverallScore, calculateOverallScore, type SchoolTrend } from "@shared/schema";
+import { School, SchoolWithOverallScore, type SchoolTrend } from "@shared/schema";
+import { calculateOverallScore } from "@shared/school-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
@@ -1035,12 +1036,12 @@ export default function Home() {
         )}
       </main>
 
-      <SchoolDetailPanel
+      {selectedSchool && <Suspense fallback={<div role="status" className="fixed right-4 top-24 z-50 rounded-lg border bg-background p-4 shadow-lg">Loading school details…</div>}><SchoolDetailPanel
         school={selectedSchool}
         open={detailOpen}
         onOpenChange={setDetailOpen}
         isPremium={isPremium}
-      />
+      /></Suspense>}
 
       <section className="border-t bg-card" data-testid="section-explore-school-guides">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">

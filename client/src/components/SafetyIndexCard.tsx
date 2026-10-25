@@ -37,11 +37,8 @@ import {
   Info,
   AlertCircle,
 } from "lucide-react";
-import {
-  SAFETY_RADIUS_OPTIONS,
-  DEFAULT_SAFETY_RADIUS_METERS,
-  type SafetyIndexResponse,
-} from "@shared/schema";
+import { type SafetyIndexResponse } from "@shared/schema";
+import { SAFETY_RADIUS_OPTIONS, DEFAULT_SAFETY_RADIUS_METERS } from "@shared/school-utils";
 
 type SchoolType = "public" | "private" | "nyceec";
 

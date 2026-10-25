@@ -7,7 +7,8 @@ import { SchoolCard } from "@/components/SchoolCard";
 import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { calculateOverallScore, type School } from "@shared/schema";
+import { type School } from "@shared/schema";
+import { calculateOverallScore } from "@shared/school-utils";
 import { getRelatedSeoLandings, getSeoLanding, getSeoLandingPath, matchesSeoLanding, type SeoLandingKind } from "@shared/seo-landings";
 
 export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {

@@ -1,6 +1,7 @@
 import { schoolBorough, programLabels, schoolDisplayName } from "./early-childhood";
-import { isEarlyChildhoodOnly } from "./schema";
-import { calculateOverallScore, getAssessmentConfidence, type School } from "./schema";
+import { isEarlyChildhoodOnly } from "./school-utils";
+import { type School } from "./schema";
+import { calculateOverallScore, getAssessmentConfidence } from "./school-utils";
 
 function boroughFromDbn(dbn: string): string {
   switch (dbn.charAt(2).toUpperCase()) {

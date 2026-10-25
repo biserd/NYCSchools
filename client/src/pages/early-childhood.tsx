@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, MapPin, Phone, Mail, Users, Building2, Baby, ChevronRight, ExternalLink } from "lucide-react";
-import { type NyceecCenter, getBoroughName, getNyceecUrl } from "@shared/schema";
+import { type NyceecCenter } from "@shared/schema";
+import { getBoroughName, getNyceecUrl } from "@shared/school-utils";
 
 const NYC_BOROUGHS = [
   { value: "all", label: "All Boroughs" },

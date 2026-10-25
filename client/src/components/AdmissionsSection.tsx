@@ -6,7 +6,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Lock, Zap, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/schema";
+import { type AdmissionsMetrics } from "@shared/schema";
+import { getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/school-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useFreeSchoolView } from "@/hooks/useFreeSchoolView";
 import { useCheckout } from "@/hooks/useCheckout";

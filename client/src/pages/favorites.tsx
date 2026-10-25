@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useMemo } from "react";
-import { School, SchoolWithOverallScore, calculateOverallScore, Favorite } from "@shared/schema";
+import { School, SchoolWithOverallScore, Favorite } from "@shared/schema";
+import { calculateOverallScore } from "@shared/school-utils";
 import { SchoolDetailPanel } from "@/components/SchoolDetailPanel";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";

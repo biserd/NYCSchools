@@ -1,8 +1,9 @@
 import { schoolDisplayName } from "@shared/early-childhood";
-import { isEarlyChildhoodOnly } from "@shared/schema";
+import { isEarlyChildhoodOnly } from "@shared/school-utils";
 import { schoolBorough } from "@shared/early-childhood";
 import { useState, memo } from "react";
-import { School, calculateOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool, type TrendDirection } from "@shared/schema";
+import { School, type TrendDirection } from "@shared/schema";
+import { calculateOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getMetricColor, getQualityRatingLabel, getQualityRatingBadgeClasses, getSchoolUrl, isHighSchool, isPureHighSchool, isCombinedSchool } from "@shared/school-utils";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { Card } from "@/components/ui/card";

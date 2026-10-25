@@ -30,6 +30,7 @@
     "cf-dry-run": "vite build && wrangler deploy --config wrangler.jsonc --dry-run --outdir dist/worker-dry-run",
     "cf-dry-run:staging": "vite build && wrangler deploy --config wrangler.d1-staging.jsonc --dry-run --outdir dist/staging-worker-dry-run",
     "test:ratings": "tsx scripts/rating-regression.test.ts",
+    "test:client-bundle": "node scripts/analyze-client-bundle.mjs --check",
     "test:surveys": "tsx scripts/survey-regression.test.ts",
     "import:surveys": "tsx scripts/import-surveys.ts",
     "test:twok": "tsx scripts/twok-regression.test.ts",

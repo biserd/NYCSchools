@@ -15,7 +15,8 @@ import {
   Baby, Sparkles, Star, Shield, HeartHandshake, BookOpen, Award, Clock, UserCheck,
   Globe, Percent, Languages, DollarSign, Lock, CheckCircle, Target, Share2, Check, Copy
 } from "lucide-react";
-import { calculateOverallScore, calculateAcademicScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, isHighSchool as isHighSchoolRating, getScoreColor, getSchoolUrl, SchoolTrend, TrendDirection, type AdmissionsMetrics, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, School, type SafetyIndexResponse, DEFAULT_SAFETY_RADIUS_METERS } from "@shared/schema";
+import { SchoolTrend, TrendDirection, type AdmissionsMetrics, School, type SafetyIndexResponse } from "@shared/schema";
+import { calculateOverallScore, calculateAcademicScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, isHighSchool as isHighSchoolRating, getScoreColor, getSchoolUrl, getCompetitivenessLevel, getCompetitivenessDisplay, getComparisonUrl, parseComparisonSlug, DEFAULT_SAFETY_RADIUS_METERS } from "@shared/school-utils";
 import { useToast } from "@/hooks/use-toast";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { Badge } from "@/components/ui/badge";

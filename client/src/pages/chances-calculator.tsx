@@ -23,7 +23,8 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import { School, calculateOverallScore, getAssessmentConfidence } from "@shared/schema";
+import { School } from "@shared/schema";
+import { calculateOverallScore, getAssessmentConfidence } from "@shared/school-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";

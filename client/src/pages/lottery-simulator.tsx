@@ -32,7 +32,8 @@ import {
   ListOrdered,
   ArrowRight
 } from "lucide-react";
-import { School, calculateOverallScore, getAssessmentConfidence } from "@shared/schema";
+import { School } from "@shared/schema";
+import { calculateOverallScore, getAssessmentConfidence } from "@shared/school-utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";

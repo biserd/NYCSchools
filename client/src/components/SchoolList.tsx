@@ -26,7 +26,7 @@ export function SchoolList({ schools }: SchoolListProps) {
     setDisplayCount(INITIAL_LOAD);
   }, [schools]);
 
-  const displayedSchools = schools.slice(0, displayCount);
+  const displayedSchools = useMemo(() => schools.slice(0, displayCount), [schools, displayCount]);
   const hasMore = displayCount < schools.length;
   
   const displayedDbns = useMemo(() => 

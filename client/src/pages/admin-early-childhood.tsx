@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
-import { type School, getSchoolUrl } from "@shared/schema";
+import { type School } from "@shared/schema";
+import { getSchoolUrl } from "@shared/school-utils";
 import { schoolDisplayName } from "@shared/early-childhood";
 
 export default function AdminEarlyChildhood() {

@@ -19,7 +19,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Award, School } from "lucide-react";
-import { calculateOverallScore, getAssessmentConfidence, isHighSchool, type School as SchoolRecord } from "@shared/schema";
+import { type School as SchoolRecord } from "@shared/schema";
+import { calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/school-utils";
 
 const districtPerformanceData = [
   { district: "D26", ela: 70.4, math: 73.1, location: "Queens" },

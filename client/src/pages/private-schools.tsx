@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { type PrivateSchool, getTuitionRange, getGradeRangeDisplay, getPrivateSchoolUrl } from "@shared/schema";
+import { type PrivateSchool } from "@shared/schema";
+import { getTuitionRange, getGradeRangeDisplay, getPrivateSchoolUrl } from "@shared/school-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

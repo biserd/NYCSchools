@@ -1,6 +1,7 @@
 import { schoolDisplayName } from "@shared/early-childhood";
 import { schoolBorough } from "@shared/early-childhood";
-import { SchoolWithOverallScore, getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, type MiddleSchoolDestination, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/schema";
+import { SchoolWithOverallScore, type MiddleSchoolDestination } from "@shared/schema";
+import { getAssessmentConfidence, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreLabel, getScoreColor, getMetricColor, getQualityRatingBars, getQualityRatingBadgeClasses, getQualityRatingBarColor, getQualityRatingLabel, isHighSchool, isCombinedSchool, isPureHighSchool } from "@shared/school-utils";
 import { getBoroughFromDBN } from "@shared/boroughMapping";
 import { METRIC_TOOLTIPS } from "@shared/metricHelp";
 import { AdmissionsSection } from "./AdmissionsSection";

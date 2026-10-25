@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { Shield, Database, Calculator, MapPin } from "lucide-react";
-import { SAFETY_RADIUS_OPTIONS, SAFETY_OFFENSE_WEIGHTS } from "@shared/schema";
+import { SAFETY_RADIUS_OPTIONS, SAFETY_OFFENSE_WEIGHTS } from "@shared/school-utils";
 
 export default function SafetyMethodologyPage() {
   return (

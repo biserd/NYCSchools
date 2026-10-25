@@ -1,4 +1,5 @@
-import { isEarlyChildhoodOnly, type School } from "./schema";
+import { type School } from "./schema";
+import { isEarlyChildhoodOnly } from "./school-utils";
 import { getBoroughFromDBN } from "./boroughMapping";
 
 export function schoolBorough(school: { dbn: string; borough?: string | null }): string | null {

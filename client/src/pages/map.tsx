@@ -11,7 +11,8 @@ import { MapPin, Filter, ChevronDown, ChevronUp, Search, Home } from "lucide-rea
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { School, calculateOverallScore, getAssessmentConfidence, isHighSchool, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getSchoolSlug, type NyceecCenter, getBoroughName, getNyceecUrl, type PrivateSchool, getPrivateSchoolUrl, type TwokCenter } from "@shared/schema";
+import { School, type NyceecCenter, type PrivateSchool, type TwokCenter } from "@shared/schema";
+import { calculateOverallScore, getAssessmentConfidence, isHighSchool, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getSchoolSlug, getBoroughName, getNyceecUrl, getPrivateSchoolUrl } from "@shared/school-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 

@@ -1,6 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { type PrivateSchool, formatTuition, getTuitionRange, getSelectivityDisplay, getGradeRangeDisplay, getProgramEmphasisLabel, extractNcesIdFromSlug, getPrivateSchoolSlug } from "@shared/schema";
+import { type PrivateSchool } from "@shared/schema";
+import { formatTuition, getTuitionRange, getSelectivityDisplay, getGradeRangeDisplay, getProgramEmphasisLabel, extractNcesIdFromSlug, getPrivateSchoolSlug } from "@shared/school-utils";
 import { getQueryFn } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

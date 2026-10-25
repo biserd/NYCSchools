@@ -160,11 +160,11 @@ function QuickActions({ onSelect, currentSchool }: { onSelect: (question: string
   );
 }
 
-export function ChatBot() {
+export function ChatBot({ initialOpen = false }: { initialOpen?: boolean }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { startCheckout, isPending: checkoutPending } = useCheckout();
   const [location] = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
