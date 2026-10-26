@@ -22,7 +22,7 @@ const KNOWN_STATIC_ROUTES = new Set([
   "/auth/magic-link/callback",
 ]);
 
-const ENTITY_ROUTE = /^\/(?:school|private-school|early-childhood|blog|compare|nyc-schools)\/[^/]+$/;
+const ENTITY_ROUTE = /^\/(?:school|private-school|early-childhood|blog|compare|nyc-schools|guides)\/[^/]+$/;
 const MAGIC_LINK_ROUTE = /^\/auth\/magic-link\/[^/]+$/;
 
 function normalizePath(rawUrl: string): string {

@@ -1,4 +1,5 @@
 import type { School } from "./schema";
+import { languageEvidenceFor } from './language-evidence';
 
 export type SeoLandingKind = "district" | "neighborhood" | "program";
 export type SeoLandingRef = `${SeoLandingKind}:${string}`;
@@ -147,13 +148,13 @@ export function matchesSeoLanding(school: School, landing: SeoLanding): boolean 
   if (landing.kind === "neighborhood") return !!school.zip_code && !!landing.zipCodes?.includes(school.zip_code);
   switch (landing.program) {
     case "gifted": return school.has_gifted_talented === true;
-    case "dual": return school.has_dual_language === true;
-    case "spanish": return school.has_dual_language === true && (school.dual_language_languages ?? []).some((language) => /spanish/i.test(language));
-    case "mandarin": return school.has_dual_language === true && (school.dual_language_languages ?? []).some((language) => /mandarin|chinese/i.test(language));
+    case "dual": return school.has_dual_language === true || languageEvidenceFor(school.dbn).length > 0;
+    case "spanish": return languageEvidenceFor(school.dbn,'Spanish').length > 0 || (school.has_dual_language === true && (school.dual_language_languages ?? []).some((language) => /spanish/i.test(language)));
+    case "mandarin": return languageEvidenceFor(school.dbn,'Mandarin').length > 0 || (school.has_dual_language === true && (school.dual_language_languages ?? []).some((language) => /\bmandarin\b/i.test(language)));
     case "prek": return school.has_prek === true;
     case "3k": return school.has_3k === true;
     case "specialized": return school.is_specialized_hs === true;
-    case "screened": return /screen/i.test(school.hs_admission_method ?? school.admission_method ?? "");
+    case "screened": return /\bscreened\b/i.test(school.hs_admission_method ?? school.admission_method ?? "") && !/\bunscreened\b/i.test(school.hs_admission_method ?? school.admission_method ?? "");
     default: return false;
   }
 }

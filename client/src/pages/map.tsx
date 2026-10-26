@@ -15,6 +15,7 @@ import { School, type NyceecCenter, type PrivateSchool, type TwokCenter } from "
 import { calculateOverallScore, getAssessmentConfidence, isHighSchool, ASSESSMENT_PARTICIPATION_THRESHOLD, ASSESSMENT_MINIMUM_TESTED_COUNT, getScoreColor, getSchoolSlug, getBoroughName, getNyceecUrl, getPrivateSchoolUrl } from "@shared/school-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { MapDiscoveryContent } from '@shared/MapDiscoveryContent';
 
 interface UserZones {
   elementary: string | null;
@@ -131,11 +132,11 @@ export default function MapPage() {
   const urlParams = useMemo(() => new URLSearchParams(searchString), [searchString]);
   
   // Initialize state from URL parameters
-  // Default to District 2 unless a specific district is provided in URL
+  // Start citywide; shared URLs can select a district.
   const [selectedDistrict, setSelectedDistrict] = useState(() => {
     const district = urlParams.get("district");
     if (district) return district;
-    return "2"; // Default to District 2 for less crowded view
+    return "all";
   });
   const [selectedType, setSelectedType] = useState(() => urlParams.get("type") || "all");
   const [selectedGT, setSelectedGT] = useState(() => urlParams.get("gt") || "all");
@@ -191,11 +192,11 @@ export default function MapPage() {
     const source = newParams.get("source");
     const centerType = newParams.get("centerType");
     
-    // Set district: explicit district > default to District 2
+    // Restore an explicit district or the citywide default.
     if (district) {
       setSelectedDistrict(district);
     } else {
-      setSelectedDistrict("2");
+      setSelectedDistrict("all");
     }
     
     setSelectedType(type || "all");
@@ -206,6 +207,7 @@ export default function MapPage() {
     setSelectedZoned(zoned || "all");
     setDataSource(source || "schools");
     setSelectedNyceecType(centerType || "all");
+    setSelectedTwokSeatType(newParams.get("seatType") || "all");
   }, [searchString]);
 
   // Update URL when filters change
@@ -213,9 +215,9 @@ export default function MapPage() {
     const newParams = new URLSearchParams();
     
     Object.entries(params).forEach(([key, value]) => {
-      // Don't add default values to URL (District 2 is the default for map)
+      // Omit true defaults while preserving shareable filters.
       const isDefault = 
-        (key === "district" && value === "2") ||
+        (key === "district" && value === "all") ||
         (key === "source" && value === "schools") ||
         (key !== "district" && key !== "zip" && key !== "source" && value === "all") ||
         (key === "zip" && !value);
@@ -247,8 +249,9 @@ export default function MapPage() {
       zoned: selectedZoned,
       source: dataSource,
       centerType: selectedNyceecType,
+      seatType: selectedTwokSeatType,
     });
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, dataSource, selectedNyceecType, updateURL]);
+  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned, dataSource, selectedNyceecType, selectedTwokSeatType, updateURL]);
 
   const { data: allSchools } = useQuery<School[]>({
     queryKey: ["/api/schools"],
@@ -492,14 +495,14 @@ export default function MapPage() {
     
     // Borough filter (using district selector - private schools don't have districts)
     // Map district to borough for filtering
-    if (selectedDistrict !== "all" && selectedDistrict !== "2") {
+    if (selectedDistrict !== "all") {
       // For private schools, we'll filter by borough instead
       // Districts 1-6: Manhattan, 7-12: Bronx, 13-23: Brooklyn, 24-30: Queens, 31: Staten Island
       const districtNum = parseInt(selectedDistrict);
       let borough: string | null = null;
       if (districtNum >= 1 && districtNum <= 6) borough = "Manhattan";
       else if (districtNum >= 7 && districtNum <= 12) borough = "Bronx";
-      else if (districtNum >= 13 && districtNum <= 23) borough = "Brooklyn";
+      else if ((districtNum >= 13 && districtNum <= 23) || districtNum === 32) borough = "Brooklyn";
       else if (districtNum >= 24 && districtNum <= 30) borough = "Queens";
       else if (districtNum === 31) borough = "Staten Island";
       
@@ -514,7 +517,7 @@ export default function MapPage() {
   // Count active filters (District 2 is default, "all" is expanded view - neither counts as active)
   const activeFilterCount = useMemo(() => {
     return [
-      (selectedDistrict !== "2" && selectedDistrict !== "all") ? 1 : 0,
+      selectedDistrict !== "all" ? 1 : 0,
       selectedType !== "all" ? 1 : 0,
       selectedGT !== "all" ? 1 : 0,
       selectedDL !== "all" ? 1 : 0,
@@ -550,7 +553,7 @@ export default function MapPage() {
       parts.push(iepLabel);
     }
     
-    if (selectedDistrict !== "2" && selectedDistrict !== "all") {
+    if (selectedDistrict !== "all") {
       parts.push(`District ${selectedDistrict}`);
     }
     
@@ -575,7 +578,7 @@ export default function MapPage() {
     if (selectedIEP !== "all") canonicalParams.set("iep", selectedIEP);
     if (selectedZipCode && selectedZipCode.length === 5) canonicalParams.set("zip", selectedZipCode);
     const canonicalQuery = canonicalParams.toString();
-    const canonicalPath = canonicalQuery ? `/map?${canonicalQuery}` : "/map";
+    const canonicalPath = "/map"; // Filter views consolidate to the map, not indexable duplicate URLs.
     
     return { title, description, canonicalPath };
   }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, filteredSchools.length, schoolsWithCoords.length]);
@@ -1040,7 +1043,7 @@ export default function MapPage() {
 
   // Clear all filters (reset to defaults)
   const clearFilters = () => {
-    setSelectedDistrict("2");
+    setSelectedDistrict("all");
     setSelectedType("all");
     setSelectedGT("all");
     setSelectedDL("all");
@@ -1069,7 +1072,7 @@ export default function MapPage() {
           // Early childhood sources aren't district-organised like K-12 schools;
           // default to All Districts so centers are visible immediately.
           if (val === "nyceec" || val === "twok") setSelectedDistrict("all");
-          else setSelectedDistrict("2");
+          else setSelectedDistrict("all");
         }}>
         <SelectTrigger data-testid="select-map-data-source" className="h-9 border-primary/50 bg-primary/5">
           <SelectValue placeholder="K-12 Schools" />
@@ -1250,7 +1253,7 @@ export default function MapPage() {
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-semibold" data-testid="text-map-title">School Map</h1>
+            <h1 className="text-xl font-semibold" data-testid="text-map-title">{selectedDistrict === "all" ? "NYC School Map — All Districts" : `School Map — District ${selectedDistrict}`}</h1>
           </div>
           <div className="text-sm text-muted-foreground">
             {dataSource === "nyceec"
@@ -1263,6 +1266,7 @@ export default function MapPage() {
           </div>
         </div>
 
+        <p className="text-sm text-muted-foreground mb-4">Exploring nearby schools? <a className="text-primary underline" href="/guides/nyc-school-district-map-and-zones">Learn how districts, attendance zones and ZIP codes differ</a> before checking address eligibility.</p>
         <Card className="mb-4 relative z-20">
           <CardContent className="p-4">
             {/* Desktop filters - always visible */}
@@ -1386,10 +1390,11 @@ export default function MapPage() {
           <Link href="/private-schools" className="text-primary hover:underline font-medium">
             Best Private Schools NYC 2026
           </Link>
-          <span className="text-muted-foreground"> — browse 623 private schools across all five boroughs.</span>
+          <span className="text-muted-foreground"> — browse private-school records across all five boroughs.</span>
         </div>
       </div>
 
+      <div className="container mx-auto px-4"><MapDiscoveryContent /></div>
       <Footer />
     </div>
   );

@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { PARENT_GUIDES, parentGuidePath, GUIDE_REVIEWED } from '../shared/parent-guides';
 import { KINDERLEARNER_PAGES } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
 import { blogPosts } from "@shared/blog-data";
@@ -34,10 +35,11 @@ export async function sitemapByName(name: string): Promise<string | null> {
     "/", "/map", "/compare", "/recommendations", "/early-childhood", "/private-schools", "/lottery-simulator", "/chances-calculator", "/safe-and-strong", "/blog", "/pricing", "/features", "/benefits", "/faq", "/contact", "/methodology", "/about", "/explore-schools", "/safety-methodology", "/developers", "/developers/docs", "/privacy", "/terms",
   ].map((path) => ({ path, changefreq: path === "/" ? "daily" : "monthly", priority: path === "/" ? "1.0" : "0.7" })));
   if (name === "guides") return urlset([
+    ...PARENT_GUIDES.map(guide => ({ path: parentGuidePath(guide), lastmod: GUIDE_REVIEWED, changefreq: 'monthly', priority: '0.8' })),
     ...CANONICAL_SCHOOL_GUIDES.map((guide) => ({ path: `/nyc-schools/${guide.slug}`, changefreq: "monthly", priority: "0.8" })),
     ...SEO_LANDINGS.map((landing) => ({ path: getSeoLandingPath(landing), changefreq: "monthly", priority: "0.8" })),
   ]);
-  if (name === "blog") return urlset(blogPosts.map((post) => ({ path: `/blog/${post.slug}`, lastmod: post.publishedAt, changefreq: "monthly", priority: "0.8" })));
+  if (name === "blog") return urlset(blogPosts.map((post) => ({ path: `/blog/${post.slug}`, lastmod: post.updatedAt || post.publishedAt, changefreq: "monthly", priority: "0.8" })));
   if (name === "public-schools") return urlset((await storage.getSchools()).map((school) => ({ path: `/school/${getSchoolSlug(school)}`, lastmod: school.last_updated, changefreq: "monthly", priority: "0.9" })));
   if (name === "private-schools") return urlset((await storage.getPrivateSchools()).map((school) => ({ path: `/private-school/${getPrivateSchoolSlug(school)}`, lastmod: school.updatedAt, changefreq: "monthly", priority: "0.7" })));
   if (name === "early-childhood") return urlset((await storage.getNyceecCenters()).map((center) => ({ path: `/early-childhood/${getNyceecSlug(center)}`, lastmod: center.lastUpdated, changefreq: "monthly", priority: "0.7" })));

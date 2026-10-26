@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { PARENT_GUIDES, parentGuidePath } from '@shared/parent-guides';
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -19,6 +20,7 @@ export default function ExploreSchoolsPage() {
       <h1 className="text-4xl font-bold mb-3">Explore NYC school guides</h1>
       <p className="text-lg text-muted-foreground max-w-3xl mb-10">Start with the location or program your family cares about, then compare school ratings and details using consistent public data.</p>
       <div className="grid lg:grid-cols-3 gap-6">{groups.map(([title, items]) => <Card key={title}><CardHeader><CardTitle>{title}</CardTitle></CardHeader><CardContent><ul className="columns-2 lg:columns-1 space-y-2">{items.map((item) => <li key={item.slug}><Link className="text-primary hover:underline" href={getSeoLandingPath(item)}>{item.name}</Link></li>)}</ul></CardContent></Card>)}</div>
+      <section className="mt-10"><h2 className="text-2xl font-semibold mb-5">Parent decision guides and comparisons</h2><div className="grid md:grid-cols-2 gap-5">{PARENT_GUIDES.map(guide => <Card key={guide.slug}><CardHeader><CardTitle className="text-xl"><Link className="text-primary hover:underline" href={parentGuidePath(guide)}>{guide.title}</Link></CardTitle></CardHeader><CardContent><p className="text-muted-foreground">{guide.description}</p></CardContent></Card>)}</div></section>
     </main><Footer />
   </div>;
 }

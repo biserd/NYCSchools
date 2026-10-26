@@ -6,6 +6,7 @@ export interface BlogPost {
   description: string;
   author: string;
   publishedAt: string;
+  updatedAt?: string;
   readTime: string;
   category: string;
   featuredImage?: string;
@@ -73,10 +74,11 @@ export const blogPosts: BlogPost[] = [
   },
   {
     slug: "best-nyc-elementary-schools-2026",
-    title: "Best NYC Elementary Schools 2026: Complete Rankings & Guide",
-    description: "The definitive guide to NYC's top elementary schools. See rankings for all five boroughs based on academic performance, school climate, and progress scores. Includes neighborhood breakdowns and enrollment tips.",
+    title: "Best NYC Elementary Schools 2026: Compare Evidence by Borough",
+    description: "Compare NYC elementary schools with same-year assessment tables, transparent ranking rules, survey context and verified admissions guidance. Build a realistic shortlist.",
     author: "NYC School Ratings Team",
     publishedAt: "2026-01-06",
+    updatedAt: "2026-10-25",
     readTime: "15 min read",
     category: "School Rankings",
     tags: ["Elementary Schools", "Best Schools", "NYC Schools", "School Rankings", "K-5", "2026"]
@@ -84,9 +86,10 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "best-nyc-middle-schools-2026",
     title: "Best NYC Middle Schools 2026: Top Programs for Grades 6-8",
-    description: "Find the best middle schools in NYC for your child. Our comprehensive rankings cover academic excellence, specialized programs, and what makes each school stand out for grades 6-8.",
+    description: "Compare NYC middle schools by borough using dated assessments, participation and survey context, with fall 2027 admissions guidance and clear missing-data limits.",
     author: "NYC School Ratings Team",
     publishedAt: "2026-01-05",
+    updatedAt: "2026-10-25",
     readTime: "14 min read",
     category: "School Rankings",
     tags: ["Middle Schools", "Best Schools", "NYC Schools", "School Rankings", "Grades 6-8", "2026"]

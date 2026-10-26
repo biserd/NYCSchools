@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
+import { loadParentGuideData } from './parentGuides';
 import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, familySubscriptions, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { db } from "./db";
@@ -99,6 +100,24 @@ async function getUserLimits(userId: string | undefined): Promise<typeof FREE_TI
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get('/api/ranking-reports/:stage', async (req,res) => {
+    const stage = req.params.stage;
+    if (stage !== 'elementary' && stage !== 'middle') return res.status(404).json({error:'Report not found'});
+    try {
+      const {loadRankingReport} = await import('./rankingReports');
+      res.set('Cache-Control','public, max-age=300').json(await loadRankingReport(stage));
+    } catch { res.status(503).json({error:'Report temporarily unavailable'}); }
+  });
+  app.get('/api/parent-guides/:slug', async (req, res) => {
+    try {
+      const data = await loadParentGuideData(String(req.params.slug));
+      if (!data) return res.status(404).json({ error: 'Guide not found' });
+      res.set('Cache-Control', 'public, max-age=300').json(data);
+    } catch (error) {
+      console.error('[PARENT_GUIDE] load failed', error);
+      res.status(503).json({ error: 'Guide data temporarily unavailable' });
+    }
+  });
   registerAgentDiscovery(app, () => getAppUrl());
   app.get('/api/surveys/:kind/:key', async (req, res) => {
     if (!['school','center'].includes(req.params.kind) || !/^[a-z0-9]{4,12}$/i.test(req.params.key)) return res.status(400).json({error:'Invalid survey profile identifier'});

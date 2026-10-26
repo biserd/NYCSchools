@@ -1,6 +1,7 @@
 import React from 'react';
 import { KinderLearnerResourceLink } from './KinderLearnerResourceLink';
 import { getBlogPost } from './blog-data';
+import { PARENT_GUIDES, parentGuidePath } from './parent-guides';
 
 // Editorial, reciprocal links: connect complementary evidence, not rankings to survey scores.
 const connections: [string, string, string][] = [
@@ -22,6 +23,8 @@ export function relatedBlogLinks(slug: string) {
 
 export function RelatedBlogReading({slug}: {slug:string}) {
   const links=relatedBlogLinks(slug);
-  if (!links.length) return null;
-  return <><section className="my-10 border-t pt-8" aria-label="Related blog reading"><h2 className="text-2xl font-bold mb-4">Put the findings in context</h2><ul className="space-y-5">{links.map(({post,context})=><li key={post.slug}><a className="font-semibold underline underline-offset-4" href={`/blog/${post.slug}`}>{post.title}</a><p className="text-sm text-muted-foreground mt-2 leading-7">{context}</p></li>)}</ul></section>{slug==='best-nyc-kindergartens-2026'&&<KinderLearnerResourceLink stage="kindergarten"/>}{slug==='nyc-prek-3k-kindergarten-admissions-demand-2025'&&<KinderLearnerResourceLink/>}</>;
+  const guideSlugs = slug === 'best-nyc-elementary-schools-2026' ? ['ps6-vs-ps290', 'private-elementary-schools-nyc', 'nyc-school-district-map-and-zones'] : /kindergarten|prek-3k|early-childhood/.test(slug) ? ['2k-3k-prek-kindergarten-same-school'] : /high-school/.test(slug) ? ['townsend-harris-vs-stuyvesant'] : [];
+  const guides = PARENT_GUIDES.filter(guide => guideSlugs.includes(guide.slug));
+  if (!links.length && !guides.length) return null;
+  return <><section className="my-10 border-t pt-8" aria-label="Related blog reading"><h2 className="text-2xl font-bold mb-4">Put the findings in context</h2><ul className="space-y-5">{links.map(({post,context})=><li key={post.slug}><a className="font-semibold underline underline-offset-4" href={`/blog/${post.slug}`}>{post.title}</a><p className="text-sm text-muted-foreground mt-2 leading-7">{context}</p></li>)}{guides.map(guide => <li key={guide.slug}><a className="font-semibold underline underline-offset-4" href={parentGuidePath(guide)}>{guide.title}</a><p className="text-sm text-muted-foreground mt-2">{guide.description}</p></li>)}</ul></section>{slug==='best-nyc-kindergartens-2026'&&<KinderLearnerResourceLink stage="kindergarten"/>}{slug==='nyc-prek-3k-kindergarten-admissions-demand-2025'&&<KinderLearnerResourceLink/>}</>;
 }

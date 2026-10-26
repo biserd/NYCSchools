@@ -56,6 +56,7 @@ const AdminEarlyChildhoodPage = lazy(() => import("@/pages/admin-early-childhood
 const SchoolGuidePage = lazy(() => import("@/pages/school-guide"));
 const ExploreSchoolsPage = lazy(() => import("@/pages/explore-schools"));
 const SeoLandingPage = lazy(() => import("@/pages/seo-landing"));
+const ParentGuidePage = lazy(() => import("@/pages/parent-guide"));
 const MethodologyPage = lazy(() => import("@/pages/methodology"));
 const AboutPage = lazy(() => import("@/pages/about"));
 const KinderLearnerPage = lazy(() => import("@/pages/kinderlearner"));
@@ -86,6 +87,20 @@ function AnalyticsPageView() {
       page_path: location,
       page_title: document.title,
     });
+  }, [location]);
+
+  useEffect(() => {
+    if (!/^\/(guides|blog|district|neighborhood|program)(\/|$)/.test(location)) return;
+    const onClick = (event: MouseEvent) => {
+      const link = (event.target as Element)?.closest?.('a');
+      if (!link) return;
+      const url = new URL(link.href, window.location.origin);
+      if (url.origin !== window.location.origin) return;
+      const action = /^\/(school|private-school)\//.test(url.pathname) ? 'profile' : /^\/compare(?:\/|$)/.test(url.pathname) ? 'compare' : url.pathname === '/favorites' ? 'saved_schools' : null;
+      if (action) trackEvent('guide_next_step', { guide_path: location, destination_path:url.pathname, action });
+    };
+    document.addEventListener('click',onClick);
+    return () => document.removeEventListener('click',onClick);
   }, [location]);
 
   return null;
@@ -179,6 +194,7 @@ function Router() {
           <SchoolGuidePage />
         </Route>
         <Route path="/explore-schools"><ExploreSchoolsPage /></Route>
+        <Route path="/guides/:slug"><ParentGuidePage /></Route>
         <Route path="/district/:slug"><SeoLandingPage kind="district" /></Route>
         <Route path="/neighborhood/:slug"><SeoLandingPage kind="neighborhood" /></Route>
         <Route path="/program/:slug"><SeoLandingPage kind="program" /></Route>

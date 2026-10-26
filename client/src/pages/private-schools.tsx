@@ -86,7 +86,7 @@ export default function PrivateSchools() {
         return false;
       }
       if (religiousFilter !== "all") {
-        if (religiousFilter === "Non-Religious" && school.isReligious) {
+        if (religiousFilter === "Non-Religious" && school.religiousAffiliation !== "Non-Religious") {
           return false;
         } else if (religiousFilter !== "Non-Religious" && school.religiousAffiliation !== religiousFilter) {
           return false;
@@ -185,7 +185,6 @@ export default function PrivateSchools() {
                 addressRegion: "NY",
                 addressCountry: "US",
               },
-              ...((school.tuitionElementary || school.tuitionMiddle || school.tuitionHigh) ? { priceRange: getTuitionRange(school) } : {}),
               ...(school.enrollment ? { numberOfStudents: school.enrollment } : {}),
             },
           })),
@@ -204,10 +203,10 @@ export default function PrivateSchools() {
           <h1 className="text-3xl font-bold mb-3">NYC Private Schools</h1>
           <div className="space-y-3 text-muted-foreground">
             <p>
-              New York City has 623 private schools ranging from elite Manhattan prep schools with $65,000+ tuition to small religious academies in Brooklyn and Queens. This directory covers every private school across all five boroughs — Catholic, Jewish, Islamic, non-sectarian, Montessori, and independent — with enrollment size, grade range, and student-teacher ratios for each.
+              Explore the private schools recorded in our directory across NYC’s five boroughs. Compare grade ranges, location and reported enrollment, then verify current programs and fees directly with the school. Directory coverage and missing fields should not be interpreted as a complete list of operating schools or current seats.
             </p>
             <p>
-              Use the filters above to narrow by borough, religious affiliation, grade level, or school type. Looking for the most selective options? Manhattan's Upper East Side prep schools — Brearley, Chapin, Spence, Dalton, Trinity — are among the most competitive in the country, with tuition exceeding $65,000/year and waitlists that rival Ivy League admissions. Brooklyn and Queens offer strong Catholic academy options in the $8,000–$15,000 range.
+              Choosing an elementary school? <a className="text-primary underline" href="/guides/private-elementary-schools-nyc">Use our private elementary comparison guide</a> for a borough-by-borough coverage breakdown, example profiles and questions about classroom fit, continuity and cost. These are directory comparisons, not a common academic ranking of private schools.
             </p>
           </div>
         </div>
@@ -352,17 +351,18 @@ export default function PrivateSchools() {
                       </div>
                       
                       <div className="flex flex-wrap gap-1.5 mb-3">
-                        {school.isReligious && school.religiousAffiliation && (
+                        {school.religiousAffiliation && school.religiousAffiliation !== 'Non-Religious' && school.religiousAffiliation !== 'Unknown' && (
                           <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400">
                             <Church className="w-2.5 h-2.5 mr-1" />
                             {school.religiousAffiliation}
                           </Badge>
                         )}
-                        {!school.isReligious && (
+                        {school.religiousAffiliation === 'Non-Religious' && (
                           <Badge variant="outline" className="text-xs">
                             Non-Religious
                           </Badge>
                         )}
+                        {(!school.religiousAffiliation || school.religiousAffiliation === 'Unknown') && <Badge variant="outline" className="text-xs">Affiliation not recorded</Badge>}
                         {school.coedStatus && school.coedStatus !== 'coed' && (
                           <Badge variant="outline" className="text-xs">
                             {school.coedStatus === 'male' ? "Boys" : "Girls"}
@@ -382,9 +382,10 @@ export default function PrivateSchools() {
                           {school.enrollment ? `${school.enrollment} students` : 'Enrollment N/A'}
                         </span>
                         {school.studentTeacherRatio && (
-                          <span>{school.studentTeacherRatio}:1 ratio</span>
+                          <span>{school.studentTeacherRatio}:1 students/FTE teacher</span>
                         )}
                       </div>
+                      <p className="text-xs text-muted-foreground mt-2">Directory source year: {school.dataSourceYear || 'not recorded'} · Whole-school figures, not class size.</p>
                     </CardContent>
                   </Card>
                 </Link>

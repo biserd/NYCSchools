@@ -359,18 +359,18 @@ function generateElementaryAdmissionsAnswer(school: SchoolWithOverallScore): str
   const method = (school as any).admission_method as string | null | undefined;
   if (method) {
     const m = method.toLowerCase();
-    if (m.includes('zoned')) {
-      return `${school.name} is a zoned school. Families living within the school's attendance zone are guaranteed a seat. Out-of-zone families may apply but admission depends on availability. Apply through MySchools.nyc during the kindergarten or middle school application window.`;
+    if (/\bzoned\b/.test(m) && !/non[-\s]?zoned/.test(m)) {
+      return `${school.name} is a zoned school. Address-based priority and seat availability must be checked for the specific program and application year. Out-of-zone families may apply but admission depends on availability. Apply through MySchools.nyc during the kindergarten or middle school application window.`;
     }
     if (m.includes('lottery') || m.includes('unscreened')) {
-      return `${school.name} admits students through a ${method.toLowerCase()} process. There is no zoned attendance area — all families apply through MySchools.nyc, and seats are assigned based on the NYC enrollment lottery and applicant priorities.`;
+      return `${school.name} admits students through a ${method.toLowerCase()} process. The recorded method alone does not establish geographic eligibility; check the program’s current priorities and requirements in MySchools.`;
     }
     if (m.includes('screen')) {
-      return `${school.name} uses a ${method.toLowerCase()} admissions process. Applicants are evaluated using academic records, attendance, and other criteria. Apply through MySchools.nyc during the application window.`;
+      return `${school.name} uses a ${method.toLowerCase()} admissions process. Check the current program-specific selection criteria; a stored school-level label does not establish which measures are used this year. Apply through MySchools.nyc during the application window.`;
     }
     return `${school.name} uses a ${method} admissions process. Apply through MySchools.nyc during the NYC enrollment window.`;
   }
-  return `${school.name} accepts applications through MySchools.nyc during the NYC enrollment window. Most NYC elementary schools are zoned, meaning families in the attendance zone are guaranteed a seat. Contact the school directly to confirm current admissions requirements.`;
+  return `${school.name} accepts applications through MySchools.nyc during the NYC enrollment window. An admissions method has not been verified for this record; do not infer a zone or seat guarantee from missing data. Contact the school directly to confirm current admissions requirements.`;
 }
 
 function generateTestScoresAnswer(school: SchoolWithOverallScore): string {

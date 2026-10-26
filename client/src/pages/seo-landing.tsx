@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { LandingDecisionContent } from '@shared/LandingDecisionContent';
 import { KinderLearnerResourceLink } from '@shared/KinderLearnerResourceLink';
 import { Link, useParams } from "wouter";
 import { AppHeader } from "@/components/AppHeader";
@@ -16,7 +17,7 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
   const landing = getSeoLanding(kind, slug);
   const { data: schools = [], isLoading, isError } = useQuery<School[]>({ queryKey: ["/api/schools"] });
   const matches = landing
-    ? schools.filter((school) => matchesSeoLanding(school, landing)).sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a))
+    ? schools.filter((school) => matchesSeoLanding(school, landing)).sort((a, b) => a.name.localeCompare(b.name))
     : [];
   const related = landing ? getRelatedSeoLandings(landing, schools) : [];
 
@@ -34,9 +35,10 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
           <p className="text-lg text-muted-foreground">{landing.intro}</p>
         </header>
         <section className="rounded-lg border bg-muted/30 p-4 mb-8 text-sm">
-          <strong>How to use this guide:</strong> Rankings use the same published rating methodology across the site. Data comes from NYSED and NYC Public Schools; program availability, admissions rules, and zones should be verified with the official source. <Link className="text-primary underline" href="/methodology">Read the methodology</Link>.
+          <strong>How to use this guide:</strong> The complete directory below is alphabetical, not a cross-age ranking. Compare schools within the same stage and dated measures. Data comes from NYSED and NYC Public Schools; verify programs, admission rules and zones with official sources. <Link className="text-primary underline" href="/methodology">Read the methodology</Link>.
         </section>
         {kind === 'program' && (slug === 'prek' || slug === '3k') && <KinderLearnerResourceLink/>}
+        <LandingDecisionContent landing={landing} schools={matches} ready={!isLoading && !isError} />
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <h2 className="text-2xl font-semibold">{isLoading ? "Loading schools…" : `${matches.length} matching schools`}</h2>
           <div className="flex gap-2"><Button asChild variant="outline"><Link href="/compare">Compare</Link></Button><Button asChild><Link href="/recommendations">Find my match</Link></Button></div>

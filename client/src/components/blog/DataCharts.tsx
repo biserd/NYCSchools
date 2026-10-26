@@ -20,7 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Award, School } from "lucide-react";
 import { type School as SchoolRecord } from "@shared/schema";
-import { calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/school-utils";
+import { calculateOverallScore, getAssessmentConfidence, isHighSchool, getSchoolSlug } from "@shared/school-utils";
+import { admissionEvidence } from '@shared/admissions-evidence';
 
 const districtPerformanceData = [
   { district: "D26", ela: 70.4, math: 73.1, location: "Queens" },
@@ -1441,10 +1442,7 @@ export function CorrelationContextChart() {
 type BlogSchoolRow = SchoolRecord;
 
 function blogAdmissionLabel(s: BlogSchoolRow): { label: string; tone: 'default' | 'screened' | 'lottery' } {
-  const m = (s.admission_method || '').toLowerCase();
-  if (m.includes('screen')) return { label: 'Screened', tone: 'screened' };
-  if (m.includes('lottery') || m.includes('open')) return { label: 'Lottery', tone: 'lottery' };
-  return { label: 'Zoned (Unscreened)', tone: 'default' };
+  return admissionEvidence(s);
 }
 
 const ACCENT_BORDER: Record<string, string> = {
@@ -1518,7 +1516,7 @@ export function BlogSchoolTable({
                     <tr key={s.dbn} className="border-b">
                       <td className="py-2 px-2">
                         <a
-                          href={`/school/${s.dbn.toLowerCase()}`}
+                          href={`/school/${getSchoolSlug(s)}`}
                           className="text-primary hover:underline font-medium"
                           data-testid={`link-blog-school-${s.dbn}`}
                         >
@@ -1539,8 +1537,8 @@ export function BlogSchoolTable({
                           {ratingWithheld ? "Withheld" : overall < 0 ? "N/A" : `${overall}/100`}
                         </span>
                       </td>
-                      <td className="text-center py-2 px-2 font-medium">{s.ela_proficiency ?? '—'}%</td>
-                      <td className="text-center py-2 px-2 font-medium">{s.math_proficiency ?? '—'}%</td>
+                      <td className="text-center py-2 px-2 font-medium">{s.ela_proficiency == null ? 'N/A' : `${s.ela_proficiency}%`}<small className="block">{s.assessment_year || 'Year not recorded'}</small></td>
+                      <td className="text-center py-2 px-2 font-medium">{s.math_proficiency == null ? 'N/A' : `${s.math_proficiency}%`}</td>
                       <td className="text-center py-2 px-2 text-xs hidden sm:table-cell">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded ${
                           adm.tone === 'screened' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'
@@ -1562,7 +1560,7 @@ export function BlogSchoolTable({
               </tbody>
             </table>
             <p className="text-xs text-muted-foreground mt-3">
-              Rating = Test Proficiency (40%) + Climate (30%) + Progress (30%). NYC elementary schools are <strong>unscreened</strong> — admission is by zone (guaranteed) or lottery (no test/grade requirement). Click any school name for the full profile.
+              Ratings are site calculations, not official NYCPS ratings. Methods, priorities and eligibility differ by program; a missing method is not evidence of zoned admission. Verify the current entry cycle in MySchools. Open profiles for sources, participation and methodology.
             </p>
           </div>
         )}

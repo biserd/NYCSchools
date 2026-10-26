@@ -28,6 +28,10 @@ import { isEarlyChildhoodOnly } from "@shared/schema";
  */
 
 import { storage } from "./storage";
+import { getParentGuide, PARENT_GUIDES, parentGuidePath } from '../shared/parent-guides';
+import { ParentGuideContent } from '../shared/ParentGuideContent';
+import { LandingDecisionContent } from '../shared/LandingDecisionContent';
+import { loadParentGuideData } from './parentGuides';
 import React from 'react';
 import { KINDERLEARNER, KINDERLEARNER_PAGES, getKinderLearnerPage, kinderLearnerSchemas } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES, getKinderLearnerInfoPage, kinderLearnerInfoSchemas } from '../shared/kinderlearner-info';
@@ -41,6 +45,7 @@ import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
 import { getSchoolSurveys } from './schoolSurveys';
+import { MapDiscoveryContent } from '../shared/MapDiscoveryContent';
 
 async function surveyServerHtml(key: string, kind: 'school' | 'center' = 'school'): Promise<string> {
   try {
@@ -694,6 +699,14 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
 
   const title = `${post.title} | NYC School Ratings`;
   const description = post.description;
+  const stage = slug === 'best-nyc-elementary-schools-2026' ? 'elementary' : slug === 'best-nyc-middle-schools-2026' ? 'middle' : null;
+  let rankingHtml = '';
+  if (stage) {
+    const [{ loadRankingReport }, { RankingReportContent }] = await Promise.all([import('./rankingReports'), import('../shared/RankingReportContent')]);
+    const data = await loadRankingReport(stage).catch(() => undefined);
+    rankingHtml = renderToStaticMarkup(React.createElement(RankingReportContent, {stage, report:data?.report, surveys:data?.surveys}));
+    if (!data) rankingHtml += '<!-- ranking-data-temporarily-unavailable -->';
+  }
   const canonical = `${SITE_ORIGIN}/blog/${slug}`;
   const ogImage = post.featuredImage
     ? (post.featuredImage.startsWith("http") ? post.featuredImage : `${SITE_ORIGIN}${post.featuredImage}`)
@@ -706,6 +719,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     description: post.description,
     url: canonical,
     datePublished: post.publishedAt,
+    dateModified: post.updatedAt || post.publishedAt,
     author: { "@type": "Organization", name: post.author },
     publisher: {
       "@type": "Organization",
@@ -742,7 +756,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     ogImage,
     jsonLd: [article, breadcrumb],
     bootHeading: post.title,
-    serverHtml: noscriptHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
+    serverHtml: noscriptHtml + rankingHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
   });
 }
 
@@ -1013,13 +1027,13 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
       <p>Short, parent-guided learning adventures in letters, numbers and thinking for ages 3–6, made by the NYC School Ratings team.</p>
       <p><a href="https://kinderlearner.com/" target="_blank" rel="noopener">Explore KinderLearner</a></p>
     </section>` : "";
-  const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul></section>` : "";
+  const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><h2>Parent decision guides and comparisons</h2><ul>${PARENT_GUIDES.map(guide => `<li><a href="${parentGuidePath(guide)}">${escapeHtml(guide.title)}</a><p>${escapeHtml(guide.description)}</p></li>`).join('')}</ul></section>` : "";
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
   const blogSections = path === '/blog' ? `<section><h2>All articles</h2><ul>${blogPosts.map(post => `<li><h3><a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a></h3><p>${escapeHtml(post.description)}</p></li>`).join('')}</ul></section>` : '';
   const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>` : '';
   const crawlerHtml = path === '/pricing'
     ? `<main>${pricingSections}</main>`
-    : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}</main>`;
+    : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}</main>`;
 
   return applyMeta(baseHtml, {
     title: meta.title,
@@ -1071,7 +1085,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
   const allSchools = (await storage.getSchools()) as School[];
   const schools = allSchools
     .filter((school) => matchesSeoLanding(school, landing))
-    .sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a));
+    .sort((a, b) => a.name.localeCompare(b.name));
   const relatedGuides = getRelatedSeoLandings(landing, allSchools);
   const canonical = `${SITE_ORIGIN}${getSeoLandingPath(landing)}`;
   const items = schools.slice(0, 30).map((school, index) => ({
@@ -1090,7 +1104,8 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
   ];
   const kinderLearnerLink = kind === 'program' && (slug === 'prek' || slug === '3k') ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '';
   const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p>${kinderLearnerLink}<ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
-  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, bootHeading: landing.title, serverHtml });
+  const enrichedHtml = serverHtml.replace('<ol>', `${renderToStaticMarkup(React.createElement(LandingDecisionContent, { landing, schools }))}<ol>`);
+  return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, bootHeading: landing.title, serverHtml: enrichedHtml });
 }
 
 /**
@@ -1183,6 +1198,26 @@ export async function renderSeoHtml(
         .replace('</head>', `<link rel="stylesheet" href="${KINDERLEARNER.stylesheet}" data-kinderlearner="true" /></head>`);
     } else if (result) {
       // Static landing page metadata is complete.
+    } else if ((m = path.match(/^\/guides\/([^/]+)$/))) {
+      const guide = getParentGuide(m[1]);
+      if (!guide) return null;
+      const data = await loadParentGuideData(guide.slug).catch(error => {
+        console.error('[PARENT_GUIDE_SSR] data temporarily unavailable', error);
+        return null;
+      });
+      const canonical = `${SITE_ORIGIN}${parentGuidePath(guide)}`;
+      result = applyMeta(baseHtml, {
+        title: guide.title, description: guide.description, canonical, bootHeading: guide.title,
+        serverHtml: `<main data-server-rendered="true">${renderToStaticMarkup(React.createElement(ParentGuideContent, { guide, data: data ?? undefined }))}</main>`,
+        jsonLd: [{ '@context': 'https://schema.org', '@type': 'WebPage', name: guide.title, description: guide.description, url: canonical },
+          { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'School guides', item: `${SITE_ORIGIN}/explore-schools` },
+            { '@type': 'ListItem', position: 2, name: guide.title, item: canonical },
+          ] }],
+      });
+      // A temporary data outage must not turn a known editorial page into a
+      // 404, or cache the missing comparison for the full HTML cache lifetime.
+      if (!data) return result;
     } else if ((m = path.match(/^\/blog\/([^/]+)$/)) && getSurveyInsight(m[1])) {
       const page = getSurveyInsight(m[1]);
       if (!page) return null;
@@ -1208,7 +1243,7 @@ export async function renderSeoHtml(
     } else if ((m = path.match(/^\/(district|neighborhood|program)\/([^/]+)$/))) {
       result = await renderSeoLanding(m[1], m[2], baseHtml);
     }
-    if (result) cacheSet(cacheKey, result);
+    if (result && !result.includes('<!-- ranking-data-temporarily-unavailable -->')) cacheSet(cacheKey, result);
     return result;
   } catch (err) {
     console.error("[SEO_RENDERER] error for", path, err);

@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {readFileSync} from 'node:fs';
+import {admissionEvidence} from '../shared/admissions-evidence';
+import {buildRankingReport,gradeRange} from '../shared/ranking-report';
+import {RankingReportContent,SurveySnapshot} from '../shared/RankingReportContent';
+import {MapDiscoveryContent} from '../shared/MapDiscoveryContent';
+import {buildParentGuideData,safeWebsite} from '../shared/parent-guide-data';
+import {getParentGuide} from '../shared/parent-guides';
+import {matchesSeoLanding,getSeoLanding} from '../shared/seo-landings';
+import type {School} from '../shared/schema';
+const school=(extra:Partial<School>)=>({dbn:'02M001',name:'Test',district:2,grade_band:'K-5',ela_proficiency:70,math_proficiency:80,assessment_year:'2024-25',climate_score:80,progress_score:80,...extra} as School);
+assert.match(admissionEvidence({dbn:'02M002'}).label,/Not verified/);
+assert.equal(admissionEvidence({dbn:'02M002',admission_method:'Unscreened'}).tone,'lottery');
+assert.match(admissionEvidence({dbn:'02M002',admission_method:'Screened and audition'}).label,/verify each program/);
+assert.match(admissionEvidence({dbn:'21K239'}).label,/Talent test/);
+assert.equal(gradeRange('2K')?.[1],-1);
+assert.deepEqual(gradeRange('6–8'),[6,8]);
+assert.equal(gradeRange('unknown'),null);
+const report=buildRankingReport([school({}),school({}),school({dbn:'02M002',assessment_year:'2023-24'}),school({dbn:'02M003',grade_band:'K-12'}),school({dbn:'02M004',math_proficiency:null}),school({dbn:'02M005',grade_band:'2K'})],'elementary');
+assert.equal(report.population,4);
+assert.equal(report.eligible,1);
+assert.equal(report.groups[0].n,1);
+assert.equal(report.groups[0].math,80);
+assert.equal(report.groups[0].rows[0].mathTested,undefined); // missing must not become zero
+const html=renderToStaticMarkup(React.createElement(RankingReportContent,{stage:'middle',report}));
+for(const phrase of ['fourth-grade','November 2, 2026','must include','School','not official']) assert.ok(html.includes(phrase),phrase);
+assert.ok(!html.includes('Zoned (Unscreened)'));
+const map=renderToStaticMarkup(React.createElement(MapDiscoveryContent));
+assert.equal((map.match(/href="\/district\/\d+"/g)||[]).length,32);
+assert.ok(map.includes('schoolsearch.schools.nyc'));
+const rows=Array.from({length:41},(_,i)=>school({dbn:`02M${String(i).padStart(3,'0')}`,has_3k:true,has_prek:true}));
+const continuity=buildParentGuideData(getParentGuide('2k-3k-prek-kindergarten-same-school')!,rows);
+assert.equal(continuity.rows.length,41);
+assert.ok(continuity.rows.every(r=>r.tags?.includes('3k-prek-k')));
+assert.equal(safeWebsite('javascript:alert(1)'),undefined);
+const mandarin=getSeoLanding('program','mandarin-dual-language')!;
+assert.equal(matchesSeoLanding(school({dbn:'01M184',has_dual_language:true,dual_language_languages:['Chinese']}),mandarin),true);
+assert.equal(matchesSeoLanding(school({dbn:'02M999',has_dual_language:true,dual_language_languages:['Chinese']}),mandarin),false);
+const mapCode=readFileSync('client/src/pages/map.tsx','utf8');
+assert.ok(mapCode.includes('const canonicalPath = "/map"'));
+assert.ok(mapCode.includes('seatType: selectedTwokSeatType'));
+assert.ok(!readFileSync('client/src/pages/blog-post.tsx','utf8').includes('blend screened and unscreened seats'));
+const {storage}=await import('../server/storage');
+const {renderSeoHtml,clearSeoCache}=await import('../server/seoRenderer');
+const old=storage.getSchools;
+storage.getSchools=async()=>[school({})];
+try {
+  const base='<html><head><title>Base</title></head><body><div id="root"></div></body></html>';
+  for(const path of ['/blog/best-nyc-elementary-schools-2026','/blog/best-nyc-middle-schools-2026']) {
+    const result=await renderSeoHtml(path,base);
+    assert.ok(result?.includes('How this shortlist is built'));
+    assert.ok(result?.includes('Sources and years'));
+  }
+  const result=await renderSeoHtml('/map',base);
+  assert.ok(result?.includes('Browse school districts by borough'));
+  const {deleteCache}=await import('../server/cache');
+  clearSeoCache(); deleteCache('ranking-report:middle');
+  storage.getSchools=async()=>{throw new Error('Simulated report outage');};
+  const degraded=await renderSeoHtml('/blog/best-nyc-middle-schools-2026',base);
+  assert.ok(degraded?.includes('ranking-data-temporarily-unavailable'));
+  storage.getSchools=async()=>[school({grade_band:'6-8'})];
+  const recovered=await renderSeoHtml('/blog/best-nyc-middle-schools-2026',base);
+  assert.ok(recovered?.includes('1 records serve this stage'));
+  assert.ok(!recovered?.includes('ranking-data-temporarily-unavailable'));
+} finally {storage.getSchools=old;clearSeoCache();}
+console.log('Content plan: admissions, same-year denominators, SSR, continuity, source matching and map regressions passed.');
