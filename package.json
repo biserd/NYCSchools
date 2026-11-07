@@ -32,6 +32,7 @@
     "test:ratings": "tsx scripts/rating-regression.test.ts",
     "test:school-data": "tsx scripts/school-data-integration.test.ts",
     "test:district-rankings": "tsx scripts/district-ranking.test.ts",
+    "test:score-movers": "tsx scripts/score-movers.test.ts",
     "test:client-bundle": "node scripts/analyze-client-bundle.mjs --check",
     "test:surveys": "tsx scripts/survey-regression.test.ts",
     "import:surveys": "tsx scripts/import-surveys.ts",

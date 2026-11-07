@@ -3374,7 +3374,7 @@ When answering:
       // Blog posts — single source of truth in shared/blog-data.ts so the
       // sitemap and the actual blog pages can never drift apart.
       const { blogPosts: blogData } = await import("@shared/blog-data");
-      const blogPosts = blogData.map((p) => ({ slug: p.slug, lastmod: p.publishedAt }));
+      const blogPosts = blogData.map((p) => ({ slug: p.slug, lastmod: p.updatedAt || p.publishedAt }));
       
       // Generate XML
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';

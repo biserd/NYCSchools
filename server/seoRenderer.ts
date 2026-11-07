@@ -45,6 +45,9 @@ import { PRICING_DESCRIPTION } from '../shared/pricing-coverage';
 import { PricingHero, PricingPlanFeatures } from '../shared/PricingValueContent';
 import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
+import { getScoreArticle, scoreArticleSchema } from '../shared/score-articles';
+import { ScoreArticleContent } from '../shared/ScoreArticleContent';
+import { ScoreMoversTeaser } from '../shared/ScoreMoversTeaser';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
 import { getSchoolSurveys } from './schoolSurveys';
@@ -1083,7 +1086,7 @@ function renderSchoolGuide(slug: string, baseHtml: string): string | null {
     canonical,
     jsonLd: [collectionPage, breadcrumb],
     bootHeading: guide.heading,
-    serverHtml: content + (slug === 'elementary-schools' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink, {stage:'kindergarten'})) : ''),
+    serverHtml: content + (slug === 'high-schools' ? renderToStaticMarkup(React.createElement(ScoreMoversTeaser, {stage:'high'})) : '') + (slug === 'elementary-schools' ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink, {stage:'kindergarten'})) : ''),
   });
 }
 
@@ -1124,7 +1127,7 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
 export async function getCanonicalRedirectPath(rawUrl: string): Promise<string | null> {
   const path = rawUrl.split("?")[0].split("#")[0];
   const legacySurvey = path.match(/^\/insights\/([^/]+)\/?$/);
-  if (legacySurvey && getSurveyInsight(legacySurvey[1])) return `/blog/${legacySurvey[1]}`;
+  if (legacySurvey && (getSurveyInsight(legacySurvey[1]) || getScoreArticle(legacySurvey[1]))) return `/blog/${legacySurvey[1]}`;
   if (LEGACY_SEO_GUIDE_REDIRECTS[path]) return LEGACY_SEO_GUIDE_REDIRECTS[path];
   let match: RegExpMatchArray | null;
 
@@ -1226,6 +1229,10 @@ export async function renderSeoHtml(
       // A temporary data outage must not turn a known editorial page into a
       // 404, or cache the missing comparison for the full HTML cache lifetime.
       if (!data) return result;
+    } else if ((m = path.match(/^\/blog\/([^/]+)$/)) && getScoreArticle(m[1])) {
+      const page=getScoreArticle(m[1])!;
+      result=applyMeta(baseHtml,{title:`${page.title} | NYC School Ratings`,description:page.description,canonical:`${SITE_ORIGIN}/blog/${page.slug}`,bootHeading:page.title,serverHtml:renderToStaticMarkup(React.createElement(ScoreArticleContent,{page})),jsonLd:scoreArticleSchema(page)})
+        .replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i,'<meta property="og:type" content="article" />');
     } else if ((m = path.match(/^\/blog\/([^/]+)$/)) && getSurveyInsight(m[1])) {
       const page = getSurveyInsight(m[1]);
       if (!page) return null;

@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {writeFileSync,readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {SCORE_ARTICLES} from '../shared/score-articles';
+const origin='https://nycschoolsratings.com';
+const results=await Promise.all(SCORE_ARTICLES.map(async page=>{
+  const response=await fetch(origin+'/blog/'+page.slug,{signal:AbortSignal.timeout(30_000)});
+  assert.equal(response.status,200,page.slug);
+  const html=await response.text();
+  assert.ok(html.includes('data-score-article="'+page.slug+'"'),page.slug+' server-rendered article');
+  assert.ok(html.includes('data-score-chart='),page.slug+' chart configuration mount');
+  assert.ok(html.includes('href="'+origin+'/blog/'+page.slug+'"'),page.slug+' canonical');
+  assert.ok(html.includes('2026-11-07'),page.slug+' modified date');
+  assert.ok(!html.includes('Not imported into school ratings'));
+  assert.ok(html.includes(page.kind==='snapshot'?'Regents reporting year 2026 only':'2025'));
+  return {slug:page.slug,status:response.status,bytes:Buffer.byteLength(html),charts:(html.match(/data-score-chart=/g)||[]).length,tables:(html.match(/<table/g)||[]).length};
+}));
+const sitemap=await fetch(origin+'/sitemaps/blog.xml').then(r=>r.text());
+for(const p of SCORE_ARTICLES)assert.ok(sitemap.includes('/blog/'+p.slug));
+const download=await fetch(origin+'/data/score-movers-2026.json',{signal:AbortSignal.timeout(30_000)});
+assert.equal(download.status,200);
+const deployed=Buffer.from(await download.arrayBuffer()),local=readFileSync('client/public/data/score-movers-2026.json');
+assert.equal(createHash('sha256').update(deployed).digest('hex'),createHash('sha256').update(local).digest('hex'),'Published evidence matches validated artifact');
+const report={checkedAt:new Date().toISOString(),origin,articles:results,sitemap:true,evidenceExactMatch:true};
+writeFileSync('.wrangler/score-movers/live-validation.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify(report,null,2));

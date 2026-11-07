@@ -1,5 +1,6 @@
 import { Link, useRoute } from "wouter";
 import { KinderLearnerResourceLink } from '@shared/KinderLearnerResourceLink';
+import { ScoreMoversTeaser } from '@shared/ScoreMoversTeaser';
 import { ArrowRight, CheckCircle2, Search } from "lucide-react";
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { AppHeader } from "@/components/AppHeader";
@@ -59,6 +60,7 @@ export default function SchoolGuidePage() {
 
         <section className="mx-auto max-w-5xl px-4 py-12">
           <h2 className="mb-6 text-2xl font-semibold">What you can compare</h2>
+          {guide.slug === 'high-schools' && <ScoreMoversTeaser stage="high"/>}
           <div className="grid gap-4 md:grid-cols-3">
             {guide.highlights.map((highlight) => (
               <Card key={highlight}>

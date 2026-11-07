@@ -14,7 +14,7 @@ const connections: [string, string, string][] = [
   ['survey-methodology','does-crime-predict-nyc-school-quality-data-analysis-2026','See why survey experience, academic outcomes and neighborhood safety are different measures.'],
   ['nyc-early-childhood-survey-2026','nyc-prek-3k-kindergarten-admissions-demand-2025','Combine center experience with admissions context; survey scores do not indicate available seats.'],
   ['nyc-early-childhood-survey-2026','best-nyc-kindergartens-2026','Plan the transition to kindergarten without treating Birth-to-5 feedback as a K–12 academic rating.'],
-  ['nys-test-results-2026','nyc-schools-2025-covid-recovery','Understand the existing assessment baseline while waiting for final school-level results.'],
+  ['nys-test-results-2026','nyc-school-survey-2026','Read the current assessment results alongside school-community feedback, keeping each measure and reporting year separate.'],
 ];
 
 export function relatedBlogLinks(slug: string) {

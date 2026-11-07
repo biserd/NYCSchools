@@ -1,4 +1,5 @@
 import { SURVEY_INSIGHTS } from './survey-insights';
+import { SCORE_ARTICLES } from './score-articles';
 
 export interface BlogPost {
   slug: string;
@@ -14,6 +15,7 @@ export interface BlogPost {
 }
 
 export const blogPosts: BlogPost[] = [
+  ...SCORE_ARTICLES.map(page=>({...page,author:'NYC School Ratings Team',category:'Data Analysis'})),
   ...SURVEY_INSIGHTS.map(page => ({
     slug: page.slug, title: page.title, description: page.description,
     author: 'NYC School Ratings Team', publishedAt: '2026-09-15',
@@ -78,7 +80,7 @@ export const blogPosts: BlogPost[] = [
     description: "Compare NYC elementary schools with same-year assessment tables, transparent ranking rules, survey context and verified admissions guidance. Build a realistic shortlist.",
     author: "NYC School Ratings Team",
     publishedAt: "2026-01-06",
-    updatedAt: "2026-10-25",
+    updatedAt: "2026-11-07",
     readTime: "15 min read",
     category: "School Rankings",
     tags: ["Elementary Schools", "Best Schools", "NYC Schools", "School Rankings", "K-5", "2026"]
