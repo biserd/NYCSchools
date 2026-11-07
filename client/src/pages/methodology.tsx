@@ -9,6 +9,9 @@ export default function MethodologyPage() {
     <p>NYC School Ratings helps families compare schools consistently. It is an independent guide, not an NYC Department of Education or New York State Education Department publication.</p>
     <h2>How the overall score is calculated</h2>
     <p>For schools with sufficient data, the overall score combines academics (40%), school climate (30%), and student progress (30%). High-school calculations use the age-appropriate outcomes shown on each school page. We withhold a numeric rating when required data is unavailable or state-test participation is too limited for a responsible comparison.</p>
+    <h2>Rankings and district averages</h2>
+    <p>Assessment-based rankings and district comparisons use the latest citywide ELA/math school year (2025–26 for spring 2026). Older dated school records remain accessible but are not ranked as current-year assessment results. District ELA/math averages use schools with both reported subject results and no low-confidence warning; they are unweighted school means, not official student-weighted district proficiency rates. Reporting years and contributing school counts accompany the averages.</p>
+    <p>Overall district averages are the mean of actual eligible school ratings. High-school overall ratings form a separate cohort using graduation, college readiness and progress; the new Regents exam results do not redefine that formula. Climate/progress retain their legacy reporting cycles. Demographic averages use the latest demographic school year separately. Missing values remain null and genuine zeros remain zero; no default 50-point score or 15:1 ratio is supplied.</p>
     <h2>Primary sources</h2>
     <ul>
       <li><a href="https://data.ny.gov/browse?Dataset-Information_Agency=Education+Department%2C+State" rel="noopener noreferrer">New York State Education Department open data</a> for state assessment results.</li>

@@ -5,6 +5,9 @@ import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiCha
 import { eq, and, sql, desc, asc, like, or, gte, isNotNull, inArray, lt } from "drizzle-orm";
 import { d1Chunks } from './d1-batches';
 import { schoolProfileMetadata } from '@shared/schema';
+import { calculateAcademicScore,isHighSchool,isEarlyChildhoodOnly } from '../shared/school-utils';
+import { buildDistrictAverages, buildAllDistrictAverages, type DistrictAverages } from '../shared/district-averages';
+export type { DistrictAverages } from '../shared/district-averages';
 
 export interface IStorage {
   // User operations for standalone auth
@@ -190,40 +193,6 @@ export interface PrivateSchoolFilters {
   maxTuition?: number;
 }
 
-export interface DistrictAverages {
-  district: number;
-  schoolCount: number;
-  overallScore: number;
-  academicsScore: number;
-  elaProficiency: number;
-  mathProficiency: number;
-  climateScore: number;
-  progressScore: number;
-  studentTeacherRatio: number;
-  economicNeedIndex: number | null;
-  enrollment: number;
-  // Demographics
-  ellPercent: number | null;
-  iepPercent: number | null;
-  asianPercent: number | null;
-  blackPercent: number | null;
-  hispanicPercent: number | null;
-  whitePercent: number | null;
-  multiRacialPercent: number | null;
-  // Survey - Student
-  studentSafety: number | null;
-  studentTeacherTrust: number | null;
-  studentEngagement: number | null;
-  // Survey - Teacher
-  teacherQuality: number | null;
-  teacherCollaboration: number | null;
-  teacherLeadership: number | null;
-  // Survey - Guardian
-  guardianSatisfaction: number | null;
-  guardianCommunication: number | null;
-  guardianSchoolTrust: number | null;
-}
-
 export interface CovidRecoveryBlogData {
   citywideYearlyTrends: Array<{
     year: number;
@@ -358,14 +327,15 @@ export class DbStorage implements IStorage {
   async getSchools(): Promise<School[]> {
     const [rows, metadata] = await Promise.all([db.select().from(schools), db.select().from(schoolProfileMetadata)]);
     const byDbn = new Map(metadata.map(m => [m.dbn, m]));
-    return rows.map(s => normalizeSchool({ ...s, ...byDbn.get(s.dbn) }));
+    return rows.map(s => {const normalized=normalizeSchool({ ...s, ...byDbn.get(s.dbn) });return isHighSchool(normalized)?normalized:{...normalized,academics_score:calculateAcademicScore(normalized)};});
   }
 
   async getSchool(dbn: string): Promise<School | undefined> {
     const [school] = await db.select().from(schools).where(eq(schools.dbn, dbn)).limit(1);
     if (!school) return undefined;
     const [metadata] = await db.select().from(schoolProfileMetadata).where(eq(schoolProfileMetadata.dbn, dbn)).limit(1);
-    return normalizeSchool({ ...school, ...metadata });
+    const normalized=normalizeSchool({ ...school, ...metadata });
+    return isHighSchool(normalized)?normalized:{...normalized,academics_score:calculateAcademicScore(normalized)};
   }
 
   async upsertSchool(school: School): Promise<School> {
@@ -571,252 +541,18 @@ export class DbStorage implements IStorage {
     return userProfile;
   }
 
-  async getDistrictAverages(district: number): Promise<DistrictAverages> {
-    const [stats] = await db
-      .select({
-        schoolCount: sql<number>`COUNT(*)`,
-        elaProficiency: sql<number>`(ROUND((AVG(${schools.ela_proficiency})) * 10, 0) / 10.0)`,
-        mathProficiency: sql<number>`(ROUND((AVG(${schools.math_proficiency})) * 10, 0) / 10.0)`,
-        climateScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END)) * 10, 0) / 10.0)`,
-        progressScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END)) * 10, 0) / 10.0)`,
-        studentTeacherRatio: sql<number>`(ROUND((AVG(${schools.student_teacher_ratio})) * 10, 0) / 10.0)`,
-        economicNeedIndex: sql<number>`(ROUND((AVG(${schools.economic_need_index})) * 10, 0) / 10.0)`,
-        enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
-        // Demographics
-        ellPercent: sql<number>`(ROUND((AVG(${schools.ell_percent})) * 10, 0) / 10.0)`,
-        iepPercent: sql<number>`(ROUND((AVG(${schools.iep_percent})) * 10, 0) / 10.0)`,
-        asianPercent: sql<number>`(ROUND((AVG(${schools.asian_percent})) * 10, 0) / 10.0)`,
-        blackPercent: sql<number>`(ROUND((AVG(${schools.black_percent})) * 10, 0) / 10.0)`,
-        hispanicPercent: sql<number>`(ROUND((AVG(${schools.hispanic_percent})) * 10, 0) / 10.0)`,
-        whitePercent: sql<number>`(ROUND((AVG(${schools.white_percent})) * 10, 0) / 10.0)`,
-        multiRacialPercent: sql<number>`(ROUND((AVG(${schools.multi_racial_percent})) * 10, 0) / 10.0)`,
-        // Survey - Student
-        studentSafety: sql<number>`(ROUND((AVG(${schools.student_safety})) * 10, 0) / 10.0)`,
-        studentTeacherTrust: sql<number>`(ROUND((AVG(${schools.student_teacher_trust})) * 10, 0) / 10.0)`,
-        studentEngagement: sql<number>`(ROUND((AVG(${schools.student_engagement})) * 10, 0) / 10.0)`,
-        // Survey - Teacher
-        teacherQuality: sql<number>`(ROUND((AVG(${schools.teacher_quality})) * 10, 0) / 10.0)`,
-        teacherCollaboration: sql<number>`(ROUND((AVG(${schools.teacher_collaboration})) * 10, 0) / 10.0)`,
-        teacherLeadership: sql<number>`(ROUND((AVG(${schools.teacher_leadership})) * 10, 0) / 10.0)`,
-        // Survey - Guardian
-        guardianSatisfaction: sql<number>`(ROUND((AVG(${schools.guardian_satisfaction})) * 10, 0) / 10.0)`,
-        guardianCommunication: sql<number>`(ROUND((AVG(${schools.guardian_communication})) * 10, 0) / 10.0)`,
-        guardianSchoolTrust: sql<number>`(ROUND((AVG(${schools.guardian_school_trust})) * 10, 0) / 10.0)`,
-      })
-      .from(schools)
-      .where(and(eq(schools.district, district), sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`));
-    
-    const avgEla = Number(stats?.elaProficiency ?? 50);
-    const avgMath = Number(stats?.mathProficiency ?? 50);
-    const avgClimate = Number(stats?.climateScore ?? 50);
-    const avgProgress = Number(stats?.progressScore ?? 50);
-    
-    const testProficiency = (avgEla + avgMath) / 2;
-    const academicsScore = Math.round(testProficiency);
-    const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
-    
-    return {
-      district,
-      schoolCount: Number(stats?.schoolCount || 0),
-      overallScore,
-      academicsScore,
-      elaProficiency: avgEla,
-      mathProficiency: avgMath,
-      climateScore: avgClimate,
-      progressScore: avgProgress,
-      studentTeacherRatio: Number(stats?.studentTeacherRatio ?? 15),
-      economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
-      enrollment: Number(stats?.enrollment || 0),
-      // Demographics
-      ellPercent: stats?.ellPercent ? Number(stats.ellPercent) : null,
-      iepPercent: stats?.iepPercent ? Number(stats.iepPercent) : null,
-      asianPercent: stats?.asianPercent ? Number(stats.asianPercent) : null,
-      blackPercent: stats?.blackPercent ? Number(stats.blackPercent) : null,
-      hispanicPercent: stats?.hispanicPercent ? Number(stats.hispanicPercent) : null,
-      whitePercent: stats?.whitePercent ? Number(stats.whitePercent) : null,
-      multiRacialPercent: stats?.multiRacialPercent ? Number(stats.multiRacialPercent) : null,
-      // Survey - Student
-      studentSafety: stats?.studentSafety ? Number(stats.studentSafety) : null,
-      studentTeacherTrust: stats?.studentTeacherTrust ? Number(stats.studentTeacherTrust) : null,
-      studentEngagement: stats?.studentEngagement ? Number(stats.studentEngagement) : null,
-      // Survey - Teacher
-      teacherQuality: stats?.teacherQuality ? Number(stats.teacherQuality) : null,
-      teacherCollaboration: stats?.teacherCollaboration ? Number(stats.teacherCollaboration) : null,
-      teacherLeadership: stats?.teacherLeadership ? Number(stats.teacherLeadership) : null,
-      // Survey - Guardian
-      guardianSatisfaction: stats?.guardianSatisfaction ? Number(stats.guardianSatisfaction) : null,
-      guardianCommunication: stats?.guardianCommunication ? Number(stats.guardianCommunication) : null,
-      guardianSchoolTrust: stats?.guardianSchoolTrust ? Number(stats.guardianSchoolTrust) : null,
-    };
+  async getDistrictAverages(district:number):Promise<DistrictAverages> {
+    return buildDistrictAverages(await this.getSchools(),district);
   }
 
-  async getAllDistrictAverages(): Promise<Map<number, DistrictAverages>> {
-    const results = await db
-      .select({
-        district: schools.district,
-        schoolCount: sql<number>`COUNT(*)`,
-        elaProficiency: sql<number>`(ROUND((AVG(${schools.ela_proficiency})) * 10, 0) / 10.0)`,
-        mathProficiency: sql<number>`(ROUND((AVG(${schools.math_proficiency})) * 10, 0) / 10.0)`,
-        climateScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END)) * 10, 0) / 10.0)`,
-        progressScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END)) * 10, 0) / 10.0)`,
-        studentTeacherRatio: sql<number>`(ROUND((AVG(${schools.student_teacher_ratio})) * 10, 0) / 10.0)`,
-        economicNeedIndex: sql<number>`(ROUND((AVG(${schools.economic_need_index})) * 10, 0) / 10.0)`,
-        enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
-        // Demographics
-        ellPercent: sql<number>`(ROUND((AVG(${schools.ell_percent})) * 10, 0) / 10.0)`,
-        iepPercent: sql<number>`(ROUND((AVG(${schools.iep_percent})) * 10, 0) / 10.0)`,
-        asianPercent: sql<number>`(ROUND((AVG(${schools.asian_percent})) * 10, 0) / 10.0)`,
-        blackPercent: sql<number>`(ROUND((AVG(${schools.black_percent})) * 10, 0) / 10.0)`,
-        hispanicPercent: sql<number>`(ROUND((AVG(${schools.hispanic_percent})) * 10, 0) / 10.0)`,
-        whitePercent: sql<number>`(ROUND((AVG(${schools.white_percent})) * 10, 0) / 10.0)`,
-        multiRacialPercent: sql<number>`(ROUND((AVG(${schools.multi_racial_percent})) * 10, 0) / 10.0)`,
-        // Survey - Student
-        studentSafety: sql<number>`(ROUND((AVG(${schools.student_safety})) * 10, 0) / 10.0)`,
-        studentTeacherTrust: sql<number>`(ROUND((AVG(${schools.student_teacher_trust})) * 10, 0) / 10.0)`,
-        studentEngagement: sql<number>`(ROUND((AVG(${schools.student_engagement})) * 10, 0) / 10.0)`,
-        // Survey - Teacher
-        teacherQuality: sql<number>`(ROUND((AVG(${schools.teacher_quality})) * 10, 0) / 10.0)`,
-        teacherCollaboration: sql<number>`(ROUND((AVG(${schools.teacher_collaboration})) * 10, 0) / 10.0)`,
-        teacherLeadership: sql<number>`(ROUND((AVG(${schools.teacher_leadership})) * 10, 0) / 10.0)`,
-        // Survey - Guardian
-        guardianSatisfaction: sql<number>`(ROUND((AVG(${schools.guardian_satisfaction})) * 10, 0) / 10.0)`,
-        guardianCommunication: sql<number>`(ROUND((AVG(${schools.guardian_communication})) * 10, 0) / 10.0)`,
-        guardianSchoolTrust: sql<number>`(ROUND((AVG(${schools.guardian_school_trust})) * 10, 0) / 10.0)`,
-      })
-      .from(schools)
-      .where(sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`)
-      .groupBy(schools.district);
-    
-    const averagesMap = new Map<number, DistrictAverages>();
-    
-    for (const row of results) {
-      const avgEla = Number(row.elaProficiency ?? 50);
-      const avgMath = Number(row.mathProficiency ?? 50);
-      const avgClimate = Number(row.climateScore ?? 50);
-      const avgProgress = Number(row.progressScore ?? 50);
-      
-      const testProficiency = (avgEla + avgMath) / 2;
-      const academicsScore = Math.round(testProficiency);
-      const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
-      
-      averagesMap.set(row.district, {
-        district: row.district,
-        schoolCount: Number(row.schoolCount || 0),
-        overallScore,
-        academicsScore,
-        elaProficiency: avgEla,
-        mathProficiency: avgMath,
-        climateScore: avgClimate,
-        progressScore: avgProgress,
-        studentTeacherRatio: Number(row.studentTeacherRatio ?? 15),
-        economicNeedIndex: row.economicNeedIndex ? Number(row.economicNeedIndex) : null,
-        enrollment: Number(row.enrollment || 0),
-        // Demographics
-        ellPercent: row.ellPercent ? Number(row.ellPercent) : null,
-        iepPercent: row.iepPercent ? Number(row.iepPercent) : null,
-        asianPercent: row.asianPercent ? Number(row.asianPercent) : null,
-        blackPercent: row.blackPercent ? Number(row.blackPercent) : null,
-        hispanicPercent: row.hispanicPercent ? Number(row.hispanicPercent) : null,
-        whitePercent: row.whitePercent ? Number(row.whitePercent) : null,
-        multiRacialPercent: row.multiRacialPercent ? Number(row.multiRacialPercent) : null,
-        // Survey - Student
-        studentSafety: row.studentSafety ? Number(row.studentSafety) : null,
-        studentTeacherTrust: row.studentTeacherTrust ? Number(row.studentTeacherTrust) : null,
-        studentEngagement: row.studentEngagement ? Number(row.studentEngagement) : null,
-        // Survey - Teacher
-        teacherQuality: row.teacherQuality ? Number(row.teacherQuality) : null,
-        teacherCollaboration: row.teacherCollaboration ? Number(row.teacherCollaboration) : null,
-        teacherLeadership: row.teacherLeadership ? Number(row.teacherLeadership) : null,
-        // Survey - Guardian
-        guardianSatisfaction: row.guardianSatisfaction ? Number(row.guardianSatisfaction) : null,
-        guardianCommunication: row.guardianCommunication ? Number(row.guardianCommunication) : null,
-        guardianSchoolTrust: row.guardianSchoolTrust ? Number(row.guardianSchoolTrust) : null,
-      });
-    }
-    
-    return averagesMap;
+  async getAllDistrictAverages():Promise<Map<number,DistrictAverages>> {
+    return buildAllDistrictAverages(await this.getSchools());
   }
 
-  async getCitywideAverages(): Promise<DistrictAverages> {
-    const [stats] = await db
-      .select({
-        schoolCount: sql<number>`COUNT(*)`,
-        elaProficiency: sql<number>`(ROUND((AVG(${schools.ela_proficiency})) * 10, 0) / 10.0)`,
-        mathProficiency: sql<number>`(ROUND((AVG(${schools.math_proficiency})) * 10, 0) / 10.0)`,
-        climateScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.climate_score} >= 0 THEN ${schools.climate_score} END)) * 10, 0) / 10.0)`,
-        progressScore: sql<number>`(ROUND((AVG(CASE WHEN ${schools.progress_score} >= 0 THEN ${schools.progress_score} END)) * 10, 0) / 10.0)`,
-        studentTeacherRatio: sql<number>`(ROUND((AVG(${schools.student_teacher_ratio})) * 10, 0) / 10.0)`,
-        economicNeedIndex: sql<number>`(ROUND((AVG(${schools.economic_need_index})) * 10, 0) / 10.0)`,
-        enrollment: sql<number>`ROUND(AVG(${schools.enrollment}), 0)`,
-        // Demographics
-        ellPercent: sql<number>`(ROUND((AVG(${schools.ell_percent})) * 10, 0) / 10.0)`,
-        iepPercent: sql<number>`(ROUND((AVG(${schools.iep_percent})) * 10, 0) / 10.0)`,
-        asianPercent: sql<number>`(ROUND((AVG(${schools.asian_percent})) * 10, 0) / 10.0)`,
-        blackPercent: sql<number>`(ROUND((AVG(${schools.black_percent})) * 10, 0) / 10.0)`,
-        hispanicPercent: sql<number>`(ROUND((AVG(${schools.hispanic_percent})) * 10, 0) / 10.0)`,
-        whitePercent: sql<number>`(ROUND((AVG(${schools.white_percent})) * 10, 0) / 10.0)`,
-        multiRacialPercent: sql<number>`(ROUND((AVG(${schools.multi_racial_percent})) * 10, 0) / 10.0)`,
-        // Survey - Student
-        studentSafety: sql<number>`(ROUND((AVG(${schools.student_safety})) * 10, 0) / 10.0)`,
-        studentTeacherTrust: sql<number>`(ROUND((AVG(${schools.student_teacher_trust})) * 10, 0) / 10.0)`,
-        studentEngagement: sql<number>`(ROUND((AVG(${schools.student_engagement})) * 10, 0) / 10.0)`,
-        // Survey - Teacher
-        teacherQuality: sql<number>`(ROUND((AVG(${schools.teacher_quality})) * 10, 0) / 10.0)`,
-        teacherCollaboration: sql<number>`(ROUND((AVG(${schools.teacher_collaboration})) * 10, 0) / 10.0)`,
-        teacherLeadership: sql<number>`(ROUND((AVG(${schools.teacher_leadership})) * 10, 0) / 10.0)`,
-        // Survey - Guardian
-        guardianSatisfaction: sql<number>`(ROUND((AVG(${schools.guardian_satisfaction})) * 10, 0) / 10.0)`,
-        guardianCommunication: sql<number>`(ROUND((AVG(${schools.guardian_communication})) * 10, 0) / 10.0)`,
-        guardianSchoolTrust: sql<number>`(ROUND((AVG(${schools.guardian_school_trust})) * 10, 0) / 10.0)`,
-      })
-      .from(schools)
-      .where(sql`upper(${schools.grade_band}) NOT IN ('2K', '3K', 'PK', 'PREK', 'PRE-K', '2-K', '3-K', 'EARLY CHILDHOOD')`);
-    
-    const avgEla = Number(stats?.elaProficiency ?? 50);
-    const avgMath = Number(stats?.mathProficiency ?? 50);
-    const avgClimate = Number(stats?.climateScore ?? 50);
-    const avgProgress = Number(stats?.progressScore ?? 50);
-    
-    const testProficiency = (avgEla + avgMath) / 2;
-    const academicsScore = Math.round(testProficiency);
-    const overallScore = Math.round(testProficiency * 0.4 + avgClimate * 0.3 + avgProgress * 0.3);
-    
-    return {
-      district: 0,
-      schoolCount: Number(stats?.schoolCount || 0),
-      overallScore,
-      academicsScore,
-      elaProficiency: avgEla,
-      mathProficiency: avgMath,
-      climateScore: avgClimate,
-      progressScore: avgProgress,
-      studentTeacherRatio: Number(stats?.studentTeacherRatio ?? 15),
-      economicNeedIndex: stats?.economicNeedIndex ? Number(stats.economicNeedIndex) : null,
-      enrollment: Number(stats?.enrollment || 0),
-      // Demographics
-      ellPercent: stats?.ellPercent ? Number(stats.ellPercent) : null,
-      iepPercent: stats?.iepPercent ? Number(stats.iepPercent) : null,
-      asianPercent: stats?.asianPercent ? Number(stats.asianPercent) : null,
-      blackPercent: stats?.blackPercent ? Number(stats.blackPercent) : null,
-      hispanicPercent: stats?.hispanicPercent ? Number(stats.hispanicPercent) : null,
-      whitePercent: stats?.whitePercent ? Number(stats.whitePercent) : null,
-      multiRacialPercent: stats?.multiRacialPercent ? Number(stats.multiRacialPercent) : null,
-      // Survey - Student
-      studentSafety: stats?.studentSafety ? Number(stats.studentSafety) : null,
-      studentTeacherTrust: stats?.studentTeacherTrust ? Number(stats.studentTeacherTrust) : null,
-      studentEngagement: stats?.studentEngagement ? Number(stats.studentEngagement) : null,
-      // Survey - Teacher
-      teacherQuality: stats?.teacherQuality ? Number(stats.teacherQuality) : null,
-      teacherCollaboration: stats?.teacherCollaboration ? Number(stats.teacherCollaboration) : null,
-      teacherLeadership: stats?.teacherLeadership ? Number(stats.teacherLeadership) : null,
-      // Survey - Guardian
-      guardianSatisfaction: stats?.guardianSatisfaction ? Number(stats.guardianSatisfaction) : null,
-      guardianCommunication: stats?.guardianCommunication ? Number(stats.guardianCommunication) : null,
-      guardianSchoolTrust: stats?.guardianSchoolTrust ? Number(stats.guardianSchoolTrust) : null,
-    };
+  async getCitywideAverages():Promise<DistrictAverages> {
+    return buildDistrictAverages(await this.getSchools(),0);
   }
 
-  // AI Chat Session operations
   async createChatSession(session: InsertAiChatSession): Promise<AiChatSession> {
     const [created] = await db.insert(aiChatSessions).values(session).returning();
     return created;

@@ -1,4 +1,5 @@
 import type { School } from './schema';
+import { latestAssessmentYear } from './current-ranking';
 import { calculateOverallScore, getAssessmentConfidence, getSchoolSlug } from './school-utils';
 import { admissionEvidence } from './admissions-evidence';
 export type SchoolStage = 'elementary' | 'middle';
@@ -22,7 +23,7 @@ export function buildRankingReport(input: School[], stage: SchoolStage): Ranking
   const schools = [...new Map(input.map(s => [s.dbn, s])).values()].filter(s => servesStage(s, stage));
   // Exclude upper-school combinations: existing scores use high-school measures there.
   const candidates = schools.filter(s => { const range = gradeRange(s.grade_band)!; return range[1] <= 8 && valid(s.ela_proficiency) && valid(s.math_proficiency) && getAssessmentConfidence(s) !== 'low' && calculateOverallScore(s) >= 0 && /^20\d{2}-\d{2}$/.test(s.assessment_year || ''); });
-  const year = candidates.map(s => s.assessment_year!).sort().at(-1) || null;
+  const year = latestAssessmentYear(input);
   const comparable = candidates.filter(s => s.assessment_year === year);
   return { stage, population: schools.length, eligible: comparable.length, year, excluded: schools.length - comparable.length,
     groups: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'].map(b => {

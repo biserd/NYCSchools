@@ -1,3 +1,4 @@
+import { latestAssessmentYear,currentRankingScore } from '../shared/current-ranking';
 import { filterPrograms } from "../shared/early-childhood";
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
@@ -443,11 +444,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const slugify = (n: string) =>
         n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
 
+      const rankingYear=latestAssessmentYear(allSchools);
       const rows = allSchools
         .map((s) => {
           const safety = safetyByDbn.get(s.dbn);
           if (safety === undefined) return null;
-          const overall = calculateOverallScore(s);
+          const overall = currentRankingScore(s,rankingYear);
           if (overall < 0) return null;
           const combined = Math.round((overall + safety) / 2);
           return {
@@ -459,6 +461,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             gradeBand: s.grade_band,
             enrollment: s.enrollment || 0,
             overallScore: overall,
+            assessmentYear:s.assessment_year ?? null,
+            ratingBasis:isHighSchool(s)?"Graduation/readiness/progress; not a 2026 Regents rating":"Latest-year ELA/math plus legacy climate/progress",
             safetyIndex: safety,
             combinedScore: combined,
           };
@@ -2275,6 +2279,7 @@ Focus on practical, actionable advice. Don't make claims about the center's qual
           overall: score >= 0 ? score : null,
           rating_status: status,
           academics: s.academics_score,
+          assessment_year:s.assessment_year,demographics_year:s.demographics_year,
           climate: s.climate_score,
           progress: s.progress_score,
           ela: s.ela_proficiency,
@@ -2641,6 +2646,7 @@ Enrollment: ${school.enrollment ?? 'N/A'} | Student-Teacher Ratio: ${school.stud
               g: s.grade_band,
               o: overall >= 0 ? overall : null,
               rs: ratingStatus,
+              assessment_year:s.assessment_year ?? null,demographics_year:s.demographics_year ?? null,
               f: flags || null,
             };
             if (s.enrollment != null) entry.e = s.enrollment;

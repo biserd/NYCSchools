@@ -1,3 +1,4 @@
+import { latestAssessmentYear,currentRankingScore } from '@shared/current-ranking';
 import { schoolDisplayName } from "@shared/early-childhood";
 import { isEarlyChildhoodOnly } from "@shared/school-utils";
 import { programLabels } from "@shared/early-childhood";
@@ -131,7 +132,8 @@ function ChartSourceLink({ text, url, testId }: { text: string; url?: string; te
 }
 
 // Helper to format district comparison delta with proper rounding
-function formatDelta(value: number, compare: number): string {
+function formatDelta(value: number, compare: number | null): string {
+  if(compare==null)return "";
   const diff = Math.round(value - compare);
   if (diff > 0) return `+${diff}`;
   if (diff < 0) return `${diff}`;
@@ -183,7 +185,7 @@ export default function SchoolDetail() {
   } : null;
 
   // Fetch district averages for comparison
-  const { districtAverages, citywideAverages, isLoading: districtLoading } = useDistrictAverages(school?.district || 0);
+  const { districtAverages, citywideAverages, isLoading: districtLoading } = useDistrictAverages(school?.district || 0,school);
   
   // Fetch historical trends
   const { data: historicalTrend, isLoading: trendLoading } = useQuery<SchoolTrend>({
@@ -238,9 +240,11 @@ export default function SchoolDetail() {
   // Get top 3 schools in the same district (excluding current school) - memoized for performance
   const topDistrictSchools = useMemo(() => {
     if (!allSchools || !school) return [];
+    const rankingYear=latestAssessmentYear(allSchools);
     return allSchools
       .filter(s => s.district === school.district && s.dbn !== dbn)
-      .map(s => ({ ...s, overall_score: calculateOverallScore(s) }))
+      .map(s => ({ ...s, overall_score: currentRankingScore(s,rankingYear) }))
+      .filter(s=>s.overall_score>=0)
       .sort((a, b) => b.overall_score - a.overall_score)
       .slice(0, 3);
   }, [allSchools, school?.district, dbn]);
@@ -637,7 +641,7 @@ export default function SchoolDetail() {
                     }`}>
                       {schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}
                     </span>
-                    {districtAverages && schoolWithScore.overall_score >= 0 && (
+                    {districtAverages?.overallScore != null && schoolWithScore.overall_score >= 0 && (
                       <DistrictComparisonBadge 
                         value={schoolWithScore.overall_score} 
                         districtAvg={districtAverages.overallScore} 
@@ -697,7 +701,7 @@ export default function SchoolDetail() {
                       }`}>
                         {schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}
                       </span>
-                      {districtAverages && schoolWithScore.overall_score >= 0 && (
+                      {districtAverages?.overallScore != null && schoolWithScore.overall_score >= 0 && (
                         <span className={`text-sm font-medium ${
                           schoolWithScore.overall_score > districtAverages.overallScore ? 'text-emerald-600' :
                           schoolWithScore.overall_score < districtAverages.overallScore ? 'text-red-600' : 'text-muted-foreground'
@@ -708,7 +712,7 @@ export default function SchoolDetail() {
                     </div>
                     {districtAverages && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Dist. avg: {districtAverages.overallScore}
+                        Dist. avg: {districtAverages.overallScore ?? "Not available for this cohort/year"}
                       </div>
                     )}
                     <div className="text-xs text-muted-foreground mt-1">
@@ -724,7 +728,7 @@ export default function SchoolDetail() {
                   {/* Academics Score Card */}
                   <div className="border rounded-lg p-4 relative" data-testid="snapshot-academics">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-primary">Academics</span>
+                      <span className="text-sm font-medium text-primary">{isHS ? "Legacy academic indicator" : "Academics"}</span>
                       <div className={`w-2.5 h-2.5 rounded-full ${colorMap[getScoreColor(schoolWithScore.academics_score ?? -1)]}`} />
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -735,7 +739,7 @@ export default function SchoolDetail() {
                       }`}>
                         {schoolWithScore.academics_score === null || schoolWithScore.academics_score === undefined ? 'N/A' : schoolWithScore.academics_score}
                       </span>
-                      {districtAverages && schoolWithScore.academics_score !== null && schoolWithScore.academics_score !== undefined && (
+                      {districtAverages?.academicsScore != null && schoolWithScore.academics_score !== null && schoolWithScore.academics_score !== undefined && (
                         <span className={`text-sm font-medium ${
                           schoolWithScore.academics_score > districtAverages.academicsScore ? 'text-emerald-600' :
                           schoolWithScore.academics_score < districtAverages.academicsScore ? 'text-red-600' : 'text-muted-foreground'
@@ -746,7 +750,7 @@ export default function SchoolDetail() {
                     </div>
                     {districtAverages && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Dist. avg: {districtAverages.academicsScore}
+                        Dist. avg: {districtAverages.academicsScore ?? "Not available for this cohort/year"}
                       </div>
                     )}
                   </div>
@@ -765,7 +769,7 @@ export default function SchoolDetail() {
                       }`}>
                         {schoolWithScore.climate_score === null || schoolWithScore.climate_score === undefined ? 'N/A' : schoolWithScore.climate_score}
                       </span>
-                      {districtAverages && schoolWithScore.climate_score !== null && schoolWithScore.climate_score !== undefined && (
+                      {districtAverages?.climateScore != null && schoolWithScore.climate_score !== null && schoolWithScore.climate_score !== undefined && (
                         <span className={`text-sm font-medium ${
                           schoolWithScore.climate_score > districtAverages.climateScore ? 'text-emerald-600' :
                           schoolWithScore.climate_score < districtAverages.climateScore ? 'text-red-600' : 'text-muted-foreground'
@@ -776,7 +780,7 @@ export default function SchoolDetail() {
                     </div>
                     {districtAverages && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Dist. avg: {districtAverages.climateScore}
+                        Dist. avg: {districtAverages.climateScore ?? "Not available for this cohort/year"}
                       </div>
                     )}
                   </div>
@@ -795,7 +799,7 @@ export default function SchoolDetail() {
                       }`}>
                         {schoolWithScore.progress_score === null || schoolWithScore.progress_score === undefined ? 'N/A' : schoolWithScore.progress_score}
                       </span>
-                      {districtAverages && schoolWithScore.progress_score !== null && schoolWithScore.progress_score !== undefined && (
+                      {districtAverages?.progressScore != null && schoolWithScore.progress_score !== null && schoolWithScore.progress_score !== undefined && (
                         <span className={`text-sm font-medium ${
                           schoolWithScore.progress_score > districtAverages.progressScore ? 'text-emerald-600' :
                           schoolWithScore.progress_score < districtAverages.progressScore ? 'text-red-600' : 'text-muted-foreground'
@@ -806,7 +810,7 @@ export default function SchoolDetail() {
                     </div>
                     {districtAverages && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Dist. avg: {districtAverages.progressScore}
+                        Dist. avg: {districtAverages.progressScore ?? "Not available for this cohort/year"}
                       </div>
                     )}
                   </div>
@@ -827,7 +831,7 @@ export default function SchoolDetail() {
                     </div>
                     <div className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-primary">Academics</span>
+                        <span className="text-sm font-medium text-primary">{isHS ? "Legacy academic indicator" : "Academics"}</span>
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       </div>
                       <div className="flex items-baseline gap-2">
@@ -953,6 +957,8 @@ export default function SchoolDetail() {
                   <li>ELA/Math proficiency: {schoolWithScore.assessment_source || "NYSED Grades 3-8 Results"} ({schoolWithScore.assessment_year || "year not reported"})</li>
                   <li>Climate/Progress scores: 2024-25 NYC Department of Education School Survey and Quality Reports</li>
                 </ul>
+                {districtAverages && <p className="text-xs text-muted-foreground mt-2" data-testid="district-average-data-years">District assessment averages: {districtAverages.assessmentYear || 'not reported'} school year{districtAverages.assessmentTestYear ? ` · spring ${districtAverages.assessmentTestYear}` : ''} ({districtAverages.assessmentSchoolCount} schools with comparable ELA/math); demographics/enrollment: {districtAverages.demographicsYear || 'not reported'}. Unweighted school averages; missing years are not substituted. Overall compares {isHS ? `${districtAverages.highSchoolRatedCount} high schools using graduation/readiness/progress` : `${districtAverages.ratedSchoolCount} eligible assessment-based school ratings`}. Other score components retain their original reporting cycles.</p>}
+
                 <p className="mt-2">Record last updated: {schoolWithScore.last_updated ? new Date(schoolWithScore.last_updated).toLocaleDateString() : "not reported"}. <Link href="/methodology" className="text-primary underline">Methodology and official sources</Link></p>
               </div>
             </CardContent>
@@ -2997,7 +3003,7 @@ function SurveyMetric({ label, value, districtAvg }: { label: string; value: num
 function ComparisonStat({ label, schoolValue, districtAvg, unit = "" }: { 
   label: string; 
   schoolValue: number; 
-  districtAvg?: number;
+  districtAvg?: number | null;
   unit?: string;
 }) {
   if (districtAvg === undefined || districtAvg === null || isNaN(districtAvg)) {

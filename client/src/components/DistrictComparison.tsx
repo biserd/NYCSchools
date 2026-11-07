@@ -2,43 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export interface DistrictAverages {
-  district: number;
-  schoolCount: number;
-  overallScore: number;
-  academicsScore: number;
-  elaProficiency: number;
-  mathProficiency: number;
-  climateScore: number;
-  progressScore: number;
-  studentTeacherRatio: number;
-  economicNeedIndex: number | null;
-  enrollment: number;
-  // Demographics
-  ellPercent: number | null;
-  iepPercent: number | null;
-  asianPercent: number | null;
-  blackPercent: number | null;
-  hispanicPercent: number | null;
-  whitePercent: number | null;
-  multiRacialPercent: number | null;
-  // Survey - Student
-  studentSafety: number | null;
-  studentTeacherTrust: number | null;
-  studentEngagement: number | null;
-  // Survey - Teacher
-  teacherQuality: number | null;
-  teacherCollaboration: number | null;
-  teacherLeadership: number | null;
-  // Survey - Guardian
-  guardianSatisfaction: number | null;
-  guardianCommunication: number | null;
-  guardianSchoolTrust: number | null;
-}
+import type { DistrictAverages } from '@shared/district-averages';
+export type { DistrictAverages } from '@shared/district-averages';
+import type { School } from '@shared/schema';
+import { districtAveragesForSchool } from '@shared/district-averages';
 
 interface ComparisonIndicatorProps {
   value: number;
-  districtAvg: number;
+  districtAvg: number | null;
   label: string;
   unit?: string;
   higherIsBetter?: boolean;
@@ -53,6 +24,7 @@ export function ComparisonIndicator({
   higherIsBetter = true,
   showDifference = true 
 }: ComparisonIndicatorProps) {
+  if(districtAvg==null)return null;
   const difference = value - districtAvg;
   const absDiff = Math.abs(difference);
   const threshold = 2;
@@ -127,11 +99,12 @@ export function ComparisonIndicator({
 
 interface DistrictComparisonBadgeProps {
   value: number;
-  districtAvg: number;
+  districtAvg: number | null;
   higherIsBetter?: boolean;
 }
 
 export function DistrictComparisonBadge({ value, districtAvg, higherIsBetter = true }: DistrictComparisonBadgeProps) {
+  if(districtAvg==null)return null;
   const difference = value - districtAvg;
   const absDiff = Math.abs(difference);
   const threshold = 2;
@@ -183,7 +156,7 @@ interface UseDistrictAveragesResult {
   isLoading: boolean;
 }
 
-export function useDistrictAverages(district: number): UseDistrictAveragesResult {
+export function useDistrictAverages(district: number, school?: School): UseDistrictAveragesResult {
   const { data: districtAverages, isLoading: districtLoading } = useQuery<DistrictAverages>({
     queryKey: ["/api/districts", district, "averages"],
     enabled: district > 0,
@@ -194,8 +167,8 @@ export function useDistrictAverages(district: number): UseDistrictAveragesResult
   });
 
   return {
-    districtAverages,
-    citywideAverages,
+    districtAverages:districtAveragesForSchool(districtAverages,school),
+    citywideAverages:districtAveragesForSchool(citywideAverages,school),
     isLoading: districtLoading || citywideLoading,
   };
 }
@@ -203,7 +176,7 @@ export function useDistrictAverages(district: number): UseDistrictAveragesResult
 interface DistrictComparisonRowProps {
   label: string;
   schoolValue: number;
-  districtAvg: number;
+  districtAvg: number | null;
   citywideAvg?: number;
   unit?: string;
   higherIsBetter?: boolean;
@@ -217,6 +190,7 @@ export function DistrictComparisonRow({
   unit = "",
   higherIsBetter = true 
 }: DistrictComparisonRowProps) {
+  if(districtAvg==null)return null;
   const districtDiff = schoolValue - districtAvg;
   const citywideDiff = citywideAvg !== undefined ? schoolValue - citywideAvg : null;
   

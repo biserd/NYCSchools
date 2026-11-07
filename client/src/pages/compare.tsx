@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Footer } from "@/components/Footer";
 import { SurveyComparison } from '@/components/SurveyComparison';
+import { districtAveragesForSchool } from '@shared/district-averages';
 import { SchoolDataComparison } from '@/components/SchoolDataComparison';
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
@@ -37,7 +38,7 @@ import { useCheckout } from "@/hooks/useCheckout";
 
 function ComparisonCell({ value, districtAvg, unit = "", higherIsBetter = true }: { 
   value: number | null | undefined; 
-  districtAvg?: number | undefined;
+  districtAvg?: number | null | undefined;
   unit?: string;
   higherIsBetter?: boolean;
 }) {
@@ -45,7 +46,7 @@ function ComparisonCell({ value, districtAvg, unit = "", higherIsBetter = true }
     return <span className="text-muted-foreground">N/A</span>;
   }
   
-  if (!districtAvg) {
+  if (districtAvg == null) {
     return <span>{value}{unit}</span>;
   }
   
@@ -904,7 +905,7 @@ export default function ComparePage() {
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-ela-${school.dbn}`}>
                           <ComparisonCell 
                             value={school.ela_proficiency} 
-                            districtAvg={allDistrictAverages?.[String(school.district)]?.elaProficiency}
+                            districtAvg={districtAveragesForSchool(allDistrictAverages?.[String(school.district)],school)?.elaProficiency}
                             unit="%"
                           />
                         </TableCell>
@@ -916,7 +917,7 @@ export default function ComparePage() {
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-math-${school.dbn}`}>
                           <ComparisonCell 
                             value={school.math_proficiency} 
-                            districtAvg={allDistrictAverages?.[String(school.district)]?.mathProficiency}
+                            districtAvg={districtAveragesForSchool(allDistrictAverages?.[String(school.district)],school)?.mathProficiency}
                             unit="%"
                           />
                         </TableCell>
@@ -940,7 +941,7 @@ export default function ComparePage() {
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-climate-${school.dbn}`}>
                           <ComparisonCell 
                             value={school.climate_score} 
-                            districtAvg={allDistrictAverages?.[String(school.district)]?.climateScore}
+                            districtAvg={districtAveragesForSchool(allDistrictAverages?.[String(school.district)],school)?.climateScore}
                           />
                         </TableCell>
                       ))}
@@ -951,7 +952,7 @@ export default function ComparePage() {
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-progress-${school.dbn}`}>
                           <ComparisonCell 
                             value={school.progress_score} 
-                            districtAvg={allDistrictAverages?.[String(school.district)]?.progressScore}
+                            districtAvg={districtAveragesForSchool(allDistrictAverages?.[String(school.district)],school)?.progressScore}
                           />
                         </TableCell>
                       ))}
@@ -1805,7 +1806,7 @@ export default function ComparePage() {
           )}
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
-            <p>Sources: NYSED Grades 3–8 assessments and NYC Department of Education School Survey.</p>
+            <p>Sources: NYCPS / NYSED assessments and school profile survey measures. District comparisons use the same assessment year and rating cohort, with unweighted school averages.</p>
             <p>
               Assessments: {Array.from(new Set(schoolsWithScores.map(s => s.assessment_year).filter(Boolean))).join(", ") || "year not reported"}
               {" · "}{Array.from(new Set(schoolsWithScores.map(s => s.assessment_source).filter(Boolean))).join(", ") || "source not reported"}

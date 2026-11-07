@@ -1,3 +1,4 @@
+import { latestAssessmentYear,currentRankingScore } from '../shared/current-ranking';
 import { schoolBorough } from "../shared/early-childhood";
 import { isEarlyChildhoodOnly } from "@shared/schema";
 import { storage } from "./storage";
@@ -336,6 +337,7 @@ function normalizeSchoolName(name: string): string {
 // Tool handlers
 async function handleSearchSchools(params: Record<string, any>) {
   const schools = await storage.getSchools();
+  const rankingYear=latestAssessmentYear(schools);
   let filtered = schools;
 
   // Apply filters
@@ -367,7 +369,7 @@ async function handleSearchSchools(params: Record<string, any>) {
   }
 
   if (params.min_overall_score) {
-    filtered = filtered.filter(s => calculateOverallScore(s) >= params.min_overall_score);
+    filtered = filtered.filter(s => currentRankingScore(s,rankingYear) >= params.min_overall_score);
   }
 
   if (params.has_gifted_talented === true) {
@@ -388,7 +390,7 @@ async function handleSearchSchools(params: Record<string, any>) {
   }
 
   // Sort by overall score descending
-  filtered.sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a));
+  filtered.sort((a, b) => currentRankingScore(b,rankingYear)-currentRankingScore(a,rankingYear));
 
   // Limit results
   const limit = Math.min(params.limit || 10, 50);
@@ -671,6 +673,7 @@ async function handleGetSchoolHistory(params: Record<string, any>) {
 
 async function handleGetTopSchools(params: Record<string, any>) {
   const schools = await storage.getSchools();
+  const rankingYear=latestAssessmentYear(schools);
   let filtered = schools;
 
   if (params.borough) {
@@ -693,8 +696,8 @@ async function handleGetTopSchools(params: Record<string, any>) {
   }
 
   // Sort by overall score descending
-  filtered = filtered.filter(s => calculateOverallScore(s) >= 0);
-  filtered.sort((a, b) => calculateOverallScore(b) - calculateOverallScore(a));
+  filtered = filtered.filter(s => currentRankingScore(s,rankingYear) >= 0);
+  filtered.sort((a, b) => currentRankingScore(b,rankingYear)-currentRankingScore(a,rankingYear));
 
   const limit = Math.min(params.limit || 10, 25);
   filtered = filtered.slice(0, limit);
@@ -713,6 +716,8 @@ async function handleGetTopSchools(params: Record<string, any>) {
       score_interpretation: "80+ = Excellent, 60-79 = Good, 40-59 = Fair, Below 40 = Needs Improvement",
       next_actions: ["Get details on any school", "Compare top 2-4 schools", "Filter by different criteria"]
     },
+    assessment_year:rankingYear,
+    ranking_note:'Assessment-based ranks use the latest citywide year; high-school ratings retain graduation/readiness/progress measures and are not 2026 Regents ratings.',
     ranking_context: `Top ${limit} ${filterDescription} schools by overall score`,
     top_schools: filtered.map((s, index) => ({
       rank: index + 1,
@@ -721,6 +726,8 @@ async function handleGetTopSchools(params: Record<string, any>) {
       district: s.district,
       borough: schoolBorough(s),
       grade_band: s.grade_band,
+      assessment_year:s.assessment_year ?? null,
+      assessment_source:s.assessment_source ?? null,
       address: s.address,
       latitude: s.latitude,
       longitude: s.longitude,

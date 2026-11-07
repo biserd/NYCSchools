@@ -202,6 +202,11 @@ router.get("/districts", async (_req: Request, res: Response) => {
           enrollment: d.enrollment,
           student_teacher_ratio: d.studentTeacherRatio,
           economic_need_index: d.economicNeedIndex,
+          assessment_year:d.assessmentYear,assessment_test_year:d.assessmentTestYear,assessment_school_count:d.assessmentSchoolCount,
+          demographics_year:d.demographicsYear,demographics_school_count:d.demographicsSchoolCount,
+          rated_school_count:d.ratedSchoolCount,high_school_overall_score:d.highSchoolOverallScore,
+          high_school_rated_count:d.highSchoolRatedCount,metric_counts:d.metricCounts,
+          methodology:d.methodology,component_years:d.componentYears,
         }));
       setCache("v1:districts", payload, CACHE_TTL_LONG);
     }

@@ -1,3 +1,4 @@
+import { latestAssessmentYear,currentRankingScore } from '../shared/current-ranking';
 import { z } from 'zod';
 import { schoolDisplayName } from '../shared/early-childhood';
 import { calculateOverallScore, getAssessmentConfidence, getSchoolSlug, isEarlyChildhoodOnly, isHighSchool, type School } from '../shared/schema';
@@ -123,6 +124,7 @@ function scoreValue(value: number | null | undefined) { return typeof value === 
 
 export function searchMuseSchools(schools: School[], raw: unknown, baseUrl:string) {
   const q = museSearchSchema.parse(raw);
+  const rankingYear=latestAssessmentYear(schools);
   const query = q.query ? normalizedName(q.query) : null;
   const rows = schools.filter(s => {
     if (query && !normalizedName(s.name).includes(query) && !normalizedName(schoolDisplayName(s)).includes(query) && !s.dbn.toLowerCase().includes(query)) return false;
@@ -135,17 +137,20 @@ export function searchMuseSchools(schools: School[], raw: unknown, baseUrl:strin
       if (q[flag] !== undefined && s[flag] !== q[flag]) return false;
     }
     if(q.has_2k === true && s.early_childhood_source?.status === 'needs_verification') return false;
-    if (q.min_overall_score !== undefined && (rating(s).overall_score ?? -1) < q.min_overall_score) return false;
+    if (q.min_overall_score !== undefined && currentRankingScore(s,rankingYear) < q.min_overall_score) return false;
     return true;
   });
-  rows.sort((a,b) => (rating(b).overall_score ?? -1) - (rating(a).overall_score ?? -1) || a.name.localeCompare(b.name) || a.dbn.localeCompare(b.dbn));
+  rows.sort((a,b) => currentRankingScore(b,rankingYear)-currentRankingScore(a,rankingYear) || a.name.localeCompare(b.name) || a.dbn.localeCompare(b.dbn));
   const reasons = [query && 'name or identifier match', q.district && `district ${q.district}`, q.borough && `${q.borough} location`, q.grade && `grade ${q.grade}`, q.grade_band && `${q.grade_band} grades`, q.school_type && `${q.school_type} type`, ...(['has_2k','has_3k','has_prek','has_gifted_talented','has_dual_language'] as const).filter(flag => q[flag] === true).map(flag => `recorded ${flag.replace('has_','')} program`)].filter(Boolean);
   return {
+    ranking_assessment_year:rankingYear,
+    ranking_note:'Assessment-based ranks use the latest citywide assessment year. Older dated records remain discoverable but are not current-year ranked. High-school ratings use graduation/readiness/progress, not Regents.',
     total_matches: rows.length, limit:q.limit, offset:q.offset,
     next_offset:q.offset + q.limit < rows.length ? q.offset + q.limit : null,
     schools: rows.slice(q.offset,q.offset+q.limit).map(s => ({
       dbn:s.dbn,name:schoolDisplayName(s),borough:schoolBorough(s),district:s.district,grade_band:s.grade_band,school_type:schoolType(s),
       programs:{has_2k:s.has_2k ?? null,has_3k:s.has_3k ?? null,has_prek:s.has_prek ?? null,has_gifted_talented:s.has_gifted_talented ?? null,has_dual_language:s.has_dual_language ?? null},
+      ranking_eligible:currentRankingScore(s,rankingYear)>=0,
       rating:rating(s),assessment_year:s.assessment_year ?? null,assessment_source:s.assessment_source ?? null,
       enrollment:s.enrollment ?? null,demographics_year:s.demographics_year ?? null,
       program_source_url:s.early_childhood_source?.sourceUrl ?? null,program_verification:s.early_childhood_source?.status ?? null,

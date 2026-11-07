@@ -1,3 +1,4 @@
+import { latestAssessmentYear,currentRankingScore } from '../shared/current-ranking';
 import { schoolBorough, programLabels, schoolDisplayName } from "../shared/early-childhood";
 import { isEarlyChildhoodOnly } from "@shared/schema";
 /**
@@ -309,11 +310,12 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
   let related: School[] = [];
   try {
     const all = (await storage.getSchools()) as School[];
+    const rankingYear=latestAssessmentYear(all);
     related = all
       .filter((s) => s.district === school.district && s.dbn !== school.dbn)
       .map((s) => ({
         s,
-        score: calculateOverallScore(s),
+        score: currentRankingScore(s,rankingYear),
       }))
       .filter((x) => x.score >= 0)
       .sort((a, b) => b.score - a.score)

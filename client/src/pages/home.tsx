@@ -1,3 +1,4 @@
+import { latestAssessmentYear,currentRankingScore,currentAcademicRankingScore } from '@shared/current-ranking';
 import { lazy, Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
@@ -295,6 +296,7 @@ export default function Home() {
 
   const show2K = selectedGradeBand === "2K";
 
+  const rankingYear = useMemo(()=>latestAssessmentYear(rawSchools || []),[rawSchools]);
   const schools = useMemo(() => {
     if (!rawSchools) return [];
     
@@ -585,9 +587,9 @@ export default function Home() {
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "overall":
-          return b.overall_score - a.overall_score;
+          return currentRankingScore(b,rankingYear)-currentRankingScore(a,rankingYear) || a.name.localeCompare(b.name);
         case "academics":
-          return (b.academics_score ?? -1) - (a.academics_score ?? -1);
+          return currentAcademicRankingScore(b,rankingYear)-currentAcademicRankingScore(a,rankingYear) || a.name.localeCompare(b.name);
         case "climate":
           return (b.climate_score ?? -1) - (a.climate_score ?? -1);
         case "progress":
@@ -602,7 +604,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, selectedSchoolType, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, zonedFilter, userZones, trends, sortBy]);
+  }, [schools, debouncedSearchQuery, selectedDistrict, selectedGradeBand, selectedSchoolType, earlyChildhoodFilter, giftedTalentedFilter, trendFilter, dualLanguageFilter, ptaFilter, iepFilter, debouncedZipCode, zonedFilter, userZones, trends, sortBy, rankingYear]);
 
   const handleSchoolClick = (school: SchoolWithOverallScore) => {
     setSelectedSchool(school);
@@ -848,6 +850,8 @@ export default function Home() {
         onZonedFilterChange={handleZonedFilterChange}
         hasZonedSchools={hasZonedSchools}
       />
+
+      <p className="container mx-auto px-4 py-2 text-xs text-muted-foreground" data-testid="ranking-data-year">ELA/Math rankings: {rankingYear || 'year not reported'} school year{rankingYear ? ` · spring ${Number(rankingYear.slice(0,4))+1} tests` : ''}. Older dated assessment records remain discoverable after current-year ranked results. High-school overall ratings use graduation/readiness/progress, not Regents.</p>
 
       {/* Render the full strip during loading: its wrapping height depends on
           viewport width, so a fixed minimum leaves a large mobile gap. */}
