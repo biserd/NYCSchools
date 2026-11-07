@@ -1,5 +1,6 @@
 // Transactional email for NYC School Ratings using Cloudflare Email Service.
 import { env } from "cloudflare:workers";
+import { KINDERLEARNER_SITE } from "../shared/kinderlearner";
 
 type EmailRecipient = string | EmailAddress | (string | EmailAddress)[];
 
@@ -287,6 +288,14 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
             </a>
           </div>
           
+          <div style="background: #eff6ff; border-radius: 8px; padding: 20px; margin: 25px 0;">
+            <h2 style="color: #1e40af; margin-top: 0; font-size: 18px;">KinderLearner is now available for iPhone and iPad</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #374151;">
+              Meet our early learning app for playful practice in letters and numbers. It’s free to download, with a separate optional paid membership.
+            </p>
+            <a href="${KINDERLEARNER_SITE.appStore}" target="_blank" rel="noopener noreferrer nofollow" style="color: #1d4ed8; font-weight: bold;">Download on the App Store</a>
+          </div>
+
           <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
               Questions? Just reply to this email or reach out at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>.

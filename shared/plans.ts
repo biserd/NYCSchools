@@ -2,6 +2,7 @@
 // Historical offer only: retain for receipts, delayed webhooks and existing access.
 export const RESEARCH_PASS = { id: 'season_pass', name: 'School Research Pass', amount: 2900, currency: 'usd', months: 6, available: false, legacy: true } as const;
 export const FAMILY_PREMIUM = { id: 'family_premium', name: 'Family Premium', amount: 999, currency: 'usd', interval: 'month' } as const;
+export const FAMILY_PREMIUM_ACTIVE_STATUSES = ['active', 'trialing'] as const;
 // Safe default; server-owned environment flags control actual availability.
 export const PARENT_ASSISTANT_AVAILABLE = false;
 
@@ -16,7 +17,7 @@ export function resolveAccess(user: AccessInput, family: FamilyAccessInput | nul
     (!user.subscriptionExpiresAt || user.subscriptionExpiresAt > now);
   const legacyResearchActive = user.subscriptionStatus === 'active' && user.subscriptionPlan === 'premium' &&
     (!user.subscriptionExpiresAt || user.subscriptionExpiresAt > now);
-  const familyActive = !!family && ['active', 'trialing'].includes(family.status) && family.currentPeriodEnd > now;
+  const familyActive = !!family && FAMILY_PREMIUM_ACTIVE_STATUSES.some(status => status === family.status) && family.currentPeriodEnd > now;
   const grandfatheredAssistant = passActive || legacyResearchActive;
   return {
     research: passActive || legacyResearchActive || familyActive,

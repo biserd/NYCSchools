@@ -1,13 +1,13 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { familySubscriptions, type User } from '@shared/schema';
-import { FAMILY_PREMIUM, resolveAccess } from '@shared/plans';
+import { FAMILY_PREMIUM, FAMILY_PREMIUM_ACTIVE_STATUSES, resolveAccess } from '@shared/plans';
 import type Stripe from 'stripe';
 import { db } from './db';
 
 export async function accountAccess(user: User) {
   const rows = await db.select().from(familySubscriptions).where(eq(familySubscriptions.userId, user.id)).orderBy(desc(familySubscriptions.currentPeriodEnd));
   const now = new Date();
-  const family = rows.find(row => ['active', 'trialing'].includes(row.status) && row.currentPeriodEnd > now) ?? rows[0] ?? null;
+  const family = rows.find(row => FAMILY_PREMIUM_ACTIVE_STATUSES.some(status => status === row.status) && row.currentPeriodEnd > now) ?? rows[0] ?? null;
   return resolveAccess(user, family, now, process.env.PARENT_ASSISTANT_ENABLED === 'true');
 }
 

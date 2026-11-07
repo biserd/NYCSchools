@@ -53,7 +53,6 @@ assert.equal(kinderLearnerLegacyRedirect('/kinderlearner/'),KINDERLEARNER_SITE.h
 assert.equal(kinderLearnerLegacyRedirect('/kinderlearner/pre-k-learning-app'),undefined);
 for (const [path, destination] of [
   ['/', KINDERLEARNER_SITE.home],
-  ['/pricing', KINDERLEARNER_SITE.home],
   ['/blog/best-nyc-kindergartens-2026', KINDERLEARNER_SITE.kindergartenGuide],
   ['/blog/nyc-prek-3k-kindergarten-admissions-demand-2025', KINDERLEARNER_SITE.preKGuide],
 ] as const) {

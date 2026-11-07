@@ -39,7 +39,7 @@ import { KinderLearnerInfoContent } from '../shared/KinderLearnerInfoContent';
 import { KinderLearnerContent } from '../shared/KinderLearnerContent';
 import { KinderLearnerResourceLink } from '../shared/KinderLearnerResourceLink';
 import { PRICING_DESCRIPTION } from '../shared/pricing-coverage';
-import { PricingHero, PricingPlanFeatures } from '../shared/PricingValueContent';
+import { PricingHero, PricingKinderLearner, PricingPlanFeatures } from '../shared/PricingValueContent';
 import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
@@ -1030,7 +1030,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
   const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><h2>Parent decision guides and comparisons</h2><ul>${PARENT_GUIDES.map(guide => `<li><a href="${parentGuidePath(guide)}">${escapeHtml(guide.title)}</a><p>${escapeHtml(guide.description)}</p></li>`).join('')}</ul></section>` : "";
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
   const blogSections = path === '/blog' ? `<section><h2>All articles</h2><ul>${blogPosts.map(post => `<li><h3><a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a></h3><p>${escapeHtml(post.description)}</p></li>`).join('')}</ul></section>` : '';
-  const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>` : '';
+  const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>${renderToStaticMarkup(React.createElement(PricingKinderLearner))}` : '';
   const crawlerHtml = path === '/pricing'
     ? `<main>${pricingSections}</main>`
     : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}</main>`;

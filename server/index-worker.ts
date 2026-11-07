@@ -5,6 +5,7 @@ import {parentWhatsappWebhook, PARENT_WEBHOOK_PATH} from './parent/whatsapp';
 import {processReminders, pruneParentData, reminderStatusWebhook, PARENT_STATUS_PATH} from './parent/delivery';
 
 export {ParentAssistantAgent} from './parent/agent-sdk';
+export { KinderLearnerEntitlements } from './kinderLearnerService';
 
 type WorkerHandler = ReturnType<typeof httpServerHandler>;
 

@@ -9,6 +9,7 @@ export const KINDERLEARNER = {
 export const KINDERLEARNER_SITE = {
   home: 'https://kinderlearner.com/',
   app: 'https://kinderlearner.com/app/',
+  appStore: 'https://apps.apple.com/us/app/kinderlearner/id6816259828',
   preKGuide: 'https://kinderlearner.com/guides/counting-games-at-home/',
   kindergartenGuide: 'https://kinderlearner.com/guides/kindergarten-readiness-without-pressure/',
 } as const;
