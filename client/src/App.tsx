@@ -13,6 +13,7 @@ import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 import { initializeAttribution, trackEvent } from "@/lib/analytics";
 import { guideActionParams } from '@/lib/guide-actions';
+import { dataReleaseActionParams } from '@/lib/data-release-actions';
 
 // Lazy-load every non-Home route so its JS + CSS split into separate chunks.
 // Home stays eager so its LCP element ships in the initial bundle.
@@ -81,6 +82,17 @@ function PageLoader() {
 
 function AnalyticsPageView() {
   const [location] = useLocation();
+
+  useEffect(()=>{
+    const onClick=(event:MouseEvent)=>{
+      const link=(event.target as Element)?.closest?.('a[data-release-action]') as HTMLAnchorElement|null;
+      if(!link)return;
+      const params=dataReleaseActionParams(location,link.href,window.location.origin,link.dataset.releaseAction,link.dataset.releaseResource,link.dataset.releasePlacement);
+      if(params)trackEvent(params.action==='download'?'press_resource_download':'data_release_click',params);
+    };
+    document.addEventListener('click',onClick);
+    return()=>document.removeEventListener('click',onClick);
+  },[location]);
 
   useEffect(() => {
     initializeAttribution();

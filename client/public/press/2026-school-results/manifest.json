@@ -1,0 +1,92 @@
+{
+  "prepared": "2026-11-07",
+  "files": {
+    "press-release.txt": {
+      "bytes": 4872,
+      "sha256": "20f978ccf5b3cf50ebd0adb19f6b3b0299dc3393e727a18114996bfc3b85fbe5"
+    },
+    "README.txt": {
+      "bytes": 3515,
+      "sha256": "411c981ae1ff1eb4c743781780186bbc94f518ecfad5697621f73d381dc0308c"
+    },
+    "sources.json": {
+      "bytes": 11700,
+      "sha256": "424d7ffff9def21e6c0153d225f5ba61ee103bba080be88b5f2d1aa8dfbc32bb"
+    },
+    "ela-math-school-changes-2025-2026.csv": {
+      "rows": 1604,
+      "columns": [
+        "dbn",
+        "school_name",
+        "borough",
+        "district",
+        "profile_url",
+        "subject",
+        "tested_grades",
+        "previous_test_year",
+        "current_test_year",
+        "previous_school_year",
+        "current_school_year",
+        "previous_proficiency_pct",
+        "current_proficiency_pct",
+        "change_pp_rounded_1dp",
+        "previous_tested",
+        "current_tested",
+        "fixed_2025_grade_weight_change_pp",
+        "source_url",
+        "source_sha256",
+        "eligibility_method"
+      ],
+      "bytes": 603827,
+      "sha256": "727ff175d177c1b3232dbd98f5ee3456e1bdb4aca8d8a08ed3265a8a0804aacb"
+    },
+    "regents-history-changes-2025-2026.csv": {
+      "rows": 605,
+      "columns": [
+        "dbn",
+        "school_name",
+        "borough",
+        "district",
+        "profile_url",
+        "source_exam_label",
+        "previous_reporting_year",
+        "current_reporting_year",
+        "previous_pass_rate_65plus_pct",
+        "current_pass_rate_65plus_pct",
+        "change_pp_rounded_1dp",
+        "previous_tested",
+        "current_tested",
+        "previous_mean_score",
+        "current_mean_score",
+        "previous_scoring_80plus_pct",
+        "current_scoring_80plus_pct",
+        "source_url",
+        "source_sha256",
+        "eligibility_method"
+      ],
+      "bytes": 267024,
+      "sha256": "298b27f4015f361fe7436c9b65c2193f55c0e449c1b7c529e4ab9ee9ddf74469"
+    },
+    "regents-source-category-snapshots-2026.csv": {
+      "rows": 1594,
+      "columns": [
+        "dbn",
+        "school_name",
+        "borough",
+        "district",
+        "profile_url",
+        "source_exam_label",
+        "reporting_year",
+        "tested",
+        "pass_rate_65plus_pct",
+        "mean_score",
+        "scoring_80plus_pct",
+        "growth_comparison_status",
+        "source_url",
+        "source_sha256"
+      ],
+      "bytes": 658609,
+      "sha256": "c1b5ca5a039995899c04f3f334a760ee2ba2078bbfbfbac81134f551d821bc2c"
+    }
+  }
+}

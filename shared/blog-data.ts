@@ -1,5 +1,6 @@
 import { SURVEY_INSIGHTS } from './survey-insights';
 import { SCORE_ARTICLES } from './score-articles';
+import { DATA_RELEASE } from './data-release';
 
 export interface BlogPost {
   slug: string;
@@ -15,6 +16,7 @@ export interface BlogPost {
 }
 
 export const blogPosts: BlogPost[] = [
+  {...DATA_RELEASE,author:'NYC School Ratings Team',readTime:'6 min read',category:'Press Release',tags:['2026 NYC school results','Public data','Media resources']},
   ...SCORE_ARTICLES.map(page=>({...page,author:'NYC School Ratings Team',category:'Data Analysis'})),
   ...SURVEY_INSIGHTS.map(page => ({
     slug: page.slug, title: page.title, description: page.description,

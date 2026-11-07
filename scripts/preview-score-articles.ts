@@ -21,7 +21,7 @@ createServer(async(req,res)=>{
       res.writeHead(401);return res.end('{"message":"Anonymous read-only preview"}');
     }
     const file=resolve(root,'.'+decodeURIComponent(url.pathname));
-    if(!file.startsWith(root+sep)){res.writeHead(403).end();return;}
+    if(file!==root&&!file.startsWith(root+sep)){res.writeHead(403).end();return;}
     if(extname(file)) {
       try{const body=await readFile(file);res.setHeader('Content-Type',mime[extname(file)]||'application/octet-stream');return res.end(body);}catch{res.writeHead(404).end();return;}
     }

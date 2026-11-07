@@ -48,6 +48,9 @@ import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
 import { getScoreArticle, scoreArticleSchema } from '../shared/score-articles';
 import { ScoreArticleContent } from '../shared/ScoreArticleContent';
 import { ScoreMoversTeaser } from '../shared/ScoreMoversTeaser';
+import { DATA_RELEASE,dataReleaseSchema } from '../shared/data-release';
+import { DataReleaseContent } from '../shared/DataReleaseContent';
+import { DataReleaseNotice } from '../shared/DataReleaseNotice';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
 import { getSchoolSurveys } from './schoolSurveys';
@@ -1008,7 +1011,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
     ? (breadcrumb ? [...(Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]), breadcrumb] : meta.jsonLd)
     : breadcrumb;
 
-  const homepageSections = path === "/" ? `
+  const homepageSections = path === "/" ? `${renderToStaticMarkup(React.createElement(DataReleaseNotice,{placement:'homepage'}))}
     <section>
       <h2>Compare NYC schools with transparent data</h2>
       <p>Explore academics, student progress, school climate, programs, demographics, admissions context, parent reviews, and commute fit across public, charter, private, 3-K, and Pre-K options.</p>
@@ -1229,6 +1232,9 @@ export async function renderSeoHtml(
       // A temporary data outage must not turn a known editorial page into a
       // 404, or cache the missing comparison for the full HTML cache lifetime.
       if (!data) return result;
+    } else if (path===DATA_RELEASE.path) {
+      result=applyMeta(baseHtml,{title:`${DATA_RELEASE.title} | NYC School Ratings`,description:DATA_RELEASE.description,canonical:`${SITE_ORIGIN}${DATA_RELEASE.path}`,bootHeading:DATA_RELEASE.title,serverHtml:renderToStaticMarkup(React.createElement(DataReleaseContent)),jsonLd:dataReleaseSchema()})
+        .replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i,'<meta property="og:type" content="article" />');
     } else if ((m = path.match(/^\/blog\/([^/]+)$/)) && getScoreArticle(m[1])) {
       const page=getScoreArticle(m[1])!;
       result=applyMeta(baseHtml,{title:`${page.title} | NYC School Ratings`,description:page.description,canonical:`${SITE_ORIGIN}/blog/${page.slug}`,bootHeading:page.title,serverHtml:renderToStaticMarkup(React.createElement(ScoreArticleContent,{page})),jsonLd:scoreArticleSchema(page)})

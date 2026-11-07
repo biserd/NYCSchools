@@ -1,0 +1,81 @@
+{
+  "analysis_date": "2026-11-07",
+  "source_page": "https://infohub.nyced.org/reports/academics/test-results",
+  "sources": [
+    {
+      "file": "school-ela-results-public.xlsx",
+      "url": "https://infohub.nyced.org/docs/default-source/default-document-library/school-ela-results-public.xlsx",
+      "sha256": "5a8c419e64091c65b06a01d2694d9bd11bcd45f424fe2756ffa47b8f02b4ce18",
+      "notes": [
+        "NEW YORK CITY Results on the NEW YORK STATE English Language Arts (ELA), Mathematics and Science Exams",
+        "(Grades 3 - 8)",
+        "2018 - 2026",
+        "NOTES",
+        "This report includes results for the New York State ELA, Math and Science exams for the years 2018-2026 as of August 3, 2026. Due to differences in reporting timing, results may differ slightly from finalized results reported on data.nysed.gov.",
+        "Starting in 2024, NYSED transitioned from a paper-based test to a computer-based test for grades 5 and 8; this was expanded to grades 4 and 6 in 2025. The data presented in this report include results from both computer-based and paper-based administrations. In cases where a student completed both computer- and paper-based tests, the results in this report reflect the most complete test record. Accordingly, results included in this report may differ slightly from those published on data.nysed.gov.",
+        "In 2024, NYSED introduced the new Grade 5 and 8 Science tests aligned to the NYS P-12 Science Learning Standards; data presented in this report only include results from the redesigned exam.",
+        "In 2023, NYSED aligned the Math and ELA tests to new standards; therefore, results from 2022 and earlier should not be directly compared to results from 2023 and later.",
+        "In 2018, NYSED rescaled the Math and ELA exams to account for a change in test administration from 3 days to 2 days; therefore, results from 2017 and earlier should not be directly compared to results from 2018 and later.",
+        "Because exams were cancelled in 2020 and voluntary in 2021 (~21% of eligible students took exams in 2021), no data for those years is included. ",
+        "Results from 2013-2017 can be found here: https://opendata.cityofnewyork.us/",
+        "Prior to 2025, students enrolled in NYC PS schools outside of their district of residence were considered out-of-district placement (OODP) testers and attributed separately. Beginning in 2025, these students are attributed to the schools they were enrolled in during the testing window.",
+        "Students enrolled in OODP schools are included in the city and borough-level results but excluded in all other files.",
+        "District 75 students are included in city-level results but excluded in all other files.",
+        "Charter schools are not included. School level charter data will be made available here: https://infohub.nyced.org/reports-and-policies/citywide-information-and-data/test-results",
+        "Students enrolled at the Children's School may be attributed to either one of two separate District-Borough-Numbers (DBN): 15K418 & 75M732. In 2026, results are reported by the DBN of enrollment. In 2025, all students enrolled at the Children's School were attributed to 75M732. In prior years, students enrolled at 15K418 were attributed to OODP.",
+        "Data for Asian students include Native Hawaiian or Other Pacific Islanders.",
+        "Economically disadvantaged students include those identified by the State as eligible for free or reduced-price lunch or other economic assistance programs.",
+        "Gender and Gender by Ethnicity tabs report a \"Neither Female nor Male\" category starting in 2023.",
+        "Data for students in temporary housing and foster care were not available at the time of publication; therefore, the corresponding tabs are not included. These will be appended once the data become available.",
+        "Due to missing demographic information in the files from NYSED, demographic categories do not always add up to citywide totals.",
+        "In order to comply with regulations of the Family Educational Rights and Privacy Act (FERPA) on public reporting of education outcomes, groups with 5 or fewer tested students are suppressed with an “s”. In addition, groups with the next lowest number of tested students are suppressed when they could reveal, through addition or subtraction, the underlying numbers that have been redacted."
+      ]
+    },
+    {
+      "file": "school-math-results-public.xlsx",
+      "url": "https://infohub.nyced.org/docs/default-source/default-document-library/school-math-results-public.xlsx",
+      "sha256": "fc11957633937e324a7456ca80cce1b075ea379d85c4c7153d9c477f6f255a6a",
+      "notes": [
+        "NEW YORK CITY Results on the NEW YORK STATE English Language Arts (ELA), Mathematics and Science Exams",
+        "(Grades 3 - 8)",
+        "2018 - 2026",
+        "NOTES",
+        "This report includes results for the New York State ELA, Math and Science exams for the years 2018-2026 as of August 3, 2026. Due to differences in reporting timing, results may differ slightly from finalized results reported on data.nysed.gov.",
+        "Starting in 2024, NYSED transitioned from a paper-based test to a computer-based test for grades 5 and 8; this was expanded to grades 4 and 6 in 2025. The data presented in this report include results from both computer-based and paper-based administrations. In cases where a student completed both computer- and paper-based tests, the results in this report reflect the most complete test record. Accordingly, results included in this report may differ slightly from those published on data.nysed.gov.",
+        "In 2024, NYSED introduced the new Grade 5 and 8 Science tests aligned to the NYS P-12 Science Learning Standards; data presented in this report only include results from the redesigned exam.",
+        "In 2023, NYSED aligned the Math and ELA tests to new standards; therefore, results from 2022 and earlier should not be directly compared to results from 2023 and later.",
+        "In 2018, NYSED rescaled the Math and ELA exams to account for a change in test administration from 3 days to 2 days; therefore, results from 2017 and earlier should not be directly compared to results from 2018 and later.",
+        "Because exams were cancelled in 2020 and voluntary in 2021 (~21% of eligible students took exams in 2021), no data for those years is included. ",
+        "Results from 2013-2017 can be found here: https://opendata.cityofnewyork.us/",
+        "Prior to 2025, students enrolled in NYC PS schools outside of their district of residence were considered out-of-district placement (OODP) testers and attributed separately. Beginning in 2025, these students are attributed to the schools they were enrolled in during the testing window.",
+        "Students enrolled in OODP schools are included in the city and borough-level results but excluded in all other files.",
+        "District 75 students are included in city-level results but excluded in all other files.",
+        "Charter schools are not included. School level charter data will be made available here: https://infohub.nyced.org/reports-and-policies/citywide-information-and-data/test-results",
+        "Students enrolled at the Children's School may be attributed to either one of two separate District-Borough-Numbers (DBN): 15K418 & 75M732. In 2026, results are reported by the DBN of enrollment. In 2025, all students enrolled at the Children's School were attributed to 75M732. In prior years, students enrolled at 15K418 were attributed to OODP.",
+        "Data for Asian students include Native Hawaiian or Other Pacific Islanders.",
+        "Economically disadvantaged students include those identified by the State as eligible for free or reduced-price lunch or other economic assistance programs.",
+        "Gender and Gender by Ethnicity tabs report a \"Neither Female nor Male\" category starting in 2023.",
+        "Data for students in temporary housing and foster care were not available at the time of publication; therefore, the corresponding tabs are not included. These will be appended once the data become available.",
+        "Due to missing demographic information in the files from NYSED, demographic categories do not always add up to citywide totals.",
+        "In order to comply with regulations of the Family Educational Rights and Privacy Act (FERPA) on public reporting of education outcomes, groups with 5 or fewer tested students are suppressed with an “s”. In addition, groups with the next lowest number of tested students are suppressed when they could reveal, through addition or subtraction, the underlying numbers that have been redacted."
+      ]
+    },
+    {
+      "file": "nyc-regents-overall-and-by-category---public.xlsx",
+      "url": "https://infohub.nyced.org/docs/default-source/default-document-library/nyc-regents-overall-and-by-category---public.xlsx",
+      "sha256": "252cafb1e680190ff5c9eb4680a4b0b4cdeb5eda8e74bc2c34d406cb1315294c",
+      "notes": [
+        "School-level NEW YORK CITY Results on NEW YORK STATE Regents Exams",
+        "2015 - 2026",
+        "Notes",
+        "Testing and score data includes all administrations of the Regents exam: January, June, and August. It reports the highest score for each student for each Regents exam for each school year. Non-numeric marks are dropped from the data.  ",
+        "Due to the COVID-19 pandemic, most Regents exams between June 2020 and August 2021 were cancelled. As a result, the New York State Education Department (NYSED) allowed eligible students to waive Regents exams during this time period. Students who completed all course credits in a course sequence but had not yet passed the corresponding Regents exam were eligible for waivers. Regents exam waivers were applied towards students' Regents and Advanced Regents diploma requirements but are not included in this report. Additionally, NYSED suspended the US History and Government Regents exam until June 2023.",
+        "School DBNs are as of June 30th for each school year. School name and school type reflect most recent data available.",
+        "While the college & career readiness index (CRI) has been suspended since 2020 due to the pandemic and cancellation of the majority of exams in 2019-20 & 2020-21, CUNY has continued to use Regents exams as a means to place out of remediation. More information regarding CUNY's proficiency requirements can be found here: https://www.cuny.edu/academics/testing/testing-faqs/.\nCUNY proficiency benchmarks are included in this report. CUNY proficiency requirements only apply to ELA and Math exams and otherwise are labeled as \"na\". The CUNY proficiency benchmarks on Regents exams include:\n     - English Regents exam score of 75+\n     - Any Math Regents exam score of 80+\n     - Common Core-aligned Algebra I or Geometry Regents exam score of 70+ or Algebra II/Trigonometry exam score of 65+",
+        "Students with disabilities are defined as any child receiving an IEP as of the end of the school year.",
+        "Data on students with disabilities and English Language Learners are as of June 30th for each school year.",
+        "In order to comply with regulations of the Family Educational Rights and Privacy Act (FERPA) on public reporting of education outcomes, groups with 5 or fewer tested students are suppressed with an “s”. In addition, groups with the next lowest number of tested students are suppressed when they could reveal, through addition or subtraction, the underlying numbers that have been redacted."
+      ]
+    }
+  ]
+}

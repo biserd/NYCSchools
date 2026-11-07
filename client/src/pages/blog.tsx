@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { blogPosts } from "@shared/blog-data";
+import { DataReleaseNotice } from '@shared/DataReleaseNotice';
 import { Calendar, Clock, ArrowRight, BarChart3, Home, ChevronRight } from "lucide-react";
 
 function formatDate(dateStr: string): string {
@@ -79,6 +80,7 @@ export default function BlogPage() {
         </div>
 
         <div className="space-y-6">
+          <DataReleaseNotice placement="blog"/>
           {blogPosts.map((post) => (
             <Card key={post.slug} className="hover-elevate transition-all" data-testid={`blog-card-${post.slug}`}>
               <CardHeader>
