@@ -3605,7 +3605,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
   app.post("/mcp", async (req: Request, res: Response) => {
     try {
       const request = req.body;
-      const requestedProtocol = req.header("MCP-Protocol-Version");
+      const requestedProtocol = request?.params?._meta?.['io.modelcontextprotocol/protocolVersion'] || req.header("MCP-Protocol-Version");
       if (requestedProtocol && !["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05", "2026-07-28"].includes(requestedProtocol)) {
         return res.status(400).json({ jsonrpc: "2.0", id: request?.id ?? null, error: { code: -32600, message: "Unsupported MCP protocol version" } });
       }
@@ -3636,7 +3636,8 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       }
 
       const response = await handleMCPRequest(request, context);
-      res.set({ "MCP-Protocol-Version": "2025-11-25", "Mcp-Method": request.method, "Cache-Control": "no-store" }).json(response);
+      const modern=request.params?._meta?.['io.modelcontextprotocol/protocolVersion']==='2026-07-28' || requestedProtocol==='2026-07-28' || request.method==='server/discover';
+      res.set({ "MCP-Protocol-Version": modern?'2026-07-28':'2025-11-25', "Mcp-Method": request.method, "Cache-Control": "no-store" }).json(response);
     } catch (error: any) {
       console.error("MCP request error:", error);
       res.status(500).json({
@@ -3668,9 +3669,10 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     const request=req.body;
     if(!request || JSON.stringify(request).length>4096 || request.jsonrpc!=='2.0' || !['server/discover','initialize','notifications/initialized','tools/list','tools/call','ping'].includes(request.method))
       return res.status(400).json({jsonrpc:'2.0',id:request?.id??null,error:{code:-32600,message:'Invalid or oversized MCP request.'}});
-    const requestedProtocol=req.header('MCP-Protocol-Version');
-    if(requestedProtocol && !['2025-11-25','2025-06-18','2025-03-26','2024-11-05'].includes(requestedProtocol))
+    const requestedProtocol=request.params?._meta?.['io.modelcontextprotocol/protocolVersion'] || req.header('MCP-Protocol-Version');
+    if(requestedProtocol && !['2026-07-28','2025-11-25','2025-06-18','2025-03-26','2024-11-05'].includes(requestedProtocol))
       return res.status(400).json({jsonrpc:'2.0',id:request.id??null,error:{code:-32600,message:'Unsupported MCP protocol version.'}});
+    if(requestedProtocol==='2026-07-28' || request.method==='server/discover')res.set('MCP-Protocol-Version','2026-07-28');
     if(request.method==='notifications/initialized')return res.status(202).end();
     const response=await handleMCPRequest(request,{allowedTools:MUSE_RESEARCH_TOOLS});
     // Log only action and result class. Never log arguments (which could hold

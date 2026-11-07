@@ -822,6 +822,11 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
     switch (method) {
       case "server/discover":
         result = {
+          resultType:'complete',
+          supportedVersions:['2026-07-28'],
+          ttlMs:0,
+          cacheScope:context.allowedTools?'public':'private',
+          _meta:{'io.modelcontextprotocol/serverInfo':SERVER_INFO},
           protocolVersion: context.allowedTools ? '2025-11-25' : SERVER_INFO.protocolVersion,
           serverInfo: SERVER_INFO,
           capabilities: SERVER_CAPABILITIES,
@@ -937,6 +942,12 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
         };
     }
 
+    // Modern result envelopes retain identity independently of tool data.
+    // Legacy initialize clients ignore these additive result fields.
+    if(result && typeof result==='object') {
+      result.resultType='complete';
+      result._meta={...result._meta,'io.modelcontextprotocol/serverInfo':SERVER_INFO};
+    }
     return {
       jsonrpc: "2.0",
       id,

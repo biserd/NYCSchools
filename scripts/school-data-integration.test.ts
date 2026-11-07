@@ -73,6 +73,11 @@ await withDatabaseInstance(database,async()=>{
   const v1=serializeSchool(a);assert.equal(v1.demographics_year,'2025-26');assert.equal(v1.science_assessment_year,'2024-25');assert.equal(v1.ell_percent,0);
   const discover=await handleMCPRequest({jsonrpc:'2.0',id:2,method:'server/discover'});
   assert.equal(discover.result.protocolVersion,'2025-11-25');
+  assert.equal(discover.result.resultType,'complete');
+  assert.deepEqual(discover.result.supportedVersions,['2026-07-28']);
+  assert.equal(discover.result.ttlMs,0);
+  assert.equal(discover.result.cacheScope,'private');
+  assert.equal(discover.result._meta['io.modelcontextprotocol/serverInfo'].name,'nyc-school-ratings');
   const forbidden=await handleMCPRequest({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'get_favorites',arguments:{}}},{allowedTools:MUSE_RESEARCH_TOOLS});
   assert.ok(forbidden.error,'public research must not gain access to private tools');
   const unauthenticated=await handleMCPRequest({jsonrpc:'2.0',id:4,method:'tools/call',params:{name:'get_favorites',arguments:{}}});
