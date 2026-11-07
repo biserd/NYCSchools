@@ -9,7 +9,9 @@ import { getCanonicalRedirectPath, renderSeoHtml } from "./seoRenderer";
 
 import { KINDERLEARNER_PAGES, kinderLearnerLegacyRedirect } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
+import { CHATGPT_PLUGIN } from '../shared/chatgpt-plugin';
 const KNOWN_STATIC_ROUTES = new Set([
+  CHATGPT_PLUGIN.path,
   ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
   ...Object.values(KINDERLEARNER_PAGES).map(page => page.path),
   "/", "/login", "/register", "/forgot-password", "/reset-password",

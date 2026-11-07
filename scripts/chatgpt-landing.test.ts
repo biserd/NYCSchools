@@ -6,6 +6,7 @@ import { ChatGPTPluginContent } from '../shared/ChatGPTPluginContent';
 import { CHATGPT_FAQS, CHATGPT_PLUGIN, CHATGPT_PROMPTS, chatgptPluginSchemas } from '../shared/chatgpt-plugin';
 import { renderSeoHtml } from '../server/seoRenderer';
 import { sitemapByName } from '../server/seoFeeds';
+import { isAgentPublicPage, publicPageMarkdown } from '../server/agentMarkdown';
 
 const template=readFileSync('client/index.html','utf8');
 const markup=renderToStaticMarkup(React.createElement(ChatGPTPluginContent));
@@ -44,4 +45,10 @@ assert.ok((await renderSeoHtml('/features',template))?.includes('href="/chatgpt"
 const app=readFileSync('client/src/App.tsx','utf8');
 assert.ok(app.includes('lazy(() => import("@/pages/chatgpt"))'),'page must be lazy-loaded');
 assert.ok(app.includes('path="/chatgpt" component={ChatGPTPage}'));
+for (const entry of ['server/workerStatic.ts','server/index-prod.ts']) {
+  const source=readFileSync(entry,'utf8');
+  assert.match(source,/const KNOWN_STATIC_ROUTES = new Set\(\[\s*CHATGPT_PLUGIN.path,/,'production must not return a soft/real 404 for the new static route');
+}
+assert.equal(isAgentPublicPage(CHATGPT_PLUGIN.path),true);
+assert.ok(publicPageMarkdown(CHATGPT_PLUGIN.path,html,'https://nycschoolsratings.com')?.includes(CHATGPT_PLUGIN.url));
 console.log('ChatGPT landing: verified listing URL, shared SSR/client copy, SEO, unique schemas, FAQs, public/private boundaries, prompts, lazy route, sitemap and internal links passed.');

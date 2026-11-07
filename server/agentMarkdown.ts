@@ -1,7 +1,7 @@
 import { parseDocument } from 'htmlparser2';
 
 type Node = ReturnType<typeof parseDocument>['children'][number];
-const PUBLIC_STATIC = new Set(['/', '/about', '/methodology', '/safety-methodology', '/faq', '/features', '/benefits', '/pricing', '/blog', '/explore-schools', '/developers', '/developers/docs', '/contact', '/privacy', '/terms', '/release-notes', '/early-childhood', '/private-schools', '/safe-and-strong']);
+const PUBLIC_STATIC = new Set(['/', '/chatgpt', '/about', '/methodology', '/safety-methodology', '/faq', '/features', '/benefits', '/pricing', '/blog', '/explore-schools', '/developers', '/developers/docs', '/contact', '/privacy', '/terms', '/release-notes', '/early-childhood', '/private-schools', '/safe-and-strong']);
 export function isAgentPublicPage(path: string): boolean {
   return PUBLIC_STATIC.has(path) || /^\/(school|private-school|early-childhood|blog|compare|nyc-schools|district|neighborhood|program|guides)\/[^/]+$/.test(path);
 }
