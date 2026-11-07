@@ -91,7 +91,7 @@ function shouldServeAsset(pathname: string): boolean {
   if (/^\/[a-f0-9]{32}\.txt$/.test(pathname)) return false;
   return pathname.startsWith("/assets/") ||
     pathname === "/favicon.ico" ||
-    /\.(?:avif|css|csv|gif|ico|jpe?g|json|map|png|svg|txt|webmanifest|webp|woff2?)$/i.test(pathname);
+    /\.(?:avif|css|csv|gif|ico|jpe?g|json|map|png|svg|txt|webmanifest|webp|woff2?|zip)$/i.test(pathname);
 }
 
 async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
