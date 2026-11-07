@@ -12,7 +12,7 @@ Authorized scope: N1–N5, N7 and N8. N6 (purchase and activation funnel audit) 
 | N4 | `/private-schools` | Borough/grade links populate working filters, preserve the other selected dimension and update shareable URLs. Shared SSR copy explains source years, tuition and ranking limits. Structured data describes the displayed records. Filter URLs retain the directory canonical. |
 | N5 | `/blog/best-nyc-middle-schools-2026` | Contextual shortlist, compare and family/reminder links near the introduction and conclusion, with guide-action click reporting. |
 | N7 | `/guides/private-schools-brooklyn` | New self-canonical guide in the guide hub and sitemap; Brooklyn-only canonical NCES records, stage filters, dated profile links and three attributed official-source examples. |
-| N8 | Private working scorecard | Five observed queries, five target pages, exact-query URL mappings, click metric definitions and a repeatable 28-day comparison procedure. Business analytics are kept outside the public site/repository. |
+| N8 | Private working scorecard | Five observed queries, six target pages, exact-query URL mappings, click metric definitions and a repeatable 28-day comparison procedure. Business analytics are kept outside the public site/repository. |
 
 The Brooklyn guide uses recorded grade ranges, not independently reverified current provision. Unknown grades remain unclassified; NCES IDs are deduplicated, while similarly named schools/campuses are not silently merged. Stage counts overlap. Official school examples illustrate fit questions rather than a ranked top three.
 
