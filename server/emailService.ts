@@ -160,7 +160,7 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
               Start Exploring Schools →
             </a>
           </div>
-          
+
           <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
               Your School Research Pass is valid for <strong>6 months</strong>. If you have any questions,
@@ -287,11 +287,14 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
               Start Exploring Schools
             </a>
           </div>
-          
+
           <div style="background: #eff6ff; border-radius: 8px; padding: 20px; margin: 25px 0;">
             <h2 style="color: #1e40af; margin-top: 0; font-size: 18px;">KinderLearner is now available for iPhone and iPad</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #374151;">
-              Meet our early learning app for playful practice in letters and numbers. It’s free to download, with a separate optional paid membership.
+              Meet our early learning app for playful practice in letters and numbers. <strong>KinderLearner Pro is included with an active NYC School Ratings Family Premium membership, at no extra cost.</strong>
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; color: #374151;">
+              Download KinderLearner on your iPhone or iPad, then sign in and verify the same email address you use for NYC School Ratings. Pro unlocks automatically while your Family Premium membership is active.
             </p>
             <a href="${KINDERLEARNER_SITE.appStore}" target="_blank" rel="noopener noreferrer nofollow" style="color: #1d4ed8; font-weight: bold;">Download on the App Store</a>
           </div>
@@ -516,6 +519,9 @@ export async function sendFamilyPremiumAccessLink(userEmail: string, magicLinkUr
         <p>Stripe confirmed your Family Premium subscription. Your school research, Family Calendar and Parent Assistant are now available. Your Stripe receipt shows the price you agreed to at checkout.</p>
         <p><a href="${magicLinkUrl}" style="display:inline-block;background:#0d746b;color:white;padding:12px 18px;border-radius:8px;text-decoration:none">Open your Family Calendar</a></p>
         <p>This one-time sign-in link expires in 24 hours. If it expires, request a fresh link on the sign-in page using this email address. Never share the link.</p>
+        <h2>KinderLearner Pro is included</h2>
+        <p>Your Family Premium membership also includes KinderLearner Pro for iPhone and iPad, at no extra cost. Download the app, then sign in and verify the same email address you used for NYC School Ratings. Pro unlocks automatically while your Family Premium membership is active.</p>
+        <p><a href="${KINDERLEARNER_SITE.appStore}" target="_blank" rel="noopener noreferrer nofollow">Download KinderLearner on the App Store</a></p>
         <p>You can review or cancel the monthly subscription in account settings after signing in. Canceling retains access through the paid period. This purchase does not alter any separate legacy Research Pass.</p>
         <p>Questions? Contact <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
       </div>`,
@@ -837,6 +843,12 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
                 <span style="color: #10b981; font-weight: bold;">&#10003;</span>
                 <strong style="margin-left: 10px;">Detailed Score Breakdowns</strong>
                 <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Deep dive into test scores and trends</span>
+              </li>
+              <li style="padding: 10px 0; border-top: 1px solid rgba(245, 158, 11, 0.3);">
+                <span style="color: #10b981; font-weight: bold;">&#10003;</span>
+                <strong style="margin-left: 10px;">KinderLearner Pro for iPhone and iPad</strong>
+                <span style="display: block; font-size: 14px; margin-left: 24px; color: #92400e;">Included at no extra cost while your Family Premium membership is active. Download the app, then sign in and verify the same email address you use for NYC School Ratings to unlock Pro automatically.</span>
+                <a href="${KINDERLEARNER_SITE.appStore}" target="_blank" rel="noopener noreferrer nofollow" style="display: inline-block; margin-top: 8px; margin-left: 24px; color: #92400e; font-size: 14px;">Download KinderLearner on the App Store</a>
               </li>
             </ul>
           </div>

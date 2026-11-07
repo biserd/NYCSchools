@@ -45,6 +45,7 @@
     "test:kinderlearner": "tsx scripts/kinderlearner.test.ts",
     "test:pricing-value": "tsx scripts/pricing-value.test.ts",
     "test:chatgpt-landing": "tsx scripts/chatgpt-landing.test.ts",
+    "test:kinderlearner-emails": "node scripts/kinderlearner-email.test.mjs",
     "import:assessment-counts": "tsx scripts/d1/run.ts scripts/import-assessment-tested-counts.ts --d1-staging",
     "db:push": "node scripts/d1/guard-production-deploy.mjs",
     "db:generate:d1": "drizzle-kit generate --config drizzle.d1.config.ts",
