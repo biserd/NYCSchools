@@ -4,6 +4,7 @@ import { getSchoolUrl } from "../shared/schema";
 import { users, favorites, schools, reviews, userProfiles, aiChatSessions, aiChatMessages, schoolHistoricalScores, hsGraduation, hsRegents, nyceecCenters, nyceecReviews, nyceecAiInsights, trackedSchools, passwordResetTokens, admissionsMetrics, magicLinkTokens, processedWebhookEvents, privateSchools, privateSchoolHistory, apiKeys, apiKeyRateState, apiRequestLog, apiAbuseAlerts, type User, type UpsertUser, type InsertUser, type Favorite, type InsertFavorite, type School, type Review, type InsertReview, type ReviewWithUser, type UserProfile, type InsertUserProfile, type AiChatSession, type InsertAiChatSession, type AiChatMessage, type InsertAiChatMessage, type AiChatSessionWithMessages, type HistoricalScore, type SchoolTrend, calculateTrend, type NyceecCenter, type InsertNyceecCenter, type NyceecReview, type InsertNyceecReview, type NyceecReviewWithUser, type NyceecAiInsight, type InsertNyceecAiInsight, type TrackedSchool, type InsertTrackedSchool, type AdmissionsMetrics, type MagicLinkToken, type ProcessedWebhookEvent, type PrivateSchool, type InsertPrivateSchool, type PrivateSchoolHistory, type InsertPrivateSchoolHistory, type HsGraduation, type InsertHsGraduation, type HsRegents, type InsertHsRegents, schoolAttendance, type SchoolAttendance, schoolDiscipline, type SchoolDiscipline, hsAdmissionsProgram, type HsAdmissionsProgram, type ApiKey, type InsertApiKey, type ApiKeyRateState, type InsertApiRequestLog, type InsertApiAbuseAlert, type TwokCenter } from "@shared/schema";
 import { eq, and, sql, desc, asc, like, or, gte, isNotNull, inArray, lt } from "drizzle-orm";
 import { d1Chunks } from './d1-batches';
+import { schoolProfileMetadata } from '@shared/schema';
 
 export interface IStorage {
   // User operations for standalone auth
@@ -355,12 +356,16 @@ export class DbStorage implements IStorage {
   }
 
   async getSchools(): Promise<School[]> {
-    return (await db.select().from(schools)).map(normalizeSchool);
+    const [rows, metadata] = await Promise.all([db.select().from(schools), db.select().from(schoolProfileMetadata)]);
+    const byDbn = new Map(metadata.map(m => [m.dbn, m]));
+    return rows.map(s => normalizeSchool({ ...s, ...byDbn.get(s.dbn) }));
   }
 
   async getSchool(dbn: string): Promise<School | undefined> {
     const [school] = await db.select().from(schools).where(eq(schools.dbn, dbn)).limit(1);
-    return school ? normalizeSchool(school) : undefined;
+    if (!school) return undefined;
+    const [metadata] = await db.select().from(schoolProfileMetadata).where(eq(schoolProfileMetadata.dbn, dbn)).limit(1);
+    return normalizeSchool({ ...school, ...metadata });
   }
 
   async upsertSchool(school: School): Promise<School> {

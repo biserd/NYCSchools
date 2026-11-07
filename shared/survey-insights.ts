@@ -8,13 +8,13 @@ export function surveyBlogSchema(page: SurveyInsight) {
   ];
 }
 export const SURVEY_INSIGHTS: SurveyInsight[] = [
-  {slug:'nys-test-results-2026',title:'2026 New York state test results: preliminary release and next update',
-    description:'What the preliminary 2026 ELA, math and science release means, and why final school-level results are not yet used in NYC School Ratings.',
-    source:'https://www.nysed.gov/news/2026/state-education-department-releases-preliminary-data-english-language-arts-mathematics-and',
+  {slug:'nys-test-results-2026',title:'2026 NYC state test results: school results and data limits',
+    description:'School profiles now include the NYCPS spring 2026 ELA and math snapshot, with explicit years, historical results and testing standards context.',
+    source:'https://infohub.nyced.org/reports/academics/test-results',
     sections:[
-      {title:'Preliminary results are under review',text:'NYSED announced on August 5, 2026 that preliminary ELA, mathematics and science results were available to schools and districts for verification. The announcement anticipated the public release of final state assessment data in early November.'},
-      {title:'What appears on school profiles now',text:'We have not imported preliminary 2026 school-level assessment results. Existing assessment figures retain their own reporting years. Statewide charts cannot supply a missing school result, and survey feedback is not a substitute for an assessment.'},
-      {title:'How the next update will be checked',text:'Before adding final results, we will verify school identifiers, reporting year, grade and subject, participation and suppression rules. We will preserve earlier results so families can distinguish a genuine year-to-year change from a coverage or methodology change.'},
+      {title:'Which release is displayed',text:'The November 7, 2026 update uses NYCPS school-level ELA and math results from spring 2026, school year 2025–26. The source snapshot is dated August 3, 2026. This is not a claim that these are finalized NYSED results. The NYCPS school files exclude charter schools and District 75.'},
+      {title:'What appears on school profiles now',text:'Matched school profiles show 2026 proficiency and grade-level results. Schools absent from the release keep their earlier dated results. Suppressed values remain missing, not zero. Science keeps its existing separate reporting year. Statewide charts cannot supply a missing school result.'},
+      {title:'Historical trends and validation',text:'Earlier records remain available. The trend calculation compares complete ELA and math pairs within the same standards era, beginning in 2023 for current results. The import checks exact school identifiers, duplicate records, percentage units and suppression, and verifies that original historical records remain unchanged.'},
     ]},
   { slug: 'nyc-school-survey-2026', title: '2026 NYC School Survey: results and what they mean for families',
     description: 'Explore NYC family, teacher, student and early-childhood survey results, with participation context and links to individual school feedback.', source: SURVEY_CITYWIDE,

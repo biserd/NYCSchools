@@ -3,28 +3,34 @@
 import type { School, HistoricalScore, SchoolTrend, TrendDirection, PrivateSchool, NyceecCenter } from "./schema";
 
 export function calculateTrend(scores: HistoricalScore[]): SchoolTrend {
-  if (scores.length < 2) {
+  const sorted = [...scores].sort((a, b) => a.year - b.year);
+  const latestYear = sorted.at(-1)?.year ?? 0;
+  // New ELA/math standards began in 2023. Preserve all history, but compare
+  // complete subject pairs within the latest standards era; zero is a score.
+  const comparable = sorted.filter(s => s.year >= (latestYear >= 2023 ? 2023 : 2018)
+    && s.year !== 2020 && s.year !== 2021
+    && s.ela_proficiency != null && s.math_proficiency != null);
+  const comparisonStartYear = comparable[0]?.year;
+  const comparisonEndYear = comparable.at(-1)?.year;
+  if (comparable.length < 2) {
     return {
       direction: 'insufficient_data',
       changePercent: 0,
-      yearsAnalyzed: scores.length,
-      historicalData: scores,
+      yearsAnalyzed: comparable.length,
+      historicalData: sorted,
+      comparisonStartYear, comparisonEndYear,
     };
   }
-
-  // Sort by year ascending
-  const sorted = [...scores].sort((a, b) => a.year - b.year);
 
   // Calculate average proficiency for first and last available years
   const getAvgProficiency = (score: HistoricalScore) => {
     const ela = score.ela_proficiency ?? 0;
     const math = score.math_proficiency ?? 0;
-    const count = (score.ela_proficiency ? 1 : 0) + (score.math_proficiency ? 1 : 0);
-    return count > 0 ? (ela + math) / count : 0;
+    return (ela + math) / 2;
   };
 
-  const oldest = sorted[0];
-  const newest = sorted[sorted.length - 1];
+  const oldest = comparable[0];
+  const newest = comparable[comparable.length - 1];
 
   const oldestAvg = getAvgProficiency(oldest);
   const newestAvg = getAvgProficiency(newest);
@@ -33,8 +39,9 @@ export function calculateTrend(scores: HistoricalScore[]): SchoolTrend {
     return {
       direction: 'insufficient_data',
       changePercent: 0,
-      yearsAnalyzed: scores.length,
+      yearsAnalyzed: comparable.length,
       historicalData: sorted,
+      comparisonStartYear, comparisonEndYear,
     };
   }
 
@@ -53,8 +60,9 @@ export function calculateTrend(scores: HistoricalScore[]): SchoolTrend {
   return {
     direction,
     changePercent: Math.round(changePercent * 10) / 10,
-    yearsAnalyzed: scores.length,
+    yearsAnalyzed: comparable.length,
     historicalData: sorted,
+    comparisonStartYear, comparisonEndYear,
   };
 }
 

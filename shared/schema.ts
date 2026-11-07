@@ -173,7 +173,17 @@ export const schools = sqliteTable("schools", {
 export const insertSchoolSchema = createInsertSchema(schools);
 
 export type InsertSchool = z.infer<typeof insertSchoolSchema>;
-export type School = typeof schools.$inferSelect;
+export const schoolProfileMetadata = sqliteTable('school_profile_metadata', {
+  dbn: text('dbn').primaryKey().references(() => schools.dbn),
+  science_assessment_year: text('science_assessment_year'),
+  demographics_year: text('demographics_year'),
+  demographics_source: text('demographics_source'),
+});
+export type School = typeof schools.$inferSelect & {
+  science_assessment_year?: string | null;
+  demographics_year?: string | null;
+  demographics_source?: string | null;
+};
 
 // Historical Scores Table - stores year-over-year data for trend analysis
 export const schoolHistoricalScores = sqliteTable("school_historical_scores", {
@@ -207,6 +217,8 @@ export interface SchoolTrend {
   changePercent: number; // Percentage change from oldest to newest year
   yearsAnalyzed: number;
   historicalData: HistoricalScore[];
+  comparisonStartYear?: number;
+  comparisonEndYear?: number;
 }
 
 // Calculate trend from historical scores
@@ -250,11 +262,11 @@ export type HsGraduation = typeof hsGraduation.$inferSelect;
 export const hsRegents = sqliteTable("hs_regents", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   dbn: text("dbn").notNull(),
-  year: integer("year").notNull(), // School year start (e.g., 2024 for 2024-25)
+  year: integer("year").notNull(), // NYCPS source reporting year, not an inferred school-year start.
   exam_name: text("exam_name").notNull(), // e.g., "English", "Algebra I", "Living Environment"
   total_tested: integer("total_tested"), // Number of students tested
   pass_rate: real("pass_rate"), // % scoring 65+ (passing)
-  college_ready_rate: real("college_ready_rate"), // % scoring 80+ (college-ready threshold)
+  college_ready_rate: real("college_ready_rate"), // Legacy field name: % scoring 80+, not exam-specific CUNY readiness.
   mastery_rate: real("mastery_rate"), // % scoring 90+ (mastery level)
   mean_score: real("mean_score"), // Average score
   // Subgroup pass rates
@@ -276,6 +288,17 @@ export const hsRegents = sqliteTable("hs_regents", {
 export const insertHsRegentsSchema = createInsertSchema(hsRegents).omit({ id: true });
 export type InsertHsRegents = z.infer<typeof insertHsRegentsSchema>;
 export type HsRegents = typeof hsRegents.$inferSelect;
+
+export type DemographicsSnapshot = {
+  reported_bounds?: Record<string, string>;
+  enrollment: number | null; elementary_enrollment: number | null; middle_enrollment: number | null; high_school_enrollment: number | null;
+  ell_percent: number | null; iep_percent: number | null; asian_percent: number | null; black_percent: number | null;
+  hispanic_percent: number | null; white_percent: number | null; multi_racial_percent: number | null; economic_need_index: number | null;
+};
+export const schoolDemographicsHistory = sqliteTable('school_demographics_history', {
+  dbn:text('dbn').notNull().references(()=>schools.dbn), schoolYear:text('school_year').notNull(),
+  data:text('data',{mode:'json'}).$type<DemographicsSnapshot>().notNull(), sourceUrl:text('source_url').notNull(), sourceHash:text('source_hash'),
+}, table=>[primaryKey({columns:[table.dbn,table.schoolYear]})]);
 
 // Standard Regents exam names for consistent display
 

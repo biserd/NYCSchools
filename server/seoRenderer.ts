@@ -557,9 +557,12 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
           <li>District: ${school.district}</li>
           <li>Borough: ${escapeHtml(borough)}</li>
           <li>Grade band: ${escapeHtml(school.grade_band ?? "K-5")}</li>
-          <li>Enrollment: ${school.enrollment ?? "n/a"}</li>
+          <li>Enrollment (${escapeHtml(school.demographics_year || 'year not recorded')}): ${school.enrollment ?? "n/a"}</li>
+          <li>Demographics school year: ${escapeHtml(school.demographics_year || 'Not recorded')}</li>
           <li>${overall < 0 ? escapeHtml(ratingSentence) : `Overall score: ${overall}/100`}</li>
-          <li>Assessment reporting year: ${escapeHtml(school.assessment_year || 'Not reported')}</li>
+          <li>ELA/Math school year: ${escapeHtml(school.assessment_year || 'Not reported')}</li>
+          <li>ELA/Math source: ${escapeHtml(school.assessment_source || 'Not recorded')}</li>
+          ${school.science_proficiency != null ? `<li>Science assessment school year: ${escapeHtml(school.science_assessment_year || 'Not recorded')}</li>` : ''}
           ${school.assessment_source ? `<li>Assessment source: ${escapeHtml(school.assessment_source)}</li>` : ''}
           ${school.ela_proficiency != null ? `<li>ELA proficiency: ${school.ela_proficiency}%</li>` : ""}
           ${school.math_proficiency != null ? `<li>Math proficiency: ${school.math_proficiency}%</li>` : ""}

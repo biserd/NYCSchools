@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { calculateTrend } from '../shared/school-utils';
+import type { HistoricalScore } from '../shared/schema';
+const score = (year: number, ela: number | null, math: number | null) => ({ year, ela_proficiency: ela, math_proficiency: math } as HistoricalScore);
+const history = [score(2018, 5, 5), score(2022, 10, 10), score(2023, 50, 50), score(2025, 60, 60), score(2026, 55, 55)];
+const trend = calculateTrend(history);
+assert.equal(trend.changePercent, 10);
+assert.equal(trend.comparisonStartYear, 2023);
+assert.equal(trend.comparisonEndYear, 2026);
+assert.equal(trend.yearsAnalyzed, 3);
+assert.equal(trend.historicalData.length, 5);
+assert.equal(calculateTrend([score(2023, 0, 50), score(2026, 0, 60)]).changePercent, 20);
+assert.equal(calculateTrend([score(2023, 50, null), score(2026, 60, 60)]).direction, 'insufficient_data');
+assert.equal(calculateTrend([score(2023, 0, 0), score(2026, 60, 60)]).direction, 'insufficient_data');
+assert.equal(calculateTrend([score(2018, 40, 40), score(2021, 100, 100), score(2022, 44, 44)]).yearsAnalyzed, 2);
+assert.equal(history[0].year, 2018);
+console.log('Assessment trend standards, suppression, zero values and history preservation passed.');

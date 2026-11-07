@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Footer } from "@/components/Footer";
 import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SchoolSurveySection } from "@/components/SchoolSurveySection";
+import { SchoolDemographicsHistory } from "@/components/SchoolDemographicsHistory";
 import { SEOHead } from "@/components/SEOHead";
 import { getSchoolSeoMeta } from "@shared/school-seo";
 import { getSeoLandingPath, getSeoLandingsForSchool } from "@shared/seo-landings";
@@ -163,6 +164,7 @@ export default function SchoolDetail() {
   const { startCheckout, isLoading: checkoutLoading, isPending: checkoutPending } = useCheckout();
 
   const historicalLegend = useChartLegendToggle();
+  const [assessmentEra, setAssessmentEra] = useState<'current' | 'earlier'>('current');
   const gradLegend = useChartLegendToggle();
   const regentsLegend = useChartLegendToggle();
   const attendanceLegend = useChartLegendToggle();
@@ -189,6 +191,10 @@ export default function SchoolDetail() {
     enabled: !!dbn,
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
+  const latestHistoricalYear = historicalTrend?.historicalData.at(-1)?.year;
+  useEffect(() => {
+    setAssessmentEra(latestHistoricalYear && latestHistoricalYear < 2023 ? 'earlier' : 'current');
+  }, [dbn, latestHistoricalYear]);
 
   const isHS = school ? isHighSchool(school) : false;
   const assessmentConfidence = school && !isHS ? getAssessmentConfidence(school) : null;
@@ -1021,7 +1027,7 @@ export default function SchoolDetail() {
                   </div>
                   {schoolWithScore.assessment_year && (
                     <span className="text-xs font-normal text-muted-foreground" data-testid="text-assessment-source">
-                      {schoolWithScore.assessment_year} | {schoolWithScore.assessment_source || 'NYSED'}
+                      ELA/Math · school year {schoolWithScore.assessment_year} | {schoolWithScore.assessment_source || 'NYSED'}
                     </span>
                   )}
                 </CardTitle>
@@ -1050,7 +1056,7 @@ export default function SchoolDetail() {
                   )}
                   {schoolWithScore.science_proficiency != null && (
                     <MetricCard
-                      label="Science Proficiency"
+                      label={`Science Proficiency (${schoolWithScore.science_assessment_year || 'year not recorded'})`}
                       value={`${schoolWithScore.science_proficiency}%`}
                       tooltip={METRIC_TOOLTIPS.scienceProficiency.tooltip}
                       testId="science"
@@ -1248,7 +1254,7 @@ export default function SchoolDetail() {
           )}
 
           {/* Historical Trends - Only shown for schools with historical data (not pure high schools) */}
-          {historicalTrend && historicalTrend.direction !== 'insufficient_data' && historicalTrend.historicalData.length >= 2 && !isPureHighSchool(schoolWithScore) && (
+          {historicalTrend && historicalTrend.historicalData.length >= 1 && !isPureHighSchool(schoolWithScore) && (
             isPremium ? (
               <Card data-testid="card-historical-trends">
                 <CardHeader>
@@ -1274,21 +1280,26 @@ export default function SchoolDetail() {
                       {historicalTrend.direction === 'improving' && `Improving +${Math.abs(historicalTrend.changePercent)}%`}
                       {historicalTrend.direction === 'declining' && `Declining ${historicalTrend.changePercent}%`}
                       {historicalTrend.direction === 'stable' && 'Stable'}
+                      {historicalTrend.direction === 'insufficient_data' && 'Insufficient comparable results'}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    ELA, Math{historicalTrend.historicalData.some(d => d.science_proficiency != null) ? ', and Science' : ''} proficiency trends from NYS standardized tests over {historicalTrend.yearsAnalyzed} years.
+                    Percent scoring Level 3 or 4 on ELA and Math tests. Years below are spring test years; 2026 is school year 2025–26.
                   </p>
                 </CardHeader>
                 <CardContent>
+                  <label className="block text-sm mb-3">Testing standards era{' '}
+                    <select className="border rounded bg-background p-1" value={assessmentEra} onChange={e => setAssessmentEra(e.target.value as 'current' | 'earlier')}>
+                      <option value="current">2023 onward</option><option value="earlier">2018–2022 archive</option>
+                    </select>
+                  </label>
                   <div className="h-64" data-testid="chart-historical">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
-                        data={historicalTrend.historicalData.map(d => ({
+                        data={historicalTrend.historicalData.filter(d => assessmentEra === 'current' ? d.year >= 2023 : d.year < 2023).map(d => ({
                           year: d.year,
                           ELA: d.ela_proficiency,
                           Math: d.math_proficiency,
-                          Science: d.science_proficiency,
                         }))}
                         margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
                       >
@@ -1342,23 +1353,13 @@ export default function SchoolDetail() {
                           name="Math Proficiency"
                           hide={historicalLegend.isHidden("Math")}
                         />
-                        {historicalTrend.historicalData.some(d => d.science_proficiency != null) && (
-                          <Line 
-                            type="monotone" 
-                            dataKey="Science" 
-                            stroke="hsl(var(--chart-3))" 
-                            strokeWidth={2}
-                            dot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2 }}
-                            name="Science Proficiency"
-                            hide={historicalLegend.isHidden("Science")}
-                          />
-                        )}
+
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                   <ChartSourceLink
-                    text="Source: NYSED State Report Card Database (2015-2024)"
-                    url="https://data.nysed.gov/reportcard.php"
+                    text={`Source: NYCPS / NYSED assessment releases, ${historicalTrend.historicalData[0]?.year}–${historicalTrend.historicalData.at(-1)?.year}`}
+                    url="https://infohub.nyced.org/reports/academics/test-results"
                     testId="source-historical"
                   />
                   
@@ -1399,8 +1400,7 @@ export default function SchoolDetail() {
                   </div>
                   
                   <p className="text-xs text-muted-foreground mt-4 italic">
-                    Note: 2020-2021 data unavailable due to COVID-19 testing cancellations. 
-                    Trend calculated by comparing earliest and most recent available years ({historicalTrend.historicalData[0]?.year}-{historicalTrend.historicalData[historicalTrend.historicalData.length - 1]?.year}).
+                    ELA/Math standards changed in 2023; earlier results remain in the archive and table and are not directly comparable. The trend badge compares complete ELA/Math pairs within one standards era ({historicalTrend.comparisonStartYear}–{historicalTrend.comparisonEndYear}), using relative percent change in their average proficiency. Science remains in the table at its original test year; the science test changed in 2024. No 2020 tests; 2021 testing was voluntary and is excluded. Missing or suppressed results are shown as —.
                   </p>
                 </CardContent>
               </Card>
@@ -1428,25 +1428,7 @@ export default function SchoolDetail() {
                 <CardContent className="relative">
                   {/* Blurred preview */}
                   <div className="h-64 relative" data-testid="chart-historical-blurred">
-                    <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={[
-                            { year: '2019', ELA: 45, Math: 42 },
-                            { year: '2022', ELA: 52, Math: 48 },
-                            { year: '2023', ELA: 58, Math: 55 },
-                            { year: '2024', ELA: 62, Math: 59 },
-                          ]}
-                          margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                          <Line type="monotone" dataKey="ELA" stroke="hsl(var(--chart-1))" strokeWidth={2} />
-                          <Line type="monotone" dataKey="Math" stroke="hsl(var(--chart-2))" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <p className="text-xs text-muted-foreground text-center pt-8">Unlock this school's dated results and historical table.</p>
                     
                     {/* Overlay CTA */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
@@ -1709,32 +1691,13 @@ export default function SchoolDetail() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    School-level pass rates for core Regents exams. Pass = 65+, College Ready = 80+.
+                    Pass rate = percentage scoring 65+. Scoring 80+ is a separate score threshold; official CUNY readiness benchmarks vary by exam.
                   </p>
                 </CardHeader>
                 {!isPremium ? (
                   <CardContent className="relative">
                     <div className="h-64 relative" data-testid="regents-blurred">
-                      <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={[
-                              { year: '2019', Algebra: 72, English: 85, Living: 68 },
-                              { year: '2022', Algebra: 68, English: 80, Living: 65 },
-                              { year: '2023', Algebra: 75, English: 82, Living: 70 },
-                              { year: '2024', Algebra: 78, English: 88, Living: 73 },
-                            ]}
-                            margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                            <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                            <Line type="monotone" dataKey="Algebra" stroke="hsl(var(--chart-1))" strokeWidth={2} />
-                            <Line type="monotone" dataKey="English" stroke="hsl(var(--chart-2))" strokeWidth={2} />
-                            <Line type="monotone" dataKey="Living" stroke="hsl(var(--chart-3))" strokeWidth={2} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
+                      <p className="text-xs text-muted-foreground text-center pt-8">Unlock this school's dated results and historical table.</p>
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
                         <div className="text-center p-6 max-w-sm">
                           <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
@@ -1742,7 +1705,7 @@ export default function SchoolDetail() {
                           </div>
                           <h3 className="text-lg font-semibold mb-2">Unlock Regents Exam Data</h3>
                           <p className="text-sm text-muted-foreground mb-4">
-                            View detailed Regents pass rates, college readiness scores, and multi-year trends for each exam subject.
+                            View dated Regents pass rates, percentages scoring 80+, and multi-year trends for each exam.
                           </p>
                             <Button className="gap-2" data-testid="button-upgrade-regents" onClick={startCheckout} disabled={checkoutPending}>
                               {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
@@ -1765,7 +1728,7 @@ export default function SchoolDetail() {
                         <div className="space-y-6">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="outline" className="text-xs" data-testid="badge-regents-year">
-                              {latestYear}-{String(latestYear + 1).slice(-2)} School Year
+                              NYCPS Regents reporting year {latestYear}
                             </Badge>
                           </div>
 
@@ -1777,7 +1740,7 @@ export default function SchoolDetail() {
                                   <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Exam</th>
                                   <th className="text-right py-2 px-3 font-medium text-muted-foreground">Tested</th>
                                   <th className="text-right py-2 px-3 font-medium text-muted-foreground">Pass Rate</th>
-                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">College Ready</th>
+                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">Scoring 80+</th>
                                   {latestExams.some(e => e.mean_score !== null) && (
                                     <th className="text-right py-2 pl-3 font-medium text-muted-foreground">Avg Score</th>
                                   )}
@@ -1823,13 +1786,13 @@ export default function SchoolDetail() {
                                 Regents Pass Rate Trends
                               </h4>
                               <p className="text-xs text-muted-foreground mb-3">
-                                Multi-year pass rates by exam subject. Toggle individual exams to focus on specific subjects.
+                                Percent scoring 65+ by NYCPS reporting year. Toggle exams in the legend. Biology and Earth Space Sciences remain separate from predecessor exams; tests and student cohorts can change between years.
                               </p>
                               <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                   <LineChart data={years.sort((a, b) => a - b).map(year => {
                                     const yearExams = regentsData.filter(r => r.year === year);
-                                    const entry: any = { year: `${year}-${String(year + 1).slice(-2)}` };
+                                    const entry: any = { year: String(year) };
                                     yearExams.forEach(e => { entry[e.exam_name] = e.pass_rate; });
                                     return entry;
                                   })}>
@@ -1842,14 +1805,14 @@ export default function SchoolDetail() {
                                       const examNames = [...new Set(regentsData.map(r => r.exam_name))];
                                       const colors = ['#2563eb', '#dc2626', '#059669', '#d97706', '#7c3aed', '#0891b2', '#be185d', '#4f46e5', '#65a30d', '#ea580c'];
                                       return examNames.map((name, i) => (
-                                        <Line key={name} type="monotone" dataKey={name} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls hide={regentsLegend.isHidden(name)} />
+                                        <Line key={name} type="monotone" dataKey={name} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} hide={regentsLegend.isHidden(name)} />
                                       ));
                                     })()}
                                   </LineChart>
                                 </ResponsiveContainer>
                               </div>
                               <ChartSourceLink
-                                text="Source: NYC DOE InfoHub Regents Exam Results (2018-2024)"
+                                text={`Source: NYCPS InfoHub Regents reporting years ${Math.min(...years)}–${latestYear}. Missing / suppressed values are gaps.`}
                                 url="https://infohub.nyced.org/reports/academics/test-results"
                                 testId="source-regents"
                               />
@@ -2658,24 +2621,24 @@ export default function SchoolDetail() {
             <CardContent>
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <dt className="text-sm text-muted-foreground">Total Enrollment</dt>
+                  <dt className="text-sm text-muted-foreground">Total Enrollment · {schoolWithScore.demographics_year ? `${schoolWithScore.demographics_year} school year` : 'reporting year not recorded'}</dt>
                   <dd className="text-lg font-semibold" data-testid="text-enrollment">{schoolWithScore.enrollment?.toLocaleString() ?? "Not available"}</dd>
                   {/* Enrollment Breakdown by Grade Level */}
-                  {(schoolWithScore.elementary_enrollment || schoolWithScore.middle_enrollment || schoolWithScore.high_school_enrollment) && (
+                  {Boolean(schoolWithScore.elementary_enrollment || schoolWithScore.middle_enrollment || schoolWithScore.high_school_enrollment) && (
                     <div className="mt-2 space-y-1 text-sm" data-testid="enrollment-breakdown">
-                      {schoolWithScore.elementary_enrollment && schoolWithScore.elementary_enrollment > 0 && (
+                      {schoolWithScore.elementary_enrollment != null && schoolWithScore.elementary_enrollment > 0 && (
                         <div className="flex justify-between" data-testid="elementary-enrollment">
                           <span className="text-muted-foreground">K-5 (Elementary)</span>
                           <span className="font-medium tabular-nums">{schoolWithScore.elementary_enrollment.toLocaleString()}</span>
                         </div>
                       )}
-                      {schoolWithScore.middle_enrollment && schoolWithScore.middle_enrollment > 0 && (
+                      {schoolWithScore.middle_enrollment != null && schoolWithScore.middle_enrollment > 0 && (
                         <div className="flex justify-between" data-testid="middle-enrollment">
                           <span className="text-muted-foreground">6-8 (Middle)</span>
                           <span className="font-medium tabular-nums">{schoolWithScore.middle_enrollment.toLocaleString()}</span>
                         </div>
                       )}
-                      {schoolWithScore.high_school_enrollment && schoolWithScore.high_school_enrollment > 0 && (
+                      {schoolWithScore.high_school_enrollment != null && schoolWithScore.high_school_enrollment > 0 && (
                         <div className="flex justify-between" data-testid="hs-enrollment">
                           <span className="text-muted-foreground">9-12 (High School)</span>
                           <span className="font-medium tabular-nums">{schoolWithScore.high_school_enrollment.toLocaleString()}</span>
@@ -2697,6 +2660,7 @@ export default function SchoolDetail() {
           </Card>
 
 
+          <SchoolDemographicsHistory dbn={dbn} />
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 
             schoolWithScore.iep_percent !== null || schoolWithScore.asian_percent !== null || 
@@ -2708,6 +2672,7 @@ export default function SchoolDetail() {
                   <Home className="w-5 h-5" />
                   Student Demographics
                 </CardTitle>
+                <p className="text-xs text-muted-foreground" data-testid="text-demographics-year">School year: {schoolWithScore.demographics_year || 'not recorded'}. {schoolWithScore.demographics_source || 'Legacy profile data; year not recorded'}.</p>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Economic Need & Special Populations */}
@@ -2719,14 +2684,14 @@ export default function SchoolDetail() {
                         <div className="bg-muted/50 rounded-lg p-3" data-testid="container-economic-need">
                           <p className="text-xs text-muted-foreground mb-1">Economic Need Index</p>
                           <div className="flex items-center gap-2 mb-2">
-                            <p className="text-2xl font-bold tabular-nums" data-testid="text-economic-need">{schoolWithScore.economic_need_index}%</p>
+                            <p className="text-2xl font-bold tabular-nums" data-testid="text-economic-need">{schoolWithScore.economic_need_index}/100</p>
                             <InlineComparison 
                               value={schoolWithScore.economic_need_index} 
                               districtAvg={districtAverages?.economicNeedIndex}
                               higherIsBetter={false}
                             />
                           </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">Percentage of students facing economic hardship. Lower indicates fewer students in need.</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">NYCPS Economic Need Index, shown on a 0–100 scale; an estimate of economic need, not a direct poverty count.</p>
                         </div>
                       )}
                       {schoolWithScore.ell_percent !== null && (
@@ -2770,7 +2735,7 @@ export default function SchoolDetail() {
                       {schoolWithScore.asian_percent !== null && (
                         <div className="bg-muted/30 rounded-lg p-2 text-center" data-testid="container-asian-percent">
                           <p className="text-xl font-bold tabular-nums" data-testid="text-asian-percent">{schoolWithScore.asian_percent}%</p>
-                          <p className="text-xs text-muted-foreground">Asian</p>
+                          <p className="text-xs text-muted-foreground">Asian / Pacific Islander</p>
                         </div>
                       )}
                       {schoolWithScore.black_percent !== null && (
@@ -2884,7 +2849,7 @@ export default function SchoolDetail() {
           
           <div className="text-xs text-muted-foreground text-center py-4 space-y-1" data-testid="text-data-source">
             <p>Independent analysis of NYSED and NYC Public Schools data.</p>
-            <p>Reporting year: {schoolWithScore.assessment_year || "varies by metric"} | <Link href="/methodology" className="text-primary underline">Methodology and sources</Link></p>
+            <p>ELA/Math: {schoolWithScore.assessment_year || "year not recorded"} · Demographics/enrollment: {schoolWithScore.demographics_year || "year not recorded"} | <Link href="/methodology" className="text-primary underline">Methodology and sources</Link></p>
           </div>
         </div>
       </main>

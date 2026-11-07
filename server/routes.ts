@@ -6,7 +6,8 @@ import path from "path";
 import { storage } from "./storage";
 import { loadParentGuideData } from './parentGuides';
 import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, familySubscriptions, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { schoolDemographicsHistory } from "@shared/schema";
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
@@ -708,6 +709,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching admissions data:", error);
       res.status(500).json({ error: "Failed to fetch admissions data" });
+    }
+  });
+
+  app.get("/api/schools/:dbn/demographics-history", async (req: Request, res: Response) => {
+    try {
+      const data = await db.select().from(schoolDemographicsHistory)
+        .where(eq(schoolDemographicsHistory.dbn, req.params.dbn.toUpperCase()))
+        .orderBy(asc(schoolDemographicsHistory.schoolYear));
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching demographic history:", error);
+      res.status(500).json({ error: "Failed to fetch demographic history" });
     }
   });
 
