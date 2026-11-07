@@ -2,12 +2,12 @@
   "prepared": "2026-11-07",
   "files": {
     "press-release.txt": {
-      "bytes": 4872,
-      "sha256": "20f978ccf5b3cf50ebd0adb19f6b3b0299dc3393e727a18114996bfc3b85fbe5"
+      "bytes": 6447,
+      "sha256": "2232190dd9bc21ca6858d1ee66bca2e53e20f466f1400cf892e2511e0a074dd8"
     },
     "README.txt": {
-      "bytes": 3515,
-      "sha256": "411c981ae1ff1eb4c743781780186bbc94f518ecfad5697621f73d381dc0308c"
+      "bytes": 3512,
+      "sha256": "a5c842fdee74a96d004bf057347cf5d5c2ef5bbbcc734fe976a351045bee81a3"
     },
     "sources.json": {
       "bytes": 11700,

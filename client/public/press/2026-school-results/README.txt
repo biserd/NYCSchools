@@ -1,4 +1,4 @@
-NYC SCHOOL RATINGS — 2026 SCHOOL RESULTS MEDIA KIT
+NYC SCHOOL RATINGS: 2026 SCHOOL RESULTS MEDIA KIT
 Published November 7, 2026
 Announcement: https://nycschoolsratings.com/blog/nyc-school-ratings-2026-data-release
 Results guide: https://nycschoolsratings.com/blog/nys-test-results-2026

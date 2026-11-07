@@ -40,7 +40,7 @@ for category,report in data['regents'].items():
 export('regents-history-changes-2025-2026.csv',identity+['source_exam_label','previous_reporting_year','current_reporting_year','previous_pass_rate_65plus_pct','current_pass_rate_65plus_pct','change_pp_rounded_1dp','previous_tested','current_tested','previous_mean_score','current_mean_score','previous_scoring_80plus_pct','current_scoring_80plus_pct','source_url','source_sha256','eligibility_method'],pairs)
 export('regents-source-category-snapshots-2026.csv',identity+['source_exam_label','reporting_year','tested','pass_rate_65plus_pct','mean_score','scoring_80plus_pct','growth_comparison_status','source_url','source_sha256'],snapshots)
 assert len(assessment)==1604 and len(pairs)==605 and len(snapshots)==1594
-readme='''NYC SCHOOL RATINGS — 2026 SCHOOL RESULTS MEDIA KIT
+readme='''NYC SCHOOL RATINGS: 2026 SCHOOL RESULTS MEDIA KIT
 Published November 7, 2026
 Announcement: https://nycschoolsratings.com/blog/nyc-school-ratings-2026-data-release
 Results guide: https://nycschoolsratings.com/blog/nys-test-results-2026

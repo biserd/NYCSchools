@@ -2,8 +2,8 @@
 export const DATA_RELEASE = {
   slug:'nyc-school-ratings-2026-data-release',
   path:'/blog/nyc-school-ratings-2026-data-release',
-  title:'NYC School Ratings Publishes 2026 Test-Score Analysis and Downloadable School Data',
-  description:'Public school-by-school analysis includes 1,604 matched ELA/math comparisons and 605 Regents history comparisons, with tested counts, clear years and free CSV downloads.',
+  title:'2026 NYC School Analysis: ELA Proficiency Fell at 720 of 843 Matched Schools',
+  description:'ELA proficiency fell at 720 of 843 matched NYC schools from spring 2025 to 2026. Explore school examples, math and Regents findings, charts and public data.',
   publishedAt:'2026-11-07', updatedAt:'2026-11-07',
   contact:'hello@nycschoolsratings.com',
   resourceRoot:'/press/2026-school-results',

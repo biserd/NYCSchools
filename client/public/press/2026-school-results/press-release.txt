@@ -1,44 +1,52 @@
 FOR IMMEDIATE RELEASE
 
-NYC School Ratings Publishes 2026 Test-Score Analysis and Downloadable School Data
+2026 NYC School Analysis: ELA Proficiency Fell at 720 of 843 Matched Schools
 
-The public release includes 1,604 matched ELA/math school-subject comparisons and 605 Regents history school-exam comparisons, with clear years, tested counts and CSV downloads for families and reporters.
+The median ELA change was -7.4 percentage points, compared with -0.3 in math. US History Regents pass rates rose at 233 of 291 matched schools. All figures describe eligible school-level samples.
 
-NEW YORK — November 7, 2026 — NYC School Ratings has published a public school-by-school analysis of spring 2026 English Language Arts and math results and reporting-year 2026 Regents results, together with downloadable data for families, journalists and researchers.
+NEW YORK, November 7, 2026. Lower English Language Arts proficiency was widespread among schools that qualified for NYC School Ratings' spring 2025 to spring 2026 comparison: 720 of 843 recorded declines. Math results were more evenly split, with 360 schools improving and 394 declining in a separate sample. The independent analysis of already-public NYC Public Schools files shows why families should check the subject, year and tested group before interpreting a school's change.
 
-Key findings from the matched samples
+Reading, math and Regents results moved in different directions
 
-ELA: 843 schools meet the analysis rules for spring 2025 and spring 2026. 121 recorded an increase, 720 a decline and 2 no change at one-decimal precision. The median school change was -7.4 percentage points.
+ELA, spring 2025 to spring 2026: 720 of 843 eligible schools recorded lower proficiency, 121 improved and 2 were unchanged at one-decimal precision. The median school change was -7.4 percentage points.
 
-Math: 761 schools meet the rules in a separate matched sample. 360 recorded an increase, 394 a decline and 7 no change at one-decimal precision. The median school change was -0.3 percentage points.
+Math, spring 2025 to spring 2026: 360 of 761 eligible schools improved, 394 declined and 7 were unchanged. The median school change was -0.3 percentage points, much closer to zero than in the ELA sample.
 
-Regents: 605 school-exam comparisons cleared the checks for Global History and Geography (314) and US History and Government (291). The subjects are reported separately; there is no combined all-exam high-school growth ranking.
+US History and Government Regents, reporting year 2025 to 2026: pass rates at the 65+ threshold rose at 233 of 291 matched schools and fell at 54; 4 were unchanged. The median change was +6.4 percentage points.
 
-What families can explore
+Global History and Geography Regents, reporting year 2025 to 2026: 133 of 314 matched schools improved, 177 declined and 4 were unchanged. The median change was -0.8 percentage points. Combining these exams into one growth ranking would hide their different results.
 
-The public guides show the largest eligible increases and decreases, both years’ results, tested counts, charts and links to school profiles. Families can use current proficiency alongside historical trends, demographics, programs and school comparisons when building a shortlist.
+Three schools show what the changes look like
 
-The analysis and media downloads are available without an email signup. The downloadable CSVs include all eligible comparisons, rather than only the schools featured in the articles. A large increase does not automatically make a school the best fit, and a decline does not establish poorer teaching.
+In Brooklyn, New Heights Middle School's ELA proficiency rose from 34.5% in spring 2025 to 51.3% in spring 2026, a gain of 16.8 percentage points. The tested group numbered 229 students in 2025 and 195 in 2026. Its gain stood out against the declines across most schools in the eligible ELA sample.
 
-How the comparisons were screened
+Also in Brooklyn, P.S. 380 John Wayne Elementary's math proficiency rose from 46.3% to 82.1%, a gain of 35.8 percentage points between spring 2025 and spring 2026. Tested counts were 149 and 123, respectively.
 
-ELA and math comparisons use the same school DBN and All Students population in spring 2025 (2024–25 school year) and spring 2026 (2025–26 school year). Both years must have at least 50 tested students, and the tested count must remain between 75% and 125% of its prior-year value. Matching tested-grade sets and grade-mix checks provide additional safeguards. A stricter 100-tested sensitivity analysis is available in the subject articles.
+In Queens, Eagle Academy for Young Men III's US History and Government Regents pass rate at the 65+ threshold rose from 33.7% in reporting year 2025 to 78.8% in 2026, a gain of 45.1 percentage points. The source reports 104 tested students in each year. These examples describe different tested groups across years; they do not measure the progress of the same children or establish what caused the changes.
 
-These are descriptive school-level results from separate filtered samples, not official student-weighted citywide proficiency changes. They do not follow the same children across years or establish the cause of a change. The school-level ELA/math files exclude charter schools and District 75. The Children’s School is excluded because the source documents changed DBN attribution.
+What parents can check before choosing a school
 
-The ELA/math source snapshot is dated August 3, 2026 and may differ from finalized NYSED results. This announcement publishes an independent analysis of already-public NYCPS files; it is not a new government data release. Rates in the published exports were reconciled with source percentages and tested counts using an independent workbook reader.
+A rise in proficiency and a high current proficiency rate answer different questions. Families can open the ELA and math guides to see both years, the size of the tested group and the largest eligible gains and declines, then visit school profiles to put those results alongside enrollment history, demographics and programs.
 
-Regents exam-version limits remain visible
+For high schools, check the exam name as well as the year. The Regents guides publish separate Global History and US History comparisons. English and algebra appear as labeled 2026 snapshots because the available source does not establish a valid exam-version match for growth rankings. New science exams are not merged with predecessor exams.
 
-English and algebra articles provide clearly labeled 2026 snapshots under the exact NYCPS source categories. They do not publish unvalidated growth leaderboards: the English exam transition and unresolved legacy algebra labels prevent a defensible same-version comparison in the available file. New science exams are not merged with predecessor exams.
+The analysis and media downloads are available without an email signup. The files contain all 1,604 eligible ELA/math school-subject comparisons and all 605 eligible Regents history school-exam comparisons, not just the featured schools. Those totals count comparisons, not unique schools.
 
-Regents Year is retained as a reporting year. The source reports each student’s highest numeric score per exam across administrations in that school year. Tested students, retakers and course-taking patterns can differ between years.
+Which schools qualified, and what the figures cannot tell us
 
-Data, attribution and media access
+ELA and math use the same school DBN and All Students population in spring 2025 (2024–25 school year) and spring 2026 (2025–26 school year). Both years must have at least 50 tested students, and the current tested count must stay between 75% and 125% of the prior count. Matching tested-grade sets and grade-mix checks provide additional safeguards. The subject articles also show a stricter 100-tested sensitivity analysis.
 
-The media kit contains this release, three CSV exports, methodology, source URLs and SHA-256 hashes. It distinguishes proficiency percentages, percentage-point changes, mean exam scores and tested-student counts. Earlier school-profile data remains available as history.
+These are separate filtered samples of school-level results, not official student-weighted citywide proficiency changes. They do not follow the same children across years, establish teaching effects or rank overall school quality. Charter schools and District 75 are outside the ELA/math school-file scope. The Children’s School is excluded because source DBN attribution changed.
 
-Please credit NYC School Ratings for the independent analysis and NYC Public Schools for the source data, with a link to the analysis and methodology. Original source material retains its applicable terms. Media questions and corrections can be sent to hello@nycschoolsratings.com.
+The ELA/math source snapshot is dated August 3, 2026 and may differ from finalized NYSED results. This is independent analysis of already-public NYCPS files, not a new government data release. Exported rates were reconciled with source percentages and tested counts using an independent workbook reader.
+
+Regents Year is a reporting year. The source reports each student’s highest numeric score per exam across administrations in that school year. Retakers, course-taking patterns and tested groups can differ between years. The 65+ pass-rate threshold is distinct from mean scores and the share scoring 80+.
+
+For reporters covering a borough or a particular school
+
+The public media kit includes this release, the full comparison CSVs, separate Regents snapshots, methodology and original source links. School identifiers and borough fields let reporters check a local school or build a borough-specific story. Every comparison retains its years and tested counts; charts and school profiles provide additional context.
+
+Please credit NYC School Ratings for the independent analysis and NYC Public Schools for the source data, with a link to the analysis and methodology. Original source material retains its applicable terms. For data questions or corrections, contact hello@nycschoolsratings.com.
 
 About NYC School Ratings
 
