@@ -89,7 +89,7 @@ export const blogPosts: BlogPost[] = [
     description: "Compare NYC middle schools by borough using dated assessments, participation and survey context, with fall 2027 admissions guidance and clear missing-data limits.",
     author: "NYC School Ratings Team",
     publishedAt: "2026-01-05",
-    updatedAt: "2026-10-25",
+    updatedAt: "2026-11-07",
     readTime: "14 min read",
     category: "School Rankings",
     tags: ["Middle Schools", "Best Schools", "NYC Schools", "School Rankings", "Grades 6-8", "2026"]

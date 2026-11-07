@@ -16,6 +16,7 @@ import { calculateOverallScore, getAssessmentConfidence, isHighSchool, ASSESSMEN
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { MapDiscoveryContent } from '@shared/MapDiscoveryContent';
+import { MAP_META } from '@shared/discovery-pages';
 
 interface UserZones {
   elementary: string | null;
@@ -527,61 +528,9 @@ export default function MapPage() {
     ].reduce((a, b) => a + b, 0);
   }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, selectedZoned]);
 
-  // Generate dynamic SEO title, description, and canonical path from active filter state
-  const seoContent = useMemo(() => {
-    const parts: string[] = [];
-    let description = "Explore NYC public and charter schools by address, borough, district, grade, programs, and school type on an interactive map.";
-    
-    if (selectedType !== "all") {
-      const typeLabel = GRADE_BAND_OPTIONS.find(o => o.value === selectedType)?.label || "";
-      parts.push(typeLabel);
-    }
-    
-    if (selectedGT !== "all") {
-      const gtLabel = GT_OPTIONS.find(o => o.value === selectedGT)?.label || "";
-      parts.push(gtLabel);
-    }
-    
-    if (selectedDL !== "all") {
-      const dlLabel = DUAL_LANGUAGE_OPTIONS.find(o => o.value === selectedDL)?.label || "";
-      if (selectedDL !== "dl") parts.push(`${dlLabel} Dual Language`);
-      else parts.push(dlLabel);
-    }
-    
-    if (selectedIEP !== "all") {
-      const iepLabel = IEP_OPTIONS.find(o => o.value === selectedIEP)?.label || "";
-      parts.push(iepLabel);
-    }
-    
-    if (selectedDistrict !== "all") {
-      parts.push(`District ${selectedDistrict}`);
-    }
-    
-    if (selectedZipCode && selectedZipCode.length === 5) {
-      parts.push(`Zip ${selectedZipCode}`);
-    }
-    
-    let title = "NYC School District Map & School Finder | NYC School Ratings";
-    if (parts.length > 0) {
-      title = `${parts.join(" - ")} Schools Map`;
-      description = `Find ${parts.join(", ")} schools in NYC. View ${filteredSchools.length} school locations, ratings, and details on our interactive map.`;
-    } else {
-      description = "Explore NYC public and charter schools by address, borough, district, grade, programs, and school type on an interactive map.";
-    }
-    
-    // Build canonical path from active filter state
-    const canonicalParams = new URLSearchParams();
-    if (selectedDistrict !== "2" && selectedDistrict !== "all") canonicalParams.set("district", selectedDistrict);
-    if (selectedType !== "all") canonicalParams.set("type", selectedType);
-    if (selectedGT !== "all") canonicalParams.set("gt", selectedGT);
-    if (selectedDL !== "all") canonicalParams.set("dl", selectedDL);
-    if (selectedIEP !== "all") canonicalParams.set("iep", selectedIEP);
-    if (selectedZipCode && selectedZipCode.length === 5) canonicalParams.set("zip", selectedZipCode);
-    const canonicalQuery = canonicalParams.toString();
-    const canonicalPath = "/map"; // Filter views consolidate to the map, not indexable duplicate URLs.
-    
-    return { title, description, canonicalPath };
-  }, [selectedDistrict, selectedType, selectedGT, selectedDL, selectedIEP, selectedZipCode, filteredSchools.length, schoolsWithCoords.length]);
+  // Filter URLs retain one indexable tool page; the guide answers boundary questions.
+  const canonicalPath = "/map";
+  const seoContent = { ...MAP_META, canonicalPath };
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -1246,6 +1195,7 @@ export default function MapPage() {
         description={seoContent.description}
         keywords="NYC school map, school locations, school finder map, NYC school districts, elementary school map, G&T schools, dual language schools, special education schools"
         canonicalPath={seoContent.canonicalPath}
+        appendSiteName={false}
       />
       <AppHeader />
 
@@ -1253,7 +1203,7 @@ export default function MapPage() {
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-semibold" data-testid="text-map-title">{selectedDistrict === "all" ? "NYC School Map — All Districts" : `School Map — District ${selectedDistrict}`}</h1>
+            <h1 className="text-xl font-semibold" data-testid="text-map-title">{MAP_META.heading}</h1>
           </div>
           <div className="text-sm text-muted-foreground">
             {dataSource === "nyceec"
@@ -1266,7 +1216,7 @@ export default function MapPage() {
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">Exploring nearby schools? <a className="text-primary underline" href="/guides/nyc-school-district-map-and-zones">Learn how districts, attendance zones and ZIP codes differ</a> before checking address eligibility.</p>
+        <div className="text-sm text-muted-foreground mb-4 space-y-2"><p>Explore schools by district, grade and program, then open profiles to build your shortlist. {selectedDistrict === 'all' ? 'Showing all community districts.' : `Current view: District ${selectedDistrict}.`}</p><p>A district is not an attendance zone. Markers and ZIP codes do not establish admission eligibility. <a className="text-primary underline" href="https://schoolsearch.schools.nyc/" target="_blank" rel="nofollow noopener noreferrer">Check your exact address with NYCPS</a> · <a className="text-primary underline" href="/guides/nyc-school-district-map-and-zones">Read the districts and zones guide</a></p><p><a className="text-primary underline" href="/compare">Next: compare the schools you find</a></p></div>
         <Card className="mb-4 relative z-20">
           <CardContent className="p-4">
             {/* Desktop filters - always visible */}

@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 import { initializeAttribution, trackEvent } from "@/lib/analytics";
+import { guideActionParams } from '@/lib/guide-actions';
 
 // Lazy-load every non-Home route so its JS + CSS split into separate chunks.
 // Home stays eager so its LCP element ships in the initial bundle.
@@ -90,14 +91,12 @@ function AnalyticsPageView() {
   }, [location]);
 
   useEffect(() => {
-    if (!/^\/(guides|blog|district|neighborhood|program)(\/|$)/.test(location)) return;
+    if (!/^\/(guides|blog|district|neighborhood|program|map|private-schools)(\/|$)/.test(location)) return;
     const onClick = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest?.('a');
       if (!link) return;
-      const url = new URL(link.href, window.location.origin);
-      if (url.origin !== window.location.origin) return;
-      const action = /^\/(school|private-school)\//.test(url.pathname) ? 'profile' : /^\/compare(?:\/|$)/.test(url.pathname) ? 'compare' : url.pathname === '/favorites' ? 'saved_schools' : null;
-      if (action) trackEvent('guide_next_step', { guide_path: location, destination_path:url.pathname, action });
+      const params = guideActionParams(location, link.href, window.location.origin, link.dataset.guidePlacement);
+      if (params) trackEvent('guide_next_step', params);
     };
     document.addEventListener('click',onClick);
     return () => document.removeEventListener('click',onClick);

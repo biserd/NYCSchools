@@ -35,7 +35,7 @@ export async function sitemapByName(name: string): Promise<string | null> {
     "/", "/map", "/compare", "/recommendations", "/early-childhood", "/private-schools", "/lottery-simulator", "/chances-calculator", "/safe-and-strong", "/blog", "/pricing", "/features", "/benefits", "/faq", "/contact", "/methodology", "/about", "/explore-schools", "/safety-methodology", "/developers", "/developers/docs", "/privacy", "/terms",
   ].map((path) => ({ path, changefreq: path === "/" ? "daily" : "monthly", priority: path === "/" ? "1.0" : "0.7" })));
   if (name === "guides") return urlset([
-    ...PARENT_GUIDES.map(guide => ({ path: parentGuidePath(guide), lastmod: GUIDE_REVIEWED, changefreq: 'monthly', priority: '0.8' })),
+    ...PARENT_GUIDES.map(guide => ({ path: parentGuidePath(guide), lastmod: guide.reviewedAt || GUIDE_REVIEWED, changefreq: 'monthly', priority: '0.8' })),
     ...CANONICAL_SCHOOL_GUIDES.map((guide) => ({ path: `/nyc-schools/${guide.slug}`, changefreq: "monthly", priority: "0.8" })),
     ...SEO_LANDINGS.map((landing) => ({ path: getSeoLandingPath(landing), changefreq: "monthly", priority: "0.8" })),
   ]);

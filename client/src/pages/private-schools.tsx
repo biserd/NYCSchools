@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type PrivateSchool } from "@shared/schema";
@@ -13,6 +13,9 @@ import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
 import { StructuredData } from "@/components/StructuredData";
 import { AppHeader } from "@/components/AppHeader";
+import { PrivateDirectoryContent } from '@shared/PrivateDirectoryContent';
+import { PRIVATE_DIRECTORY_META, PRIVATE_BOROUGHS, PRIVATE_GRADES } from '@shared/discovery-pages';
+import { privateSchoolServesStage } from '@shared/parent-guide-data';
 import {
   Search,
   MapPin,
@@ -37,37 +40,24 @@ const SCHOOLS_PER_PAGE = 50;
 
 export default function PrivateSchools() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [boroughFilter, setBoroughFilter] = useState("all");
+  const [boroughFilter, setBoroughFilter] = useState<string>(() => {
+    const value = new URLSearchParams(window.location.search).get('borough');
+    return PRIVATE_BOROUGHS.find(b => b === value) || 'all';
+  });
   const [religiousFilter, setReligiousFilter] = useState("all");
   const [coedFilter, setCoedFilter] = useState("all");
-  const [gradeLevelFilter, setGradeLevelFilter] = useState("all");
+  const [gradeLevelFilter, setGradeLevelFilter] = useState<string>(() => {
+    const value = new URLSearchParams(window.location.search).get('grade');
+    return PRIVATE_GRADES.find(g => g.value === value)?.value || 'all';
+  });
   const [displayCount, setDisplayCount] = useState(SCHOOLS_PER_PAGE);
 
-  // Helper to check if school serves a given grade level
-  const schoolServesGradeLevel = (school: PrivateSchool, level: string): boolean => {
-    const low = school.lowestGrade;
-    const high = school.highestGrade;
-    if (!low || !high) return false;
-    
-    // Grade order for comparison
-    const gradeOrder = ['PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-    const lowIdx = gradeOrder.indexOf(low);
-    const highIdx = gradeOrder.indexOf(high);
-    if (lowIdx === -1 || highIdx === -1) return false;
-    
-    // Check grade levels
-    if (level === 'elementary') {
-      // Elementary: Pre-K through 5
-      return lowIdx <= 6 && highIdx >= 0; // Overlaps with PK-5
-    } else if (level === 'middle') {
-      // Middle: 6-8
-      return lowIdx <= 9 && highIdx >= 7; // Overlaps with 6-8
-    } else if (level === 'high') {
-      // High: 9-12
-      return lowIdx <= 13 && highIdx >= 10; // Overlaps with 9-12
-    }
-    return true;
-  };
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (boroughFilter === 'all') url.searchParams.delete('borough'); else url.searchParams.set('borough', boroughFilter);
+    if (gradeLevelFilter === 'all') url.searchParams.delete('grade'); else url.searchParams.set('grade', gradeLevelFilter);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [boroughFilter, gradeLevelFilter]);
 
   const { data: schools = [], isLoading } = useQuery<PrivateSchool[]>({
     queryKey: ["/api/private-schools"],
@@ -95,7 +85,7 @@ export default function PrivateSchools() {
       if (coedFilter !== "all" && school.coedStatus !== coedFilter) {
         return false;
       }
-      if (gradeLevelFilter !== "all" && !schoolServesGradeLevel(school, gradeLevelFilter)) {
+      if (!privateSchoolServesStage(school, gradeLevelFilter)) {
         return false;
       }
       return true;
@@ -159,8 +149,8 @@ export default function PrivateSchools() {
   return (
     <div className="min-h-screen bg-background" data-testid="page-private-schools">
       <SEOHead
-        title="Best Private Schools NYC 2026: Browse 623 Schools by Borough, Tuition & Grades"
-        description="Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by religious affiliation, grade level, enrollment size, and student-teacher ratio."
+        title={PRIVATE_DIRECTORY_META.title}
+        description={PRIVATE_DIRECTORY_META.description}
         canonicalPath="/private-schools"
         appendSiteName={false}
         keywords="best private schools NYC 2026, NYC private schools, private school directory, New York City private schools, Catholic schools NYC, independent schools, private school tuition NYC"
@@ -169,10 +159,10 @@ export default function PrivateSchools() {
         data={{
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: "Best Private Schools NYC 2026",
-          description: "Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by borough, religious affiliation, grade level, and tuition.",
+          name: PRIVATE_DIRECTORY_META.heading,
+          description: PRIVATE_DIRECTORY_META.description,
           url: "https://nycschoolsratings.com/private-schools",
-          itemListElement: schools.slice(0, 50).map((school, idx) => ({
+          itemListElement: displayedSchools.map((school, idx) => ({
             "@type": "ListItem",
             position: idx + 1,
             item: {
@@ -200,14 +190,9 @@ export default function PrivateSchools() {
             </Badge>
             <Badge variant="outline">{schools.length} Schools</Badge>
           </div>
-          <h1 className="text-3xl font-bold mb-3">NYC Private Schools</h1>
+          <h1 className="text-3xl font-bold mb-3">{PRIVATE_DIRECTORY_META.heading}</h1>
           <div className="space-y-3 text-muted-foreground">
-            <p>
-              Explore the private schools recorded in our directory across NYC’s five boroughs. Compare grade ranges, location and reported enrollment, then verify current programs and fees directly with the school. Directory coverage and missing fields should not be interpreted as a complete list of operating schools or current seats.
-            </p>
-            <p>
-              Choosing an elementary school? <a className="text-primary underline" href="/guides/private-elementary-schools-nyc">Use our private elementary comparison guide</a> for a borough-by-borough coverage breakdown, example profiles and questions about classroom fit, continuity and cost. These are directory comparisons, not a common academic ranking of private schools.
-            </p>
+            <PrivateDirectoryContent borough={boroughFilter} grade={gradeLevelFilter}/>
           </div>
         </div>
 
@@ -236,13 +221,14 @@ export default function PrivateSchools() {
           </div>
         )}
 
-        <Card className="mb-6">
+        <Card className="mb-6 scroll-mt-6" id="school-results">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by school name..."
+                  aria-label="Search private schools by name"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
@@ -295,7 +281,7 @@ export default function PrivateSchools() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Grades</SelectItem>
-                  <SelectItem value="elementary">Elementary (PK-5)</SelectItem>
+                  <SelectItem value="elementary">Elementary (K-5)</SelectItem>
                   <SelectItem value="middle">Middle (6-8)</SelectItem>
                   <SelectItem value="high">High School (9-12)</SelectItem>
                 </SelectContent>

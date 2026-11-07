@@ -30,6 +30,8 @@ import { isEarlyChildhoodOnly } from "@shared/schema";
 import { storage } from "./storage";
 import { getParentGuide, PARENT_GUIDES, parentGuidePath } from '../shared/parent-guides';
 import { ParentGuideContent } from '../shared/ParentGuideContent';
+import { MAP_META, PRIVATE_DIRECTORY_META } from '../shared/discovery-pages';
+import { PrivateDirectoryContent } from '../shared/PrivateDirectoryContent';
 import { LandingDecisionContent } from '../shared/LandingDecisionContent';
 import { loadParentGuideData } from './parentGuides';
 import React from 'react';
@@ -847,14 +849,10 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     ],
   },
   "/map": {
-    title: "NYC School District Map & School Finder | NYC School Ratings",
-    description: "Explore NYC public and charter schools by address, borough, district, grade, programs, and school type on an interactive map.",
-    heading: "NYC School District Map and School Finder",
+    ...MAP_META,
   },
   "/private-schools": {
-    title: "Best Private Schools NYC 2026: Browse 623 Schools by Borough, Tuition & Grades",
-    description: "Browse 623 NYC private schools across Manhattan, Brooklyn, Queens, the Bronx and Staten Island. Filter by religious affiliation, grade level, enrollment size, and student-teacher ratio.",
-    heading: "NYC Private Schools",
+    ...PRIVATE_DIRECTORY_META,
   },
   "/early-childhood": {
     title: "NYC 3-K & Pre-K Programs: Early Childhood Directory",
@@ -1033,7 +1031,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
   const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>${renderToStaticMarkup(React.createElement(PricingKinderLearner))}` : '';
   const crawlerHtml = path === '/pricing'
     ? `<main>${pricingSections}</main>`
-    : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}</main>`;
+    : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}${path === '/private-schools' ? renderToStaticMarkup(React.createElement(PrivateDirectoryContent)) : ''}</main>`;
 
   return applyMeta(baseHtml, {
     title: meta.title,

@@ -60,7 +60,7 @@ assert.ok(!matchesSeoLanding(school({ hs_admission_method: 'Unscreened' }), scre
 assert.ok(matchesSeoLanding(school({ hs_admission_method: 'Screened With Assessment' }), screened));
 
 const routes = new Set(PARENT_GUIDES.map(parentGuidePath));
-assert.equal(routes.size, 5);
+assert.equal(routes.size, 6);
 for (const page of PARENT_GUIDES) {
   assert.ok(page.sources.length >= 2 && page.questions.length >= 2);
   const html = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, data: buildParentGuideData(page, [first, second], [privateSchool({})]) }));
@@ -68,7 +68,7 @@ for (const page of PARENT_GUIDES) {
   assert.match(html, /<table/);
   assert.match(html, /Sources and data limits/);
   assert.match(html, /Your next step/);
-  assert.match(html, /2026-10-25/);
+  assert.ok(html.includes(page.reviewedAt || '2026-10-25'));
   for (const link of page.related) if (link.href.startsWith('/guides/')) assert.ok(routes.has(link.href), link.href);
   for (const anchor of html.matchAll(/<a\b[^>]*href="https?:[^>]*>/g)) {
     assert.match(anchor[0], /target="_blank"/);

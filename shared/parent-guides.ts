@@ -3,6 +3,9 @@ export type GuideLink = { label: string; href: string };
 export type ParentGuide = {
   slug: string; title: string; description: string; answer: string;
   kind: 'zones' | 'private' | 'continuity' | 'comparison'; dbns?: string[];
+  reviewedAt?: string;
+  privateScope?: { borough: string; elementaryOnly: boolean };
+  examples?: Array<{ name: string; detail: string; question: string; source: GuideLink }>;
   questions: Array<{ title: string; text: string }>;
   columns: string[]; comparison: string[][];
   sources: GuideLink[]; related: GuideLink[]; next: GuideLink;
@@ -12,8 +15,9 @@ export const GUIDE_REVIEWED = '2026-10-25';
 export const PARENT_GUIDES: ParentGuide[] = [
   {
     slug: 'nyc-school-district-map-and-zones', kind: 'zones',
-    title: 'NYC School District Map: Districts, Zones and Your Address',
-    description: 'Understand NYC school districts versus attendance zones, compare neighborhood search boundaries, and verify your address before building a school shortlist.',
+    title: 'NYC School Districts vs Attendance Zones: Address Guide',
+    reviewedAt: '2026-11-07',
+    description: 'Learn the difference between NYC school districts, attendance zones and ZIP codes. Use the interactive map to explore, then verify your exact address with NYCPS.',
     answer: 'Use a district map to explore schools, not to prove eligibility. Your district, a school’s attendance zone, and a neighborhood name describe different boundaries. Check your exact home address with NYC Public Schools before making an enrollment or housing decision.',
     columns: ['Boundary', 'Useful for', 'Does not establish'],
     comparison: [
@@ -32,8 +36,9 @@ export const PARENT_GUIDES: ParentGuide[] = [
   },
   {
     slug: 'private-elementary-schools-nyc', kind: 'private',
-    title: 'Private Elementary Schools in NYC: Compare Your Options',
-    description: 'Compare NYC private elementary schools by borough, grade span and reported enrollment. See data coverage, missing information and questions to ask about cost and admissions.',
+    title: 'Best Private Elementary Schools in NYC? Compare Fit & Cost',
+    reviewedAt: '2026-11-07',
+    description: 'Build a NYC private elementary shortlist by borough, entry grade, teaching approach and total cost. Compare dated school profiles and questions for admissions visits.',
     answer: 'The best private elementary school is a fit decision, not a defensible citywide test-score ranking. Start with grade span and travel, then verify teaching approach, learning support and the full annual cost with each school. Our directory data supports a shortlist, not a claim that one private school is academically best.',
     columns: ['Decision', 'Compare', 'Ask the school'],
     comparison: [
@@ -46,10 +51,38 @@ export const PARENT_GUIDES: ParentGuide[] = [
       { title: 'What the data can—and cannot—compare', text: 'NCES directory records are useful for school identity, grades and enrollment. They are not a common academic assessment of private schools. We do not apply public-school test ratings to these records or interpret a missing tuition field as free tuition.' },
       { title: 'Compare like with like', text: 'Whole-school enrollment at a K–12 school is not its elementary enrollment. A student–teacher ratio is not class size. Use the grade span next to every enrollment number, and request division-specific figures before drawing conclusions.' },
       { title: 'Build a shortlist with evidence', text: 'Choose two or three feasible commutes. Ask each school the same questions about literacy instruction, differentiation, support staffing, after-school arrangements and total cost. Keep dated answers so that your comparison reflects the same admission year.' },
+      { title: 'Before you pay an application fee', text: 'Confirm your child’s exact entry grade, the application year, required visits or assessments, application and aid deadlines, and whether aid is available in that division. Ask what is included in tuition, which extras are mandatory and how costs change when moving to the next division. The dated tuition examples below show why headline prices need grade and fee context; they are not a current quote for your family.' },
     ],
     sources: [{ label: 'NCES Private School Universe Survey: scope and collected fields', href: 'https://nces.ed.gov/surveys/pss/index.asp' }, { label: 'NCES private-school directory: about the data', href: 'https://nces.ed.gov/surveys/pss/privateschoolsearch/aboutdata.asp' }],
-    related: [{ label: 'Public elementary school guide', href: '/blog/best-nyc-elementary-schools-2026' }, { label: 'Districts versus zones', href: '/guides/nyc-school-district-map-and-zones' }],
-    next: { label: 'Browse the full private-school directory', href: '/private-schools' },
+    related: [{ label: 'Brooklyn private-school guide', href: '/guides/private-schools-brooklyn' }, { label: 'Public elementary school guide', href: '/blog/best-nyc-elementary-schools-2026' }, { label: 'Districts versus zones', href: '/guides/nyc-school-district-map-and-zones' }],
+    next: { label: 'Browse private schools serving elementary grades', href: '/private-schools?grade=elementary#school-results' },
+  },
+  {
+    slug: 'private-schools-brooklyn', kind: 'private', reviewedAt: '2026-11-07',
+    privateScope: { borough: 'Brooklyn', elementaryOnly: false },
+    title: 'Private Schools in Brooklyn: Compare Grades, Fit & Cost',
+    description: 'Compare Brooklyn private schools using dated profiles, school-source examples and a visit checklist. Find elementary, middle and high school options without an unsupported ranking.',
+    answer: 'Looking for the best private schools in Brooklyn? Begin with your child’s grade, travel and learning needs. There is no common private-school assessment in our directory that supports a borough-wide academic ranking. Use the recorded profiles below to identify options, then compare current school information and the total cost for the same entry year.',
+    columns: ['Decision', 'What to compare', 'What to verify'],
+    comparison: [
+      ['Daily travel', 'The campus for your child’s division and morning journey', 'Drop-off, pickup and after-school arrangements at that exact site'],
+      ['School stage', 'Elementary, middle or high grades on the profile', 'Current entry points, spaces and progression between divisions'],
+      ['Learning environment', 'Teaching approach, assessment and support', 'A normal-day visit and examples of feedback for your child’s age'],
+      ['Cost and admissions', 'Same-year tuition, required extras and aid', 'Dated fees, aid eligibility and application deadlines directly with the school'],
+    ],
+    examples: [
+      { name: 'Brooklyn Friends School', detail: 'The school describes a Downtown Brooklyn program from early childhood through grade 12, grounded in Quaker values, with an IB Diploma Programme in the Upper School.', question: 'Ask how Quaker meeting and classroom routines work in your child’s division, and which Upper School students take the IB pathway.', source: { label: 'Brooklyn Friends: school approach and divisions', href: 'https://brooklynfriends.org/private-schools-brooklyn-brooklyn-friends-school-difference/' } },
+      { name: 'The Packer Collegiate Institute', detail: 'Packer’s admissions page describes a Brooklyn Heights Pre-K–12 program, with its youngest grades at a separate Early Learning Center. Its middle division begins in fifth grade.', question: 'Confirm the campus, division and entry process for your child’s grade rather than assuming all middle schools start in sixth grade.', source: { label: 'Packer: admissions and division information', href: 'https://www.packer.edu/admissions/welcome' } },
+      { name: 'Saint Ann’s School', detail: 'Saint Ann’s describes an approach without formal grades, prizes or rankings. That assessment model is a meaningful fit question rather than evidence of a higher or lower academic rank.', question: 'Ask how teachers report progress, identify support needs and prepare students for transitions without formal grades.', source: { label: 'Saint Ann’s: educational approach', href: 'https://saintannsny.org/about/' } },
+    ],
+    questions: [
+      { title: 'How to use this Brooklyn comparison', text: 'The examples illustrate different questions to ask; they are not a top-three list, paid placements or an exhaustive selection. The directory table includes matching Brooklyn NCES records alphabetically, with profile links and survey years. Filter by school stage, then verify each record’s identity and current operation.' },
+      { title: 'Look beyond a familiar school name', text: 'Compare a manageable commute with classroom fit, learning support, religious or educational approach and the full annual cost. Brooklyn Heights, Downtown Brooklyn, Park Slope and Bay Ridge can produce very different daily journeys. Test the trip at school arrival time and check the campus for your child’s division.' },
+      { title: 'Keep admissions and aid comparisons in the same year', text: 'Use the same intended entry year on every inquiry. Ask about entry grades, required visits or assessments, application and aid deadlines, fees and after-school costs. A grade in an older directory record does not establish an available seat, and continued attendance between divisions is not guaranteed by a long grade span.' },
+    ],
+    sources: [{ label: 'NCES private-school directory: scope and data years', href: 'https://nces.ed.gov/surveys/pss/privateschoolsearch/aboutdata.asp' }, { label: 'Brooklyn Friends school-source example', href: 'https://brooklynfriends.org/private-schools-brooklyn-brooklyn-friends-school-difference/' }, { label: 'Packer school-source example', href: 'https://www.packer.edu/admissions/welcome' }, { label: 'Saint Ann’s school-source example', href: 'https://saintannsny.org/about/' }],
+    related: [{ label: 'NYC private elementary comparison guide', href: '/guides/private-elementary-schools-nyc' }, { label: 'All NYC private schools', href: '/private-schools' }, { label: 'Brooklyn public-school options', href: '/nyc-schools/brooklyn' }],
+    next: { label: 'Browse Brooklyn private-school profiles', href: '/private-schools?borough=Brooklyn#school-results' },
   },
   {
     slug: '2k-3k-prek-kindergarten-same-school', kind: 'continuity',

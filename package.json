@@ -38,6 +38,7 @@
     "test:seo-linking": "tsx scripts/seo-linking.test.ts",
     "test:parent-guides": "tsx scripts/parent-guides.test.ts",
     "test:content-plan": "tsx scripts/content-plan.test.ts",
+    "test:marketing-discovery": "tsx scripts/marketing-discovery.test.ts",
     "test:agent-readiness": "tsx scripts/test-agent-readiness.ts",
     "test:pagespeed-accessibility": "tsx scripts/test-pagespeed-accessibility.ts",
     "verify:agent-readiness": "node scripts/verify-agent-readiness.mjs",
