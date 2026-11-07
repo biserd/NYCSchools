@@ -1,12 +1,12 @@
-import { schoolBorough, programLabels } from "../shared/early-childhood";
-import { isEarlyChildhoodOnly } from "@shared/schema";
+import { programLabels } from "../shared/early-childhood";
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { storage } from "./storage";
 import { requireApiKey, apiError } from "./apiKeyAuth";
 import { apiRequestLoggerMiddleware } from "./apiObservability";
 import { getCached, setCache, CACHE_TTL_LONG } from "./cache";
-import { calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
+import { getSchoolResearchData } from './schoolResearchData';
+import { serializeSchool } from './schoolApiView';
 
 // Public Developer API (v1). All routes require a valid Bearer API key issued
 // to a Premium subscriber. Requests are rate-limited per key in apiKeyAuth.ts.
@@ -22,54 +22,6 @@ const BOROUGH_NAMES: Record<string, string> = {
 function boroughFromDbn(dbn: string): string | null {
   const c = dbn.charAt(2).toUpperCase();
   return BOROUGH_NAMES[c] ?? null;
-}
-
-// Public-facing serialization for a school. Snake_case mirrors the docs we
-// already publish on /developers/docs.
-function serializeSchool(s: any) {
-  const score = calculateOverallScore(s);
-  const assessmentDriven = !isHighSchool(s) && !isEarlyChildhoodOnly(s);
-  const confidence = assessmentDriven ? getAssessmentConfidence(s) : "not_applicable";
-  const ratingStatus = isEarlyChildhoodOnly(s) ? "not_applicable" : score >= 0
-    ? "rated"
-    : confidence === "low"
-      ? "withheld_limited_participation"
-      : "unavailable";
-  return {
-    dbn: s.dbn,
-    name: s.name,
-    display_name: s.early_childhood_source?.providerName || s.name,
-    program_source: s.early_childhood_source ?? null,
-    district: s.district,
-    borough: schoolBorough(s),
-    address: s.address,
-    grade_band: s.grade_band,
-    overall_score: score >= 0 ? score : null,
-    rating_status: ratingStatus,
-    rating_confidence: confidence,
-    rating_note: ratingStatus === "not_applicable" ? "K–12 academic ratings are not applicable to this provider." : ratingStatus === "withheld_limited_participation"
-      ? "Overall rating withheld because state-test participation was limited."
-      : ratingStatus === "unavailable"
-        ? "Overall rating unavailable because required data was not reported."
-        : null,
-    academics_score: s.academics_score,
-    climate_score: s.climate_score,
-    progress_score: s.progress_score,
-    ela_proficiency: s.ela_proficiency,
-    math_proficiency: s.math_proficiency,
-    science_proficiency: s.science_proficiency,
-    enrollment: s.enrollment ?? null,
-    student_teacher_ratio: s.student_teacher_ratio ?? null,
-    economic_need_index: s.economic_need_index ?? null,
-    has_2k: s.has_2k ?? null,
-    has_3k: s.has_3k ?? null,
-    has_prek: s.has_prek ?? null,
-    has_gifted_talented: s.has_gifted_talented ?? false,
-    latitude: s.latitude ?? null,
-    longitude: s.longitude ?? null,
-    phone: s.phone ?? null,
-    website: s.website ?? null,
-  };
 }
 
 const schoolsQuerySchema = z.object({
@@ -223,7 +175,7 @@ router.get("/schools/:dbn", async (req: Request, res: Response) => {
       return apiError(res, 404, "NOT_FOUND", `No school found with DBN ${dbn}.`);
     }
     // Detail endpoint returns a flat object (no `data` wrapper) — matches docs.
-    res.json(serializeSchool(school));
+    res.json({...serializeSchool(school),...(await getSchoolResearchData(school))});
   } catch (err) {
     console.error("v1 /schools/:dbn error:", err);
     apiError(res, 500, "INTERNAL_ERROR", "Failed to fetch school.");

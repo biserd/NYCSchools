@@ -70,7 +70,7 @@ const endpoints: EndpointDoc[] = [
       "science_proficiency": 70,
       "enrollment": 450,
       "student_teacher_ratio": 12,
-      "economic_need_index": 0.65,
+      "economic_need_index": 65,
       "has_3k": true,
       "has_prek": true,
       "has_gifted_talented": false,
@@ -92,7 +92,7 @@ const endpoints: EndpointDoc[] = [
   {
     method: "GET",
     path: "/api/v1/schools/:dbn",
-    description: "Get detailed information for a specific school by its DBN (District Borough Number). Returns a flat object (no `data` wrapper). overall_score is null when rating_status is withheld_limited_participation or unavailable. rating_status is rated, withheld_limited_participation, or unavailable; rating_confidence is sufficient, low, unknown, or not_applicable.",
+    description: "Get detailed information for a specific school by its DBN (District Borough Number). Returns an unwrapped school object (no `data` wrapper), including demographics with school_year, enrollment_history and demographics_history with dated source snapshots, and regents with latest_reporting_year, results and complete available history. overall_score is null when rating_status is withheld_limited_participation or unavailable. rating_status is rated, withheld_limited_participation, or unavailable; rating_confidence is sufficient, low, unknown, or not_applicable.",
     parameters: [
       { name: "dbn", type: "string", required: true, description: "The school's unique DBN identifier (e.g., '02M545')" },
     ],
@@ -115,7 +115,7 @@ const endpoints: EndpointDoc[] = [
   "science_proficiency": 70,
   "enrollment": 450,
   "student_teacher_ratio": 12,
-  "economic_need_index": 0.65,
+  "economic_need_index": 65,
   "has_3k": true,
   "has_prek": true,
   "has_gifted_talented": false,
@@ -196,7 +196,7 @@ const endpoints: EndpointDoc[] = [
   {
     method: "GET",
     path: "/api/v1/trends/:dbn",
-    description: "Get historical performance trends for a specific school (3-5 year data). Returns a flat object (no `data` wrapper).",
+    description: "Get historical performance trends for a specific school (3-5 year data). Returns an unwrapped school object (no `data` wrapper), including demographics with school_year, enrollment_history and demographics_history with dated source snapshots, and regents with latest_reporting_year, results and complete available history.",
     parameters: [
       { name: "dbn", type: "string", required: true, description: "The school's DBN identifier" },
     ],
@@ -295,7 +295,8 @@ export default function DevelopersDocsPage() {
                 <CardDescription>The read-only connector is separate from the Premium Developer REST API below.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p>Search, view, and compare canonical schools without a parent account or API key at <code>/mcp/muse</code>. Results include DBNs, source years, methodology links, and canonical school pages. This connector does not expose favorites, payments, reminders, or address-to-zone claims.</p>
+                <p>Search, view, and compare canonical schools without a parent account or API key at <code>/mcp/muse</code>. Results include DBNs, source years, methodology links, and canonical school pages. get_school_details and compare_schools also return demographics, dated enrollment/demographic history, and Regents results/history. Each Regents row retains reporting_year and exam_name; pass_rate is percent scoring 65+, while scoring_80_plus_percent is a separate threshold, not official CUNY readiness. This connector does not expose favorites, payments, reminders, or address-to-zone claims.</p>
+                <p>Use the same reporting year and exam for comparisons. Null means unavailable or suppressed; genuine zero stays zero. Enrollment years are school years (such as 2025–26); Regents uses the NYCPS numeric reporting year (such as 2026). Science has its own assessment year. Undated legacy demographics are excluded from dated trends.</p>
                 <p>The <code>/api/v1</code> endpoints documented below continue to require a subscriber API key. Public MCP calls are bounded and rate limited.</p>
               </CardContent>
             </Card>

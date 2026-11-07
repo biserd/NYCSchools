@@ -19,8 +19,8 @@ No account, payment, or API key is required for this endpoint. /mcp/schools is a
 Discover the current schemas at ${origin}/.well-known/mcp/server-card.json or with tools/list.
 
 1. Use search_schools with the requested district, borough, grade, or program flags. Search by name to resolve ambiguous schools before using a DBN. Neighborhood names are not school names: clarify geography if it cannot be mapped confidently to supported filters. District and neighborhood boundaries are not interchangeable.
-2. Use get_school_details with a returned DBN for sources, reporting years, programs, and canonical profile links.
-3. Use compare_schools for two to four DBNs. Compare identically defined metrics and disclose missing data; null is not zero.
+2. Use get_school_details with a returned DBN for sources, dataset years, current demographics, dated enrollment/demographic history, Regents exam results and history, programs, and canonical profile links. Science retains its own assessment year.
+3. Use compare_schools for two to four DBNs. Compare identically defined metrics and dataset years; Regents comparison results align the same exam and reporting year. An empty current-year result must not use an older year. Enrollment history uses school-year labels and excludes undated legacy values. Disclose missing data; null is not zero.
 4. Cite the canonical profile URL and reporting year for each metric. Our independent comparison score is not an official NYCPS or NYSED rating. Explain what "best" means and ask about priorities and grade when ambiguous.
 5. K–12 academic scoring does not apply to early-childhood-only providers. Recorded 2-K, 3-K and pre-K programs do not establish current vacancies, eligibility, or admission odds. Verify current admissions information with NYC Public Schools.
 

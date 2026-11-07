@@ -8,6 +8,7 @@ import { loadParentGuideData } from './parentGuides';
 import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, insertNyceecReviewSchema, insertTrackedSchoolSchema, insertContactSubmissionSchema, contactSubmissions, schoolZones, privateSchools, schoolSafetyIndex, familySubscriptions, getNyceecSlug, getPrivateSchoolSlug, getSchoolSlug, calculateOverallScore, getAssessmentConfidence, isHighSchool } from "@shared/schema";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { schoolDemographicsHistory } from "@shared/schema";
+import { registerSchoolResearchRoutes } from './schoolResearchData';
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
@@ -711,6 +712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch admissions data" });
     }
   });
+
+  registerSchoolResearchRoutes(app);
 
   app.get("/api/schools/:dbn/demographics-history", async (req: Request, res: Response) => {
     try {
@@ -3532,7 +3535,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       terms_of_service_url: "https://nycschoolsratings.com/terms",
       mcp_server: {
         url: "https://nycschoolsratings.com/mcp",
-        protocol_version: "2026-07-28",
+        protocol_version: "2025-11-25",
         transport: "streamable-http"
       },
       oauth: {
@@ -3569,7 +3572,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       name: "nyc-school-ratings",
       title: "NYC School Ratings",
       description: "Search and compare NYC schools using transparent public data.",
-      protocol_version: "2026-07-28",
+      protocol_version: "2025-11-25",
       transport: { type: "streamable-http", url: `${baseUrl}/mcp` },
       authorization_servers: [baseUrl],
       documentation: `${baseUrl}/developers/docs`,
@@ -3585,7 +3588,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     res.json({
       name: "NYC School Ratings MCP Server",
       description: "Stateless Streamable HTTP Model Context Protocol server for AI clients.",
-      protocolVersion: "2026-07-28",
+      protocolVersion: "2025-11-25",
       documentation: "https://nycschoolsratings.com/.well-known/openai-apps.json",
       tools: [
         "search_schools - Search NYC schools by criteria",
@@ -3603,21 +3606,23 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
     try {
       const request = req.body;
       const requestedProtocol = req.header("MCP-Protocol-Version");
-      if (requestedProtocol && !["2026-07-28", "2024-11-05"].includes(requestedProtocol)) {
+      if (requestedProtocol && !["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05", "2026-07-28"].includes(requestedProtocol)) {
         return res.status(400).json({ jsonrpc: "2.0", id: request?.id ?? null, error: { code: -32600, message: "Unsupported MCP protocol version" } });
       }
       
       // Validate JSON-RPC format
-      if (!request.jsonrpc || request.jsonrpc !== "2.0" || !request.method) {
+      if (!request || request.jsonrpc !== "2.0" || typeof request.method !== "string") {
         return res.status(400).json({
           jsonrpc: "2.0",
-          id: request.id || null,
+          id: request?.id ?? null,
           error: {
             code: -32600,
             message: "Invalid Request"
           }
         });
       }
+
+      if(request.method === 'notifications/initialized')return res.status(202).end();
 
       // Check for Bearer token for authenticated requests
       let context: { userId?: string } = {};
@@ -3631,7 +3636,7 @@ Sitemap: https://nycschoolsratings.com/sitemap.xml`;
       }
 
       const response = await handleMCPRequest(request, context);
-      res.set({ "MCP-Protocol-Version": "2026-07-28", "Mcp-Method": request.method, "Cache-Control": "no-store" }).json(response);
+      res.set({ "MCP-Protocol-Version": "2025-11-25", "Mcp-Method": request.method, "Cache-Control": "no-store" }).json(response);
     } catch (error: any) {
       console.error("MCP request error:", error);
       res.status(500).json({

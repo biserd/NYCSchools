@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Footer } from "@/components/Footer";
 import { SurveyComparison } from '@/components/SurveyComparison';
+import { SchoolDataComparison } from '@/components/SchoolDataComparison';
 import { SEOHead } from "@/components/SEOHead";
 import { AppHeader } from "@/components/AppHeader";
 import { Link, useLocation, useRoute } from "wouter";
@@ -894,6 +895,10 @@ export default function ComparePage() {
                   </TableHeader>
                   <TableBody>
                     <TableRow>
+                      <TableCell className="font-medium">ELA / Math school year</TableCell>
+                      {schoolsWithScores.map(school => <TableCell key={school.dbn} className="text-center text-xs">{school.assessment_year || 'Year not reported'}</TableCell>)}
+                    </TableRow>
+                    <TableRow>
                       <TableCell className="font-medium">ELA Proficiency</TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-ela-${school.dbn}`}>
@@ -1456,6 +1461,8 @@ export default function ComparePage() {
             </Card>
           )}
 
+          <SchoolDataComparison schools={schoolsWithScores} />
+
           {/* School Info & Demographics */}
           <Card>
             <CardHeader>
@@ -1479,10 +1486,14 @@ export default function ComparePage() {
                   </TableHeader>
                   <TableBody>
                     <TableRow>
+                      <TableCell className="font-medium">Demographics / enrollment school year</TableCell>
+                      {schoolsWithScores.map(school => <TableCell key={school.dbn} className="text-center" data-testid={`cell-demographics-year-${school.dbn}`}>{school.demographics_year || 'Year not recorded'}</TableCell>)}
+                    </TableRow>
+                    <TableRow>
                       <TableCell className="font-medium">Total Enrollment</TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-enrollment-${school.dbn}`}>
-                          {school.enrollment?.toLocaleString() || 'N/A'}
+                          {school.enrollment?.toLocaleString() ?? 'N/A'}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -1511,12 +1522,12 @@ export default function ComparePage() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Home className="w-4 h-4 text-muted-foreground" />
-                          Economic Need Index
+                          Economic Need Index (0–100)
                         </div>
                       </TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-eni-${school.dbn}`}>
-                          <ComparisonCell value={school.economic_need_index} unit="%" higherIsBetter={false} />
+                          <ComparisonCell value={school.economic_need_index} higherIsBetter={false} />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -1534,7 +1545,7 @@ export default function ComparePage() {
                       ))}
                     </TableRow>
                     <TableRow>
-                      <TableCell className="font-medium">Students with IEPs</TableCell>
+                      <TableCell className="font-medium">Students with disabilities</TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-iep-${school.dbn}`}>
                           <ComparisonCell value={school.iep_percent} unit="%" />
@@ -1593,13 +1604,14 @@ export default function ComparePage() {
                       {schoolsWithScores.map((school) => (
                         <TableHead key={school.dbn} className="text-center">
                           <div className="text-xs truncate max-w-[150px]">{schoolDisplayName(school)}</div>
+                          <div className="text-xs font-normal text-muted-foreground">{school.demographics_year || "Year not recorded"}</div>
                         </TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     <TableRow>
-                      <TableCell className="font-medium">Asian</TableCell>
+                      <TableCell className="font-medium">Asian / Pacific Islander</TableCell>
                       {schoolsWithScores.map((school) => (
                         <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-asian-${school.dbn}`}>
                           {school.asian_percent != null ? `${school.asian_percent}%` : 'N/A'}
@@ -1744,14 +1756,7 @@ export default function ComparePage() {
                           </TableCell>
                         ))}
                       </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Regents Pass Rate</TableCell>
-                        {schoolsWithScores.map((school) => (
-                          <TableCell key={school.dbn} className="text-center tabular-nums" data-testid={`cell-regents-${school.dbn}`}>
-                            <ComparisonCell value={school.regents_pass_rate} unit="%" />
-                          </TableCell>
-                        ))}
-                      </TableRow>
+
                       <TableRow>
                         <TableCell className="font-medium">AP Courses Offered</TableCell>
                         {schoolsWithScores.map((school) => (
@@ -1804,7 +1809,8 @@ export default function ComparePage() {
             <p>
               Assessments: {Array.from(new Set(schoolsWithScores.map(s => s.assessment_year).filter(Boolean))).join(", ") || "year not reported"}
               {" · "}{Array.from(new Set(schoolsWithScores.map(s => s.assessment_source).filter(Boolean))).join(", ") || "source not reported"}
-              {" | "}Climate/Progress: 2024-25 NYC School Survey
+              <br />Demographics/enrollment school years: {Array.from(new Set(schoolsWithScores.map(s => s.demographics_year || "year not recorded"))).join(", ")}. The dated comparison above uses a shared selected school year.
+              {" | "}Legacy Climate/Progress: 2024-25 NYC School Survey
             </p>
           </div>
         </div>

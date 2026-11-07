@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { schoolDisplayName } from '../shared/early-childhood';
 import { calculateOverallScore, getAssessmentConfidence, getSchoolSlug, isEarlyChildhoodOnly, isHighSchool, type School } from '../shared/schema';
 import { SURVEY_SOURCE, surveyCaution, type SurveyResult } from '../shared/surveys';
+import { buildSchoolResearch, type SchoolResearchData } from '../shared/school-research';
 
 // A public, read-only view of canonical schools. No client API key, copied
 // database, or connector-specific rating formula is involved.
@@ -55,13 +56,13 @@ export const MUSE_TOOL_DEFINITIONS: Record<(typeof MUSE_RESEARCH_TOOLS)[number],
   },
   get_school_details: {
     name:'get_school_details',
-    description:'Read one canonical school profile by DBN. Separates proprietary ratings, official academic metrics, family/student/teacher surveys, and center-wide early-childhood feedback. Returns explicit nulls, source links, reporting years, admissions caveats, and a canonical profile URL; never claims current seats or odds.',
+    description:'Read one canonical school profile by DBN. Separates proprietary ratings, official academic metrics, family/student/teacher surveys, and center-wide early-childhood feedback. Includes dated demographics, enrollment and demographic history, and Regents exam results/history through the latest available reporting year. Returns explicit nulls, source links, reporting years, admissions caveats, and a canonical profile URL; never claims current seats or odds.',
     inputSchema:{type:'object',additionalProperties:false,properties:{dbn:{type:'string',pattern:'^[0-9]{2}[A-Za-z0-9]{4}$',description:'Stable six-character school DBN from search results.'}},required:['dbn']},
     annotations:{readOnlyHint:true,openWorldHint:false,destructiveHint:false},
   },
   compare_schools: {
     name:'compare_schools',
-    description:'Compare two to four distinct canonical school DBNs on identically defined available metrics, programs, and separate 2026 survey instruments. Missing values remain null and early-childhood providers are not assigned K–12 scores.',
+    description:'Compare two to four distinct canonical school DBNs on identically defined available metrics, programs, and separate 2026 survey instruments. Includes demographics, enrollment history and same-year, same-exam Regents comparisons with reporting years and source links. Missing values remain null and early-childhood providers are not assigned K–12 scores.',
     inputSchema:{type:'object',additionalProperties:false,properties:{dbns:{type:'array',items:{type:'string',pattern:'^[0-9]{2}[A-Za-z0-9]{4}$'},minItems:2,maxItems:4}},required:['dbns']},
     annotations:{readOnlyHint:true,openWorldHint:false,destructiveHint:false},
   },
@@ -146,6 +147,7 @@ export function searchMuseSchools(schools: School[], raw: unknown, baseUrl:strin
       dbn:s.dbn,name:schoolDisplayName(s),borough:schoolBorough(s),district:s.district,grade_band:s.grade_band,school_type:schoolType(s),
       programs:{has_2k:s.has_2k ?? null,has_3k:s.has_3k ?? null,has_prek:s.has_prek ?? null,has_gifted_talented:s.has_gifted_talented ?? null,has_dual_language:s.has_dual_language ?? null},
       rating:rating(s),assessment_year:s.assessment_year ?? null,assessment_source:s.assessment_source ?? null,
+      enrollment:s.enrollment ?? null,demographics_year:s.demographics_year ?? null,
       program_source_url:s.early_childhood_source?.sourceUrl ?? null,program_verification:s.early_childhood_source?.status ?? null,
       match_reasons:reasons.length ? reasons : ['matches citywide school directory'],canonical_url:canonicalUrl(s,baseUrl),
     })),
@@ -165,14 +167,17 @@ function surveyView(results: SurveyResult[]) {
 }
 
 export interface LatestGraduationContext { cohort_year:number; cohort_label:string | null; source:string | null }
-export function museSchoolProfile(school:School, surveys:SurveyResult[], baseUrl:string, graduation:LatestGraduationContext | null = null) {
+export function museSchoolProfile(school:School, surveys:SurveyResult[], baseUrl:string, graduation:LatestGraduationContext | null = null, research:SchoolResearchData = buildSchoolResearch(school)) {
   const early = school.early_childhood_source;
   const isEarly = isEarlyChildhoodOnly(school);
   return {
     dbn:school.dbn,name:schoolDisplayName(school),borough:schoolBorough(school),district:school.district,grade_band:school.grade_band,school_type:schoolType(school),
     address:school.address,canonical_url:canonicalUrl(school,baseUrl),last_updated:school.last_updated?.toISOString() ?? null,
+    last_updated_note:'Legacy profile-record timestamp; use each dataset reporting year and source below for data freshness.',
+    ...research,
     rating:rating(school),
     academics:{assessment_year:school.assessment_year ?? null,assessment_source:school.assessment_source ?? null,
+      science_assessment_year:school.science_assessment_year ?? null,
       ela_proficiency:isEarly?null:scoreValue(school.ela_proficiency),math_proficiency:isEarly?null:scoreValue(school.math_proficiency),science_proficiency:isEarly?null:scoreValue(school.science_proficiency),
       academics_score:isEarly?null:scoreValue(school.academics_score),climate_score:isEarly?null:scoreValue(school.climate_score),progress_score:isEarly?null:scoreValue(school.progress_score),source_url:ASSESSMENT_SOURCE_URL,
       high_school_outcomes:isHighSchool(school)?{graduation_rate_4yr:scoreValue(school.graduation_rate_4yr),college_readiness_rate:scoreValue(school.college_readiness_rate),latest_graduation_cohort_year:graduation?.cohort_year ?? null,latest_graduation_cohort_label:graduation?.cohort_label ?? null,source:graduation?.source ?? null,source_url:GRADUATION_SOURCE_URL,
@@ -186,14 +191,19 @@ export function museSchoolProfile(school:School, surveys:SurveyResult[], baseUrl
   };
 }
 
-export function museComparison(schools:School[], surveysByDbn:Record<string,SurveyResult[]>, baseUrl:string, graduationByDbn:Record<string,LatestGraduationContext | null> = {}) {
+export function museComparison(schools:School[], surveysByDbn:Record<string,SurveyResult[]>, baseUrl:string, graduationByDbn:Record<string,LatestGraduationContext | null> = {}, researchByDbn:Record<string,SchoolResearchData> = {}) {
+  const research = schools.map(s => researchByDbn[s.dbn] ?? buildSchoolResearch(s));
+  const regentsYears = research.flatMap(r => r.regents.available_reporting_years);
+  const regentsYear = regentsYears.length ? Math.max(...regentsYears) : null;
   return {
+    regents_comparison_reporting_year:regentsYear,
     metric_definitions:{overall_score:'Independent NYC School Ratings score, not an official NYCPS rating.',proficiency:'Reported percent proficient in the stated assessment year.',surveys:'Separate instruments, reported in 2026; missing values remain null. Birth-to-5 feedback is center-wide.'},
-    schools:schools.map(school => {
-      const profile=museSchoolProfile(school,surveysByDbn[school.dbn] ?? [],baseUrl,graduationByDbn[school.dbn] ?? null);
-      return {dbn:profile.dbn,name:profile.name,grade_band:profile.grade_band,school_type:profile.school_type,canonical_url:profile.canonical_url,rating:profile.rating,academics:profile.academics,programs:profile.programs,surveys:profile.surveys};
+    schools:schools.map((school,index) => {
+      const profile=museSchoolProfile(school,surveysByDbn[school.dbn] ?? [],baseUrl,graduationByDbn[school.dbn] ?? null,research[index]);
+      return {dbn:profile.dbn,name:profile.name,grade_band:profile.grade_band,school_type:profile.school_type,canonical_url:profile.canonical_url,rating:profile.rating,academics:profile.academics,programs:profile.programs,surveys:profile.surveys,
+        ...research[index],regents_comparison_results:research[index].regents.history.filter(r => r.reporting_year===regentsYear)};
     }),
     source_links:{methodology:METHODOLOGY_URL,assessments:ASSESSMENT_SOURCE_URL,graduation:GRADUATION_SOURCE_URL,surveys:SURVEY_SOURCE},
-    caveat:'Compare like-for-like schools. A missing metric is not zero or evidence that a school is worse.',
+    caveat:'Compare like-for-like schools, dataset years and Regents exams. The aligned Regents results use regents_comparison_reporting_year; an empty result means no published result for that year, never a fallback to another year. Demographics retain their own school years; use the dated history for same-year comparisons. A missing metric is not zero or evidence that a school is worse.',
   };
 }

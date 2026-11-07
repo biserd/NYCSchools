@@ -83,13 +83,14 @@ assert.equal(calculateOverallScore(combinedSchoolWithLowGrade38Participation), 8
 
 console.log("rating regression tests passed");
 
-for (const file of ["server/routes.ts", "server/routesV1.ts", "server/mcp.ts"]) {
+for (const file of ["server/routes.ts", "server/schoolApiView.ts", "server/mcp.ts"]) {
   const source = fs.readFileSync(file, "utf8");
   assert.match(source, /calculateOverallScore/);
   assert.doesNotMatch(source, /0\.4\s*\*\s*(?:\([^)]*\))?(?:s|school)\.academics_score|(?:s|school)\.academics_score\s*\*\s*0\.4/);
 }
 
-const routesV1Source = fs.readFileSync("server/routesV1.ts", "utf8");
+const routesV1Source = fs.readFileSync("server/schoolApiView.ts", "utf8");
+assert.match(fs.readFileSync('server/routesV1.ts','utf8'),/serializeSchool\(school\)/);
 assert.match(routesV1Source, /overall_score:\s*score >= 0 \? score : null/);
 assert.match(routesV1Source, /rating_status:\s*ratingStatus/);
 assert.match(routesV1Source, /withheld_limited_participation/);

@@ -6,6 +6,7 @@ import { getAppUrl } from "./runtimeConfig";
 import { ZodError } from 'zod';
 import { MUSE_TOOL_DEFINITIONS, museCompareSchema, museComparison, museDetailSchema, museSchoolProfile, searchMuseSchools } from './museResearch';
 import { getSchoolSurveys } from './schoolSurveys';
+import { getSchoolResearchData } from './schoolResearchData';
 
 // MCP (Model Context Protocol) Server for OpenAI ChatGPT Apps SDK
 // This implements the JSON-RPC 2.0 protocol that ChatGPT uses to communicate with apps
@@ -110,7 +111,7 @@ WHEN TO USE:
 - After a search, user wants to dive deeper into one result
 - User provides a specific DBN code
 
-DATA RETURNED: Full school profile including: all scores with breakdowns, student demographics, enrollment numbers, NYC School Survey results (parent/teacher/student satisfaction), special programs, historical context, address, and contact info.
+DATA RETURNED: Full school profile including: all scores with breakdowns, student demographics, enrollment numbers, NYC School Survey results (parent/teacher/student satisfaction), special programs, dated demographic and enrollment history, per-exam Regents results and history with explicit reporting years, address, and contact info.
 
 REQUIRES: The school's DBN code (like "02M234"). If user only mentions a name, search first to find the DBN.`,
     inputSchema: {
@@ -138,7 +139,7 @@ WHEN TO USE:
 - User is deciding between options ("which is better, School A or School B?")
 - User wants to see differences in scores, programs, or demographics
 
-DATA RETURNED: Side-by-side comparison including: overall scores, academic/climate/progress scores, ELA & Math proficiency, enrollment size, demographics, special programs, and survey results for each school.
+DATA RETURNED: Side-by-side comparison including: overall scores, academic/climate/progress scores, ELA & Math proficiency, dated enrollment/demographic history, per-exam Regents results with reporting years, special programs, and survey results for each school. Compare the same exam and reporting year; never substitute another year for a missing result.
 
 BEST FOR: Helping parents make decisions by showing concrete differences between their top choices.`,
     inputSchema: {
@@ -258,7 +259,7 @@ const SERVER_INFO = {
   name: "nyc-school-ratings",
   title: "NYC School Ratings",
   version: "2.0.0",
-  protocolVersion: "2026-07-28",
+  protocolVersion: "2025-11-25",
   websiteUrl: "https://nycschoolsratings.com",
   description: "Independent NYC school discovery and comparison using public NYSED and NYC Public Schools data."
 };
@@ -438,6 +439,9 @@ async function handleSearchSchools(params: Record<string, any>) {
     academics_score: s.academics_score,
     climate_score: s.climate_score,
     progress_score: s.progress_score,
+    assessment_year:s.assessment_year ?? null,
+    assessment_source:s.assessment_source ?? null,
+    enrollment:s.enrollment ?? null,demographics_year:s.demographics_year ?? null,
     ela_proficiency: s.ela_proficiency,
     math_proficiency: s.math_proficiency,
     has_gifted_talented: s.has_gifted_talented,
@@ -467,7 +471,7 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     throw new Error("dbn is required");
   }
 
-  const school = await storage.getSchool(params.dbn);
+  const school = await storage.getSchool(museDetailSchema.parse(params).dbn);
   if (!school) {
     throw new Error(`School with DBN ${params.dbn} not found`);
   }
@@ -510,6 +514,11 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
     progress_score: school.progress_score,
     ela_proficiency: school.ela_proficiency,
     math_proficiency: school.math_proficiency,
+    assessment_year:school.assessment_year ?? null,
+    assessment_source:school.assessment_source ?? null,
+    science_assessment_year:school.science_assessment_year ?? null,
+    demographics_year:school.demographics_year ?? null,
+    ...(await getSchoolResearchData(school)),
     
     // Demographics
     enrollment: school.enrollment,
@@ -544,6 +553,7 @@ async function handleGetSchoolDetails(params: Record<string, any>) {
 }
 
 async function handleCompareSchools(params: Record<string, any>) {
+  const { dbns } = museCompareSchema.parse(params);
   if (!params.dbns || !Array.isArray(params.dbns)) {
     throw new Error("dbns array is required");
   }
@@ -553,7 +563,7 @@ async function handleCompareSchools(params: Record<string, any>) {
   }
 
   const schools = await Promise.all(
-    params.dbns.map(async (dbn: string) => {
+    dbns.map(async (dbn: string) => {
       const school = await storage.getSchool(dbn);
       if (!school) {
         return { dbn, error: "School not found" };
@@ -573,6 +583,11 @@ async function handleCompareSchools(params: Record<string, any>) {
         progress_score: school.progress_score,
         ela_proficiency: school.ela_proficiency,
         math_proficiency: school.math_proficiency,
+        assessment_year:school.assessment_year ?? null,
+        assessment_source:school.assessment_source ?? null,
+        science_assessment_year:school.science_assessment_year ?? null,
+        demographics_year:school.demographics_year ?? null,
+        ...(await getSchoolResearchData(school)),
         enrollment: school.enrollment,
         student_teacher_ratio: school.student_teacher_ratio,
         has_gifted_talented: school.has_gifted_talented,
@@ -584,6 +599,9 @@ async function handleCompareSchools(params: Record<string, any>) {
     })
   );
 
+  const years=schools.flatMap(s=>'regents' in s?s.regents.available_reporting_years:[]);
+  const regentsYear=years.length?Math.max(...years):null;
+
   return {
     _formatting_hint: {
       format: "comparison_table",
@@ -592,7 +610,8 @@ async function handleCompareSchools(params: Record<string, any>) {
       key_metrics: ["overall_score", "academics_score", "ela_proficiency", "math_proficiency", "enrollment"],
       next_actions: ["Get details on winning school", "View trends for any school", "Search for more options"]
     },
-    comparison: schools,
+    regents_comparison_reporting_year:regentsYear,
+    comparison: schools.map(s=>({...s,regents_comparison_results:'regents' in s?s.regents.history.filter(r=>r.reporting_year===regentsYear):[]})),
     metrics_explained: {
       overall_score: "Weighted average: 40% academics + 30% climate + 30% progress (0-100)",
       academics_score: "Based on ELA and Math proficiency rates",
@@ -607,11 +626,15 @@ async function handleGetSchoolHistory(params: Record<string, any>) {
     throw new Error("dbn is required");
   }
 
-  const trend = await storage.getSchoolTrend(params.dbn);
+  const {dbn} = museDetailSchema.parse(params);
+  const school = await storage.getSchool(dbn);
+  if(!school) throw new Error(`School ${dbn} not found`);
+  const [trend,research] = await Promise.all([storage.getSchoolTrend(dbn),getSchoolResearchData(school)]);
   if (!trend || trend.historicalData.length === 0) {
     return {
       dbn: params.dbn,
-      message: "No historical data available for this school"
+      ...research,
+      message: "No ELA/math history available; enrollment, demographic and Regents history are supplied separately where reported."
     };
   }
 
@@ -638,6 +661,9 @@ async function handleGetSchoolHistory(params: Record<string, any>) {
     change_percent: Math.round(trend.changePercent * 10) / 10,
     years_analyzed: trend.yearsAnalyzed,
     scores_by_year: scoresByYear,
+    ...research,
+    assessment_comparison_start_year:trend.comparisonStartYear ?? null,
+    assessment_comparison_end_year:trend.comparisonEndYear ?? null,
     trend_summary: `Overall trend: ${trend.direction} (${trend.changePercent > 0 ? '+' : ''}${Math.round(trend.changePercent)}% change)`,
     interpretation_note: "Changes can reflect cohort composition, participation, reporting, or school conditions; the series alone does not establish causation."
   };
@@ -836,8 +862,8 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
               const {dbn}=museDetailSchema.parse(toolParams);
               const school=await storage.getSchool(dbn);
               if(!school)throw new Error(`School ${dbn} was not found. Search by name to resolve the identifier.`);
-              const [surveys,graduation]=await Promise.all([researchSurveys(school),latestGraduation(school)]);
-              result=museSchoolProfile(school,surveys,'https://nycschoolsratings.com',graduation);
+              const [surveys,graduation,research]=await Promise.all([researchSurveys(school),latestGraduation(school),getSchoolResearchData(school)]);
+              result=museSchoolProfile(school,surveys,'https://nycschoolsratings.com',graduation,research);
             }
             break;
           case "compare_schools":
@@ -850,7 +876,8 @@ export async function handleMCPRequest(request: MCPRequest, context: MCPContext 
               const found=schools.filter((school): school is NonNullable<typeof school>=>!!school);
               const surveys=await Promise.all(found.map(school=>researchSurveys(school)));
               const graduation=await Promise.all(found.map(school=>latestGraduation(school)));
-              result=museComparison(found,Object.fromEntries(found.map((school,index)=>[school.dbn,surveys[index]])),'https://nycschoolsratings.com',Object.fromEntries(found.map((school,index)=>[school.dbn,graduation[index]])));
+              const research=await Promise.all(found.map(school=>getSchoolResearchData(school)));
+              result=museComparison(found,Object.fromEntries(found.map((school,index)=>[school.dbn,surveys[index]])),'https://nycschoolsratings.com',Object.fromEntries(found.map((school,index)=>[school.dbn,graduation[index]])),Object.fromEntries(found.map((school,index)=>[school.dbn,research[index]])));
             }
             break;
           case "get_school_history":
