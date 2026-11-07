@@ -48,6 +48,8 @@ import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
 import { getSchoolSurveys } from './schoolSurveys';
 import { MapDiscoveryContent } from '../shared/MapDiscoveryContent';
+import { ChatGPTPluginContent } from '../shared/ChatGPTPluginContent';
+import { CHATGPT_PLUGIN, chatgptPluginSchemas } from '../shared/chatgpt-plugin';
 
 async function surveyServerHtml(key: string, kind: 'school' | 'center' = 'school'): Promise<string> {
   try {
@@ -894,6 +896,12 @@ const STATIC_ROUTE_META: Record<string, StaticRouteMeta> = {
     description: "Explore school comparison, personalized recommendations, commute planning, admissions context, favorites, and application tracking.",
     heading: "NYC School Finder Features",
   },
+  [CHATGPT_PLUGIN.path]: {
+    title: CHATGPT_PLUGIN.title,
+    description: CHATGPT_PLUGIN.description,
+    heading: 'Find and compare NYC schools in ChatGPT.',
+    jsonLd: chatgptPluginSchemas(),
+  },
   "/benefits": {
     title: "Plan Your NYC School Search with Trusted Data",
     description: "Turn NYC school data into a transparent shortlist, side-by-side comparison, commute plan, and application checklist.",
@@ -979,7 +987,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
   const meta = STATIC_ROUTE_META[path];
   if (!meta) return null;
   const canonical = `${SITE_ORIGIN}${path === "/" ? "/" : path}`;
-  const breadcrumb = path === "/" ? undefined : {
+  const breadcrumb = path === "/" || path === CHATGPT_PLUGIN.path ? undefined : {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
@@ -1024,9 +1032,11 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
   const blogSections = path === '/blog' ? `<section><h2>All articles</h2><ul>${blogPosts.map(post => `<li><h3><a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a></h3><p>${escapeHtml(post.description)}</p></li>`).join('')}</ul></section>` : '';
   const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>` : '';
-  const crawlerHtml = path === '/pricing'
+  const crawlerHtml = path === CHATGPT_PLUGIN.path
+    ? `<main>${renderToStaticMarkup(React.createElement(ChatGPTPluginContent))}</main>`
+    : path === '/pricing'
     ? `<main>${pricingSections}</main>`
-    : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}${path === '/private-schools' ? renderToStaticMarkup(React.createElement(PrivateDirectoryContent)) : ''}</main>`;
+    : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/features' ? '<p><a href="/chatgpt">Find and compare NYC schools with our ChatGPT plugin</a></p>' : ''}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}${path === '/private-schools' ? renderToStaticMarkup(React.createElement(PrivateDirectoryContent)) : ''}</main>`;
 
   return applyMeta(baseHtml, {
     title: meta.title,

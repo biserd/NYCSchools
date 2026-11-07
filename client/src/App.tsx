@@ -61,6 +61,7 @@ const ParentGuidePage = lazy(() => import("@/pages/parent-guide"));
 const MethodologyPage = lazy(() => import("@/pages/methodology"));
 const AboutPage = lazy(() => import("@/pages/about"));
 const KinderLearnerPage = lazy(() => import("@/pages/kinderlearner"));
+const ChatGPTPage = lazy(() => import("@/pages/chatgpt"));
 
 // Loading component for lazy routes
 function PageLoader() {
@@ -167,6 +168,7 @@ function Router() {
         <Route path="/terms" component={TermsPage} />
         <Route path="/faq" component={FAQPage} />
         <Route path="/features" component={FeaturesPage} />
+        <Route path="/chatgpt" component={ChatGPTPage} />
         <Route path="/benefits" component={BenefitsPage} />
         <Route path="/release-notes" component={ReleaseNotesPage} />
         <Route path="/blog">

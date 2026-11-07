@@ -2,6 +2,7 @@ import { storage } from "./storage";
 import { PARENT_GUIDES, parentGuidePath, GUIDE_REVIEWED } from '../shared/parent-guides';
 import { KINDERLEARNER_PAGES } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
+import { CHATGPT_PLUGIN } from '../shared/chatgpt-plugin';
 import { blogPosts } from "@shared/blog-data";
 import { CANONICAL_SCHOOL_GUIDES } from "@shared/school-guides";
 import { SEO_LANDINGS, getSeoLandingPath } from "@shared/seo-landings";
@@ -30,6 +31,7 @@ export function sitemapIndex(): string {
 
 export async function sitemapByName(name: string): Promise<string | null> {
   if (name === "static") return urlset([
+    CHATGPT_PLUGIN.path,
     ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
     ...Object.entries(KINDERLEARNER_PAGES).filter(([key]) => key !== 'home').map(([, page]) => page.path),
     "/", "/map", "/compare", "/recommendations", "/early-childhood", "/private-schools", "/lottery-simulator", "/chances-calculator", "/safe-and-strong", "/blog", "/pricing", "/features", "/benefits", "/faq", "/contact", "/methodology", "/about", "/explore-schools", "/safety-methodology", "/developers", "/developers/docs", "/privacy", "/terms",

@@ -88,6 +88,7 @@ export default function FeaturesPage() {
             <Sparkles className="w-6 h-6 text-primary" />
             AI-Powered Tools
           </h2>
+          <p className="mb-5 text-muted-foreground">Already use ChatGPT? <Link href="/chatgpt" className="text-primary underline underline-offset-2">Find and compare NYC schools with our ChatGPT plugin</Link>.</p>
           <div className="grid md:grid-cols-2 gap-4">
             <FeatureCard
               icon={<MessageCircle className="w-5 h-5" />}
