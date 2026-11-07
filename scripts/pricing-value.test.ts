@@ -28,12 +28,17 @@ for (const value of ['615', '965', '755', '1,051', '614', '532', '623', '1,885']
   assert.ok(html.includes(value), `server-rendered checklist must include ${value}`);
 }
 assert.ok(markup.includes('Family Premium features'));
-assert.ok(html.includes('KinderLearner is now available for iPhone and iPad'));
-assert.ok(!markup.includes('KinderLearner access included for members'));
-assert.ok(!markup.includes('Member access is being connected'));
-assert.ok(html.includes('href="https://apps.apple.com/us/app/kinderlearner/id6816259828"'));
-assert.ok(html.includes('separate optional paid membership'));
-assert.ok(!markup.includes('KinderLearner is available now'));
+assert.ok(markup.includes('KinderLearner Pro included'));
+assert.ok(markup.includes('on the web, iPhone and iPad. Included at no extra cost'));
+assert.ok(html.includes('KinderLearner Pro included'), 'the included offer must also be visible without JavaScript');
+assert.ok(!/coming soon/i.test(PRICING_DESCRIPTION), 'pricing metadata must describe the live offer');
+assert.match(markup, /<li[^>]*>[\s\S]*href="https:\/\/kinderlearner\.com\/"[^>]*>KinderLearner Pro included<\/a>/);
+assert.ok(!html.includes('apps.apple.com'), 'pricing must link to the KinderLearner website, not the App Store');
+assert.ok(!html.includes('pricing-kinderlearner'), 'pricing must not render a separate KinderLearner box');
+assert.ok(!pageSource.includes('PricingKinderLearner'));
+assert.ok(html.includes('href="https://kinderlearner.com/"'));
+assert.ok(html.indexOf('KinderLearner Pro included') > html.indexOf('id="checkout"'), 'the benefit must be inside the main plan');
+assert.ok(!html.includes('KinderLearner access included for members'));
 assert.ok(!/also planned|not available today/i.test(`${markup} ${html} ${pageSource}`));
 assert.ok(!markup.includes('160+ NYC families'));
 assert.ok(!markup.includes('A broader view of NYC schools'));
@@ -58,4 +63,12 @@ for (const removed of ['Explore school guides', 'What your membership changes', 
 assert.equal(PRICING_COVERAGE.stages.length, 6);
 assert.equal(PRICING_COVERAGE.stages.find(stage => stage.label === '2-K programs')?.count, 615);
 assert.ok(markup.includes('Program and grade counts overlap'));
+const homeSource = readFileSync('client/src/pages/home.tsx', 'utf8');
+const homepageHtml = await renderSeoHtml('/', base);
+for (const removed of ['One place for the school journey', 'Find your schools. Plan the next step.', 'family-home-title', 'home_journey']) {
+  assert.ok(!homeSource.includes(removed), `homepage must remove the promotional banner: ${removed}`);
+  assert.ok(!homepageHtml?.includes(removed), `homepage SSR must remove the promotional banner: ${removed}`);
+}
+assert.match(homeSource, /<\/header>\s*<FilterBar/, 'school discovery must immediately follow the homepage header');
+assert.ok(homeSource.includes('menu-item-family'), 'family navigation must remain available');
 console.log('Pricing value, verified coverage copy, plan price and SSR passed');

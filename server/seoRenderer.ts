@@ -41,7 +41,7 @@ import { KinderLearnerInfoContent } from '../shared/KinderLearnerInfoContent';
 import { KinderLearnerContent } from '../shared/KinderLearnerContent';
 import { KinderLearnerResourceLink } from '../shared/KinderLearnerResourceLink';
 import { PRICING_DESCRIPTION } from '../shared/pricing-coverage';
-import { PricingHero, PricingKinderLearner, PricingPlanFeatures } from '../shared/PricingValueContent';
+import { PricingHero, PricingPlanFeatures } from '../shared/PricingValueContent';
 import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { getSurveyInsight, surveyBlogSchema } from '../shared/survey-insights';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
@@ -1005,11 +1005,6 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
       </ul>
     </section>
     <section>
-      <h2>Find your schools. Plan the next step.</h2>
-      <p>Family Premium helps parents compare schools, view NYCPS district-school dates, add private visits and deadlines, and ask Parent Assistant on the web or WhatsApp. Opt in to reminders after connecting your phone. Confirm dates with your school; private, charter, 2-K, NYCEEC and family-childcare calendars may differ.</p>
-      <p><a href="/pricing#checkout">Start Family Premium — $9.99/month</a></p>
-    </section>
-    <section>
       <h2>Explore schools by borough</h2>
       <nav aria-label="NYC school guides by borough">
         <a href="/nyc-schools/manhattan">Manhattan</a>
@@ -1028,7 +1023,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
   const guideSections = path === "/explore-schools" ? `<section><h2>Browse all school guides</h2><ul>${SEO_LANDINGS.map((landing) => `<li><a href="${escapeAttr(getSeoLandingPath(landing))}">${escapeHtml(landing.name)}</a></li>`).join("")}</ul><h2>Parent decision guides and comparisons</h2><ul>${PARENT_GUIDES.map(guide => `<li><a href="${parentGuidePath(guide)}">${escapeHtml(guide.title)}</a><p>${escapeHtml(guide.description)}</p></li>`).join('')}</ul></section>` : "";
   const trustSections = path === "/methodology" ? `<section><h2>How ratings work</h2><p>For schools with sufficient data, the score combines academics (40%), climate (30%), and progress (30%). Ratings are withheld when required data or sufficient test participation is unavailable.</p><h2>Official sources</h2><ul><li><a href="https://infohub.nyced.org/reports/academics/test-results">NYC Public Schools test results</a></li><li><a href="https://infohub.nyced.org/reports/school-quality">School Quality Reports and Surveys</a></li><li><a href="https://schoolsearch.schools.nyc/">Official NYC School Search</a></li></ul></section>` : "";
   const blogSections = path === '/blog' ? `<section><h2>All articles</h2><ul>${blogPosts.map(post => `<li><h3><a href="/blog/${escapeAttr(post.slug)}">${escapeHtml(post.title)}</a></h3><p>${escapeHtml(post.description)}</p></li>`).join('')}</ul></section>` : '';
-  const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>${renderToStaticMarkup(React.createElement(PricingKinderLearner))}` : '';
+  const pricingSections = path === '/pricing' ? `${renderToStaticMarkup(React.createElement(PricingHero))}<section id="checkout"><h2>Family Premium — $9.99 per month</h2>${renderToStaticMarkup(React.createElement(PricingPlanFeatures))}<p>Charged at checkout, then billed monthly until canceled. Existing paid plans remain unchanged.</p></section>` : '';
   const crawlerHtml = path === '/pricing'
     ? `<main>${pricingSections}</main>`
     : `<main><h1>${escapeHtml(meta.heading)}</h1><p>${escapeHtml(meta.description)}</p>${homepageSections}${guideSections}${trustSections}${blogSections}${path === '/map' ? renderToStaticMarkup(React.createElement(MapDiscoveryContent)) : ''}${path === '/private-schools' ? renderToStaticMarkup(React.createElement(PrivateDirectoryContent)) : ''}</main>`;

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCheckout } from '@/hooks/useCheckout';
 import { FAMILY_PREMIUM } from '@shared/plans';
 import { PRICING_DESCRIPTION } from '@shared/pricing-coverage';
-import { PricingHero, PricingKinderLearner, PricingPlanFeatures } from '@shared/PricingValueContent';
+import { PricingHero, PricingPlanFeatures } from '@shared/PricingValueContent';
 import { trackEvent } from '@/lib/analytics';
 import { isFamilyPremiumContinuation } from '@/lib/checkout-intent';
 
@@ -63,7 +63,6 @@ export default function PricingPage() {
           <p className="text-xs text-muted-foreground">WhatsApp reminders require your opt-in. School calendar dates should be confirmed with your provider.</p>
         </CardContent>
       </Card>
-      <PricingKinderLearner />
     </main><Footer />
   </div>;
 }

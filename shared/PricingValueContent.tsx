@@ -27,25 +27,16 @@ export function PricingPlanFeatures() {
     { title: 'Research and compare', detail: 'Full profiles, surveys, trends, commute tools, favorites and application tracking.' },
     { title: 'Plan your family’s year', detail: 'NYCPS calendar dates, your own events and opted-in reminders.' },
     { title: 'Parent Assistant on web and WhatsApp', detail: 'Up to 30 requests a day and 100 WhatsApp reminders a month.' },
+    { title: 'KinderLearner Pro included', detail: 'Math, counting and phonics on the web, iPhone and iPad. Included at no extra cost while your membership is active.', href: KINDERLEARNER_SITE.home },
   ];
   return <div className="space-y-3">
     <ul className="space-y-3" aria-label="Family Premium features">{features.map(feature => <li className="flex gap-2" key={feature.title}>
       <Check className="mt-0.5 h-5 w-5 shrink-0 text-blue-700 dark:text-sky-300" aria-hidden="true" />
       <span>
-        <span className="font-medium">{feature.title}</span>
+        {feature.href ? <a className="font-medium text-primary underline underline-offset-2" href={feature.href} target="_blank" rel="noopener noreferrer">{feature.title}</a> : <span className="font-medium">{feature.title}</span>}
         <span className="block text-sm text-muted-foreground">{feature.detail}</span>
       </span>
     </li>)}</ul>
     <p className="text-xs text-muted-foreground">Directory snapshot: {PRICING_COVERAGE.asOf}. Program and grade counts overlap; private and early-childhood directories are separate.</p>
   </div>;
-}
-
-export function PricingKinderLearner() {
-  return <aside className="rounded-xl border bg-card p-4" aria-labelledby="pricing-kinderlearner">
-    <h2 id="pricing-kinderlearner" className="font-semibold">KinderLearner is now available for iPhone and iPad</h2>
-    <p className="mt-1 text-sm text-muted-foreground">Download free for playful practice in letters and numbers. KinderLearner offers a separate optional paid membership.</p>
-    <a className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline" href={KINDERLEARNER_SITE.appStore} target="_blank" rel="noopener noreferrer nofollow">
-      Download on the App Store
-    </a>
-  </aside>;
 }
