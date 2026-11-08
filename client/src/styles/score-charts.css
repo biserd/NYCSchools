@@ -5,6 +5,8 @@
   font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --foreground: light-dark(#242424, #ececec);
   --muted-foreground: light-dark(#6b6b6b, #aaa);
+  --primary: var(--foreground);
+  --secondary: var(--muted-foreground);
   --card: light-dark(#fff, #202020);
   --muted: light-dark(#f3f3f3, #303030);
   --popover: light-dark(#fff, #292929);

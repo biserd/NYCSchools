@@ -6,6 +6,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {DATA_RELEASE,DATA_RELEASE_RESOURCES,dataReleaseResourcePath,dataReleaseSchema} from '../shared/data-release';
 import {DataReleaseContent} from '../shared/DataReleaseContent';
+import {RELEASE_CHARTS,releaseSubjectSamples,releaseSchoolExamples} from '../shared/data-release-charts';
 import {pressReleaseText} from '../shared/data-release-copy';
 import {dataReleaseActionParams} from '../client/src/lib/data-release-actions';
 import {renderSeoHtml,clearSeoCache} from '../server/seoRenderer';
@@ -62,6 +63,36 @@ assert.ok(html.includes('not a new government data release'));
 assert.ok(html.includes('separate filtered samples'));
 assert.ok(html.includes('href="/register"'));
 assert.ok(html.includes('hello@nycschoolsratings.com'));
+assert.equal((html.match(/data-release-chart=/g)||[]).length,3);
+assert.equal(html.includes('\u2014'),false,'Release copy and visual captions contain no em dashes');
+assert.ok(html.includes('Spring 2025 to spring 2026')&&html.includes('Reporting years 2025 to 2026'));
+assert.ok(html.includes('Tested 2025')&&html.includes('Tested 2026'));
+for(const [i,sample] of releaseSubjectSamples.entries()) {
+  const source=sample.label==='ELA'?evidence.assessments.ela:sample.label==='Math'?evidence.assessments.math:
+    evidence.regents[sample.label==='US History Regents'?'us-history':'global-history'].pairs;
+  const changes=source.map((r:any)=>r.change).sort((a:number,b:number)=>a-b);
+  const middle=Math.floor(changes.length/2);
+  const median=changes.length%2?changes[middle]:(changes[middle-1]+changes[middle])/2;
+  const plotted=RELEASE_CHARTS.directions.rows[i];
+  assert.equal(plotted.Declined,source.filter((r:any)=>r.change<0).length);
+  assert.equal(plotted.Improved,source.filter((r:any)=>r.change>0).length);
+  assert.equal(plotted.Unchanged,source.filter((r:any)=>r.change===0).length);
+  assert.equal(plotted.Declined+plotted.Improved+plotted.Unchanged,source.length);
+  assert.equal(RELEASE_CHARTS.medians.rows[i].Change,median);
+}
+for(const [i,{subject,row}] of releaseSchoolExamples.entries()) {
+  const source=subject.startsWith('ELA')?assessment.find(r=>r.dbn===row.dbn&&r.subject==='ELA'):
+    subject.startsWith('Math')?assessment.find(r=>r.dbn===row.dbn&&r.subject==='Math'):
+    pairs.find(r=>r.dbn===row.dbn&&r.source_exam_label==='US History and Government');
+  assert.ok(source);
+  const regents=subject.startsWith('US History');
+  assert.equal(RELEASE_CHARTS.examples.rows[i]['2025'],Number(source[regents?'previous_pass_rate_65plus_pct':'previous_proficiency_pct']));
+  assert.equal(RELEASE_CHARTS.examples.rows[i]['2026'],Number(source[regents?'current_pass_rate_65plus_pct':'current_proficiency_pct']));
+  assert.equal(row.previousTested,Number(source.previous_tested));
+  assert.equal(row.currentTested,Number(source.current_tested));
+}
+assert.deepEqual(RELEASE_CHARTS.examples.spec.xDomain,[0,100]);
+assert.ok(RELEASE_CHARTS.medians.spec.xDomain[0]<0&&RELEASE_CHARTS.medians.spec.xDomain[1]>0);
 const base='<html><head><title>Base</title><meta property="og:type" content="website"/></head><body><div id="root"></div></body></html>';
 const ssr=await renderSeoHtml(DATA_RELEASE.path,base);
 assert.ok(ssr?.includes('NewsArticle')&&ssr.includes('content="article"'));
