@@ -14,7 +14,7 @@ import { familyCheckoutAvailable, guestFamilyCheckoutAvailable } from '../../ser
 import { NYCPS_2026_27_EVENTS } from '../../shared/family-calendar';
 
 // Synthetic data in a new local D1 database; never calls Stripe or production.
-const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.d1-test.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-family-billing-')) } });
+const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.family-local.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-family-billing-')) } });
 try {
   for (const file of (await readdir('migrations-d1')).filter(f => f.endsWith('.sql')).sort()) {
     for (const statement of (await readFile(`migrations-d1/${file}`, 'utf8')).split('--> statement-breakpoint').map(s => s.trim()).filter(Boolean)) await platform.env.DB.prepare(statement).run();

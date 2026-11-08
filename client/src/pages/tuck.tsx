@@ -1,116 +1,77 @@
-import { useEffect, useState } from "react";
-import { Link } from "wouter";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Bell, CalendarDays, MessageCircle, ShieldCheck } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
-import { Footer } from "@/components/Footer";
-import { SEOHead } from "@/components/SEOHead";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
-import type { TuckOverview } from "@shared/tuck";
-import { ParentWhatsAppConnection } from '@/components/ParentWhatsAppConnection';
-import { ParentAssistantPanel } from '@/components/ParentAssistantPanel';
-import { FamilyCalendar } from '@/components/FamilyCalendar';
-import { trackEvent } from '@/lib/analytics';
+import {useEffect,useState} from 'react';
+import {Link} from 'wouter';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
+import {Plus,MessageCircle,Settings2} from 'lucide-react';
+import {AppHeader} from '@/components/AppHeader';
+import {Footer} from '@/components/Footer';
+import {SEOHead} from '@/components/SEOHead';
+import {Button} from '@/components/ui/button';
+import {useAuth} from '@/hooks/useAuth';
+import {useFamilyAssistant} from '@/hooks/useFamily';
+import {apiRequest} from '@/lib/queryClient';
+import {trackEvent} from '@/lib/analytics';
+import {FamilyCalendar} from '@/components/FamilyCalendar';
+import {FamilyEventComposer,type FamilyComposerSeed} from '@/components/FamilyEventComposer';
+import {FamilyDraftReview} from '@/components/FamilyDraftReview';
+import {FamilySettings} from '@/components/FamilySettings';
+import {ParentAssistantPanel} from '@/components/ParentAssistantPanel';
+import type {TuckOverview} from '@shared/tuck';
 
 export default function TuckPage() {
-  const { user, isLoading } = useAuth();
-  const [returnedFromCheckout] = useState(() => new URLSearchParams(window.location.search).get('checkout') === 'success');
-  const [checkoutSessionId] = useState(() => new URLSearchParams(window.location.search).get('session_id'));
-  useEffect(() => {
-    if (!returnedFromCheckout) return;
-    // A success redirect is not proof of payment; Stripe's signed webhook is
-    // still the authority for subscription activation.
-    trackEvent('subscription_checkout_returned', { plan: 'family_premium', result: 'success_return' });
-    window.history.replaceState(window.history.state, '', '/family');
-  }, [returnedFromCheckout]);
-  useEffect(() => {
-    if (!returnedFromCheckout || !checkoutSessionId || !/^cs_(?:test_|live_)?[A-Za-z0-9]{12,200}$/.test(checkoutSessionId)) return;
-    let active = true;
-    let attempts = 0;
-    const check = async () => {
-      try {
-        const response = await fetch(`/api/family/checkout/status?session_id=${encodeURIComponent(checkoutSessionId)}`, {cache:'no-store'});
-        if (!response.ok) return;
-        const result = await response.json() as {status:string;value?:number;currency?:string};
-        if (result.status === 'paid' && active && ['nycschoolsratings.com','www.nycschoolsratings.com'].includes(window.location.hostname)) {
-          const key = `nycsr_paid_checkout_${checkoutSessionId}`;
-          if (!window.localStorage.getItem(key)) {
-            window.localStorage.setItem(key, '1');
-            trackEvent('purchase', {transaction_id:checkoutSessionId,currency:(result.currency || 'usd').toUpperCase(),value:result.value || 0,items:[{item_id:'family_premium',item_name:'Family Premium',price:result.value || 0,quantity:1}],plan:'family_premium'});
-          }
-          return;
-        }
-      } catch { /* Webhook/D1 is authoritative even if browser measurement fails. */ }
-      if (active && ++attempts < 8) window.setTimeout(check, 2500);
-    };
-    void check();
-    return () => { active = false; };
-  }, [returnedFromCheckout, checkoutSessionId]);
-  // Scope React Query to the signed-in account as well as server-side ownership.
-  const overview = useQuery<TuckOverview>({ queryKey: ["tuck-overview", user?.id], enabled: !!user,
-    queryFn: async () => (await apiRequest("GET", "/api/tuck/overview")).json(), gcTime: 0 });
-  const [nickname, setNickname] = useState("");
-  const [schoolDbn, setSchoolDbn] = useState("");
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [childId, setChildId] = useState("");
-  const [detail, setDetail] = useState("");
-  const change = useMutation({
-    mutationFn: async ({ method = "POST", path, body }: { method?: string; path: string; body?: unknown }) => {
-      await apiRequest(method, `/api/tuck/${path}`, body);
-      await overview.refetch();
-    },
-  });
-  const data = overview.data;
-  const busy = change.isPending;
-  return <div className="min-h-screen flex flex-col bg-background">
-    <SEOHead title="My Family" description="Your private family calendar within NYC School Ratings." canonicalPath="/family" noindex />
-    <AppHeader stackOnMobile />
-    <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-8 space-y-8">
-      <section className="rounded-2xl border bg-teal-50 dark:bg-teal-950/30 p-6 md:p-8">
-        <p className="text-sm font-semibold text-teal-800 dark:text-teal-300">NYC SCHOOL RATINGS · FAMILY SPACE</p>
-        <h1 className="text-3xl font-bold mt-2">My Family</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">One clear view of NYCPS school dates, closures, schedule changes and your own family plans. Keep school research and the Parent Assistant close by.</p>
-        <p className="mt-4 flex items-start gap-2 text-sm"><ShieldCheck className="w-5 h-5 shrink-0" />Your saved family dates are private to your account. Family sharing is not enabled yet.</p>
-        <div className="grid gap-3 sm:grid-cols-3 mt-6 text-sm"><div className="rounded-xl bg-background/80 border p-3"><CalendarDays className="w-5 h-5 text-sky-700" /><strong className="block mt-2">Plan by child</strong><span>Official NYCPS dates plus your own private events.</span></div><div className="rounded-xl bg-background/80 border p-3"><Bell className="w-5 h-5 text-amber-700" /><strong className="block mt-2">Set reminders</strong><span>Confirm a date and choose when WhatsApp should remind you.</span></div><div className="rounded-xl bg-background/80 border p-3"><MessageCircle className="w-5 h-5 text-teal-700" /><strong className="block mt-2">Ask Parent Assistant</strong><span>School and calendar help on the website or WhatsApp.</span></div></div>
-      </section>
-      {returnedFromCheckout && <p role="status" className="rounded-xl border border-teal-300 bg-teal-50 dark:bg-teal-950/30 p-4">Thanks for checking out. Paid access begins after Stripe confirms payment. If you checked out as a guest, we’ll email a secure one-time sign-in link to the address you entered at Stripe. <Link href="/login?redirect=/family" className="underline">Sign in or request a fresh link</Link>.</p>}
-      {isLoading ? <p role="status">Checking your account…</p> : !user ? <><FamilyCalendar /><Card><CardContent className="pt-6 space-y-4"><h2 className="font-semibold">Make the calendar yours</h2><p>Sign in to add private family events, save schools and use your paid Parent Assistant. The NYCPS dates above are visible to everyone. You can subscribe first without registering; Stripe collects your email and we send a secure sign-in link after payment.</p><div className="flex flex-wrap gap-3"><Button asChild><Link href="/pricing#checkout">Explore Family Premium</Link></Button><Button asChild variant="outline"><Link href="/login?redirect=/family">Already have an account? Sign in</Link></Button></div></CardContent></Card></> : <>
-        <nav className="flex flex-wrap gap-4 text-sm underline"><Link href="/favorites">Saved schools</Link><Link href="/application-tracker">Application tracker</Link><Link href="/settings">Account &amp; subscription</Link></nav>
-        <FamilyCalendar privateEvents={data?.events || []} children={data?.children || []} onSelectDate={(selectedDate, selectedChildId) => { setDate(selectedDate); setChildId(selectedChildId || ''); }} />
-        <ParentWhatsAppConnection key={user.id} userId={user.id} />
-        {overview.isLoading ? <p role="status">Loading your family space…</p> : overview.isError || !data?.household ? <p role="alert">Could not load your family space. <button className="underline min-h-11" onClick={() => void overview.refetch()}>Try again</button></p> : <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
-          <Card><CardHeader><CardTitle>Your children</CardTitle></CardHeader><CardContent className="space-y-5">
-            {data.children.length === 0 && <p className="text-sm text-muted-foreground">Add a nickname to organize dates by child.</p>}
-            {data.children.map(child => <div key={child.id} className="border-b pb-3"><p className="font-medium">{child.nickname}</p>{child.schoolUrl && <Link className="text-sm text-primary underline" href={child.schoolUrl}>{child.schoolName}</Link>}<div><button className="text-sm underline min-h-11" disabled={busy} onClick={() => { if (window.confirm(`Remove ${child.nickname} and their calendar events?`)) change.mutate({ method: "DELETE", path: `children/${child.id}` }); }}>Remove child</button></div></div>)}
-            <form className="space-y-3" onSubmit={e => { e.preventDefault(); change.mutate({ path: "children", body: { nickname, schoolDbn: schoolDbn.trim() || null } }, { onSuccess: () => { setNickname(""); setSchoolDbn(""); } }); }}>
-              <div><Label htmlFor="tuck-nickname">Child’s nickname</Label><Input id="tuck-nickname" required maxLength={50} value={nickname} onChange={e => setNickname(e.target.value)} /></div>
-              <div><Label htmlFor="tuck-school">School DBN (optional)</Label><Input id="tuck-school" maxLength={6} placeholder="e.g. 02M234" value={schoolDbn} onChange={e => setSchoolDbn(e.target.value)} /><p className="text-xs text-muted-foreground mt-1">Use the identifier from the school profile. You can leave this blank.</p></div>
-              <Button type="submit" disabled={busy}>Add child</Button>
-            </form>
-          </CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex gap-2"><CalendarDays className="w-5 h-5" />Your private family dates</CardTitle></CardHeader><CardContent className="space-y-5">
-            <p className="text-sm text-muted-foreground">All-day dates you enter, not verified school announcements. Adding a date alone does not schedule a reminder.</p>
-            {data.events.length === 0 && <p>No dates yet. Add a school visit, deadline or family event.</p>}
-            <ol className="space-y-3">{data.events.map(event => <li key={event.id} className="border-l-4 border-teal-600 pl-4"><time className="text-sm font-medium" dateTime={event.date}>{new Date(`${event.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</time><p className="font-semibold">{event.title}</p><p className="text-xs text-muted-foreground">{data.children.find(child => child.id === event.childId)?.nickname || "Whole family"}</p>{event.detail && <p className="text-sm whitespace-pre-wrap">{event.detail}</p>}<button className="min-h-11 underline text-sm" disabled={busy} onClick={() => { if (window.confirm("Remove this event?")) change.mutate({ method: "DELETE", path: `events/${event.id}` }); }}>Remove event</button></li>)}</ol>
-            <form id="family-event-form" className="space-y-3 border-t pt-4" onSubmit={e => { e.preventDefault(); change.mutate({ path: "events", body: { title, date, childId: childId || null, detail } }, { onSuccess: () => { setTitle(""); setDetail(""); } }); }}>
-              <h3 className="font-semibold">Add an important date</h3>
-              <div><Label htmlFor="tuck-title">Event title</Label><Input id="tuck-title" value={title} onChange={e => setTitle(e.target.value)} maxLength={160} required /></div>
-              <div><Label htmlFor="tuck-date">Date</Label><Input id="tuck-date" type="date" min="2000-01-01" max="2099-12-31" value={date} onChange={e => setDate(e.target.value)} required /></div>
-              <div><Label htmlFor="tuck-child">For</Label><select id="tuck-child" className="block w-full min-h-11 rounded-md border bg-background px-3" value={childId} onChange={e => setChildId(e.target.value)}><option value="">Whole family</option>{data.children.map(child => <option key={child.id} value={child.id}>{child.nickname}</option>)}</select></div>
-              <div><Label htmlFor="tuck-detail">Notes (optional)</Label><Input id="tuck-detail" value={detail} onChange={e => setDetail(e.target.value)} maxLength={1000} /></div>
-              <Button type="submit" disabled={busy}>Save date</Button>
-            </form>
-          </CardContent></Card>
-        </div>}
-        {change.isError && <p role="alert" className="text-destructive">{change.error.message}</p>}
-        {data?.household&&<ParentAssistantPanel key={`assistant-${user.id}`} userId={user.id} events={data.events} onSaved={()=>void overview.refetch()}/>}
-      </>}
-    </main><Footer />
-  </div>;
+ const {user,isLoading}=useAuth();
+ const queries=useQueryClient();
+ const [returnedFromCheckout]=useState(()=>new URLSearchParams(window.location.search).get('checkout')==='success');
+ const [checkoutSessionId]=useState(()=>new URLSearchParams(window.location.search).get('session_id'));
+ const [checkoutConfirmed,setCheckoutConfirmed]=useState(false);
+ useEffect(()=>{
+   if(!returnedFromCheckout)return;
+   trackEvent('subscription_checkout_returned',{plan:'family_premium',result:'success_return'});
+   window.history.replaceState(window.history.state,'','/family');
+ },[returnedFromCheckout]);
+ useEffect(()=>{
+   if(!returnedFromCheckout||!checkoutSessionId||!/^cs_(?:test_|live_)?[A-Za-z0-9]{12,200}$/.test(checkoutSessionId))return;
+   let active=true,attempts=0;
+   const check=async()=>{
+     try{
+       const response=await fetch(`/api/family/checkout/status?session_id=${encodeURIComponent(checkoutSessionId)}`,{cache:'no-store'});
+       if(!response.ok)return;
+       const result=await response.json() as {status:string;value?:number;currency?:string};
+       if(result.status==='paid'&&active){
+         setCheckoutConfirmed(true);
+         // The signed-webhook-backed status, not the URL, proves payment.
+         // Refresh access even when the webhook finished after this page loaded.
+         await Promise.all([queries.invalidateQueries({queryKey:['parent-assistant',user?.id]}),queries.invalidateQueries({queryKey:['family-premium-access',user?.id]}),queries.invalidateQueries({queryKey:['/api/subscription']}),queries.invalidateQueries({queryKey:['/api/auth/user']})]);
+         if(['nycschoolsratings.com','www.nycschoolsratings.com'].includes(window.location.hostname)){
+         const key=`nycsr_paid_checkout_${checkoutSessionId}`;
+         if(!window.localStorage.getItem(key)){window.localStorage.setItem(key,'1');trackEvent('purchase',{transaction_id:checkoutSessionId,currency:(result.currency||'usd').toUpperCase(),value:result.value||0,items:[{item_id:'family_premium',item_name:'Family Premium',price:result.value||0,quantity:1}],plan:'family_premium'});}}
+         return;
+       }
+     }catch{/* Stripe webhook, not this redirect, owns access. */}
+     if(active&&++attempts<8)window.setTimeout(check,2500);
+   };void check();return()=>{active=false;};
+ },[returnedFromCheckout,checkoutSessionId,user?.id,queries]);
+ const overview=useQuery<TuckOverview>({queryKey:['tuck-overview',user?.id],enabled:!!user,gcTime:0,refetchOnWindowFocus:'always',queryFn:async()=>(await apiRequest('GET','/api/tuck/overview')).json()});
+ const assistant=useFamilyAssistant(user?.id);
+ const whatsapp=useQuery<{connected:boolean}>({queryKey:['parent-whatsapp',user?.id],enabled:!!user,gcTime:0,refetchOnWindowFocus:'always',queryFn:async()=>(await apiRequest('GET','/api/tuck/whatsapp')).json()});
+ const [composer,setComposer]=useState<FamilyComposerSeed|null>(null),[chat,setChat]=useState(false),[notice,setNotice]=useState(''),[settings,setSettings]=useState(false);
+ const data=overview.data;
+ useEffect(()=>{setComposer(null);setChat(false);setNotice('');setSettings(false);},[user?.id]);
+ const openSettings=()=>{setSettings(true);window.setTimeout(()=>document.getElementById('family-settings')?.scrollIntoView({behavior:'smooth',block:'start'}),0);};
+ useEffect(()=>{if(user)trackEvent('family_viewed');},[user?.id]);
+ return <div className="min-h-screen flex flex-col bg-background"><SEOHead title="My Family" description="Upcoming school dates, your family plans and simple WhatsApp reminders." canonicalPath="/family" noindex/><AppHeader stackOnMobile/>
+   <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6 md:py-8 space-y-6">
+     <header className="flex flex-wrap justify-between items-start gap-4"><div><h1 className="text-2xl md:text-3xl font-bold">My Family</h1><p className="mt-1 text-sm text-muted-foreground">What’s coming up, without keeping it all in your head.</p></div><div className="flex gap-2">
+       {user?<><Button onClick={()=>setComposer({})}><Plus className="w-4 h-4 mr-1"/>Add event</Button><Button variant="outline" onClick={()=>setChat(true)}><MessageCircle className="w-4 h-4 mr-1"/>Ask Assistant</Button></>:!isLoading?<><Button asChild><Link href="/login?redirect=/family">Add my own events</Link></Button><Button variant="outline" asChild><Link href="/pricing#checkout">Get reminders</Link></Button></>:<p role="status">Checking your account…</p>}
+     </div></header>
+     {returnedFromCheckout&&<p role="status" className="rounded-lg border border-blue-300 bg-blue-50 dark:bg-blue-950/30 p-3 text-sm">{checkoutConfirmed&&assistant.data?.entitled?'You’re all set. Your membership features are ready.':checkoutConfirmed?<>Payment confirmed. Use the email address you entered at Stripe to access your membership. <Link href="/login?redirect=/family" className="underline">Sign in or request a fresh link</Link>.</>:<>We’re checking payment confirmation. You can use the calendar while we finish. If you checked out as a guest, we’ll email a secure sign-in link to the address you entered at Stripe.</>}</p>}
+     {notice&&<p role="status" className="rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/30 p-3 text-sm">{notice}</p>}
+     {user&&<><div className="flex flex-wrap justify-between items-center gap-3 text-sm"><p className={whatsapp.data?.connected?'text-green-800 dark:text-green-300':'text-muted-foreground'}>{whatsapp.data?.connected?'WhatsApp connected':assistant.data?.entitled?'Reminders are included. Connect WhatsApp when you’re ready.':'Private events are yours. Membership adds WhatsApp reminders and the assistant.'}</p><button className="min-h-11 inline-flex gap-1 items-center underline" onClick={openSettings}><Settings2 className="w-4 h-4"/>Family &amp; settings</button></div><FamilyDraftReview userId={user.id}/></>}
+     {user&&overview.isError&&<p role="alert" className="rounded-lg border p-3 text-sm">Your private dates could not load. Reference dates below are still available. <button className="underline min-h-11" onClick={()=>void overview.refetch()}>Try again</button></p>}
+     {user&&assistant.isError&&<p role="alert" className="text-sm">Reminder status is unavailable. Your calendar is still available. <button className="underline min-h-11" onClick={()=>void assistant.refetch()}>Check again</button></p>}
+     {user&&overview.isLoading?<p role="status">Opening your calendar…</p>:<FamilyCalendar privateEvents={data?.events||[]} children={data?.children||[]} reminders={assistant.data?.reminders||[]} onSelectDate={user?(date,childId)=>setComposer({date,childId}):undefined} onSelectEvent={user?(entry,remind)=>setComposer({entry,remind}):undefined}/>}
+     {user?<><details id="family-settings" open={settings} onToggle={e=>setSettings(e.currentTarget.open)} className="rounded-xl border p-4"><summary className="cursor-pointer min-h-11 flex items-center font-medium">Family &amp; settings</summary><FamilySettings userId={user.id} children={data?.children||[]} onTestReminder={()=>setComposer({test:true,remind:true})}/></details><nav className="flex flex-wrap gap-5 text-sm"><Link className="min-h-11 inline-flex items-center underline" href="/favorites">Saved schools</Link><Link className="min-h-11 inline-flex items-center underline" href="/application-tracker">Application tracker</Link><Link className="min-h-11 inline-flex items-center underline" href="/settings">Account &amp; membership</Link></nav><p className="text-xs text-muted-foreground">Your family plans are private to your account. WhatsApp sends only the reminders you request. Keep a backup for critical deadlines.</p></>:<p className="text-sm text-muted-foreground">Published NYCPS dates are free to view. Sign in to save your own private events. <Link href="/pricing#checkout" className="underline text-primary">Membership</Link> adds the assistant and reminders; you can subscribe without registering first.</p>}
+   </main><Footer/>
+   {user&&composer&&<FamilyEventComposer key={user.id+JSON.stringify(composer)} userId={user.id} children={data?.children||[]} seed={composer} onClose={()=>setComposer(null)} onSaved={setNotice}/>}
+   {user&&<ParentAssistantPanel key={user.id} userId={user.id} open={chat} onOpenChange={setChat}/>}
+ </div>;
 }

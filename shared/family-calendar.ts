@@ -1,7 +1,7 @@
 // Reviewed against the NYCPS 2026–27 calendar. These dates apply to NYCPS
 // district schools (3-K–12), not every school in our directory.
 export const NYCPS_CALENDAR_SOURCE = 'https://www.schools.nyc.gov/calendar/2026-2027-school-year-calendar';
-export const NYCPS_CALENDAR_REVIEWED = '2026-09-24';
+export const NYCPS_CALENDAR_REVIEWED = '2026-11-08';
 export const NYCPS_CALENDAR_SCOPE = 'NYCPS district schools (3-K–12). Private, charter, NYCEEC, family-childcare and 2-K providers may use different calendars. Confirm school-specific dates with your school.';
 
 export type FamilyCalendarKind = 'closure' | 'schedule' | 'milestone' | 'academic';
@@ -20,7 +20,7 @@ export const NYCPS_2026_27_EVENTS: PublicFamilyEvent[] = [
   event('2026-11-11', 'Veterans Day — schools closed', 'closure'),
   event('2026-11-12', 'Middle school and D75 conferences', 'schedule', undefined, 'Afternoon and evening conferences; affected students dismissed three hours early.'),
   event('2026-11-19', 'High school, K–12 and 6–12 evening conferences', 'schedule', undefined, 'Parent-teacher conferences; your school may schedule a different date.'),
-  event('2026-11-20', 'High school / 6–12 conferences', 'schedule', undefined, 'Afternoon conferences; affected students dismissed three hours early.'),
+  event('2026-11-20', 'High school, K–12 and 6–12 conferences', 'schedule', undefined, 'Afternoon conferences; affected students dismissed three hours early.'),
   event('2026-11-26', 'Thanksgiving recess', 'closure', '2026-11-27'),
   event('2026-12-24', 'Winter recess', 'closure', '2027-01-01'),
   event('2027-01-18', 'Martin Luther King Jr. Day — schools closed', 'closure'),
@@ -32,7 +32,7 @@ export const NYCPS_2026_27_EVENTS: PublicFamilyEvent[] = [
   event('2027-03-04', 'Middle school and D75 conferences', 'schedule', undefined, 'Afternoon and evening conferences; affected students dismissed three hours early.'),
   event('2027-03-09', 'Eid al-Fitr — schools closed', 'closure'),
   event('2027-03-18', 'High school, K–12 and 6–12 evening conferences', 'schedule', undefined, 'Parent-teacher conferences; your school may schedule a different date.'),
-  event('2027-03-19', 'High school / 6–12 conferences', 'schedule', undefined, 'Afternoon conferences; affected students dismissed three hours early.'),
+  event('2027-03-19', 'High school, K–12 and 6–12 conferences', 'schedule', undefined, 'Afternoon conferences; affected students dismissed three hours early.'),
   event('2027-03-26', 'Good Friday — schools closed', 'closure'),
   event('2027-04-22', 'Spring recess', 'closure', '2027-04-30'),
   event('2027-05-12', 'High school, K–12 and 6–12 evening conferences', 'schedule', undefined, 'Parent-teacher conferences; your school may schedule a different date.'),

@@ -1,10 +1,12 @@
 import { useRef, useState, type ComponentType } from "react";
 import { MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {useLocation} from 'wouter';
 
 // Keep the launcher available immediately without loading the chat UI or its
 // authenticated queries. Once opened, retain the component and conversation.
 export function DeferredChatBot() {
+  const [location]=useLocation();
   const [Chat, setChat] = useState<ComponentType<{ initialOpen?: boolean }> | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -26,6 +28,8 @@ export function DeferredChatBot() {
     }
   }
 
+  // Family has its own shared-backend assistant. Do not show two chat launchers.
+  if(location==='/family'||location==='/tuck')return null;
   if (Chat) return <Chat initialOpen />;
   return <>
     {failed && <p role="alert" className="fixed bottom-24 right-6 z-50 max-w-64 rounded-lg border bg-background p-3 text-sm shadow-lg">Chat couldn't load. Tap the chat button to retry.</p>}

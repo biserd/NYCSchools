@@ -1,9 +1,13 @@
 import { parentPreferencesInput, reminderInput, type ParentPreferences, PARENT_LIMITS } from '../../shared/parent-assistant';
 import { TuckError } from '../tuck/store';
-import type { ParentWhatsappEnvironment } from './whatsapp';
+import {parentWhatsappReady,type ParentWhatsappEnvironment} from './whatsapp';
+import {recordFamilyActivity} from './activity';
+import {pendingFamilyDrafts} from './drafts';
 
-export type AssistantEnvironment = ParentWhatsappEnvironment & { AI?: Ai; PARENT_ASSISTANT_AGENT?:DurableObjectNamespace<any>; PARENT_AGENT_SDK_ENABLED?:string; PARENT_ASSISTANT_ENABLED?:string; PARENT_REMINDERS_ENABLED?:string; PARENT_REMINDER_CONTENT_SID?:string; FAMILY_CHECKOUT_ENABLED?:string; PARENT_LAUNCH_VERIFIED?:string; STRIPE_FAMILY_PREMIUM_PRICE_ID?:string };
+export type AssistantEnvironment = ParentWhatsappEnvironment & { AI?: Ai; PARENT_ASSISTANT_AGENT?:DurableObjectNamespace<any>; PARENT_AGENT_SDK_ENABLED?:string; PARENT_AGENT_FAST_RESPONSES_ENABLED?:string; PARENT_ASSISTANT_ENABLED?:string; PARENT_REMINDERS_ENABLED?:string; PARENT_REMINDER_CONTENT_SID?:string; FAMILY_CHECKOUT_ENABLED?:string; PARENT_LAUNCH_VERIFIED?:string; STRIPE_FAMILY_PREMIUM_PRICE_ID?:string };
 export function assistantEnabled(env:AssistantEnvironment) { return env.PARENT_ASSISTANT_ENABLED === 'true'; }
+export function reminderDeliveryReady(env:AssistantEnvironment) {return env.PARENT_REMINDERS_ENABLED==='true'&&parentWhatsappReady(env)&&/^HX[a-f0-9]{32}$/i.test(env.PARENT_REMINDER_CONTENT_SID||'');}
+export function requireReminderDelivery(env:AssistantEnvironment) {if(!reminderDeliveryReady(env))throw new TuckError(503,'WhatsApp reminders are temporarily unavailable. You can still save a calendar event without a reminder.');}
 export async function hasAssistantAccess(userId:string, env:AssistantEnvironment, now=Date.now()) {
   // Preview access is restricted to the separate staging database, never production.
   if (env.ENVIRONMENT === 'staging' && now < Date.parse(env.STAGING_EXPIRES_AT || '') && assistantEnabled(env)) return true;
@@ -60,6 +64,7 @@ export function localInstant(date:string,time:string,timezone:string) {
 }
 export async function createReminder(userId:string,env:AssistantEnvironment,input:unknown) {
   await requireAssistant(userId,env);
+  requireReminderDelivery(env);
   const data=reminderInput.parse(input),p=await preferences(userId,env),now=Date.now();
   const due=localInstant(data.localDate,data.localTime,p.timezone);
   if(due<now+60000||due>now+366*86400000)throw new TuckError(400,'Choose a reminder between one minute and one year from now.');
@@ -69,15 +74,19 @@ export async function createReminder(userId:string,env:AssistantEnvironment,inpu
   if(data.localDate>event.date)throw new TuckError(400,'Schedule the reminder on or before the event date.');
   await authorizeRequestedReminder(userId,env,now);
   const id=crypto.randomUUID();
-  const row=await env.DB.prepare(`INSERT INTO parent_reminders(id,user_id,event_id,due_at,timezone,status,attempts,next_attempt_at,created_at) SELECT ?,?,?,?,?,'pending',0,?,? WHERE (SELECT count(*) FROM parent_reminders WHERE user_id=? AND status='pending')<? ON CONFLICT(user_id,event_id,due_at) DO NOTHING RETURNING id`).bind(id,userId,data.eventId,due,p.timezone,due,now,userId,PARENT_LIMITS.pendingReminders).first();
+  const row=await env.DB.prepare(`INSERT INTO parent_reminders(id,user_id,event_id,due_at,timezone,status,attempts,next_attempt_at,created_at) SELECT ?,?,?,?,?,'pending',0,?,? WHERE (SELECT count(*) FROM parent_reminders WHERE user_id=? AND status='pending')<?
+    ON CONFLICT(user_id,event_id,due_at) DO UPDATE SET status='pending',attempts=0,next_attempt_at=excluded.next_attempt_at,created_at=excluded.created_at,claim_at=NULL,failure_code=NULL
+    WHERE parent_reminders.status='canceled' AND parent_reminders.message_sid IS NULL RETURNING id`).bind(id,userId,data.eventId,due,p.timezone,due,now,userId,PARENT_LIMITS.pendingReminders).first<{id:string}>();
   if(!row)throw new TuckError(409,'Reminder already scheduled, or you reached the pending-reminder limit.');
-  return {id,dueAt:due,timezone:p.timezone,status:'pending'};
+  await recordFamilyActivity(env.DB,userId,'reminder_scheduled',`${row.id}:${now}`);
+  return {id:row.id,dueAt:due,timezone:p.timezone,status:'pending'};
 }
 export async function cancelReminder(userId:string,env:AssistantEnvironment,id:string) {
   const row=await env.DB.prepare("UPDATE parent_reminders SET status='canceled' WHERE id=? AND user_id=? AND status='pending' RETURNING id").bind(id,userId).first();
   if(!row)throw new TuckError(409,'Reminder is not pending or was not found.');
+  await recordFamilyActivity(env.DB,userId,'reminder_canceled',id);
 }
 export async function assistantOverview(userId:string,env:AssistantEnvironment) {
-  const reminders=await env.DB.prepare('SELECT r.id,r.event_id,r.due_at,r.timezone,r.status,e.title FROM parent_reminders r JOIN tuck_events e ON e.id=r.event_id WHERE r.user_id=? ORDER BY r.due_at DESC LIMIT 100').bind(userId).all();
-  return {enabled:assistantEnabled(env),entitled:await hasAssistantAccess(userId,env),deliveryEnabled:env.PARENT_REMINDERS_ENABLED==='true',preferences:await preferences(userId,env),reminders:reminders.results,limits:PARENT_LIMITS};
+  const reminders=await env.DB.prepare('SELECT r.id,r.event_id,r.due_at,r.timezone,r.status,r.failure_code,e.title FROM parent_reminders r JOIN tuck_events e ON e.id=r.event_id WHERE r.user_id=? ORDER BY CASE WHEN r.status=\'pending\' THEN 0 ELSE 1 END,r.due_at LIMIT 100').bind(userId).all();
+  return {enabled:assistantEnabled(env),entitled:await hasAssistantAccess(userId,env),deliveryEnabled:reminderDeliveryReady(env),preferences:await preferences(userId,env),reminders:reminders.results,pendingDrafts:await pendingFamilyDrafts(env.DB,userId),limits:PARENT_LIMITS};
 }

@@ -6,7 +6,7 @@ import { getPlatformProxy } from 'wrangler';
 import type Stripe from 'stripe';
 import { cleanFunnelAttribution, confirmPaidCheckout, recordCheckoutSession } from '../../server/parent/funnel';
 
-const platform = await getPlatformProxy<Env>({configPath:'wrangler.d1-test.jsonc',persist:{path:await mkdtemp(join(tmpdir(),'nyc-funnel-'))}});
+const platform = await getPlatformProxy<Env>({configPath:'wrangler.family-local.jsonc',persist:{path:await mkdtemp(join(tmpdir(),'nyc-funnel-'))}});
 try {
   for (const file of (await readdir('migrations-d1')).filter(file=>file.endsWith('.sql')).sort()) {
     for (const statement of (await readFile(`migrations-d1/${file}`,'utf8')).split('--> statement-breakpoint').map(part=>part.trim()).filter(Boolean)) await platform.env.DB.prepare(statement).run();

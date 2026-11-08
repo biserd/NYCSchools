@@ -9,9 +9,13 @@ import {calendarSuggestions,CALENDAR_SCOPE} from './calendar';
 import {executeSchoolTool,schoolToolSources,type SchoolToolResult} from './tools';
 import {resolveAgentLocation,type ResolvedAgentLocation} from './geography';
 import {loadAgentContext,recordAgentRun,saveAgentContext,shouldUseAgentContext} from './agent-state';
+import {consumeParentQuestion} from './usage';
+import {familyDraftSchema,draftSummary,type FamilyDraftInput} from './drafts';
+import {saveFamilyEvent} from './family-events';
+import {NYCPS_2026_27_EVENTS,NYCPS_CALENDAR_SOURCE} from '../../shared/family-calendar';
 
-const draftSchema=z.object({title:z.string(),date:z.string(),detail:z.string(),reminderAt:z.number().nullable(),timezone:z.string()}).strict();
-type Draft=z.infer<typeof draftSchema>;
+const draftSchema=familyDraftSchema;
+type Draft=FamilyDraftInput;
 export type IntentParser=(message:string,today:string,timezone:string)=>Promise<unknown>;
 
 const PLAN_JSON_SCHEMA={
@@ -199,35 +203,40 @@ Short-lived structured context (not a transcript): ${JSON.stringify(context?{las
   return deterministicPlanHints(agentPlanSchema.parse(normalizeLegacyPlan(modelPayload(result))),message);
 }
 export async function stageDraft(userId:string,env:AssistantEnvironment,draft:Draft) {
-  tuckEventInput.parse({title:draft.title,date:draft.date,detail:draft.detail});
+  let parsed=draftSchema.parse(draft);
+  if(parsed.eventId&&!await env.DB.prepare('SELECT 1 FROM tuck_events e JOIN tuck_households h ON h.id=e.household_id WHERE e.id=? AND h.owner_user_id=?').bind(parsed.eventId,userId).first())throw new TuckError(404,'Event not found.');
+  if(parsed.sourceId){
+    const official=NYCPS_2026_27_EVENTS.find(event=>event.id===parsed.sourceId);
+    if(!official)throw new TuckError(400,'Official calendar entry not found.');
+    parsed={...parsed,title:official.title,date:official.date,endDate:official.endDate||null,eventTime:null,childId:null,detail:`Source: ${NYCPS_CALENDAR_SOURCE}\n${official.note||''}`};
+  }
+  tuckEventInput.parse({title:parsed.title,date:parsed.date,detail:parsed.detail});
   const id=crypto.randomUUID(),expiresAt=Date.now()+600000;
-  await env.DB.prepare('INSERT INTO parent_drafts(id,user_id,payload,expires_at) VALUES (?,?,?,?)').bind(id,userId,JSON.stringify(draft),expiresAt).run();
-  return {draftId:id,expiresAt,summary:`${draft.title} — ${draft.date}${draft.reminderAt?`; reminder ${new Intl.DateTimeFormat('en-US',{timeZone:draft.timezone,dateStyle:'full',timeStyle:'short'}).format(draft.reminderAt)} (${draft.timezone})`:''}`,message:'Review the date and reminder. Nothing is saved to your calendar until you confirm.'};
+  await env.DB.prepare('INSERT INTO parent_drafts(id,user_id,payload,expires_at) VALUES (?,?,?,?)').bind(id,userId,JSON.stringify(parsed),expiresAt).run();
+  return {draftId:id,expiresAt,summary:draftSummary(parsed),message:'Does this look right? Confirm to save it.'};
 }
 export async function confirmDraft(userId:string,env:AssistantEnvironment,id:string) {
   await requireAssistant(userId,env);
   const row=await env.DB.prepare('SELECT payload,expires_at,confirmed_at FROM parent_drafts WHERE id=? AND user_id=?').bind(id,userId).first<{payload:string;expires_at:number;confirmed_at:number|null}>();
   if(!row)throw new TuckError(404,'Draft not found.');
-  if(row.confirmed_at)return {eventId:id,message:'Already saved.'};
+  if(row.confirmed_at){
+    const previous=draftSchema.parse(JSON.parse(row.payload));
+    const event=await env.DB.prepare('SELECT e.id FROM tuck_events e JOIN tuck_households h ON h.id=e.household_id WHERE h.owner_user_id=? AND (e.id=? OR (? IS NOT NULL AND e.source_id=?)) LIMIT 1').bind(userId,previous.eventId||id,previous.sourceId,previous.sourceId).first<{id:string}>();
+    return {eventId:event?.id||id,message:previous.operation==='delete'?'Already removed.':'Already saved.'};
+  }
   if(row.expires_at<=Date.now())throw new TuckError(409,'Draft expired. Please make a new request.');
-  const d=draftSchema.parse(JSON.parse(row.payload)),p=await preferences(userId,env),now=Date.now();
-  if(d.reminderAt&&(d.reminderAt<=now||quietNow(d.reminderAt,p)))throw new TuckError(409,'Reminder timing has changed. Create a new request.');
-  // A confirmed reminder is itself the user's decision to use the calendar.
-  // Create the private household idempotently instead of making them perform
-  // an unrelated setup step on the website.
-  await env.DB.prepare('INSERT OR IGNORE INTO tuck_households(id,owner_user_id) VALUES (?,?)').bind(crypto.randomUUID(),userId).run();
-  const h=await env.DB.prepare('SELECT id FROM tuck_households WHERE owner_user_id=?').bind(userId).first<string>('id');
-  if(!h)throw new TuckError(503,'Could not open your family calendar. Please try again.');
-  if(d.reminderAt)await authorizeRequestedReminder(userId,env,now);
-  // All effects use the immutable draft ID and one D1 transaction. Concurrent
-  // confirmations cannot create duplicate events or duplicate reminders.
-  await env.DB.batch([
-    env.DB.prepare(`INSERT OR IGNORE INTO tuck_events(id,household_id,title,date,detail) SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM parent_drafts WHERE id=? AND user_id=? AND expires_at>? AND confirmed_at IS NULL) AND (? IS NULL OR (SELECT count(*) FROM parent_reminders WHERE user_id=? AND status='pending')<?)`).bind(id,h,d.title,d.date,d.detail,id,userId,now,d.reminderAt,userId,PARENT_LIMITS.pendingReminders),
-    env.DB.prepare(`INSERT OR IGNORE INTO parent_reminders(id,user_id,event_id,due_at,timezone,status,attempts,next_attempt_at,created_at) SELECT ?,?,?,?,?,'pending',0,?,? WHERE ? IS NOT NULL AND EXISTS(SELECT 1 FROM tuck_events WHERE id=? AND household_id=?)`).bind(id,userId,id,d.reminderAt??0,d.timezone,d.reminderAt??0,now,d.reminderAt,id,h),
-    env.DB.prepare('UPDATE parent_drafts SET confirmed_at=? WHERE id=? AND user_id=? AND expires_at>? AND confirmed_at IS NULL AND EXISTS(SELECT 1 FROM tuck_events WHERE id=? AND household_id=?)').bind(now,id,userId,now,id,h),
-  ]);
-  if(!await env.DB.prepare('SELECT 1 FROM tuck_events WHERE id=? AND household_id=?').bind(id,h).first())throw new TuckError(409,'Could not save: pending-reminder limit reached or draft changed.');
-  return {eventId:id,message:'Saved to your family calendar.'};
+  const d=draftSchema.parse(JSON.parse(row.payload)),p=await preferences(userId,env);
+  if(d.operation==='delete'){
+    if(!d.eventId)throw new TuckError(400,'Event not found.');
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM tuck_events WHERE id=? AND household_id IN (SELECT id FROM tuck_households WHERE owner_user_id=?) AND EXISTS(SELECT 1 FROM parent_drafts WHERE id=? AND user_id=? AND confirmed_at IS NULL AND expires_at>?)').bind(d.eventId,userId,id,userId,Date.now()),
+      env.DB.prepare('UPDATE parent_drafts SET confirmed_at=? WHERE id=? AND user_id=? AND confirmed_at IS NULL AND expires_at>?').bind(Date.now(),id,userId,Date.now()),
+    ]);
+    return {eventId:d.eventId,message:'Event and its reminders removed.'};
+  }
+  const local=d.reminderAt?localParts(d.reminderAt,p.timezone):null;
+  return saveFamilyEvent(userId,env,{requestId:id,title:d.title,date:d.date,endDate:d.endDate,eventTime:d.eventTime,timezone:d.timezone,sourceId:d.sourceId,childId:d.childId,detail:d.detail,
+    reminder:d.preserveReminder?undefined:local?{localDate:local.date,localTime:local.time}:null},d.eventId||undefined,{draftId:id});
 }
 export async function rejectDraft(userId:string,env:AssistantEnvironment,id:string) {
   await env.DB.prepare('DELETE FROM parent_drafts WHERE id=? AND user_id=? AND confirmed_at IS NULL').bind(id,userId).run();
@@ -238,7 +247,7 @@ export async function suggestCalendarEvent(userId:string,env:AssistantEnvironmen
   if(!confirmedScope)throw new TuckError(400,'Confirm your school follows this NYCPS calendar.');
   const p=await preferences(userId,env),event=calendarSuggestions(localParts(Date.now(),p.timezone).date).find(e=>e.id===id);
   if(!event)throw new TuckError(404,'Calendar entry not found or is in the past.');
-  return stageDraft(userId,env,{title:event.title,date:event.date,detail:`Source: ${event.sourceUrl}\nReviewed ${event.checkedAt}. ${CALENDAR_SCOPE}`,reminderAt:null,timezone:p.timezone});
+  return stageDraft(userId,env,{title:event.title,date:event.date,endDate:event.endDate||null,sourceId:event.id,detail:`Source: ${event.sourceUrl}\nReviewed ${event.checkedAt}. ${CALENDAR_SCOPE}`,reminderAt:null,timezone:p.timezone,preserveReminder:true});
 }
 
 function inheritedPlan(plan:AgentPlan,context:ParentAgentContext|null,useContext:boolean,inheritLocation=true):AgentPlan {
@@ -305,9 +314,7 @@ export async function answerParent(userId:string,env:AssistantEnvironment,input:
     await recordAgentRun(env,{userId,model:'deterministic',action:'conversation',tool:'social_router',outcome:'ok',durationMs:Date.now()-started,location:null,gradeLevel:context?.gradeLevel||null,resultCount:0,usedContext:!!context});
     return {message:socialReply};
   }
-  const budget=env.ENVIRONMENT==='staging'?100:5000;
-  const usage=await env.DB.prepare(`INSERT INTO parent_usage(user_id,day,count) SELECT ?,?,1 WHERE (SELECT coalesce(sum(count),0) FROM parent_usage WHERE day>=?)<? ON CONFLICT(user_id,day) DO UPDATE SET count=count+1 WHERE count<? RETURNING count`).bind(userId,today,new Date(Date.now()-86400000).toISOString().slice(0,10),budget,PARENT_LIMITS.questionsPerDay).first();
-  if(!usage)throw new TuckError(429,'Daily assistant limit reached. Your calendar remains available.');
+  await consumeParentQuestion(env.DB,userId,today,env.ENVIRONMENT==='staging'?100:PARENT_LIMITS.questionsPerDay);
   const useContext=!!context&&shouldUseAgentContext(message);
   const deterministic=!parser?deterministicParentPlan(message,useContext?context:null):null;
   if(!parser&&!deterministic&&!requiresParentTaskPlanning(message,useContext?context:null)){

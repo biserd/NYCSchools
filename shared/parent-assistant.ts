@@ -18,5 +18,7 @@ export const parentMessageInput = z.object({
 export const PARENT_LIMITS = { questionsPerDay: 30, remindersPerMonth: 100, pendingReminders: 100 } as const;
 
 export interface ParentPreferences { timezone:string; quietStart:number; quietEnd:number; reminderConsent:boolean; aiConsent:boolean }
-export interface ParentReminder { id:string; event_id:string; due_at:number; status:string; title:string; timezone:string }
-export interface CalendarSuggestion { id:string; date:string; title:string; sourceUrl:string; checkedAt:string; applicability:string }
+export interface ParentReminder { id:string; event_id:string; due_at:number; status:string; title:string; timezone:string; failure_code?:string|null }
+export interface CalendarSuggestion { id:string; date:string; endDate?:string; title:string; sourceUrl:string; checkedAt:string; applicability:string }
+export interface PendingFamilyDraft {draftId:string;summary:string;expiresAt:number;title:string;date:string;endDate?:string|null;eventTime?:string|null;reminderAt:number|null;timezone:string;sourceId?:string|null;operation?:'save'|'delete';preserveReminder?:boolean}
+export interface ParentAssistantStatus {enabled:boolean;entitled:boolean;deliveryEnabled:boolean;preferences:ParentPreferences;reminders:ParentReminder[];pendingDrafts?:PendingFamilyDraft[];limits:typeof PARENT_LIMITS}

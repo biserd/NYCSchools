@@ -1,6 +1,7 @@
 import {PARENT_AGENT_CONTEXT_TTL_MS,type AgentPlan,type ParentAgentContext} from '../../shared/parent-agent';
 import type {AssistantEnvironment} from './service';
 import type {ResolvedAgentLocation} from './geography';
+import {familyActivationOverview} from './activity';
 
 export async function loadAgentContext(userId:string,env:AssistantEnvironment,now=Date.now()):Promise<ParentAgentContext|null>{
   const row=await env.DB.prepare(`SELECT last_action,location_kind,location_value,location_label,grade_level,programs,result_dbns,expires_at,updated_at
@@ -36,5 +37,5 @@ export async function parentAgentAdminOverview(env:AssistantEnvironment,now=Date
     env.DB.prepare(`SELECT created_at,model,action,tool,outcome,duration_ms,location_kind,location_label,grade_level,result_count,used_context
       FROM parent_agent_runs ORDER BY created_at DESC LIMIT 100`).all(),
   ]);
-  return {now,windowDays:7,summary,actions:actions.results,tools:tools.results,models:models.results,recent:recent.results,privacy:'No message text, phone number, child information, email, or model response is stored in agent telemetry.'};
+  return {now,windowDays:7,summary,actions:actions.results,tools:tools.results,models:models.results,recent:recent.results,family:await familyActivationOverview(env.DB,now),privacy:'No message text, phone number, child information, email, or model response is stored in agent telemetry.'};
 }

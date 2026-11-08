@@ -7,7 +7,7 @@ import { getPlatformProxy } from 'wrangler';
 import { consumeParentAgentQueue, parentWhatsappWebhook, PARENT_WEBHOOK_PATH, parentWhatsappReady, verifyTwilioSignature, type ParentAgentQueueJob, type ParentWhatsappEnvironment } from '../../server/parent/whatsapp';
 import { createParentWhatsappLink, disconnectParentWhatsapp, parentWhatsappStatus } from '../../server/parent/account';
 
-const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.d1-test.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-parent-whatsapp-')) } });
+const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.family-local.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-parent-whatsapp-')) } });
 try {
   const db = platform.env.DB;
   for (const file of (await readdir('migrations-d1')).filter(file => file.endsWith('.sql')).sort()) {
@@ -58,7 +58,8 @@ try {
 
   await db.prepare("INSERT INTO users(id,email,password) VALUES ('wa-parent-a','wa-a@example.invalid','test'),('wa-parent-b','wa-b@example.invalid','test')").run();
   await db.prepare("INSERT INTO tuck_households(id,owner_user_id) VALUES ('house-a','wa-parent-a'),('house-b','wa-parent-b')").run();
-  await db.prepare("INSERT INTO tuck_events(id,household_id,title,date) VALUES ('event-a','house-a','Visit <school> & ask questions','2099-01-01'),('event-b','house-b','OTHER PARENT SECRET','2099-01-01')").run();
+  const futureDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
+  await db.prepare("INSERT INTO tuck_events(id,household_id,title,date) VALUES ('event-a','house-a','Visit <school> & ask questions',?),('event-b','house-b','OTHER PARENT SECRET',?)").bind(futureDate,futureDate).run();
   await assert.rejects(() => createParentWhatsappLink('wa-parent-a', env, false), /Confirm/);
   const link = await createParentWhatsappLink('wa-parent-a', env, true);
   const command = new URL(link.url).searchParams.get('text')!;

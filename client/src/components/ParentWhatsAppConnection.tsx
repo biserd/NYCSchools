@@ -1,33 +1,32 @@
-import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-export function ParentWhatsAppConnection({ userId }: { userId: string }) {
-  const [consent, setConsent] = useState(false);
-  const status = useQuery<{ preview: boolean; configured: boolean; assistantEnabled?:boolean; connected: boolean; phone: string | null }>({
-    queryKey: ['parent-whatsapp', userId], gcTime: 0,
-    queryFn: async () => (await apiRequest('GET', '/api/tuck/whatsapp')).json(),
-  });
-  const connect = useMutation<{ url: string; expiresAt: number }, Error>({
-    mutationFn: async () => (await apiRequest('POST', '/api/tuck/whatsapp/link', { consent })).json(),
-  });
-  const disconnect = useMutation({ mutationFn: async () => {
-    await apiRequest('POST', '/api/tuck/whatsapp/disconnect'); connect.reset(); setConsent(false); await status.refetch();
-  } });
-  if (status.data?.preview === false) return null;
-  return <Card><CardHeader><CardTitle>Connect WhatsApp</CardTitle></CardHeader><CardContent className="space-y-4">
-    <p className="text-sm text-muted-foreground">Dedicated NYC School Ratings number: +1 917-473-0386. Link your own WhatsApp phone to your account. Linking does not start a subscription or marketing messages. {status.data?.assistantEnabled?'Paid access enables assistant questions immediately; only reminders you explicitly schedule or confirm are sent.':'Connection preview only; AI and proactive delivery are not enabled yet.'}</p>
-    {status.isLoading ? <p role="status">Checking connection…</p> : status.isError ? <p role="alert">Could not check WhatsApp setup.</p> : <>
-      {!status.data?.configured && <p role="status">Waiting for secure Twilio configuration. Linking is disabled until setup is complete.</p>}
-      {status.data?.connected ? <><p>Connected: {status.data.phone}. Send <strong>EVENTS</strong> for your next five dates, <strong>STATUS</strong> to check, or <strong>STOP</strong> to disconnect.</p><Button variant="outline" disabled={disconnect.isPending} onClick={() => disconnect.mutate()}>Disconnect WhatsApp</Button></> : <>
-        <label className="flex items-start gap-3 text-sm min-h-11"><input className="mt-1 h-5 w-5 shrink-0" type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); connect.reset(); }} />I want to link my WhatsApp phone to my account so I can request my family calendar dates. I can disconnect here or send STOP. This does not opt me into marketing or start a paid subscription.</label>
-        <Button disabled={!status.data?.configured || !consent || connect.isPending} onClick={() => connect.mutate()}>Create secure WhatsApp link</Button>
-        {connect.data && <div className="space-y-2"><p>Send the pre-filled LINK message from your own WhatsApp phone. This private link expires in 10 minutes; do not share it.</p><Button asChild><a href={connect.data.url} target="_blank" rel="nofollow noopener noreferrer">Open WhatsApp to connect</a></Button></div>}
-      </>}
-    </>}
-    <Button variant="ghost" disabled={status.isFetching} onClick={() => { connect.reset(); void status.refetch(); }}>Refresh connection status</Button>
-    {(connect.isError || disconnect.isError) && <p role="alert" className="text-destructive">{connect.error?.message || disconnect.error?.message}</p>}
-  </CardContent></Card>;
+import {useEffect,useState} from 'react';
+import {useMutation,useQuery} from '@tanstack/react-query';
+import {apiRequest} from '@/lib/queryClient';
+import {Button} from '@/components/ui/button';
+import {trackEvent} from '@/lib/analytics';
+import {useRefreshFamily} from '@/hooks/useFamily';
+export function ParentWhatsAppConnection({userId,onConnected}:{userId:string;onConnected?:()=>void}) {
+ const [consent,setConsent]=useState(false);
+ const refresh=useRefreshFamily(userId);
+ const status=useQuery<{preview:boolean;configured:boolean;assistantEnabled?:boolean;connected:boolean;phone:string|null}>({queryKey:['parent-whatsapp',userId],gcTime:0,refetchOnWindowFocus:'always',queryFn:async()=>(await apiRequest('GET','/api/tuck/whatsapp')).json()});
+ const connect=useMutation<{url:string;expiresAt:number},Error>({mutationFn:async()=>(await apiRequest('POST','/api/tuck/whatsapp/link',{consent})).json()});
+ const disconnect=useMutation({mutationFn:async()=>{await apiRequest('POST','/api/tuck/whatsapp/disconnect');},onSuccess:async()=>{connect.reset();setConsent(false);await status.refetch();await refresh();}});
+ useEffect(()=>{
+   if(!connect.data||status.data?.connected)return;
+   const deadline=Math.min(connect.data.expiresAt,Date.now()+120000);
+   const tick=window.setInterval(()=>{if(Date.now()>deadline){window.clearInterval(tick);return;}if(document.visibilityState==='visible')void status.refetch();},4000);
+   const returned=()=>{if(document.visibilityState==='visible')void status.refetch();};document.addEventListener('visibilitychange',returned);
+   return()=>{window.clearInterval(tick);document.removeEventListener('visibilitychange',returned);};
+ },[connect.data,status.data?.connected]);
+ useEffect(()=>{if(status.data?.connected&&connect.data){trackEvent('family_whatsapp_connected');connect.reset();void refresh();onConnected?.();}},[status.data?.connected]);
+ if(status.data?.preview===false)return null;
+ return <div className="space-y-3" data-testid="whatsapp-connection">
+   {status.isLoading?<p role="status">Checking WhatsApp…</p>:status.isError?<p role="alert">WhatsApp status is unavailable. <button className="underline min-h-11" onClick={()=>void status.refetch()}>Try again</button></p>:status.data?.connected?<><p className="text-sm font-medium text-green-800 dark:text-green-300">WhatsApp connected · {status.data.phone}</p><p className="text-xs text-muted-foreground">Only reminders you request are sent. Reply STOP at any time.</p><details><summary className="cursor-pointer py-2 text-sm underline">Manage connection</summary><Button variant="outline" disabled={disconnect.isPending} onClick={()=>{if(window.confirm('Disconnect WhatsApp and cancel upcoming reminders?'))disconnect.mutate();}}>Disconnect WhatsApp</Button></details></>:<>
+     <h3 className="font-semibold">Connect WhatsApp once</h3><p className="text-sm text-muted-foreground">Then choose reminders right from your calendar. No marketing messages.</p>
+     {!status.data?.configured?<p role="status">WhatsApp setup is temporarily unavailable. You can still save calendar events.</p>:<>
+       <label className="flex items-start gap-3 min-h-11 text-sm"><input className="h-5 w-5 mt-1 shrink-0" type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);connect.reset();}}/><span>I agree to link my WhatsApp and receive only the reminders I request. I can send STOP to disconnect.</span></label>
+       {!connect.data?<Button type="button" disabled={!consent||connect.isPending} onClick={()=>connect.mutate()}>{connect.isPending?'Preparing…':'Connect my WhatsApp'}</Button>:<div className="space-y-2"><Button asChild><a href={connect.data.url} target="_blank" rel="nofollow noopener noreferrer">Open WhatsApp to connect</a></Button><p className="text-xs text-muted-foreground">Send the prefilled message. We’ll update this page when you return. Link expires in 10 minutes.</p><button className="text-sm underline min-h-11" onClick={()=>void status.refetch()}>I sent it, check connection</button></div>}
+     </>}
+   </>}
+   {(connect.isError||disconnect.isError)&&<p role="alert" className="text-sm text-destructive">{connect.error?.message||disconnect.error?.message}</p>}
+ </div>;
 }

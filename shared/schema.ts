@@ -591,13 +591,22 @@ export const tuckEvents = sqliteTable("tuck_events", {
   householdId: text("household_id").notNull().references(() => tuckHouseholds.id, { onDelete: "cascade" }),
   childId: text("child_id"),
   title: text("title").notNull(),
-  date: text("date").notNull(), // All-day local calendar date, never an implicit UTC instant.
+  date: text("date").notNull(), // Local calendar date, never an implicit UTC instant.
+  endDate: text('end_date'),
+  eventTime: text('event_time'),
+  timezone: text('timezone').notNull().default('America/New_York'),
+  sourceId: text('source_id'),
   detail: text("detail").notNull().default(""),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
 }, t => [
   index("tuck_events_household_date_idx").on(t.householdId, t.date),
+  uniqueIndex('tuck_events_source_key').on(t.householdId,t.sourceId),
   foreignKey({ columns: [t.childId, t.householdId], foreignColumns: [tuckChildren.id, tuckChildren.householdId] }).onDelete("cascade"),
 ]);
+
+export const familyActivity=sqliteTable('family_activity',{
+  id:text('id').primaryKey(),userId:text('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),eventType:text('event_type').notNull(),channel:text('channel').notNull(),occurredAt:integer('occurred_at').notNull(),dedupeKey:text('dedupe_key').notNull().unique(),
+},t=>[index('family_activity_date_idx').on(t.occurredAt,t.eventType)]);
 
 // Password Reset Tokens for forgot password flow
 export const passwordResetTokens = sqliteTable("password_reset_tokens", {

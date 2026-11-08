@@ -1,5 +1,6 @@
 import {hasAssistantAccess,preferences,quietNow,type AssistantEnvironment} from './service';
 import {parentWhatsappReady,verifyTwilioSignature} from './whatsapp';
+import {recordFamilyActivity} from './activity';
 export const PARENT_STATUS_PATH='/api/parent/whatsapp/status';
 
 export async function pruneParentData(env:AssistantEnvironment,now=Date.now()) {
@@ -13,6 +14,7 @@ export async function pruneParentData(env:AssistantEnvironment,now=Date.now()) {
     env.DB.prepare('DELETE FROM parent_agent_contexts WHERE expires_at<?').bind(now),
     env.DB.prepare('DELETE FROM parent_agent_runs WHERE created_at<?').bind(now-90*86400000),
     env.DB.prepare('DELETE FROM parent_agent_deliveries WHERE created_at<?').bind(now-90*86400000),
+    env.DB.prepare('DELETE FROM family_activity WHERE occurred_at<?').bind(now-90*86400000),
   ]);
 }
 
@@ -63,7 +65,8 @@ export async function reminderStatusWebhook(request:Request,env:AssistantEnviron
   const sid=form.get('MessageSid')||'',status=form.get('MessageStatus')||'';
   if(!/^SM[a-f0-9]{32}$/i.test(sid))return new Response('Invalid SID',{status:400});
   if(['delivered','read','failed','undelivered'].includes(status)) {
-    await env.DB.prepare(`UPDATE parent_reminders SET status=?,message_sid=?,failure_code=? WHERE id=? AND (message_sid IS NULL OR message_sid=?) AND status IN ('sending','accepted','uncertain','delivered') AND (status!='delivered' OR ?='read')`).bind(status==='undelivered'?'failed':status,sid,/^\d+$/.test(form.get('ErrorCode')||'')?form.get('ErrorCode'):null,id,sid,status).run();
+    const updated=await env.DB.prepare(`UPDATE parent_reminders SET status=?,message_sid=?,failure_code=? WHERE id=? AND (message_sid IS NULL OR message_sid=?) AND status IN ('sending','accepted','uncertain','delivered') AND (status!='delivered' OR ?='read') RETURNING user_id`).bind(status==='undelivered'?'failed':status,sid,/^\d+$/.test(form.get('ErrorCode')||'')?form.get('ErrorCode'):null,id,sid,status).first<{user_id:string}>();
+    if(updated&&['delivered','read'].includes(status))await recordFamilyActivity(env.DB,updated.user_id,'reminder_delivered',sid,'system');
   }
   return new Response(null,{status:204});
 }

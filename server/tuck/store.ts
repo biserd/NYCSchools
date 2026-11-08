@@ -3,6 +3,7 @@ import { db } from "../db";
 import { schools, tuckChildren, tuckEvents, tuckHouseholds } from "@shared/schema";
 import { tuckChildInput, tuckEventInput, type TuckOverview } from "@shared/tuck";
 import { getSchoolSlug } from "@shared/schema";
+import {schoolCalendarScope,officialSourceId} from '../../shared/family-calendar-view';
 
 export class TuckError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -21,22 +22,29 @@ export async function createHousehold(userId: string) {
   await db.insert(tuckHouseholds).values({ id: crypto.randomUUID(), ownerUserId: userId }).onConflictDoNothing({ target: tuckHouseholds.ownerUserId });
   return requireHousehold(userId);
 }
-export async function getOverview(userId: string): Promise<TuckOverview> {
+export async function getOverview(userId: string,availability={whatsapp:false,automaticReminders:false}): Promise<TuckOverview> {
   const household = await householdFor(userId);
-  const capabilities = { calendar: true, whatsapp: false, automaticReminders: false } as const;
+  const capabilities = { calendar: true as const, ...availability };
   if (!household) return { household: null, children: [], events: [], capabilities };
-  const children = await db.select({ id: tuckChildren.id, nickname: tuckChildren.nickname, schoolDbn: tuckChildren.schoolDbn, schoolName: schools.name })
+  const children = await db.select({ id: tuckChildren.id, nickname: tuckChildren.nickname, schoolDbn: tuckChildren.schoolDbn, schoolName: schools.name,gradeBand:schools.grade_band,district:schools.district })
     .from(tuckChildren).leftJoin(schools, eq(tuckChildren.schoolDbn, schools.dbn))
     .where(eq(tuckChildren.householdId, household.id)).orderBy(asc(tuckChildren.nickname));
-  const events = await db.select({ id: tuckEvents.id, childId: tuckEvents.childId, title: tuckEvents.title, date: tuckEvents.date, detail: tuckEvents.detail })
+  const events = await db.select({ id: tuckEvents.id, childId: tuckEvents.childId, title: tuckEvents.title, date: tuckEvents.date, detail: tuckEvents.detail,endDate:tuckEvents.endDate,eventTime:tuckEvents.eventTime,timezone:tuckEvents.timezone,sourceId:tuckEvents.sourceId })
     .from(tuckEvents).where(eq(tuckEvents.householdId, household.id)).orderBy(asc(tuckEvents.date), asc(tuckEvents.createdAt));
   return { household: { id: household.id }, children: children.map(child => ({ ...child,
+    calendarScope:child.schoolDbn&&child.gradeBand&&child.district!==null?schoolCalendarScope({dbn:child.schoolDbn,gradeBand:child.gradeBand,district:child.district}):'unknown',
     schoolUrl: child.schoolDbn && child.schoolName ? `/school/${getSchoolSlug({ dbn: child.schoolDbn, name: child.schoolName })}` : null,
-  })), events, capabilities };
+  })), events:events.map(event=>({...event,sourceId:officialSourceId(event)})), capabilities };
+}
+export async function updateChild(userId:string,id:string,input:unknown) {
+  const data=tuckChildInput.parse(input),household=await requireHousehold(userId);
+  if(data.schoolDbn&&!await db.select({dbn:schools.dbn}).from(schools).where(eq(schools.dbn,data.schoolDbn)).get())throw new TuckError(400,'Choose a school from the search results, or leave school blank.');
+  const result=await db.update(tuckChildren).set(data).where(and(eq(tuckChildren.id,id),eq(tuckChildren.householdId,household.id))).returning();
+  if(!result.length)throw new TuckError(404,'Child not found.');return result[0];
 }
 export async function addChild(userId: string, input: unknown) {
   const data = tuckChildInput.parse(input);
-  const household = await requireHousehold(userId);
+  const household = await createHousehold(userId);
   if (data.schoolDbn) {
     const [school] = await db.select({ dbn: schools.dbn }).from(schools).where(eq(schools.dbn, data.schoolDbn)).limit(1);
     if (!school) throw new TuckError(400, "School identifier not found. Leave it blank or use a canonical school DBN.");

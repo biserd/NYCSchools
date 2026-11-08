@@ -8,7 +8,7 @@ import { createDatabase, withDatabaseInstance } from '../../server/db';
 import { tuckRouter } from '../../server/tuck/routes';
 
 // Local D1 only. Synthetic authentication avoids live users, email and provider APIs.
-const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.d1-test.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-tuck-')) } });
+const platform = await getPlatformProxy<Env>({ configPath: 'wrangler.family-local.jsonc', persist: { path: await mkdtemp(join(tmpdir(), 'nyc-tuck-')) } });
 const binding = platform.env.DB;
 let server: ReturnType<ReturnType<typeof express>['listen']> | undefined;
 try {
@@ -79,7 +79,7 @@ try {
   const own = await (await request('overview')).json();
   assert.equal(own.children[0].schoolUrl, '/school/02m234-test-school');
   assert.equal(own.events[0].date, '2027-03-14');
-  assert.deepEqual(own.capabilities, { calendar: true, whatsapp: false, automaticReminders: false });
+  assert.deepEqual(own.capabilities, { calendar: true, whatsapp: true, automaticReminders: false });
   // Database itself rejects cross-household child links, not just the HTTP layer.
   const b = await (await request('overview', 'parent-b')).json();
   await assert.rejects(() => binding.prepare('INSERT INTO tuck_events(id,household_id,child_id,title,date) VALUES (?,?,?,?,?)').bind('invalid', b.household.id, child.id, 'Bad', '2027-01-01').run());

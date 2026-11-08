@@ -12,7 +12,7 @@ import {disconnectParentWhatsapp} from '../../server/parent/account';
 import {familyCheckout,familyCheckoutAvailable,guestFamilyCheckout,guestFamilyCheckoutAvailable} from '../../server/parent/checkout';
 import type Stripe from 'stripe';
 
-const platform=await getPlatformProxy<Env>({configPath:'wrangler.d1-test.jsonc',persist:{path:await mkdtemp(join(tmpdir(),'nyc-assistant-'))}});
+const platform=await getPlatformProxy<Env>({configPath:'wrangler.family-local.jsonc',persist:{path:await mkdtemp(join(tmpdir(),'nyc-assistant-'))}});
 try {
   const DB=platform.env.DB;
   for(const f of (await readdir('migrations-d1')).filter(f=>f.endsWith('.sql')).sort())for(const s of (await readFile(`migrations-d1/${f}`,'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean))await DB.prepare(s).run();
@@ -166,7 +166,7 @@ try {
   assert.equal(familyCheckoutAvailable({...env,ENVIRONMENT:'production',FAMILY_CHECKOUT_ENABLED:'true',STRIPE_FAMILY_PREMIUM_PRICE_ID:'price_family'}),false,'Launch verification required');
   const checkoutEnv={...production,FAMILY_CHECKOUT_ENABLED:'true',PARENT_LAUNCH_VERIFIED:'true',STRIPE_FAMILY_PREMIUM_PRICE_ID:'price_family'};
   const sessions:Stripe.Checkout.SessionCreateParams[]=[],keys:string[]=[];
-  const stripe={prices:{retrieve:async()=>({id:'price_family',active:true,livemode:true,currency:'usd',unit_amount:999,recurring:{interval:'month',interval_count:1,usage_type:'licensed'}})},customers:{create:async()=>({id:'cus_test'})},subscriptions:{list:async()=>({data:[],has_more:false})},checkout:{sessions:{create:async(params:Stripe.Checkout.SessionCreateParams,options?:{idempotencyKey:string})=>{sessions.push(params);if(options)keys.push(options.idempotencyKey);return {status:'open',url:'https://checkout.stripe.com/test'};}}}} as unknown as Stripe;
+  const stripe={prices:{retrieve:async()=>({id:'price_family',active:true,livemode:true,currency:'usd',unit_amount:999,recurring:{interval:'month',interval_count:1,usage_type:'licensed'}})},customers:{create:async()=>({id:'cus_test'})},subscriptions:{list:async()=>({data:[],has_more:false})},checkout:{sessions:{create:async(params:Stripe.Checkout.SessionCreateParams,options?:{idempotencyKey:string})=>{sessions.push(params);if(options)keys.push(options.idempotencyKey);return {id:'cs_family_test_'+sessions.length,created:Math.floor(Date.now()/1000),status:'open',url:'https://checkout.stripe.com/test'};}}}} as unknown as Stripe;
   Object.assign(stripe,{billingPortal:{configurations:{list:async()=>({data:[{features:{subscription_cancel:{enabled:true,mode:'at_period_end'}}}]})}}});
   await assert.rejects(()=>familyCheckout('a',checkoutEnv,stripe),/already includes Parent Assistant/);
   assert.equal(guestFamilyCheckoutAvailable(checkoutEnv),false,'No guest charges when email is unavailable');

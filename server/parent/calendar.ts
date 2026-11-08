@@ -4,5 +4,5 @@ export const CALENDAR_SOURCE=NYCPS_CALENDAR_SOURCE;
 export const CALENDAR_CHECKED=NYCPS_CALENDAR_REVIEWED;
 export const CALENDAR_SCOPE=NYCPS_CALENDAR_SCOPE;
 export function calendarSuggestions(today:string):CalendarSuggestion[] {
-  return NYCPS_2026_27_EVENTS.filter(event=>event.date>=today).map(event=>({id:event.id,date:event.date,title:event.title,sourceUrl:CALENDAR_SOURCE,checkedAt:CALENDAR_CHECKED,applicability:CALENDAR_SCOPE}));
+  return NYCPS_2026_27_EVENTS.filter(event=>(event.endDate||event.date)>=today).map(event=>({id:event.id,date:event.date,endDate:event.endDate,title:event.title,sourceUrl:CALENDAR_SOURCE,checkedAt:CALENDAR_CHECKED,applicability:CALENDAR_SCOPE}));
 }
