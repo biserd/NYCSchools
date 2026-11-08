@@ -50,7 +50,6 @@ import { ScoreArticleContent } from '../shared/ScoreArticleContent';
 import { ScoreMoversTeaser } from '../shared/ScoreMoversTeaser';
 import { DATA_RELEASE,dataReleaseSchema } from '../shared/data-release';
 import { DataReleaseContent } from '../shared/DataReleaseContent';
-import { DataReleaseNotice } from '../shared/DataReleaseNotice';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
 import { getSchoolSurveys } from './schoolSurveys';
@@ -1011,7 +1010,7 @@ function renderStaticRoute(path: string, baseHtml: string): string | null {
     ? (breadcrumb ? [...(Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]), breadcrumb] : meta.jsonLd)
     : breadcrumb;
 
-  const homepageSections = path === "/" ? `${renderToStaticMarkup(React.createElement(DataReleaseNotice,{placement:'homepage'}))}
+  const homepageSections = path === "/" ? `
     <section>
       <h2>Compare NYC schools with transparent data</h2>
       <p>Explore academics, student progress, school climate, programs, demographics, admissions context, parent reviews, and commute fit across public, charter, private, 3-K, and Pre-K options.</p>

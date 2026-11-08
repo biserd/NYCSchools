@@ -1,5 +1,4 @@
 import { latestAssessmentYear,currentRankingScore,currentAcademicRankingScore } from '@shared/current-ranking';
-import { DataReleaseNotice } from '@shared/DataReleaseNotice';
 import { lazy, Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterBar, SortOption } from "@/components/FilterBar";
@@ -851,9 +850,6 @@ export default function Home() {
         onZonedFilterChange={handleZonedFilterChange}
         hasZonedSchools={hasZonedSchools}
       />
-
-      <p className="container mx-auto px-4 py-2 text-xs text-muted-foreground" data-testid="ranking-data-year">ELA/Math rankings: {rankingYear || 'year not reported'} school year{rankingYear ? ` · spring ${Number(rankingYear.slice(0,4))+1} tests` : ''}. Older dated assessment records remain discoverable after current-year ranked results. High-school overall ratings use graduation/readiness/progress, not Regents.</p>
-      <div className="container mx-auto px-4"><DataReleaseNotice placement="homepage"/></div>
 
       {/* Render the full strip during loading: its wrapping height depends on
           viewport width, so a fixed minimum leaves a large mobile gap. */}

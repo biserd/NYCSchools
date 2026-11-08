@@ -97,7 +97,15 @@ const base='<html><head><title>Base</title><meta property="og:type" content="web
 const ssr=await renderSeoHtml(DATA_RELEASE.path,base);
 assert.ok(ssr?.includes('NewsArticle')&&ssr.includes('content="article"'));
 assert.ok(ssr?.includes('data-release-article'));
-assert.ok((await renderSeoHtml('/',base))?.includes(DATA_RELEASE.path));
+const homepage=await renderSeoHtml('/',base);
+const homepageSource=readFileSync('client/src/pages/home.tsx','utf8');
+for(const removed of ['ELA/Math rankings:','ranking-data-year','Older dated assessment records remain discoverable','2026 school results are available.','data-release-notice','Explore the analysis and free data downloads']) {
+  assert.ok(!homepage?.includes(removed),`homepage SSR should omit removed notice: ${removed}`);
+  assert.ok(!homepageSource.includes(removed),`homepage client should omit removed notice: ${removed}`);
+}
+assert.ok(!homepageSource.includes('DataReleaseNotice'),'do not reinsert the shared announcement into the homepage');
+assert.ok(homepageSource.includes('currentRankingScore(b,rankingYear)'),'current-year ranking behavior must remain unchanged');
+assert.ok((await renderSeoHtml('/blog',base))?.includes(DATA_RELEASE.path),'the article remains discoverable from the blog');
 assert.ok((await sitemapByName('blog'))?.includes(DATA_RELEASE.path));
 assert.equal(blogPosts.filter(p=>p.slug===DATA_RELEASE.slug).length,1);
 assert.equal(dataReleaseSchema()[0]['@type'],'NewsArticle');

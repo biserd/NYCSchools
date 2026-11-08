@@ -18,9 +18,11 @@ const resources=await Promise.all(DATA_RELEASE_RESOURCES.map(async resource=>{
   return {id:resource.id,path,status:response.status,bytes:remote.length,contentType:response.headers.get('content-type'),exactMatch:true};
 }));
 const sitemap=await fetch(origin+'/sitemaps/blog.xml').then(r=>r.text());assert.ok(sitemap.includes(DATA_RELEASE.path));
-for(const path of ['/','/blog','/blog/nys-test-results-2026']) {
+for(const path of ['/blog','/blog/nys-test-results-2026']) {
   const body=await fetch(origin+path).then(r=>r.text());assert.ok(body.includes(DATA_RELEASE.path),path+' release discovery');
 }
+const homepage=await fetch(origin+'/').then(r=>r.text());
+assert.ok(!homepage.includes('data-release-notice')&&!homepage.includes('ranking-data-year'),'homepage promotional notice stays removed');
 let indexNow:{status:number;submitted:number;accepted:boolean}|undefined;
 if(process.argv.includes('--submit-indexnow')) {
   const config=JSON.parse(readFileSync('wrangler.jsonc','utf8'));
