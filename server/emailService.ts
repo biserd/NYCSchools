@@ -168,7 +168,7 @@ export async function sendWelcomeEmail(customerEmail: string, firstName?: string
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
               Best of luck with your school search!<br/>
-              <strong>— The NYC School Ratings Team</strong>
+              <strong>The NYC School Ratings Team</strong>
             </p>
           </div>
           
@@ -214,7 +214,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
               comparing test scores, and trying to understand what really matters.
             </p>
             <p style="font-size: 15px; line-height: 1.7; color: #374151; margin-bottom: 0;">
-              That's why I built NYC School Ratings — <strong>a tool made by a NYC parent, for NYC parents</strong>. 
+              That's why I built NYC School Ratings: <strong>a tool for other NYC parents going through the same search</strong>.
               I hope it helps your family as much as it's helped mine.
             </p>
           </div>
@@ -245,7 +245,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
             <h2 style="color: #92400e; margin-top: 0; font-size: 18px;">Explore Family Premium</h2>
             <p style="font-size: 15px; line-height: 1.6; color: #78350f; margin-bottom: 15px;">
-              School research and parent assistance in one plan — <strong>$9.99/month</strong> for new subscribers when available. Charged at checkout; renews until canceled. Check current availability on our pricing page.
+              Family Premium combines school research and parent assistance. New subscriptions cost <strong>$9.99/month</strong> when available. Charged at checkout; renews until canceled. Check current availability on our pricing page.
             </p>
             <ul style="list-style: none; padding: 0; margin: 0 0 15px 0; color: #78350f;">
               <li style="padding: 10px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
@@ -305,7 +305,7 @@ export async function sendNewUserWelcomeEmail(userEmail: string, firstName?: str
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
               Best of luck with your school search!<br/>
-              <strong>— The NYC School Ratings Team</strong>
+              <strong>The NYC School Ratings Team</strong>
             </p>
           </div>
           
@@ -400,7 +400,7 @@ export async function sendPasswordResetEmail(userEmail: string, resetUrl: string
               Need help? Contact us at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
-              <strong>— The NYC School Ratings Team</strong>
+              <strong>The NYC School Ratings Team</strong>
             </p>
           </div>
           
@@ -493,7 +493,7 @@ export async function sendMagicLinkEmail(userEmail: string, magicLinkUrl: string
               Need help? Contact us at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
-              <strong>— The NYC School Ratings Team</strong>
+              <strong>The NYC School Ratings Team</strong>
             </p>
           </div>
           
@@ -579,7 +579,7 @@ export async function sendMagicLinkLoginEmail(userEmail: string, magicLinkUrl: s
               Need help? Contact us at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
-              <strong>— The NYC School Ratings Team</strong>
+              <strong>The NYC School Ratings Team</strong>
             </p>
           </div>
           
@@ -611,7 +611,7 @@ function getDripEmailFooter(userId: string): string {
         Questions? Reply to this email or reach out at <a href="mailto:${CONTACT_EMAIL}" style="color: #2563eb;">${CONTACT_EMAIL}</a>
       </p>
       <p style="font-size: 14px; color: #6b7280; margin-bottom: 0;">
-        <strong>— The NYC School Ratings Team</strong>
+        <strong>The NYC School Ratings Team</strong>
       </p>
       <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
         <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe from marketing emails</a>
@@ -714,7 +714,7 @@ export async function sendDripAiSpotlight(userEmail: string, userId: string, fir
           
           <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0; border: 1px solid #f59e0b;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>Explore Family Premium</strong> — $9.99/month for new subscribers when available. Charged at checkout; renews until canceled. Existing paid plans keep their benefits.
+              <strong>Explore Family Premium.</strong> New subscriptions cost $9.99/month when available. Charged at checkout; renews until canceled. Existing paid plans keep their benefits.
             </p>
           </div>
           
@@ -810,7 +810,7 @@ export async function sendDripUpgradeNudge(userEmail: string, userId: string, fi
           <p style="font-size: 16px; line-height: 1.6;">${greeting},</p>
           
           <p style="font-size: 16px; line-height: 1.6;">
-            You've been exploring NYC schools — great! But are you getting the complete picture?
+            If you're narrowing down your school list, it helps to see how your options compare.
           </p>
           
           <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border: 1px solid #f59e0b;">
@@ -994,14 +994,14 @@ export async function sendApiAbuseAlert(params: {
       rate_limit_storm: '[API Abuse] Rate limit storm detected',
       distinct_ip_spike: '[API Abuse] Distinct-IP spike (possible leaked key)',
     };
-    const subject = `${subjectByType[params.alertType] || '[API Abuse] Alert'} — key #${params.keyId}`;
+    const subject = `${subjectByType[params.alertType] || '[API Abuse] Alert'}: key #${params.keyId}`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #b91c1c; margin: 0 0 16px 0;">API abuse signal</h2>
         <p style="margin: 0 0 12px 0;">${params.summary}</p>
         <table style="border-collapse: collapse; margin: 16px 0; font-size: 14px;">
           <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Key</td>
-              <td style="padding: 4px 0;"><code>${params.keyPrefix}…</code> (id ${params.keyId}) — ${params.keyName}</td></tr>
+              <td style="padding: 4px 0;"><code>${params.keyPrefix}…</code> (id ${params.keyId}, ${params.keyName})</td></tr>
           <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Owner</td>
               <td style="padding: 4px 0;">${params.ownerEmail || '(unknown)'}</td></tr>
           <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Type</td>
