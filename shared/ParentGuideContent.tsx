@@ -7,9 +7,28 @@ import { ContinuityChecks } from './ContinuityChecks';
 
 export function GuideAnchor({ link, className = 'text-primary underline underline-offset-4' }: { link: GuideLink; className?: string }) {
   const external = /^https?:/.test(link.href);
-  return <a className={className} href={link.href} {...(external ? { target: '_blank', rel: 'nofollow noopener noreferrer' } : {})}>{link.label}</a>;
+  return <a className={className} href={link.href} {...(external ? { target: '_blank', rel: 'nofollow noopener noreferrer', 'data-external-nofollow': '' } : {})}>{link.label}</a>;
 }
 const cell = 'px-4 py-3 text-left align-top border-b';
+
+function VerifiedExamples({ evidence }: { evidence: NonNullable<ParentGuide['verified']> }) {
+  return <section className="my-8 space-y-4" aria-labelledby="verified-examples">
+    <h2 id="verified-examples" className="text-2xl font-semibold">{evidence.heading}</h2>
+    <p className="text-sm text-muted-foreground md:hidden">Swipe the table to see all columns and sources.</p>
+    <div className="overflow-x-auto rounded-lg border" role="region" aria-labelledby="verified-examples" tabIndex={0}>
+      <table className="w-full text-sm leading-relaxed">
+        <caption className="p-4 text-left text-muted-foreground">{evidence.caption}</caption>
+        <thead className="bg-muted"><tr><th scope="col" className={cell}>School or program</th>{evidence.columns.map(column => <th key={column} scope="col" className={cell}>{column}</th>)}<th scope="col" className={cell}>Official sources</th></tr></thead>
+        <tbody>{evidence.rows.map(row => <tr key={row.name}>
+          <th scope="row" className={`${cell} min-w-36 font-medium`}>{row.profile ? <GuideAnchor link={{ href: row.profile, label: row.name }} /> : row.name}</th>
+          {row.cells.map((value, index) => <td className={`${cell} min-w-36`} key={evidence.columns[index]}>{value}</td>)}
+          <td className={`${cell} min-w-32`}><ul className="space-y-2">{row.sources.map(source => <li key={source.href}><GuideAnchor link={source} /></li>)}</ul></td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <p className="rounded-lg border border-primary/20 bg-primary/5 p-4 leading-relaxed"><strong>What this means for your shortlist:</strong> {evidence.takeaway}</p>
+  </section>;
+}
 export function GuideEvidence({ data, showRecordSources = true }: { data: GuideData; showRecordSources?: boolean }) {
   const [filter,setFilter] = useState('');
   const [district,setDistrict] = useState('');
@@ -45,9 +64,10 @@ export function ParentGuideContent({ guide, data, pending = false }: { guide: Pa
   return <article className="max-w-5xl mx-auto">
     <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground mb-6"><a className="underline" href="/explore-schools">School guides</a> / Parent decision guide</nav>
     <header className="space-y-4 mb-8"><p className="text-sm text-primary font-semibold uppercase tracking-wide">NYC school research</p><h1 className="text-3xl md:text-4xl font-bold tracking-tight">{guide.title}</h1><p className="text-sm text-muted-foreground">Editorial review: <time dateTime={reviewed}>{reviewLabel}</time> · Dataset years are labeled separately below.</p><p className="text-lg leading-relaxed rounded-xl border border-primary/20 bg-primary/5 p-5">{guide.answer}</p><GuideAnchor link={guide.next}/></header>
+    {guide.verified && <VerifiedExamples evidence={guide.verified} />}
     <section aria-labelledby="decision-comparison"><h2 id="decision-comparison" className="text-2xl font-semibold mb-4">What to compare before deciding</h2><div className="overflow-x-auto rounded-lg border" role="region" aria-label="Decision comparison" tabIndex={0}><table className="w-full text-sm"><caption className="sr-only">Decision criteria and their limitations</caption><thead className="bg-muted"><tr>{guide.columns.map(c => <th key={c} scope="col" className={cell}>{c}</th>)}</tr></thead><tbody>{guide.comparison.map((row, i) => <tr key={i}>{row.map((v, j) => j === 0 ? <th scope="row" key={j} className={`${cell} font-medium`}>{v}</th> : <td key={j} className={cell}>{v}</td>)}</tr>)}</tbody></table></div></section>
     {guide.examples && <section className="my-8 space-y-4" aria-labelledby="school-examples"><h2 id="school-examples" className="text-2xl font-semibold">School-source examples: questions to compare</h2><p>Illustrative examples, not a ranked or exhaustive list. School statements were checked on {reviewLabel}; directory survey years are separate.</p><div className="grid md:grid-cols-3 gap-4">{guide.examples.map(example => <section className="border rounded-lg p-5 space-y-3" key={example.name}><h3 className="text-xl font-semibold">{example.name}</h3><p>{example.detail}</p><p className="text-sm">{example.question}</p><GuideAnchor link={example.source}/></section>)}</div></section>}
-    {data ? <GuideEvidence data={data} showRecordSources={guide.slug !== 'private-schools-brooklyn'} /> : guide.kind !== 'zones' && <p role="status" className="my-8 rounded-lg border p-5">{pending ? 'Loading the school comparison…' : 'School data is temporarily unavailable. The guidance below is still available; try reloading for the comparison.'}</p>}
+    {data ? <GuideEvidence data={data} showRecordSources={guide.slug !== 'private-schools-brooklyn'} /> : guide.kind !== 'zones' && guide.kind !== 'editorial' && <p role="status" className="my-8 rounded-lg border p-5">{pending ? 'Loading the school comparison…' : 'School data is temporarily unavailable. The guidance below is still available; try reloading for the comparison.'}</p>}
     {guide.slug==='private-elementary-schools-nyc' && <PrivateCostComparison/>}
     {guide.kind==='continuity' && <ContinuityChecks/>}
     <div className="my-10 space-y-8">{guide.questions.map(q => <section key={q.title}><h2 className="text-2xl font-semibold mb-3">{q.title}</h2><p className="text-muted-foreground leading-relaxed">{q.text}</p></section>)}</div>

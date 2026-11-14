@@ -7,8 +7,8 @@ export function isExternalWebLink(href:string|null,base:string):boolean {
   if(!href)return false;
   try {const target=new URL(href,base),local=new URL(base);return /^https?:$/.test(target.protocol)&&target.origin!==local.origin&&!['nycschoolsratings.com','www.nycschoolsratings.com'].includes(target.hostname.toLowerCase());}catch{return false;}
 }
-export function externalRel(rel:string|null,href:string|null=null):string {
-  const owned=isOwnedKinderLearnerLink(href);
+export function externalRel(rel:string|null,href:string|null=null,forceNofollow=false):string {
+  const owned=!forceNofollow&&isOwnedKinderLearnerLink(href);
   const tokens=(rel??'').toLowerCase().split(/\s+/).filter(t=>t&&t!=='opener'&&(!owned||!['nofollow','noreferrer'].includes(t)));
   return [...new Set([...tokens,...(owned?[]:['nofollow']),'noopener',...(owned?[]:['noreferrer'])])].join(' ');
 }

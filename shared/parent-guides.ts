@@ -1,11 +1,17 @@
+import { MIDDLE_SCHOOL_GUIDES } from './middle-school-guides';
+
 // Editorial definitions are shared by the HTML renderer and the lazy client route.
 export type GuideLink = { label: string; href: string };
 export type ParentGuide = {
   slug: string; title: string; description: string; answer: string;
-  kind: 'zones' | 'private' | 'continuity' | 'comparison'; dbns?: string[];
+  kind: 'zones' | 'private' | 'continuity' | 'comparison' | 'editorial'; dbns?: string[];
   reviewedAt?: string;
   privateScope?: { borough: string; elementaryOnly: boolean };
   examples?: Array<{ name: string; detail: string; question: string; source: GuideLink }>;
+  verified?: {
+    heading: string; caption: string; columns: string[]; takeaway: string;
+    rows: Array<{ name: string; profile?: string; cells: string[]; sources: GuideLink[] }>;
+  };
   questions: Array<{ title: string; text: string }>;
   columns: string[]; comparison: string[][];
   sources: GuideLink[]; related: GuideLink[]; next: GuideLink;
@@ -54,7 +60,7 @@ export const PARENT_GUIDES: ParentGuide[] = [
       { title: 'Before you pay an application fee', text: 'Confirm your child’s exact entry grade, the application year, required visits or assessments, application and aid deadlines, and whether aid is available in that division. Ask what is included in tuition, which extras are mandatory and how costs change when moving to the next division. The dated tuition examples below show why headline prices need grade and fee context; they are not a current quote for your family.' },
     ],
     sources: [{ label: 'NCES Private School Universe Survey: scope and collected fields', href: 'https://nces.ed.gov/surveys/pss/index.asp' }, { label: 'NCES private-school directory: about the data', href: 'https://nces.ed.gov/surveys/pss/privateschoolsearch/aboutdata.asp' }],
-    related: [{ label: 'Brooklyn private-school guide', href: '/guides/private-schools-brooklyn' }, { label: 'Public elementary school guide', href: '/blog/best-nyc-elementary-schools-2026' }, { label: 'Districts versus zones', href: '/guides/nyc-school-district-map-and-zones' }],
+    related: [{ label: 'NYC private middle-school guide', href: '/guides/private-middle-schools-nyc' }, { label: 'Brooklyn private-school guide', href: '/guides/private-schools-brooklyn' }, { label: 'Public elementary school guide', href: '/blog/best-nyc-elementary-schools-2026' }, { label: 'Districts versus zones', href: '/guides/nyc-school-district-map-and-zones' }],
     next: { label: 'Browse private schools serving elementary grades', href: '/private-schools?grade=elementary#school-results' },
   },
   {
@@ -81,7 +87,7 @@ export const PARENT_GUIDES: ParentGuide[] = [
       { title: 'Keep admissions and aid comparisons in the same year', text: 'Use the same intended entry year on every inquiry. Ask about entry grades, required visits or assessments, application and aid deadlines, fees and after-school costs. A grade in an older directory record does not establish an available seat, and continued attendance between divisions is not guaranteed by a long grade span.' },
     ],
     sources: [{ label: 'NCES private-school directory: scope and data years', href: 'https://nces.ed.gov/surveys/pss/privateschoolsearch/aboutdata.asp' }, { label: 'Brooklyn Friends school-source example', href: 'https://brooklynfriends.org/private-schools-brooklyn-brooklyn-friends-school-difference/' }, { label: 'Packer school-source example', href: 'https://www.packer.edu/admissions/welcome' }, { label: 'Saint Ann’s school-source example', href: 'https://saintannsny.org/about/' }],
-    related: [{ label: 'NYC private elementary comparison guide', href: '/guides/private-elementary-schools-nyc' }, { label: 'All NYC private schools', href: '/private-schools' }, { label: 'Brooklyn public-school options', href: '/nyc-schools/brooklyn' }],
+    related: [{ label: 'NYC private middle-school guide', href: '/guides/private-middle-schools-nyc' }, { label: 'NYC private elementary comparison guide', href: '/guides/private-elementary-schools-nyc' }, { label: 'All NYC private schools', href: '/private-schools' }, { label: 'Brooklyn public-school options', href: '/nyc-schools/brooklyn' }],
     next: { label: 'Browse Brooklyn private-school profiles', href: '/private-schools?borough=Brooklyn#school-results' },
   },
   {
@@ -144,6 +150,7 @@ export const PARENT_GUIDES: ParentGuide[] = [
     related: [{ label: 'Specialized high schools', href: '/program/specialized-high-schools' }, { label: 'Screened high schools', href: '/program/screened-high-schools' }, { label: 'NYC high school guide', href: '/nyc-schools/high-schools' }],
     next: { label: 'Compare the school profiles', href: '/compare/25Q525-vs-02M475' },
   },
+  ...MIDDLE_SCHOOL_GUIDES,
 ];
 export const getParentGuide = (slug: string) => PARENT_GUIDES.find(g => g.slug === slug);
 export const parentGuidePath = (guide: Pick<ParentGuide, 'slug'>) => `/guides/${guide.slug}`;

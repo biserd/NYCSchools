@@ -36,7 +36,7 @@ const canonical = <T,>(records: T[], id: (row: T) => string) => [...new Map(reco
 export function buildParentGuideData(guide: ParentGuide, input: School[] = [], privateInput: PrivateSchool[] = [], graduation: HsGraduation[] = []): GuideData {
   const schools = canonical(input, s => s.dbn);
   const base: GuideData = { summary: [], headers: [], rows: [], note: '', bars: [] };
-  if (guide.kind === 'zones') return base;
+  if (guide.kind === 'zones' || guide.kind === 'editorial') return base;
   if (guide.kind === 'private') {
     const all = canonical(privateInput, s => s.ncesId);
     const borough = guide.privateScope?.borough;

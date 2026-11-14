@@ -7,6 +7,7 @@ import { PARENT_GUIDES, getParentGuide, parentGuidePath } from '../shared/parent
 import { buildParentGuideData, includesKindergarten, hasPrivateElementary } from '../shared/parent-guide-data';
 import { ParentGuideContent } from '../shared/ParentGuideContent';
 import { LandingDecisionContent } from '../shared/LandingDecisionContent';
+import { RelatedBlogReading } from '../shared/RelatedBlogReading';
 import { getSeoLanding, matchesSeoLanding } from '../shared/seo-landings';
 
 const guide = (slug: string) => getParentGuide(slug)!;
@@ -60,7 +61,10 @@ assert.ok(!matchesSeoLanding(school({ hs_admission_method: 'Unscreened' }), scre
 assert.ok(matchesSeoLanding(school({ hs_admission_method: 'Screened With Assessment' }), screened));
 
 const routes = new Set(PARENT_GUIDES.map(parentGuidePath));
-assert.equal(routes.size, 6);
+assert.equal(routes.size, 8);
+const middleGuideSlugs = ['private-middle-schools-nyc', 'screened-middle-schools-nyc'];
+const middleBlogLinks = renderToStaticMarkup(React.createElement(RelatedBlogReading, { slug: 'best-nyc-middle-schools-2026' }));
+for (const slug of middleGuideSlugs) assert.ok(middleBlogLinks.includes(`/guides/${slug}`));
 for (const page of PARENT_GUIDES) {
   assert.ok(page.sources.length >= 2 && page.questions.length >= 2);
   const html = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, data: buildParentGuideData(page, [first, second], [privateSchool({})]) }));
@@ -70,6 +74,20 @@ for (const page of PARENT_GUIDES) {
   assert.match(html, /Your next step/);
   assert.ok(html.includes(page.reviewedAt || '2026-10-25'));
   for (const link of page.related) if (link.href.startsWith('/guides/')) assert.ok(routes.has(link.href), link.href);
+  if (page.kind === 'editorial') {
+    const evidence = page.verified!;
+    assert.ok(evidence.rows.length >= 4);
+    assert.match(html, /What this means for your shortlist/);
+    assert.ok(!html.includes('School data is temporarily unavailable'));
+    const clientHtml = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, pending: true }));
+    assert.equal(clientHtml, html, 'Editorial evidence renders identically without a client-side data request');
+    for (const row of evidence.rows) {
+      assert.equal(row.cells.length, evidence.columns.length);
+      assert.ok(row.sources.length);
+      assert.ok(row.sources.every(source => source.href.startsWith('https://')));
+      if (row.profile) assert.match(row.profile, /^\/(?:private-)?school\//);
+    }
+  }
   for (const anchor of html.matchAll(/<a\b[^>]*href="https?:[^>]*>/g)) {
     assert.match(anchor[0], /target="_blank"/);
     assert.match(anchor[0], /rel="nofollow noopener noreferrer"/);
@@ -113,7 +131,8 @@ try {
     assert.match(html, /Your next step/);
     assert.match(html, /BreadcrumbList/);
     assert.ok(sitemap?.includes(`<loc>https://nycschoolsratings.com${path}</loc>`));
-    if (page.kind !== 'zones') assert.match(html, /What our school records show/);
+    if (page.kind === 'editorial') assert.match(html, /Official sources/);
+    else if (page.kind !== 'zones') assert.match(html, /What our school records show/);
   }
   assert.equal(await renderSeoHtml('/guides/unknown-page', template), null);
   const hub = await renderSeoHtml('/explore-schools', template);

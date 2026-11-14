@@ -83,6 +83,7 @@ assert.equal(externalRel('sponsored opener'),'sponsored nofollow noopener norefe
 assert(isOwnedKinderLearnerLink('https://kinderlearner.com/guides/'));
 assert(!isOwnedKinderLearnerLink('https://kinderlearner.com.evil.example/'));
 assert.equal(externalRel('nofollow noreferrer noopener','https://kinderlearner.com/guides/'),'noopener');
+assert.equal(externalRel('noopener','https://kinderlearner.com/guides/',true),'noopener nofollow noreferrer');
 assert.equal(externalRel(null,'https://example.org'),'nofollow noopener noreferrer');
 console.log('Survey redesign tests passed: evidence coverage, descriptive bands, SSR charts/tables, missing scores and external-link classification.');
 const profileSource=await fs.readFile('client/src/pages/school-detail.tsx','utf8');
