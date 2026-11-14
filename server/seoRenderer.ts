@@ -1231,6 +1231,10 @@ export async function renderSeoHtml(
       // A temporary data outage must not turn a known editorial page into a
       // 404, or cache the missing comparison for the full HTML cache lifetime.
       if (!data) return result;
+      if (guide.shortlistMode && data.districtPicks) {
+        const seed = JSON.stringify(data).replace(/</g, '\\u003c');
+        result = result.replace('</body>', () => `<script type="application/json" id="shortlist-guide-data" data-slug="${escapeAttr(guide.slug)}">${seed}</script></body>`);
+      }
     } else if (path===DATA_RELEASE.path) {
       result=applyMeta(baseHtml,{title:`${DATA_RELEASE.title} | NYC School Ratings`,description:DATA_RELEASE.description,canonical:`${SITE_ORIGIN}${DATA_RELEASE.path}`,bootHeading:DATA_RELEASE.title,serverHtml:renderToStaticMarkup(React.createElement(DataReleaseContent)),jsonLd:dataReleaseSchema()})
         .replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i,'<meta property="og:type" content="article" />');

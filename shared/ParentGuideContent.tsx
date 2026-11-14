@@ -10,6 +10,65 @@ export function GuideAnchor({ link, className = 'text-primary underline underlin
   return <a className={className} href={link.href} {...(external ? { target: '_blank', rel: 'nofollow noopener noreferrer', 'data-external-nofollow': '' } : {})}>{link.label}</a>;
 }
 const cell = 'px-4 py-3 text-left align-top border-b';
+const districtGroups = [
+  { area: 'Manhattan', ids: [1, 2, 3, 4, 5, 6] }, { area: 'Bronx', ids: [7, 8, 9, 10, 11, 12] },
+  { area: 'Brooklyn', ids: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 32] },
+  { area: 'Queens', ids: [24, 25, 26, 27, 28, 29, 30] }, { area: 'Staten Island', ids: [31] },
+];
+
+function DataMark({label, value, max, unit = '', color = 'bg-primary'}: {label: string; value?: number | null; max: number; unit?: string; color?: string}) {
+  return <div className="space-y-1.5">
+    <div className="flex justify-between gap-3 text-sm"><span>{label}</span><strong className="shrink-0 tabular-nums">{value == null ? 'Not reported' : value.toLocaleString('en-US') + unit}</strong></div>
+    {value != null && <div aria-hidden="true" className="h-3 rounded-full bg-muted"><div className={`h-full rounded-full ${color} transition-[width] duration-300 motion-reduce:transition-none`} style={{width: `${Math.min(100, value / max * 100)}%`}} /></div>}
+  </div>;
+}
+
+function ShortlistExplorer({ guide, data, pending }: { guide: ParentGuide; data?: GuideData; pending: boolean }) {
+  const [district, setDistrict] = useState(2);
+  const preK = guide.shortlistMode === 'pre-k';
+  const evidence = guide.verified!;
+  const picks = data?.districtPicks;
+  const rows = picks?.filter(row => row.district === district) ?? [];
+  const maxEnrollment = Math.max(1, ...rows.map(row => row.enrolled ?? 0));
+  const borough = districtGroups.find(group => group.ids.includes(district))?.area;
+  const compared = rows.flatMap(row => row.enrolled == null ? [] : [row.enrolled]);
+  const gap = compared.length === 2 ? Math.abs(compared[0] - compared[1]) : null;
+  return <section className="my-8 space-y-5" aria-labelledby="verified-examples">
+    <h2 id="verified-examples" className="text-2xl font-semibold">Compare options in your district</h2>
+    <p className="text-muted-foreground">Choose a district to see up to two {preK ? 'pre-K programs' : 'kindergarten schools'} and the data behind them. These are starting points, not a ranking or a list of open seats.</p>
+    <label className="block max-w-sm space-y-1 text-sm font-medium"><span className="block">School district</span><select className="min-h-11 w-full rounded-md border bg-background px-3 text-base" value={district} onChange={e => setDistrict(Number(e.target.value))}>{districtGroups.map(({area, ids}) => <optgroup key={area} label={area}>{ids.map(id => <option key={id} value={id}>District {id}</option>)}</optgroup>)}</select></label>
+    <p role="status" className="text-sm text-muted-foreground">District {district} · {borough}{picks && ` · ${rows.length} ${rows.length === 1 ? 'option' : 'options'}`}</p>
+    {!rows.length && <p>{picks ? 'No verified records for this district.' : pending ? 'Loading district examples…' : 'District examples are temporarily unavailable.'} <GuideAnchor link={{ label: 'Browse the directory', href: preK ? '/program/prek' : '/nyc-schools/elementary-schools' }}/></p>}
+    {rows.length > 0 && <div className="grid gap-4 sm:grid-cols-2" data-testid="district-shortlist" aria-label="District examples">
+      {rows.map(row => <section key={row.id} className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 sm:p-5">
+        <header><p className="text-xs font-semibold uppercase tracking-wide text-primary">District {district} · {row.id}</p>
+          <h3 className="mt-1 text-lg font-semibold">{row.href ? <GuideAnchor link={{href:row.href,label:row.name}} /> : row.name}</h3>
+          {row.grades && <p className="mt-1 text-sm text-muted-foreground">Reported grade range: {row.grades}</p>}
+        </header>
+        {row.detail && <p className="text-sm">{row.detail}</p>}
+        <figure className="space-y-3" data-testid="shortlist-chart">
+          <figcaption className="text-sm font-semibold">2025–26 {preK ? 'pre-K' : 'kindergarten'} enrollment</figcaption>
+          <DataMark label="Children enrolled" value={row.enrolled} max={maxEnrollment}/>
+          {!preK && <><p className="pt-2 text-sm font-semibold">Spring 2026 grade 3 proficiency</p>
+            <DataMark label="ELA" value={row.evidence?.assessment?.ela} max={100} unit="%"/>
+            <DataMark label="Math" value={row.evidence?.assessment?.math} max={100} unit="%" color="bg-teal-600 dark:bg-teal-400"/>
+          </>}
+          {preK && row.evidence?.family && <><p className="pt-2 text-sm font-semibold">2026 Birth-to-5 family survey</p>
+            <DataMark label="Outreach to parents" value={row.evidence.family.outreach} max={100} unit="/100" color="bg-teal-600 dark:bg-teal-400"/>
+            <p className="text-sm">Family responses: {row.evidence.family.count ?? 'Not reported'}{row.evidence.teacher && ` · Teacher responses: ${row.evidence.teacher.count ?? 'Not reported'}`}{row.evidence.teacher && !row.evidence.teacher.hasTopics && ' (no teacher topic scores published)'}</p>
+          </>}
+        </figure>
+        <details className="mt-auto border-t pt-2"><summary className="min-h-11 py-2 text-sm font-medium">What to ask on a visit</summary>
+          <p className="pb-2 text-sm text-muted-foreground">{row.visit || (preK ? 'Confirm pickup time, the seat type you need, and what care is available outside the school day.' : 'Ask how teachers help children settle in, how caregivers hear about progress, and what happens after dismissal.')}</p>
+        </details>
+      </section>)}
+    </div>}
+    {gap !== null && <p className="rounded-lg bg-primary/5 p-3 text-sm"><strong>{gap === 0 ? 'Same reported enrollment.' : `${gap.toLocaleString('en-US')} students apart.`}</strong> {preK ? 'Ask how the program splits children between rooms and whether your preferred hours are available.' : 'Ask how many classrooms the school expects, not just how many children were enrolled.'}</p>}
+    <p className="text-sm text-muted-foreground">{preK ? 'Enrollment counts are not seats available. Where shown, Birth-to-5 feedback describes the whole center, not just pre-K.' : 'Enrollment counts are not seats available or class sizes. ELA and math bars run from 0% to 100% and describe tested third graders, not kindergarten.'} {rows.some(row => row.enrolled != null) && `Enrollment bars are relative to the largest published count shown (${maxEnrollment.toLocaleString('en-US')}).`}</p>
+    <p className="text-sm"><GuideAnchor link={{ label: `Explore more District ${district} schools`, href: `/district/${district}` }} /></p>
+    <details className="rounded-lg border p-3"><summary className="min-h-11 py-2 text-sm font-medium">How we picked these examples</summary><p className="text-sm text-muted-foreground">We keep verified editorial examples where available. Remaining places are filled from district schools in our database with published 2025–26 enrollment in the relevant grade. When two database examples are needed, we choose schools near the lower and upper enrollment quartiles to illustrate different program sizes. When one is needed, we choose a school near the middle. We don’t choose schools by test score.</p></details>
+  </section>;
+}
 
 function VerifiedExamples({ evidence }: { evidence: NonNullable<ParentGuide['verified']> }) {
   return <section className="my-8 space-y-4" aria-labelledby="verified-examples">
@@ -18,7 +77,7 @@ function VerifiedExamples({ evidence }: { evidence: NonNullable<ParentGuide['ver
     <div className="overflow-x-auto rounded-lg border" role="region" aria-labelledby="verified-examples" tabIndex={0}>
       <table className="w-full text-sm leading-relaxed">
         <caption className="p-4 text-left text-muted-foreground">{evidence.caption}</caption>
-        <thead className="bg-muted"><tr><th scope="col" className={cell}>School or program</th>{evidence.columns.map(column => <th key={column} scope="col" className={cell}>{column}</th>)}<th scope="col" className={cell}>Official sources</th></tr></thead>
+        <thead className="bg-muted"><tr><th scope="col" className={cell}>{evidence.firstColumn ?? 'School or program'}</th>{evidence.columns.map(column => <th key={column} scope="col" className={cell}>{column}</th>)}<th scope="col" className={cell}>Official sources</th></tr></thead>
         <tbody>{evidence.rows.map(row => <tr key={row.name}>
           <th scope="row" className={`${cell} min-w-36 font-medium`}>{row.profile ? <GuideAnchor link={{ href: row.profile, label: row.name }} /> : row.name}</th>
           {row.cells.map((value, index) => <td className={`${cell} min-w-36`} key={evidence.columns[index]}>{value}</td>)}
@@ -64,14 +123,14 @@ export function ParentGuideContent({ guide, data, pending = false }: { guide: Pa
   return <article className="max-w-5xl mx-auto">
     <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground mb-6"><a className="underline" href="/explore-schools">School guides</a> / Parent decision guide</nav>
     <header className="space-y-4 mb-8"><p className="text-sm text-primary font-semibold uppercase tracking-wide">NYC school research</p><h1 className="text-3xl md:text-4xl font-bold tracking-tight">{guide.title}</h1><p className="text-sm text-muted-foreground">Editorial review: <time dateTime={reviewed}>{reviewLabel}</time> · Dataset years are labeled separately below.</p><p className="text-lg leading-relaxed rounded-xl border border-primary/20 bg-primary/5 p-5">{guide.answer}</p><GuideAnchor link={guide.next}/></header>
-    {guide.verified && <VerifiedExamples evidence={guide.verified} />}
+    {guide.verified && (guide.shortlistMode ? <ShortlistExplorer key={guide.slug} guide={guide} data={data} pending={pending} /> : <VerifiedExamples evidence={guide.verified} />)}
     <section aria-labelledby="decision-comparison"><h2 id="decision-comparison" className="text-2xl font-semibold mb-4">What to compare before deciding</h2><div className="overflow-x-auto rounded-lg border" role="region" aria-label="Decision comparison" tabIndex={0}><table className="w-full text-sm"><caption className="sr-only">Decision criteria and their limitations</caption><thead className="bg-muted"><tr>{guide.columns.map(c => <th key={c} scope="col" className={cell}>{c}</th>)}</tr></thead><tbody>{guide.comparison.map((row, i) => <tr key={i}>{row.map((v, j) => j === 0 ? <th scope="row" key={j} className={`${cell} font-medium`}>{v}</th> : <td key={j} className={cell}>{v}</td>)}</tr>)}</tbody></table></div></section>
     {guide.examples && <section className="my-8 space-y-4" aria-labelledby="school-examples"><h2 id="school-examples" className="text-2xl font-semibold">School-source examples: questions to compare</h2><p>Illustrative examples, not a ranked or exhaustive list. School statements were checked on {reviewLabel}; directory survey years are separate.</p><div className="grid md:grid-cols-3 gap-4">{guide.examples.map(example => <section className="border rounded-lg p-5 space-y-3" key={example.name}><h3 className="text-xl font-semibold">{example.name}</h3><p>{example.detail}</p><p className="text-sm">{example.question}</p><GuideAnchor link={example.source}/></section>)}</div></section>}
     {data ? <GuideEvidence data={data} showRecordSources={guide.slug !== 'private-schools-brooklyn'} /> : guide.kind !== 'zones' && guide.kind !== 'editorial' && <p role="status" className="my-8 rounded-lg border p-5">{pending ? 'Loading the school comparison…' : 'School data is temporarily unavailable. The guidance below is still available; try reloading for the comparison.'}</p>}
     {guide.slug==='private-elementary-schools-nyc' && <PrivateCostComparison/>}
     {guide.kind==='continuity' && <ContinuityChecks/>}
     <div className="my-10 space-y-8">{guide.questions.map(q => <section key={q.title}><h2 className="text-2xl font-semibold mb-3">{q.title}</h2><p className="text-muted-foreground leading-relaxed">{q.text}</p></section>)}</div>
-    <section className="border-t pt-6 space-y-3"><h2 className="text-xl font-semibold">Sources and data limits</h2><ul className="list-disc pl-5 space-y-2">{guide.sources.map(link => <li key={link.href}><GuideAnchor link={link} /></li>)}</ul><p className="text-sm text-muted-foreground">Editorial review is not a new data release. Linked profiles identify available measures and years. Verify current admissions, program operation and seats with official sources.</p></section>
+    <section className="border-t pt-6 space-y-3"><h2 className="text-xl font-semibold">Sources and data limits</h2><ul className="list-disc pl-5 space-y-2">{guide.sources.map(link => <li key={link.href}><GuideAnchor link={link} /></li>)}</ul>{guide.shortlistMode && <details><summary className="min-h-11 py-2 text-sm font-medium">Sources for the featured examples</summary><ul className="list-disc pl-5 space-y-2 text-sm">{guide.verified?.rows.map(row => <li key={row.name}>{row.name}<ul className="pl-3 space-y-1">{row.sources.map(link => <li key={link.href}><GuideAnchor link={link} /></li>)}</ul></li>)}</ul></details>}<p className="text-sm text-muted-foreground">Editorial review is not a new data release. Linked profiles identify available measures and years. Verify current admissions, program operation and seats with official sources.</p></section>
     <section className="my-8 rounded-xl bg-primary/5 border p-6"><h2 className="text-xl font-semibold mb-4">Your next step</h2><GuideAnchor link={guide.next} className="inline-block rounded-md bg-primary text-primary-foreground px-5 py-3 font-semibold" /></section>
     <nav aria-label="Related guides" className="border-t pt-6"><h2 className="text-xl font-semibold mb-4">Continue your research</h2><ul className="space-y-3">{guide.related.map(link => <li key={link.href}><GuideAnchor link={link} /></li>)}</ul></nav>
   </article>;

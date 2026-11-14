@@ -6,6 +6,8 @@ import type { School, PrivateSchool, HsGraduation } from '../shared/schema';
 import { PARENT_GUIDES, getParentGuide, parentGuidePath } from '../shared/parent-guides';
 import { buildParentGuideData, includesKindergarten, hasPrivateElementary } from '../shared/parent-guide-data';
 import { ParentGuideContent } from '../shared/ParentGuideContent';
+import { buildDistrictPicks, centerShortlistRecord, schoolShortlistRecord, type DistrictCandidate } from '../shared/shortlist-data';
+import type { SurveyResult } from '../shared/surveys';
 import { LandingDecisionContent } from '../shared/LandingDecisionContent';
 import { RelatedBlogReading } from '../shared/RelatedBlogReading';
 import { getSeoLanding, matchesSeoLanding } from '../shared/seo-landings';
@@ -61,13 +63,41 @@ assert.ok(!matchesSeoLanding(school({ hs_admission_method: 'Unscreened' }), scre
 assert.ok(matchesSeoLanding(school({ hs_admission_method: 'Screened With Assessment' }), screened));
 
 const routes = new Set(PARENT_GUIDES.map(parentGuidePath));
-assert.equal(routes.size, 8);
+assert.equal(routes.size, 12);
+const shortlists2027 = new Map([
+  ['best-nyc-pre-k-programs-2027', { rows: 5, next: '/guides/nyc-3k-prek-applications-2027', evidence: ['Birth-to-5', 'Children enrolled'] }],
+  ['best-nyc-kindergarten-schools-2027', { rows: 6, next: '/guides/nyc-kindergarten-admissions-2027', evidence: ['Spring 2026 grade 3', 'not kindergarten', 'Children enrolled'] }],
+]);
+const earlyYears2027 = new Map([
+  ['nyc-kindergarten-admissions-2027', ['December 9, 2026', 'January 22, 2027', 'March 30, 2027', '2022']],
+  ['nyc-3k-prek-applications-2027', ['January 13', 'February 26, 2027', 'May 11, 2027', 'May 18, 2027', '2023', '2024']],
+]);
 const middleGuideSlugs = ['private-middle-schools-nyc', 'screened-middle-schools-nyc'];
 const middleBlogLinks = renderToStaticMarkup(React.createElement(RelatedBlogReading, { slug: 'best-nyc-middle-schools-2026' }));
 for (const slug of middleGuideSlugs) assert.ok(middleBlogLinks.includes(`/guides/${slug}`));
+const familySurvey = { year: 2026, instrument: 'b5-family', sourceId: 'MAMQ', responseCount: 120, metrics: [{ label: 'Outreach to Parents', value: 97, status: 'reported' }] } as SurveyResult;
+const teacherSurvey = { ...familySurvey, instrument: 'b5-teacher', responseCount: 20, metrics: [] } as SurveyResult;
+const expectedAssessment = { ela: 88, math: 92 };
+const testSchool = school({ dbn: '15K172', assessment_year: '2025-26', assessment_source: 'NYCPS InfoHub · spring 2026 ELA/math · snapshot August 3, 2026', ela_grade3: 88, math_grade3: 92, ela_proficiency: 99 });
+assert.deepEqual(centerShortlistRecord('MAMQ', [familySurvey, teacherSurvey]), { family: { count: 120, outreach: 97 }, teacher: { count: 20, hasTopics: false } });
+assert.deepEqual(centerShortlistRecord('KCEH', [familySurvey]), {});
+assert.deepEqual(centerShortlistRecord('MAMQ', [{ ...familySurvey, year: 2025 }]), {});
+assert.deepEqual(schoolShortlistRecord(testSchool), { assessment: expectedAssessment });
+assert.deepEqual(schoolShortlistRecord({ ...testSchool, ela_grade3: null, math_grade3: 0 }).assessment, { ela: null, math: 0 });
+assert.deepEqual(schoolShortlistRecord({ ...testSchool, assessment_year: '2024-25' }), {});
+const candidates: DistrictCandidate[] = [41, 63, 82, 116].map((enrolled, i) => ({
+  dbn: `02M${340 + i}`, district: 2, name: `Fixture ${i}`, grades: 'PK-5', enrolled,
+  assessment_year: '2025-26', assessment_source: testSchool.assessment_source, ela_grade3: 60, math_grade3: 75,
+}));
+candidates.push({ ...candidates[0], dbn: '31R041', district: 31, enrolled: 65 });
+const districts = buildDistrictPicks([...candidates, candidates[0]], [], 'kindergarten', row => `/school/${row.dbn}`);
+assert.deepEqual(districts.map(pick => [pick.district, pick.enrolled]), [[2, 41], [2, 116], [31, 65]]);
+assert.deepEqual(buildDistrictPicks(candidates, [], 'pre-k', () => '').map(pick => pick.evidence), [undefined, undefined, undefined]);
 for (const page of PARENT_GUIDES) {
   assert.ok(page.sources.length >= 2 && page.questions.length >= 2);
-  const html = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, data: buildParentGuideData(page, [first, second], [privateSchool({})]) }));
+  const guideData = buildParentGuideData(page, [first, second], [privateSchool({})]);
+  if (page.shortlistMode) guideData.districtPicks = buildDistrictPicks(candidates, [], page.shortlistMode, row => `/school/${row.dbn}`);
+  const html = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, data: guideData }));
   assert.equal((html.match(/<h1\b/g) ?? []).length, 1);
   assert.match(html, /<table/);
   assert.match(html, /Sources and data limits/);
@@ -76,16 +106,38 @@ for (const page of PARENT_GUIDES) {
   for (const link of page.related) if (link.href.startsWith('/guides/')) assert.ok(routes.has(link.href), link.href);
   if (page.kind === 'editorial') {
     const evidence = page.verified!;
-    assert.ok(evidence.rows.length >= 4);
-    assert.match(html, /What this means for your shortlist/);
+    assert.ok(evidence.rows.length >= (earlyYears2027.has(page.slug) ? 2 : 4));
+    const shortlist = shortlists2027.get(page.slug);
+    if (shortlist) {
+      assert.match(page.title, /^Best NYC .* Fall 2027:/);
+      assert.equal(evidence.rows.length, shortlist.rows);
+      assert.equal(page.next.href, shortlist.next);
+      for (const borough of ['Manhattan', 'Brooklyn', 'Bronx', 'Queens', 'Staten Island']) assert.ok(evidence.rows.some(row => row.name.startsWith(borough)));
+      for (const fact of shortlist.evidence) assert.ok(html.includes(fact), fact);
+      assert.ok(evidence.rows.filter(row => row.profile).length >= 4);
+      assert.doesNotMatch(html, /Official sources/);
+      assert.doesNotMatch(html, /Sources for this listing|Filter by borough|Chart measure/);
+      assert.match(html, /Sources for the featured examples/);
+      assert.match(html, /School district/);
+      assert.match(html, /What to ask on a visit/);
+      assert.equal((html.match(/data-testid="shortlist-chart"/g) ?? []).length, 2);
+    }
+    if (earlyYears2027.has(page.slug)) {
+      assert.match(page.title, /2027/);
+      for (const fact of earlyYears2027.get(page.slug)!) assert.ok(html.includes(fact), fact);
+      assert.ok(page.related.some(link => link.href !== parentGuidePath(page) && earlyYears2027.has(link.href.split('/').at(-1)!)));
+    }
+    if (!page.shortlistMode) assert.match(html, /What this means for your shortlist/);
     assert.ok(!html.includes('School data is temporarily unavailable'));
-    const clientHtml = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, pending: true }));
-    assert.equal(clientHtml, html, 'Editorial evidence renders identically without a client-side data request');
+    if (!page.shortlistMode) {
+      const clientHtml = renderToStaticMarkup(React.createElement(ParentGuideContent, { guide: page, pending: true }));
+      assert.equal(clientHtml, html, 'Editorial evidence renders identically without a client-side data request');
+    }
     for (const row of evidence.rows) {
       assert.equal(row.cells.length, evidence.columns.length);
       assert.ok(row.sources.length);
       assert.ok(row.sources.every(source => source.href.startsWith('https://')));
-      if (row.profile) assert.match(row.profile, /^\/(?:private-)?school\//);
+      if (row.profile) assert.match(row.profile, /^\/(?:(?:private-)?school|early-childhood)\//);
     }
   }
   for (const anchor of html.matchAll(/<a\b[^>]*href="https?:[^>]*>/g)) {
@@ -112,26 +164,32 @@ const { storage } = await import('../server/storage');
 const { renderSeoHtml, clearSeoCache } = await import('../server/seoRenderer');
 const { sitemapByName } = await import('../server/seoFeeds');
 const { deleteCache } = await import('../server/cache');
+const { withDatabaseInstance } = await import('../server/db');
 const original = { getSchools: storage.getSchools, getSchool: storage.getSchool, getPrivateSchools: storage.getPrivateSchools, getHSGraduation: storage.getHSGraduation };
 const template = '<html><head><title>Base</title><meta name="description" content="Base" /></head><body><div id="root"></div></body></html>';
 const clear = () => { clearSeoCache(); for (const page of PARENT_GUIDES) deleteCache(`parent-guide:${page.slug}`); };
 try {
   storage.getSchools = async () => [overlap, second];
-  storage.getSchool = async dbn => [first, second, school({ dbn: '25Q525' }), school({ dbn: '02M475' })].find(s => s.dbn === dbn);
+  storage.getSchool = async dbn => [first, second, testSchool, school({ dbn: '25Q525' }), school({ dbn: '02M475' })].find(s => s.dbn === dbn);
   storage.getPrivateSchools = async () => [privateSchool({})];
   storage.getHSGraduation = async dbn => [cohort(dbn, 2020, 99)];
   clear();
   const sitemap = await sitemapByName('guides');
   for (const page of PARENT_GUIDES) {
     const path = parentGuidePath(page);
-    const html = await renderSeoHtml(path, template);
+    let calls = 0;
+    const html = await withDatabaseInstance({ execute: async () => ({ rows: page.shortlistMode && calls++ === 0 ? candidates : [familySurvey, teacherSurvey].map(row => ({...row, importedAt: 0})) }) } as never, () => renderSeoHtml(path, template));
     assert.ok(html, path);
     assert.ok(html.includes(`https://nycschoolsratings.com${path}`));
     assert.match(html, /Sources and data limits/);
     assert.match(html, /Your next step/);
     assert.match(html, /BreadcrumbList/);
     assert.ok(sitemap?.includes(`<loc>https://nycschoolsratings.com${path}</loc>`));
-    if (page.kind === 'editorial') assert.match(html, /Official sources/);
+    if (page.shortlistMode) {
+      assert.match(html, /id="shortlist-guide-data"/);
+      assert.match(html, page.shortlistMode === 'kindergarten' ? /75%/ : /Family responses: <!-- -->120|Family responses: 120/);
+      assert.doesNotMatch(html, /Official sources/);
+    } else if (page.kind === 'editorial') assert.match(html, /Official sources/);
     else if (page.kind !== 'zones') assert.match(html, /What our school records show/);
   }
   assert.equal(await renderSeoHtml('/guides/unknown-page', template), null);

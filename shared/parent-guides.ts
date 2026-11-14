@@ -1,4 +1,6 @@
 import { MIDDLE_SCHOOL_GUIDES } from './middle-school-guides';
+import { FALL_2027_ADMISSIONS_GUIDES } from './fall-2027-admissions-guides';
+import { FALL_2027_SHORTLIST_GUIDES } from './fall-2027-shortlist-guides';
 
 // Editorial definitions are shared by the HTML renderer and the lazy client route.
 export type GuideLink = { label: string; href: string };
@@ -8,9 +10,10 @@ export type ParentGuide = {
   reviewedAt?: string;
   privateScope?: { borough: string; elementaryOnly: boolean };
   examples?: Array<{ name: string; detail: string; question: string; source: GuideLink }>;
+  shortlistMode?: 'pre-k' | 'kindergarten';
   verified?: {
-    heading: string; caption: string; columns: string[]; takeaway: string;
-    rows: Array<{ name: string; profile?: string; cells: string[]; sources: GuideLink[] }>;
+    heading: string; caption: string; firstColumn?: string; columns: string[]; takeaway: string;
+    rows: Array<{ name: string; profile?: string; cells: string[]; sources: GuideLink[]; dbKey?: string }>;
   };
   questions: Array<{ title: string; text: string }>;
   columns: string[]; comparison: string[][];
@@ -151,6 +154,8 @@ export const PARENT_GUIDES: ParentGuide[] = [
     next: { label: 'Compare the school profiles', href: '/compare/25Q525-vs-02M475' },
   },
   ...MIDDLE_SCHOOL_GUIDES,
+  ...FALL_2027_ADMISSIONS_GUIDES,
+  ...FALL_2027_SHORTLIST_GUIDES,
 ];
 export const getParentGuide = (slug: string) => PARENT_GUIDES.find(g => g.slug === slug);
 export const parentGuidePath = (guide: Pick<ParentGuide, 'slug'>) => `/guides/${guide.slug}`;

@@ -3,7 +3,7 @@ import { getSchoolSlug, getPrivateSchoolSlug } from './school-utils';
 import type { ParentGuide } from './parent-guides';
 
 export type GuideRow = { id: string; name: string; href: string; cells: string[]; tags?: string[]; website?: string; evidenceUrl?: string };
-export type GuideData = { summary: string[]; headers: string[]; rows: GuideRow[]; note: string; bars: Array<{ label: string; count: number }>; filters?: Array<{label:string;value:string}>; surveys?: Record<string, import('./surveys').SurveyResult[]> };
+export type GuideData = { summary: string[]; headers: string[]; rows: GuideRow[]; note: string; bars: Array<{ label: string; count: number }>; filters?: Array<{label:string;value:string}>; surveys?: Record<string, import('./surveys').SurveyResult[]>; districtPicks?: import('./shortlist-data').DistrictPick[] };
 const unknown = 'Not recorded';
 const pct = (n: number | null | undefined) => n != null && n >= 0 && n <= 100 ? `${n}%` : unknown;
 const year = (s: School) => s.assessment_year || 'Year not recorded';
