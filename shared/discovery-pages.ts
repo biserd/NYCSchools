@@ -1,6 +1,6 @@
 // Search presentation is shared by the initial HTML and the interactive pages.
 export const MAP_META = {
-  title: 'NYC School District Map: Find Schools by District & Grade',
+  title: 'NYC School District Map: Browse by Grade & Borough',
   description: 'Explore NYC schools on an interactive district map. Filter by district, grade and program, open profiles, and check attendance zones with the official address lookup.',
   heading: 'NYC School District Map',
 };
