@@ -764,7 +764,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
         <h1>${escapeHtml(post.title)}</h1>
         <p><em>${escapeHtml(post.author)} · ${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)}</em></p>
         ${appComparisonHtml ? '' : `<p>${escapeHtml(post.description)}</p>`}
-        <p><a href="${SITE_ORIGIN}/blog"${appComparisonHtml ? ' rel="nofollow"' : ''}>Read more articles on NYC School Ratings</a></p>
+        <p><a href="${SITE_ORIGIN}/blog">Read more articles on NYC School Ratings</a></p>
       </article>`;
 
   return applyMeta(baseHtml, {

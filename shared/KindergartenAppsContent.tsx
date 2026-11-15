@@ -7,8 +7,10 @@ import {
 } from './kindergarten-apps';
 
 function Source({ href, children, className = 'font-medium underline underline-offset-4' }: {href: string; children: ReactNode; className?: string}) {
-  const firstParty = new URL(href).hostname === 'kinderlearner.com';
-  return <a href={href} target="_blank" rel={firstParty ? 'noopener noreferrer' : 'nofollow noopener noreferrer'} className={className}>{children}</a>;
+  const host = new URL(href, 'https://nycschoolsratings.com').hostname.replace(/^www\./, '');
+  const internal = host === 'nycschoolsratings.com';
+  const rel = internal ? undefined : host === 'kinderlearner.com' ? 'noopener noreferrer' : 'nofollow noopener noreferrer';
+  return <a href={href} target={internal ? undefined : '_blank'} rel={rel} className={className}>{children}</a>;
 }
 
 export function KindergartenAppsContent() {
@@ -90,7 +92,7 @@ export function KindergartenAppsContent() {
 
       <h2 id="how-to-choose-a-kindergarten-app">How to tell if an app is worth keeping</h2>
       <p>Pick one skill, not seven apps. For beginning sounds, play a round together, then see if your child can find something in the room that starts with the same sound. For counting, ask them to hand you four socks. Notice what they can do on their own and where a little help makes a difference. That tells you more about what to try tomorrow than a badge or a streak.</p>
-      <p>Planning for school, too? See our <a href="/guides/nyc-kindergarten-admissions-2027" rel="nofollow" className="font-medium underline underline-offset-4">Fall 2027 NYC kindergarten admissions guide</a>.</p>
+      <p>Planning for school, too? See our <Source href="/guides/nyc-kindergarten-admissions-2027">Fall 2027 NYC kindergarten admissions guide</Source>.</p>
     </article>
   );
 }
