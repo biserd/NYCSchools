@@ -32,7 +32,7 @@ export default function BlogPage() {
       "description": post.description,
       "datePublished": post.publishedAt,
       "author": {
-        "@type": "Organization",
+        "@type": post.authorType ?? "Organization",
         "name": post.author
       }
     }))

@@ -76,6 +76,7 @@ import {
   getSchoolSlug,
 } from "@shared/schema";
 import { getBlogPost, blogPosts } from "@shared/blog-data";
+import { KINDERGARTEN_APPS_SLUG } from "@shared/kindergarten-apps";
 import { RelatedBlogReading } from '../shared/RelatedBlogReading';
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { getSchoolSeoMeta } from "@shared/school-seo";
@@ -713,6 +714,9 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
 
   const title = `${post.title} | NYC School Ratings`;
   const description = post.description;
+  const appComparisonHtml = slug === KINDERGARTEN_APPS_SLUG
+    ? renderToStaticMarkup(React.createElement((await import('../shared/KindergartenAppsContent')).KindergartenAppsContent))
+    : '';
   const stage = slug === 'best-nyc-elementary-schools-2026' ? 'elementary' : slug === 'best-nyc-middle-schools-2026' ? 'middle' : null;
   let rankingHtml = '';
   if (stage) {
@@ -734,7 +738,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     url: canonical,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt || post.publishedAt,
-    author: { "@type": "Organization", name: post.author },
+    author: { "@type": post.authorType ?? "Organization", name: post.author },
     publisher: {
       "@type": "Organization",
       name: "NYC School Ratings",
@@ -759,8 +763,8 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
       <article>
         <h1>${escapeHtml(post.title)}</h1>
         <p><em>${escapeHtml(post.author)} · ${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)}</em></p>
-        <p>${escapeHtml(post.description)}</p>
-        <p><a href="${SITE_ORIGIN}/blog">Read more articles on NYC School Ratings</a></p>
+        ${appComparisonHtml ? '' : `<p>${escapeHtml(post.description)}</p>`}
+        <p><a href="${SITE_ORIGIN}/blog"${appComparisonHtml ? ' rel="nofollow"' : ''}>Read more articles on NYC School Ratings</a></p>
       </article>`;
 
   return applyMeta(baseHtml, {
@@ -770,7 +774,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     ogImage,
     jsonLd: [article, breadcrumb],
     bootHeading: post.title,
-    serverHtml: noscriptHtml + rankingHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
+    serverHtml: noscriptHtml + appComparisonHtml + rankingHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
   });
 }
 

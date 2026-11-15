@@ -2,9 +2,11 @@ import React from 'react';
 import { KinderLearnerResourceLink } from './KinderLearnerResourceLink';
 import { getBlogPost } from './blog-data';
 import { PARENT_GUIDES, parentGuidePath } from './parent-guides';
+import { KINDERGARTEN_APPS_SLUG } from './kindergarten-apps';
 
 // Editorial, reciprocal links: connect complementary evidence, not rankings to survey scores.
 const connections: [string, string, string][] = [
+  [KINDERGARTEN_APPS_SLUG, 'best-nyc-kindergartens-2026', 'Pair school research with practical ideas for phonics and math practice at home.'],
   ['nyc-school-survey-2026','2023-24-doe-data-analysis','Compare community feedback with the older academic data, keeping reporting years separate.'],
   ['nyc-family-survey-2026','best-nyc-elementary-schools-2026','Use family feedback to add communication and trust questions to an elementary-school shortlist.'],
   ['nyc-family-survey-2026','best-nyc-charter-schools-2026','Look beyond a ranking when comparing family experience at charter schools.'],
@@ -25,6 +27,7 @@ export function RelatedBlogReading({slug}: {slug:string}) {
   const links=relatedBlogLinks(slug);
   const guideSlugs = slug === 'best-nyc-elementary-schools-2026' ? ['ps6-vs-ps290', 'private-elementary-schools-nyc', 'nyc-school-district-map-and-zones'] : slug === 'best-nyc-middle-schools-2026' ? ['screened-middle-schools-nyc', 'private-middle-schools-nyc'] : /kindergarten|prek-3k|early-childhood/.test(slug) ? ['2k-3k-prek-kindergarten-same-school'] : /high-school/.test(slug) ? ['townsend-harris-vs-stuyvesant'] : [];
   const guides = PARENT_GUIDES.filter(guide => guideSlugs.includes(guide.slug));
+  const rel = slug === KINDERGARTEN_APPS_SLUG ? 'nofollow' : undefined;
   if (!links.length && !guides.length) return null;
-  return <><section className="my-10 border-t pt-8" aria-label="Related blog reading"><h2 className="text-2xl font-bold mb-4">Put the findings in context</h2><ul className="space-y-5">{links.map(({post,context})=><li key={post.slug}><a className="font-semibold underline underline-offset-4" href={`/blog/${post.slug}`}>{post.title}</a><p className="text-sm text-muted-foreground mt-2 leading-7">{context}</p></li>)}{guides.map(guide => <li key={guide.slug}><a className="font-semibold underline underline-offset-4" href={parentGuidePath(guide)}>{guide.title}</a><p className="text-sm text-muted-foreground mt-2">{guide.description}</p></li>)}</ul></section>{slug==='best-nyc-kindergartens-2026'&&<KinderLearnerResourceLink stage="kindergarten"/>}{slug==='nyc-prek-3k-kindergarten-admissions-demand-2025'&&<KinderLearnerResourceLink/>}</>;
+  return <><section className="my-10 border-t pt-8" aria-label="Related blog reading"><h2 className="text-2xl font-bold mb-4">Put the findings in context</h2><ul className="space-y-5">{links.map(({post,context})=><li key={post.slug}><a className="font-semibold underline underline-offset-4" href={`/blog/${post.slug}`} rel={rel}>{post.title}</a><p className="text-sm text-muted-foreground mt-2 leading-7">{context}</p></li>)}{guides.map(guide => <li key={guide.slug}><a className="font-semibold underline underline-offset-4" href={parentGuidePath(guide)} rel={rel}>{guide.title}</a><p className="text-sm text-muted-foreground mt-2">{guide.description}</p></li>)}</ul></section>{slug==='best-nyc-kindergartens-2026'&&<KinderLearnerResourceLink stage="kindergarten"/>}{slug==='nyc-prek-3k-kindergarten-admissions-demand-2025'&&<KinderLearnerResourceLink/>}</>;
 }

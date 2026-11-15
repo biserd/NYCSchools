@@ -1,6 +1,8 @@
 import { useParams, Link } from "wouter";
 import { RankingArticle } from '@/components/blog/RankingArticle';
 import { RelatedBlogReading } from '@shared/RelatedBlogReading';
+import { KindergartenAppsContent } from '@shared/KindergartenAppsContent';
+import { KINDERGARTEN_APPS_SLUG } from '@shared/kindergarten-apps';
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -1832,7 +1834,7 @@ export default function BlogPostPage() {
     "datePublished": post.publishedAt,
     "dateModified": post.updatedAt || post.publishedAt,
     "author": {
-      "@type": "Organization",
+      "@type": post.authorType ?? "Organization",
       "name": post.author
     },
     "publisher": {
@@ -1907,6 +1909,7 @@ export default function BlogPostPage() {
           </p>
         </div>
 
+        {post.slug === KINDERGARTEN_APPS_SLUG && <KindergartenAppsContent />}
         {post.slug === "top-nyc-schools-high-crime-neighborhoods-2026" && <DiamondsInTheRoughPost />}
         {post.slug === "does-crime-predict-nyc-school-quality-data-analysis-2026" && <CrimePredictsSchoolQualityPost />}
         {post.slug === "best-nyc-kindergartens-2026" && <BestKindergartensPost />}
