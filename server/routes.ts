@@ -10,6 +10,7 @@ import { insertFavoriteSchema, insertReviewSchema, insertUserProfileSchema, inse
 import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { schoolDemographicsHistory } from "@shared/schema";
 import { registerSchoolResearchRoutes } from './schoolResearchData';
+import { registerNysedProfileAssessmentRoutes } from './nysedProfileAssessments';
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
@@ -718,6 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   registerSchoolResearchRoutes(app);
+  registerNysedProfileAssessmentRoutes(app);
 
   app.get("/api/schools/:dbn/demographics-history", async (req: Request, res: Response) => {
     try {
