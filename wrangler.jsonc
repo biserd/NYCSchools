@@ -74,6 +74,7 @@
     "APP_URL": "https://nycschoolsratings.com",
     "ENVIRONMENT": "production",
     "CLASSROOM_PILOT_ENABLED": "true",
+    "CITY_CLASS_SIZES_ENABLED": "true",
     "PARENT_WHATSAPP_ENABLED": "true",
     "PARENT_ASSISTANT_ENABLED": "true",
     "PARENT_AGENT_SDK_ENABLED": "true",
