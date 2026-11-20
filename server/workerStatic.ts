@@ -6,6 +6,8 @@ import { isAgentPublicPage, prefersMarkdown, publicPageMarkdown } from './agentM
 import { KINDERLEARNER_PAGES, kinderLearnerLegacyRedirect } from '../shared/kinderlearner';
 import { KINDERLEARNER_INFO_PAGES } from '../shared/kinderlearner-info';
 import { CHATGPT_PLUGIN } from '../shared/chatgpt-plugin';
+import { classroomPreviewEnabled } from './classroomPilot';
+import { PILOT_DRAFT_PATH } from '../shared/classroomPilot';
 const KNOWN_STATIC_ROUTES = new Set([
   CHATGPT_PLUGIN.path,
   ...Object.values(KINDERLEARNER_INFO_PAGES).map(page => page.path),
@@ -78,8 +80,12 @@ export function registerWorkerStaticRoutes(app: Express): void {
     if (kinderLearnerRedirect) return res.redirect(301, kinderLearnerRedirect);
 
     try {
-      const template = await loadIndexTemplate(requestUrl);
-      if (!isKnownAppRoute(pathname)) {
+      const pilotEnabled = classroomPreviewEnabled();
+      const baseTemplate = await loadIndexTemplate(requestUrl);
+      const template = pilotEnabled
+        ? baseTemplate.replace('</head>', '<meta name="classroom-pilot" content="enabled" /></head>')
+        : baseTemplate;
+      if (!isKnownAppRoute(pathname) && !(pilotEnabled && process.env.ENVIRONMENT === 'staging' && pathname === PILOT_DRAFT_PATH)) {
         return res.status(404).set({
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=0, must-revalidate",

@@ -20,6 +20,9 @@ import { Footer } from "@/components/Footer";
 import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SchoolSurveySection } from "@/components/SchoolSurveySection";
 import { SchoolDemographicsHistory } from "@/components/SchoolDemographicsHistory";
+import { NysedProfileAssessments } from "@/components/NysedProfileAssessments";
+import { ClassroomPilotPreview } from "@/components/ClassroomPilotPreview";
+import { PILOT_SCHOOL } from "@shared/classroomPilot";
 import { SEOHead } from "@/components/SEOHead";
 import { getSchoolSeoMeta } from "@shared/school-seo";
 import { getSeoLandingPath, getSeoLandingsForSchool } from "@shared/seo-landings";
@@ -1022,6 +1025,7 @@ export default function SchoolDetail() {
             </Card>
           )}
 
+          {!isPureHighSchool(schoolWithScore) && !isEarlyChildhoodOnly(schoolWithScore) && <NysedProfileAssessments dbn={dbn}/>}
           {/* Academic Performance with ELA/Math/Science - Only shown for schools with grades 3-8 (not pure high schools like 9-12) */}
           {!isPureHighSchool(schoolWithScore) && (schoolWithScore.ela_proficiency != null || schoolWithScore.math_proficiency != null || schoolWithScore.science_proficiency != null) && (
             <Card data-testid="card-academics-ela-math">
@@ -2666,6 +2670,7 @@ export default function SchoolDetail() {
           </Card>
 
 
+          {dbn === PILOT_SCHOOL && <ClassroomPilotPreview view="school" />}
           <SchoolDemographicsHistory dbn={dbn} />
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 

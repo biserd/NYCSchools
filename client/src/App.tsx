@@ -14,6 +14,7 @@ import NotFound from "@/pages/not-found";
 import { initializeAttribution, trackEvent } from "@/lib/analytics";
 import { guideActionParams } from '@/lib/guide-actions';
 import { dataReleaseActionParams } from '@/lib/data-release-actions';
+import { PILOT_DRAFT_PATH } from '@shared/classroomPilot';
 
 // Lazy-load every non-Home route so its JS + CSS split into separate chunks.
 // Home stays eager so its LCP element ships in the initial bundle.
@@ -36,6 +37,7 @@ const SchoolDetail = lazy(() => import("@/pages/school-detail"));
 const ComparePage = lazy(() => import("@/pages/compare"));
 const BlogPage = lazy(() => import("@/pages/blog"));
 const BlogRoute = lazy(() => import("@/pages/blog-route"));
+const ClassroomPilotDraftPage = lazy(() => import("@/pages/classroom-pilot-draft"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
 const DevelopersDocsPage = lazy(() => import("@/pages/developers-docs"));
 const RecommendationsPage = lazy(() => import("@/pages/recommendations"));
@@ -189,6 +191,7 @@ function Router() {
         <Route path="/blog/:slug">
           {params => <BlogRoute slug={params.slug} />}
         </Route>
+        <Route path={PILOT_DRAFT_PATH} component={ClassroomPilotDraftPage} />
         <Route path="/pricing">
           <PricingPage />
         </Route>
