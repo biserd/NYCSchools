@@ -39,6 +39,7 @@ function initializeProcessEnvironment(workerEnv: Env): void {
     TWILIO_AUTH_TOKEN: runtimeEnv.TWILIO_AUTH_TOKEN,
     TWILIO_ACCOUNT_SID: runtimeEnv.TWILIO_ACCOUNT_SID,
     STAGING_EXPIRES_AT: runtimeEnv.STAGING_EXPIRES_AT,
+    CLASSROOM_PILOT_ENABLED: runtimeEnv.CLASSROOM_PILOT_ENABLED,
     INDEXNOW_KEY: runtimeEnv.INDEXNOW_KEY,
   };
 

@@ -49,6 +49,9 @@ import { getScoreArticle, scoreArticleSchema } from '../shared/score-articles';
 import { ScoreArticleContent } from '../shared/ScoreArticleContent';
 import { ScoreMoversTeaser } from '../shared/ScoreMoversTeaser';
 import { DATA_RELEASE,dataReleaseSchema } from '../shared/data-release';
+import { ClassroomPilotDistrict, ClassroomPilotDraft, ClassroomPilotSchool, PILOT_DRAFT_DESCRIPTION, PILOT_DRAFT_TITLE } from '../shared/ClassroomPilotContent';
+import { CLASSROOM_ARTICLE, PILOT_DRAFT_PATH, PILOT_SCHOOL } from '../shared/classroomPilot';
+import { classroomPreviewEnabled, loadClassroomPilot } from './classroomPilot';
 import { DataReleaseContent } from '../shared/DataReleaseContent';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
@@ -587,8 +590,23 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
     canonical,
     jsonLd: [educationalOrg, breadcrumb, faq],
     bootHeading: schoolDisplayName(school),
-    serverHtml: noscriptHtml + await surveyServerHtml(school.dbn),
+    serverHtml: noscriptHtml + await surveyServerHtml(school.dbn)
+      + (school.dbn === PILOT_SCHOOL ? await classroomPilotHtml('school') : ''),
   });
+}
+
+async function classroomPilotHtml(view: 'school' | 'district' | 'draft' | 'article'): Promise<string> {
+  if (!classroomPreviewEnabled()) return '';
+  try {
+    const data = await loadClassroomPilot();
+    if (!data) return '';
+    return renderToStaticMarkup(view === 'school' ? React.createElement(ClassroomPilotSchool, {data}) :
+      view === 'district' ? React.createElement(ClassroomPilotDistrict, {data}) :
+      React.createElement(ClassroomPilotDraft, {data,showTitle:view==='draft'}));
+  } catch (error) {
+    console.error('[CLASSROOM_PILOT_SSR]',error);
+    return '';
+  }
 }
 
 async function renderPrivateSchool(slug: string, baseHtml: string): Promise<string | null> {
@@ -717,6 +735,8 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
   const appComparisonHtml = slug === KINDERGARTEN_APPS_SLUG
     ? renderToStaticMarkup(React.createElement((await import('../shared/KindergartenAppsContent')).KindergartenAppsContent))
     : '';
+  const classroomArticle = slug === CLASSROOM_ARTICLE.slug;
+  const classroomArticleHtml = classroomArticle ? await classroomPilotHtml('article') : '';
   const stage = slug === 'best-nyc-elementary-schools-2026' ? 'elementary' : slug === 'best-nyc-middle-schools-2026' ? 'middle' : null;
   let rankingHtml = '';
   if (stage) {
@@ -763,7 +783,7 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
       <article>
         <h1>${escapeHtml(post.title)}</h1>
         <p><em>${escapeHtml(post.author)} · ${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)}</em></p>
-        ${appComparisonHtml ? '' : `<p>${escapeHtml(post.description)}</p>`}
+        ${appComparisonHtml || classroomArticleHtml ? '' : `<p>${escapeHtml(post.description)}</p>`}
         <p><a href="${SITE_ORIGIN}/blog">Read more articles on NYC School Ratings</a></p>
       </article>`;
 
@@ -774,7 +794,8 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     ogImage,
     jsonLd: [article, breadcrumb],
     bootHeading: post.title,
-    serverHtml: noscriptHtml + appComparisonHtml + rankingHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
+    noindex: classroomArticle && !classroomArticleHtml,
+    serverHtml: noscriptHtml + appComparisonHtml + rankingHtml + classroomArticleHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
   });
 }
 
@@ -1121,7 +1142,8 @@ async function renderSeoLanding(kind: string, slug: string, baseHtml: string): P
   ];
   const kinderLearnerLink = kind === 'program' && (slug === 'prek' || slug === '3k') ? renderToStaticMarkup(React.createElement(KinderLearnerResourceLink)) : '';
   const serverHtml = `<main data-server-rendered="true"><p>NYC school guide</p><h1>${escapeHtml(landing.title)}</h1><p>${escapeHtml(landing.intro)}</p><p>${schools.length} matching schools. Ratings use NYSED and NYC Public Schools data. Programs, zones, and admissions rules should be verified with NYC Public Schools.</p>${kinderLearnerLink}<ol>${schools.slice(0, 30).map((school) => `<li><a href="/school/${escapeAttr(getSchoolSlug(school))}">${escapeHtml(schoolDisplayName(school))}</a> — District ${school.district}${calculateOverallScore(school) >= 0 ? ` — Score ${calculateOverallScore(school)}/100` : ""}</li>`).join("")}</ol><h2>Related school guides</h2><ul>${relatedGuides.map((guide) => `<li><a href="${escapeAttr(getSeoLandingPath(guide))}">${escapeHtml(guide.name)}</a></li>`).join("")}</ul><p><a href="/methodology">Rating methodology and data sources</a> · <a href="/explore-schools">All school guides</a></p></main>`;
-  const enrichedHtml = serverHtml.replace('<ol>', `${renderToStaticMarkup(React.createElement(LandingDecisionContent, { landing, schools }))}<ol>`);
+  const classroomHtml = kind === 'district' && slug === '2' ? await classroomPilotHtml('district') : '';
+  const enrichedHtml = serverHtml.replace('<ol>', `${renderToStaticMarkup(React.createElement(LandingDecisionContent, { landing, schools }))}${classroomHtml}<ol>`);
   return applyMeta(baseHtml, { title: landing.title, description: landing.description, canonical, jsonLd, bootHeading: landing.title, serverHtml: enrichedHtml });
 }
 
@@ -1195,7 +1217,13 @@ export async function renderSeoHtml(
     let m: RegExpMatchArray | null;
     const kinderLearnerPage = getKinderLearnerPage(path);
     const kinderLearnerInfoPage = getKinderLearnerInfoPage(path);
-    if (kinderLearnerInfoPage) {
+    if (path === PILOT_DRAFT_PATH && process.env.ENVIRONMENT === 'staging' && classroomPreviewEnabled()) {
+      const content = await classroomPilotHtml('draft');
+      result = applyMeta(baseHtml, {
+        title: PILOT_DRAFT_TITLE, description: PILOT_DRAFT_DESCRIPTION,
+        canonical: `${SITE_ORIGIN}${path}`, noindex: true, serverHtml: content,
+      });
+    } else if (kinderLearnerInfoPage) {
       const meta = KINDERLEARNER_INFO_PAGES[kinderLearnerInfoPage];
       result = applyMeta(baseHtml, {
         title: meta.title, description: meta.description, canonical: `${SITE_ORIGIN}${meta.path}`,

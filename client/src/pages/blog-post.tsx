@@ -3,6 +3,8 @@ import { RankingArticle } from '@/components/blog/RankingArticle';
 import { RelatedBlogReading } from '@shared/RelatedBlogReading';
 import { KindergartenAppsContent } from '@shared/KindergartenAppsContent';
 import { KINDERGARTEN_APPS_SLUG } from '@shared/kindergarten-apps';
+import { CLASSROOM_ARTICLE } from '@shared/classroomPilot';
+import { ClassroomPilotPreview } from '@/components/ClassroomPilotPreview';
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { SEOHead } from "@/components/SEOHead";
@@ -1910,6 +1912,7 @@ export default function BlogPostPage() {
         </div>
 
         {post.slug === KINDERGARTEN_APPS_SLUG && <KindergartenAppsContent />}
+        {post.slug === CLASSROOM_ARTICLE.slug && <ClassroomPilotPreview view="article" />}
         {post.slug === "top-nyc-schools-high-crime-neighborhoods-2026" && <DiamondsInTheRoughPost />}
         {post.slug === "does-crime-predict-nyc-school-quality-data-analysis-2026" && <CrimePredictsSchoolQualityPost />}
         {post.slug === "best-nyc-kindergartens-2026" && <BestKindergartensPost />}

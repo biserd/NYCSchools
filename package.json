@@ -35,6 +35,8 @@
     "test:ratings": "tsx scripts/rating-regression.test.ts",
     "test:school-data": "tsx scripts/school-data-integration.test.ts",
     "test:nysed-profile-assessments": "tsx scripts/nysed-profile-assessments.test.tsx",
+    "test:classroom-pilot": "tsx scripts/test-classroom-pilot.tsx",
+    "preview:classroom-pilot": "tsx scripts/preview-classroom-pilot.tsx",
     "test:district-rankings": "tsx scripts/district-ranking.test.ts",
     "test:score-movers": "tsx scripts/score-movers.test.ts",
     "build:press-kit": "tsx scripts/build-press-kit.ts",

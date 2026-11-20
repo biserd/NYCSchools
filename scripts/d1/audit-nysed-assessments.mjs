@@ -1,4 +1,4 @@
-/** Read-only checks against one explicitly pinned staging database. */
+/** Read-only checks against explicitly pinned D1 databases. Defaults to staging. */
 import {spawn} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
@@ -6,14 +6,18 @@ import {resolve} from 'node:path';
 import assert from 'node:assert/strict';
 
 const root='.wrangler/nysed-assessments';
-const config='wrangler.d1-staging.jsonc';
-const database='nyc-schools-ratings-d1-staging';
-const databaseId='e48a9ae9-4948-4dae-863a-06f6b026b436';
-const mode=process.argv[2];
-assert.ok(['--before','--after'].includes(mode),'Use --before or --after');
-const configuration=await readFile(config,'utf8');
-assert.ok(configuration.includes(`"database_name":"${database}","database_id":"${databaseId}"`),
-  'Refusing to query: the staging binding no longer matches');
+const [mode, target, ...extra]=process.argv.slice(2);
+assert.ok(['--before','--after'].includes(mode)&&(!target||target==='--production')&&!extra.length,
+  'Use --before or --after, optionally followed by --production');
+const production=target==='--production';
+const label=production?'production':'staging';
+const config=production?'wrangler.jsonc':'wrangler.d1-staging.jsonc';
+const database=production?'nyc-schools-ratings-production':'nyc-schools-ratings-d1-staging';
+const databaseId=production?'35237f81-df27-4908-be1a-1226faf501e0':'e48a9ae9-4948-4dae-863a-06f6b026b436';
+const configuration=JSON.parse(await readFile(config,'utf8'));
+assert.equal(configuration.vars?.ENVIRONMENT,label);
+assert.ok(configuration.d1_databases.some(d=>d.binding==='DB'&&d.database_name===database&&d.database_id===databaseId),
+  'Refusing to query: the expected D1 binding no longer matches');
 await mkdir(root,{recursive:true});
 
 async function query(sql){
@@ -53,8 +57,18 @@ async function fingerprint(table,key){
 const records=await Promise.all([
   fingerprint('schools','dbn'),fingerprint('school_historical_scores','id'),fingerprint('hs_regents','id'),
 ]);
-const priorFile=root+'/staging-before.json';
+const priorFile=`${root}/${label}-before.json`;
 if(mode==='--before'){
+  if(production){
+    const expected=JSON.parse(await readFile(root+'/combined/expected-results.json','utf8'));
+    const matched=new Set(expected.map(row=>row[1]));
+    const baseline=JSON.parse(await readFile(root+'/source/staging-schools.json','utf8'));
+    const identity=row=>[row.dbn,row.borough,row.district,row.address];
+    const publicSchools=await query('SELECT dbn, borough, district, address FROM schools ORDER BY dbn');
+    assert.deepEqual(publicSchools.filter(row=>matched.has(row.dbn)).map(identity).sort(),
+      baseline.filter(row=>matched.has(row.dbn)).map(identity).sort(),'Review the production roster before carrying over the crosswalk');
+    console.log(`Verified ${matched.size} mapped school identifiers, location and district against the production roster.`);
+  }
   await writeFile(priorFile,JSON.stringify({database:databaseId,records},null,2)+'\n',{flag:'wx'});
 }else{
   const prior=JSON.parse(await readFile(priorFile,'utf8'));
@@ -78,8 +92,8 @@ if(mode==='--before'){
   assert.deepEqual(districts.map(row=>JSON.stringify(districtFields.map(field=>row[field]))).sort(),
     JSON.parse(await readFile(root+'/combined/expected-district-science.json','utf8')).map(row=>JSON.stringify(row)).sort(),
     'District science results differ from the validated official aggregates');
-  await writeFile(root+'/staging-assessment-results.json',JSON.stringify(data));
-  await writeFile(root+'/staging-district-science.json',JSON.stringify(districts));
-  await writeFile(root+'/staging-after.json',JSON.stringify({database:databaseId,records,releaseId,verifiedAssessmentRows:data.length},null,2)+'\n');
+  await writeFile(`${root}/${label}-assessment-results.json`,JSON.stringify(data));
+  await writeFile(`${root}/${label}-district-science.json`,JSON.stringify(districts));
+  await writeFile(`${root}/${label}-after.json`,JSON.stringify({database:databaseId,records,releaseId,verifiedAssessmentRows:data.length},null,2)+'\n');
   console.log(`Verified every value of ${data.length} assessment rows and ${districts.length} district science results; legacy fingerprints unchanged.`);
 }
