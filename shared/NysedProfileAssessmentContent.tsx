@@ -7,6 +7,19 @@ const deltaText=(n:number)=> {
   const rounded=Number(n.toFixed(1));
   return (rounded>0?'+':rounded<0?'−':'')+Math.abs(rounded).toFixed(1)+' pp';
 };
+const magnitude=(n:number)=>Math.abs(n)<0.05?'less than 0.1 pp':Math.abs(n).toFixed(1)+' pp';
+
+function CharterChange({change}:{change:number|null}) {
+  if(change===null) return <span className="text-muted-foreground" aria-label="No comparable change">Not comparable</span>;
+  if(change===0) return <span className="inline-block rounded-md bg-muted px-2 py-1 font-medium text-muted-foreground" data-direction="flat">No change</span>;
+  const higher=change>0;
+  return <span data-direction={higher?'higher':'lower'} className={'inline-flex items-baseline gap-1 rounded-md px-2 py-1 font-semibold '+(higher
+    ?'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
+    :'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200')}>
+    <span aria-hidden="true">{higher?'▲':'▼'}</span>
+    <span>{Math.abs(change)<0.05?magnitude(change):deltaText(change)} {higher?'higher':'lower'}</span>
+  </span>;
+}
 function unavailable(p:AssessmentPoint) {
   if(p.status==='suppressed') return 'Suppressed';
   if(p.status==='zero_tested') return 'No students tested';
@@ -27,7 +40,7 @@ function Source({p}:{p:AssessmentPoint}) {
 }
 
 function GradeScience({series}:{series:AssessmentSeries}) {
-  const {latest,prior,latestAvailable,deltaPp,grade}=series;
+  const {latest,prior,latestAvailable,deltaPp,grade,districtComparison}=series;
   const points=prior||latest.year===2026?[prior,latest] as const:[latest] as const;
   return <div className="rounded-lg border bg-background p-4" data-testid={`nysed-science-grade-${grade}`}>
     <h3 className="font-semibold">Grade {grade} science</h3>
@@ -39,6 +52,11 @@ function GradeScience({series}:{series:AssessmentSeries}) {
       </div>)}
     </div>
     {deltaPp!==null&&<p className="mt-3 inline-block rounded-full bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary" data-testid="nysed-yoy">{deltaText(deltaPp)} change in proficiency</p>}
+    {districtComparison&&<div className="mt-3 rounded-md border bg-muted/25 p-3" data-testid="nysed-district-science">
+      <p className="text-sm font-semibold">{districtComparison.differencePp===0?`In line with District ${districtComparison.district}`:
+        `${magnitude(districtComparison.differencePp)} ${districtComparison.differencePp>0?'above':'below'} the District ${districtComparison.district} average`}</p>
+      <p className="mt-1 text-xs text-muted-foreground">Spring {latest.year} district proficiency: <strong>{percent(districtComparison.percent)}</strong> ({number.format(districtComparison.proficient)} of {number.format(districtComparison.tested)} proficient). Official NYSED district result for the same grade and test.</p>
+    </div>}
     {latest.percent===null&&latestAvailable&&<p className="mt-3 text-sm">Latest available: <strong>Spring {latestAvailable.year}, {percent(latestAvailable.percent!)}</strong> ({number.format(latestAvailable.tested!)} tested).</p>}
     <p className="mt-2"><Source p={latest}/>{prior&&prior.releasedOn!==latest.releasedOn&&<> · Prior result: <Source p={prior}/></>}</p>
   </div>;
@@ -78,7 +96,7 @@ function CharterSubjects({data}:{data:NysedProfileAssessments}) {
                 {s.latest.percent===null&&s.latestAvailable&&s.latestAvailable.year!==s.prior?.year&&<p className="mt-1 text-xs text-muted-foreground">Latest available: spring {s.latestAvailable.year} · {percent(s.latestAvailable.percent!)}</p>}
               </td>
               <td className="p-2.5"><SubjectResult p={s.prior}/></td>
-              <td className="p-2.5 tabular-nums">{s.deltaPp!==null?deltaText(s.deltaPp):<span className="text-muted-foreground" aria-label="No comparable change">—</span>}</td>
+              <td className="p-2.5 tabular-nums"><CharterChange change={s.deltaPp}/></td>
             </tr>)}
           </tbody>
         </table>

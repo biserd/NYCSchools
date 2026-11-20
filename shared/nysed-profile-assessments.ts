@@ -6,6 +6,7 @@ export type AssessmentRow = {
   definition:string; institutionId:string; bedsCode:string; sourceUrl:string;
   releaseId:string; releasedOn:string; tested:number|null; proficient:number|null;
   publishedPercent:number|null; status:AssessmentStatus;
+  districtNumber?:number|null; districtTested?:number|null; districtProficient?:number|null;
 };
 export type AssessmentPoint = {
   year:number; tested:number|null; proficient:number|null; percent:number|null;
@@ -14,6 +15,7 @@ export type AssessmentPoint = {
 export type AssessmentSeries = {
   subject:AssessmentSubject; grade:number; assessment:string;
   latest:AssessmentPoint; prior:AssessmentPoint|null; latestAvailable:AssessmentPoint|null; deltaPp:number|null;
+  districtComparison?:{district:number; tested:number; proficient:number; percent:number; differencePp:number};
 };
 export type NysedProfileAssessments = { science:AssessmentSeries[]; ela:AssessmentSeries[]; math:AssessmentSeries[] };
 
@@ -58,9 +60,16 @@ export function buildNysedProfileAssessments(rows:readonly AssessmentRow[]):Nyse
       latest.releaseId===previous.releaseId&&latest.definition===previous.definition&&
       latest.institutionId===previous.institutionId&&latest.bedsCode===previous.bedsCode;
     if (!latestAvailable && !group.some(row=>row.status==='suppressed')) continue;
+    const {districtNumber,districtTested,districtProficient}=latest;
+    const districtComparison=latest.subject==='science'&&usableCount(latest)&&districtNumber!=null&&
+      districtTested!=null&&districtTested>0&&districtProficient!=null&&districtProficient>=0&&districtProficient<=districtTested
+      ? {district:districtNumber,tested:districtTested,proficient:districtProficient,percent:100*districtProficient/districtTested,
+        differencePp:100*(latest.proficient!*districtTested-districtProficient*latest.tested!)/(latest.tested!*districtTested)}
+      : undefined;
     response[latest.subject].push({subject:latest.subject,grade:latest.grade,assessment:latest.assessment,
       latest:p,prior,latestAvailable:latestAvailable?point(latestAvailable):null,
-      deltaPp:comparable ? 100*(latest.proficient!*previous.tested!-previous.proficient!*latest.tested!)/(latest.tested!*previous.tested!) : null});
+      deltaPp:comparable ? 100*(latest.proficient!*previous.tested!-previous.proficient!*latest.tested!)/(latest.tested!*previous.tested!) : null,
+      ...(districtComparison ? {districtComparison} : {})});
   }
   for(const series of Object.values(response)) series.sort((a,b)=>a.grade-b.grade);
   return response;

@@ -72,7 +72,14 @@ if(mode==='--before'){
   const actual=data.map(row=>JSON.stringify(fields.map(field=>row[field]))).sort();
   const expected=JSON.parse(await readFile(root+'/combined/expected-results.json','utf8')).map(row=>JSON.stringify(row)).sort();
   assert.deepEqual(actual,expected,'Imported rows differ from the validated extract');
+  const districtFields=['release_id','district','spring_year','assessment','population','definition','institution_id','beds_code',
+    'eligible','tested','proficient'];
+  const districts=await query(`SELECT ${districtFields.join(',')} FROM school_assessment_archive_district_science WHERE release_id='${releaseId}'`);
+  assert.deepEqual(districts.map(row=>JSON.stringify(districtFields.map(field=>row[field]))).sort(),
+    JSON.parse(await readFile(root+'/combined/expected-district-science.json','utf8')).map(row=>JSON.stringify(row)).sort(),
+    'District science results differ from the validated official aggregates');
   await writeFile(root+'/staging-assessment-results.json',JSON.stringify(data));
+  await writeFile(root+'/staging-district-science.json',JSON.stringify(districts));
   await writeFile(root+'/staging-after.json',JSON.stringify({database:databaseId,records,releaseId,verifiedAssessmentRows:data.length},null,2)+'\n');
-  console.log(`Verified every value of ${data.length} assessment rows; legacy fingerprints unchanged.`);
+  console.log(`Verified every value of ${data.length} assessment rows and ${districts.length} district science results; legacy fingerprints unchanged.`);
 }

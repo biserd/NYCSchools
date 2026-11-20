@@ -10,6 +10,7 @@ This is an additive profile-data release. It neither updates nor backfills the e
 - The source grain is institution, spring, assessment, and population. We require open LCGMS BEDS → ATS System Code, a unique mapping in both directions, stable NYSED institution ID/BEDS across the two years, borough/sector agreement and an existing canonical DBN. For charters we additionally require the normalized street address to agree with the existing record. We never use a school name to resolve a match. A mismatch is unresolved, not proof that a school moved.
 - Science only accepts `Science5` and `Science8`. A percentage is calculated from the archived `NUM_PROF / NUM_TESTED`. The document spells the math codes as `Math3` etc.; the database stores `MATH3`–`MATH8`. Only those regular grade rows are used for charter math. No schoolwide math aggregate is inferred. Charter ELA accepts grades 3–8 and the exact published, non-estimated `ELA3_8` row. An aggregate ELA change also requires the same documented grade set in both periods. No combined or Regents-in-lieu grade rows, alternate assessments, `_SMALL` rows or `_EST` estimates enter a comparison.
 - Eligible and tested counts are retained from the same record when public. Published percentages are not used to reconstruct any count. Suppressed values, no test takers, and valid zero proficiency are distinct. A change compares unrounded, exact counts from the same release, definition, school and grade in consecutive years. Earlier source years remain dated; these panels never mix NYCPS and NYSED observations.
+- The science comparison uses the official geographic-district aggregate from the same archive, grade, assessment, population and spring year. It is a share of all tested students, not a mean of school rates. There are 128 district observations (32 districts × two grades × two springs). The latest result is compared only when both counts are exact and the verified school BEDS and DBN agree with the reporting district; charter and special-district profiles do not inherit a geographic-district benchmark.
 
 ## Coverage and discrepancies
 
@@ -64,16 +65,18 @@ The workflow follows [the November 2026 refresh](2026-data-refresh.md): source e
    node scripts/d1/audit-nysed-assessments.mjs --before
    npx wrangler d1 execute nyc-schools-ratings-d1-staging --remote --config wrangler.d1-staging.jsonc --file migrations-d1/0014_nysed_profile_assessments.sql --yes
    npx wrangler d1 execute nyc-schools-ratings-d1-staging --remote --config wrangler.d1-staging.jsonc --file .wrangler/nysed-assessments/combined/import.sql --yes
+   npx wrangler d1 execute nyc-schools-ratings-d1-staging --remote --config wrangler.d1-staging.jsonc --file migrations-d1/0015_nysed_district_science.sql --yes
+   npx wrangler d1 execute nyc-schools-ratings-d1-staging --remote --config wrangler.d1-staging.jsonc --file .wrangler/nysed-assessments/combined/district-science-import.sql --yes
    node scripts/d1/audit-nysed-assessments.mjs --after
    ```
 
-   The rehearsal runs the same file twice, verifies unique grains, source values and foreign keys, and expects no duplicate facts. The stage audit verifies imported values and fingerprints every row and column of the canonical school, historical proficiency and Regents tables. The UI preview uses the verified staging rows locally; the expired hosted staging Worker does not need to be republished.
+   The rehearsal runs the imports twice, verifies unique grains, source values and foreign keys, and expects no duplicate facts. The stage audit verifies imported values and fingerprints every row and column of the canonical school, historical proficiency and Regents tables. For an existing staging installation of PR #4, apply only `0015` and the district science import before deploying the updated Worker.
 
 4. With the built assets and verified staging export, run `npx tsx scripts/preview-nysed-assessments.ts`. Port 8801 shows the baseline; port 8802 shows the additive panels. Both are local, read-only, noindex previews. An optional `staging-profile-metadata.json` results array from `school_profile_metadata` preserves legacy date labels in the fixture.
 
 ## Spot checks and screenshots
 
-- **P.S. 158, 02M158:** grade 5 only. Spring 2025 is 62/87 = 71.3%; spring 2026 is 69/83 = 83.1%; exact change rounds to **+11.9 pp**.
+- **P.S. 158, 02M158:** grade 5 only. Spring 2025 is 62/87 = 71.3%; spring 2026 is 69/83 = 83.1%; exact change rounds to **+11.9 pp**. NYSED's District 2 spring 2026 grade 5 result is 1,320/2,013 = 65.6%; the school is **17.6 pp above** the district rate (rounded after subtraction).
 - **J.H.S. 167 Robert F. Wagner, 02M167:** grade 8 shows 139/186 in 2025 and 109/169 in 2026, not the 120 separate 2026 Regents-in-lieu test takers or any combined figure.
 - **Our World Neighborhood Charter School, 84Q706:** verified charter with independent ELA and regular math panels. Existing profile and rating inputs stay intact.
 - **Merrick Academy, 84Q704:** an existing charter candidate whose address could not be reconciled. Its rejected record is present in the quarantine, with no new NYSED facts on the profile.
@@ -84,4 +87,4 @@ The staging audit matched all 6,594 imported facts against the generated import.
 
 ## Rollback
 
-Do not reset or restore the whole database. If rollback is requested, use the same pinned staging binding and review the generated `combined/rollback.sql` first. It deletes only the explicitly named release's facts, then that release row. Leave the additive tables in place. Rerun the before/after legacy table fingerprint comparison and verify zero rows for that release. Revert the feature code separately if desired. No rollback or release action against production is authorized by this document.
+Do not reset or restore the whole database. If rollback is requested, use the same pinned staging binding and review the generated `combined/rollback.sql` first. It deletes only the explicitly named release's district benchmark and school facts, then that release row. Leave the additive tables in place. Rerun the before/after legacy table fingerprint comparison and verify zero rows for that release. To roll back just the district comparison, redeploy the previous staging Worker; the additive rows can remain. No rollback or release action against production is authorized by this document.

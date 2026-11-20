@@ -1,5 +1,5 @@
 import unittest
-from refresh_nysed_assessments import measures, resolve
+from refresh_nysed_assessments import district_science_row, measures, resolve
 
 
 def metric(eligible="", tested="", proficient="", percent=""):
@@ -18,6 +18,18 @@ class AssessmentTests(unittest.TestCase):
         for row in (metric("10","11","0"),metric("10","9","10"),metric("10","0","1"),metric("10","8","-3")):
             with self.assertRaises(ValueError):
                 measures(row)
+
+    def test_geographic_district_exact_regular_counts_only(self):
+        row=metric('2197','2013','1320','66') | dict(ENTITY_CD='310200010000',INSTITUTION_ID='800000048410',
+            ENTITY_NAME='NYC GEOG DIST # 2 - MANHATTAN',YEAR='2026',ASSESSMENT_NAME='Science5',
+            SUBGROUP_NAME='All Students',ESTIMATE_FLAG='')
+        self.assertEqual(district_science_row(row,'release')[1:5],(2,2026,'Science5','All Students'))
+        self.assertEqual(district_science_row(row,'release')[-2:],(2013,1320))
+        for alternate in (dict(ENTITY_CD='310200010158'),dict(ASSESSMENT_NAME='CombinedScience8'),
+            dict(ESTIMATE_FLAG='Y'),dict(NUM_PROF='s'),dict(NUM_PROF=''),dict(SUBGROUP_NAME='Female')):
+            self.assertIsNone(district_science_row(row|alternate,'release'))
+        with self.assertRaises(ValueError):
+            district_science_row(row|dict(ENTITY_NAME='NYC GEOG DIST # 3 - MANHATTAN'),'release')
 
     def test_verified_identifier_not_names(self):
         beds, inst, dbn = "330100860001","800000000001","84K111"

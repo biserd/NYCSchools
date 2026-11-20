@@ -21,12 +21,20 @@ const results=JSON.parse(await readFile(dir+'/staging-assessment-results.json','
   institution_id:string; beds_code:string; tested:number|null; proficient:number|null;
   published_percent:number|null; result_status:AssessmentRow['status'];
 }[];
+const districts=JSON.parse(await readFile(dir+'/staging-district-science.json','utf8')) as {
+  district:number; release_id:string; spring_year:number; assessment:string; definition:string; beds_code:string; tested:number; proficient:number;
+}[];
+const benchmarks=new Map(districts.map(d=>[[d.district,d.release_id,d.spring_year,d.assessment,d.definition,d.beds_code].join('|'),d]));
 const bySchool=new Map<string,AssessmentRow[]>();
 for(const row of results){
+  const district=row.subject==='science'&&row.beds_code.slice(6,8)==='01' ? benchmarks.get([
+    Number(row.dbn.slice(0,2)),release.release_id,row.spring_year,row.assessment,row.definition,row.beds_code.slice(0,8)+'0000',
+  ].join('|')) : undefined;
   const r:AssessmentRow={subject:row.subject,assessment:row.assessment,grade:row.grade,year:row.spring_year,
     definition:row.definition,institutionId:row.institution_id,bedsCode:row.beds_code,releaseId:release.release_id,
     releasedOn:release.release_date,sourceUrl:release.source_url,tested:row.tested,proficient:row.proficient,
-    publishedPercent:row.published_percent,status:row.result_status};
+    publishedPercent:row.published_percent,status:row.result_status,districtNumber:district?.district,
+    districtTested:district?.tested,districtProficient:district?.proficient};
   const group=bySchool.get(row.dbn)??[];
   group.push(r);bySchool.set(row.dbn,group);
 }

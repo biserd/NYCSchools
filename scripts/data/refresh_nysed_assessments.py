@@ -24,6 +24,9 @@ PLAN = {
 BOROUGHS = {"31": "M", "32": "X", "33": "K", "34": "Q", "35": "R"}
 DBN = re.compile(r"[0-9]{2}[MXKQR][0-9A-Z]{3}\Z")
 NUMBER = re.compile(r"[0-9]{12}\Z")
+DISTRICT_BEDS = re.compile(r"3[1-5]([0-9]{2})00010000\Z")
+DISTRICT_LABEL = re.compile(r"NYC GEOG DIST #\s*(\d+)\s*-", re.IGNORECASE)
+REGULAR_DEFINITION = "nysed:regular-grade:v1"
 MISSING = {"", "-", "—", "n/a", "na", "null"}
 
 
@@ -126,6 +129,39 @@ def measures(row):
     if tested is not None and published is not None:
         return eligible, tested, None, published, "published_percent"
     return eligible, tested, None, None, "missing"
+
+
+def district_science_row(row, release_id):
+    """Accept the official district total, never a rollup of mapped profiles."""
+    beds, inst = (row[key].strip() for key in ("ENTITY_CD", "INSTITUTION_ID"))
+    match = DISTRICT_BEDS.fullmatch(beds)
+    assessment = row["ASSESSMENT_NAME"].strip()
+    if not match or assessment not in PLAN["science"] or row["ESTIMATE_FLAG"].strip().upper()=="Y":
+        return None
+    district = int(match[1])
+    label = DISTRICT_LABEL.match(row["ENTITY_NAME"].strip())
+    year = read_int(row["YEAR"])
+    if not 1 <= district <= 32 or not label or int(label[1]) != district or not NUMBER.fullmatch(inst) or year not in (2025,2026):
+        raise ValueError(f"Unverified science district identity or year: {beds} {year}")
+    population = row["SUBGROUP_NAME"].strip()
+    if population != "All Students":
+        return None
+    eligible, tested, proficient, _, status = measures(row)
+    if status != "count":
+        return None
+    return (release_id,district,year,assessment,population,REGULAR_DEFINITION,inst,beds,eligible,tested,proficient)
+
+
+def read_district_science(path, release_id):
+    with path.open(encoding="utf-8-sig",newline="") as src:
+        rows = sorted(result for row in csv.DictReader(src) if (result := district_science_row(row,release_id)) is not None)
+    keys = {row[1:4] for row in rows}
+    expected = {(district,year,assessment) for district in range(1,33) for year in (2025,2026) for assessment in PLAN["science"]}
+    if len(keys) != len(rows) or keys != expected:
+        raise ValueError("District science archive has duplicate or missing geographic district results")
+    if {r[2]:r[-2:] for r in rows if r[1]==2 and r[3]=="Science5"} != {2025:(1960,1318),2026:(2013,1320)}:
+        raise ValueError("District 2 grade 5 science fixture failed")
+    return rows
 
 
 STREET_TERMS = {
@@ -255,7 +291,7 @@ def prepare(source, archive, phase):
         if target_key in target_keys:
             raise ValueError(f"Duplicate mapped assessment: {target_key}")
         target_keys.add(target_key)
-        definition="nysed:regular-grade:v1" if grade else "nysed:ela3-8:published-nonestimated:v1"
+        definition=REGULAR_DEFINITION if grade else "nysed:ela3-8:published-nonestimated:v1"
         facts.append((release_id,dbn,year,subject,assessment,grade,"All Students",definition,inst,beds,directory_hash,*value))
         counts[subject]["stored_"+value[-1]]+=1
 
@@ -318,7 +354,7 @@ def import_statements(table, rows):
         yield f"INSERT INTO {table} VALUES\n{values}\nON CONFLICT DO NOTHING;\n"
 
 
-def rehearse(migration, data, facts):
+def rehearse(migration, data, facts, district_data, district_rows):
     assert len(facts)==len({(r[0],r[1],r[2],r[4],r[6]) for r in facts})
     with sqlite3.connect(":memory:") as conn:
         conn.execute("PRAGMA foreign_keys=ON")
@@ -330,6 +366,10 @@ def rehearse(migration, data, facts):
         assert first==set(facts)
         conn.executescript(data)
         assert set(conn.execute("SELECT * FROM school_assessment_archive_results"))==first
+        conn.executescript(district_data)
+        assert set(conn.execute("SELECT * FROM school_assessment_archive_district_science"))==set(district_rows)
+        conn.executescript(district_data)
+        assert set(conn.execute("SELECT * FROM school_assessment_archive_district_science"))==set(district_rows)
         assert conn.execute("PRAGMA foreign_key_check").fetchall()==[]
 
 
@@ -341,12 +381,18 @@ def main():
     parser.add_argument("--phase",choices=["science","all"],required=True)
     args=parser.parse_args()
     release,facts,rejected,report=prepare(args.source,args.archive,args.phase)
+    district_rows=read_district_science(args.source/"science.csv",release[0])
+    report["district_science_rows"]=len(district_rows)
     data="".join(import_statements("school_assessment_archive_releases",[release]))+"".join(
         import_statements("school_assessment_archive_results",facts))
-    migration=Path("migrations-d1/0014_nysed_profile_assessments.sql").read_text(encoding="utf-8")
-    rehearse(migration,data,facts)
+    district_data="".join(import_statements("school_assessment_archive_district_science",district_rows))
+    migration="\n".join(Path(f"migrations-d1/{name}.sql").read_text(encoding="utf-8") for name in (
+        "0014_nysed_profile_assessments","0015_nysed_district_science"))
+    rehearse(migration,data,facts,district_data,district_rows)
     args.out.mkdir(parents=True,exist_ok=True)
     (args.out/"import.sql").write_text(data,encoding="utf-8")
+    (args.out/"district-science-import.sql").write_text(district_data,encoding="utf-8")
+    (args.out/"expected-district-science.json").write_text(json.dumps(district_rows,separators=(",",":")),encoding="utf-8")
     (args.out/"coverage.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
     (args.out/"quarantine.json").write_text(json.dumps(rejected,indent=2)+"\n",encoding="utf-8")
     with (args.out/"verified-crosswalk.csv").open("w",newline="",encoding="utf-8") as f:
@@ -355,6 +401,7 @@ def main():
         writer.writerows(sorted({(r[1],r[8],r[9],r[10]) for r in facts}))
     (args.out/"expected-results.json").write_text(json.dumps(facts,separators=(",",":")),encoding="utf-8")
     (args.out/"rollback.sql").write_text(
+        f"DELETE FROM school_assessment_archive_district_science WHERE release_id={sql_value(release[0])};\n"
         f"DELETE FROM school_assessment_archive_results WHERE release_id={sql_value(release[0])};\n"
         f"DELETE FROM school_assessment_archive_releases WHERE id={sql_value(release[0])};\n",encoding="utf-8")
     print(json.dumps(report,indent=2))
