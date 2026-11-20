@@ -3,9 +3,12 @@ import { KinderLearnerResourceLink } from './KinderLearnerResourceLink';
 import { getBlogPost } from './blog-data';
 import { PARENT_GUIDES, parentGuidePath } from './parent-guides';
 import { KINDERGARTEN_APPS_SLUG } from './kindergarten-apps';
+import { FIFTH_GRADE_POST } from './fifth-grade-class-size-study';
 
 // Editorial, reciprocal links: connect complementary evidence, not rankings to survey scores.
 const connections: [string, string, string][] = [
+  [FIFTH_GRADE_POST.slug, 'does-falling-enrollment-mean-smaller-classes', 'Explore how the number of classrooms changes what falling enrollment means for class size.'],
+  [FIFTH_GRADE_POST.slug, 'nys-test-results-2026', 'See how the 2026 assessment sources and grade-level reporting fit together.'],
   [KINDERGARTEN_APPS_SLUG, 'best-nyc-kindergartens-2026', 'Pair school research with practical ideas for phonics and math practice at home.'],
   ['nyc-school-survey-2026','2023-24-doe-data-analysis','Compare community feedback with the older academic data, keeping reporting years separate.'],
   ['nyc-family-survey-2026','best-nyc-elementary-schools-2026','Use family feedback to add communication and trust questions to an elementary-school shortlist.'],
