@@ -12,6 +12,7 @@ export function ClassroomPilotPreview({view}:{view:'school'|'district'|'draft'|'
     if (!enabled || !ready || article) return;
     const section = view === 'school' ? 'enrollment-and-class-size' : 'kindergarten-class-size';
     if (window.location.hash === '#' + section) document.getElementById(section)?.scrollIntoView();
+    if (view === 'school' && window.location.hash === '#enrollment-by-grade') document.getElementById('enrollment-by-grade')?.scrollIntoView();
   },[enabled,ready,view,article]);
   if (!enabled) return article ? <p>Classroom data is temporarily unavailable.</p> : null;
   if (!data) {

@@ -4,6 +4,14 @@ Scope: the [P.S. 158 profile](/school/02m158-ps-158-bayard-taylor#enrollment-and
 
 The separate [citywide class-size rollout](citywide-class-sizes.md) expands profile and district coverage without changing the original article's study population.
 
+## Reusable school enrollment visual
+
+The profile panel reads the existing `classroom_pilot_register` table directly, joined to `schools.dbn` by exact official identifier. The register has 1,632 distinct IDs across the two actual releases, with 1,529 verified existing profiles (1,524 in both releases and five audited-only). The other 103 source IDs do not create profiles. There are no matching charters in these NYCPS registers. The 2025–26 audited and October 31, 2026 preliminary snapshots are distinct from the older Enrollment & demographic history chart and the school’s class-size counts. The 2027–28 forecast is intentionally excluded from the query.
+
+P.S. 158 uses the same visual inside its existing combined analysis without a duplicate panel. All other matching profiles show it beside class sizes and demographic history. Suppressed, unreported, and actual zero values remain distinct. We do not show a change when either count is unavailable or list grade codes that were zero in both snapshots. The exact-values table is server-rendered for anonymous readers and crawlers. No new D1 migration or import is required.
+
+With the existing workbook rehearsal in `dist/classroom-pilot`, `npm run test:school-enrollment` covers exact profile identity, single-period schools, dates, missing/suppressed values, zero, and the original P.S. 158 enrollment counts and class-cap card.
+
 ## Data and verification
 
 | Input | Selected records and grain | Interpretation |

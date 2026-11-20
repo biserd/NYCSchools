@@ -52,6 +52,8 @@ import { DATA_RELEASE,dataReleaseSchema } from '../shared/data-release';
 import { ClassroomPilotDistrict, ClassroomPilotDraft, ClassroomPilotSchool, PILOT_DRAFT_DESCRIPTION, PILOT_DRAFT_TITLE } from '../shared/ClassroomPilotContent';
 import { CLASSROOM_ARTICLE, PILOT_DRAFT_PATH, PILOT_SCHOOL } from '../shared/classroomPilot';
 import { classroomPreviewEnabled, loadClassroomPilot } from './classroomPilot';
+import { loadSchoolEnrollment } from './schoolEnrollment';
+import { SchoolEnrollmentVisual } from '../shared/SchoolEnrollmentVisual';
 import { DataReleaseContent } from '../shared/DataReleaseContent';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
@@ -585,15 +587,29 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
         <p><a href="${SITE_ORIGIN}/">Browse all NYC schools</a> · <a href="${SITE_ORIGIN}/compare">Compare schools</a> · <a href="${SITE_ORIGIN}/map">Map view</a></p>
       </article>`;
 
+  const [surveyMarkup, enrollmentMarkup] = await Promise.all([
+    surveyServerHtml(school.dbn),
+    school.dbn === PILOT_SCHOOL ? classroomPilotHtml('school') : schoolEnrollmentHtml(school.dbn),
+  ]);
   return applyMeta(baseHtml, {
     title,
     description,
     canonical,
     jsonLd: [educationalOrg, breadcrumb, faq],
     bootHeading: schoolDisplayName(school),
-    serverHtml: noscriptHtml + await surveyServerHtml(school.dbn)
-      + (school.dbn === PILOT_SCHOOL ? await classroomPilotHtml('school') : ''),
+    serverHtml: noscriptHtml + surveyMarkup + enrollmentMarkup,
   });
+}
+
+async function schoolEnrollmentHtml(dbn:string):Promise<string>{
+  if(!classroomPreviewEnabled())return '';
+  try{
+    const data=await loadSchoolEnrollment(dbn);
+    return data?renderToStaticMarkup(React.createElement(SchoolEnrollmentVisual,{data})):'';
+  }catch(error){
+    console.error('[SCHOOL_ENROLLMENT_SSR]',error);
+    return '';
+  }
 }
 
 async function classroomPilotHtml(view: 'school' | 'district' | 'draft' | 'article'): Promise<string> {

@@ -22,6 +22,7 @@ import { SchoolSurveySection } from "@/components/SchoolSurveySection";
 import { SchoolDemographicsHistory } from "@/components/SchoolDemographicsHistory";
 import { NysedProfileAssessments } from "@/components/NysedProfileAssessments";
 import { ClassroomPilotPreview } from "@/components/ClassroomPilotPreview";
+import { SchoolEnrollment } from "@/components/SchoolEnrollment";
 import { CityClassSizes } from "@/components/CityClassSizes";
 import { PILOT_SCHOOL } from "@shared/classroomPilot";
 import { SEOHead } from "@/components/SEOHead";
@@ -2671,7 +2672,7 @@ export default function SchoolDetail() {
           </Card>
 
 
-          {dbn === PILOT_SCHOOL && <ClassroomPilotPreview view="school" />}
+          {dbn === PILOT_SCHOOL ? <ClassroomPilotPreview view="school" /> : <SchoolEnrollment dbn={dbn}/>}
           {!isEarlyChildhoodOnly(schoolWithScore) && <CityClassSizes dbn={dbn} />}
           <SchoolDemographicsHistory dbn={dbn} />
           {/* Student Demographics Card */}
