@@ -3,10 +3,12 @@ import { SCORE_ARTICLES } from './score-articles';
 import { DATA_RELEASE } from './data-release';
 import { KINDERGARTEN_APPS_POST } from './kindergarten-apps';
 import { CLASSROOM_ARTICLE } from './classroomPilot';
+import { FIFTH_GRADE_POST } from './fifth-grade-class-size-study';
 
 export interface BlogPost {
   slug: string;
   title: string;
+  seoTitle?: string;
   description: string;
   author: string;
   authorType?: 'Person' | 'Organization';
@@ -19,6 +21,7 @@ export interface BlogPost {
 }
 
 export const blogPosts: BlogPost[] = [
+  FIFTH_GRADE_POST,
   CLASSROOM_ARTICLE,
   {...KINDERGARTEN_APPS_POST, tags: [...KINDERGARTEN_APPS_POST.tags]},
   {...DATA_RELEASE,author:'NYC School Ratings Team',readTime:'6 min read',category:'Press Release',tags:['2026 NYC school results','Public data','Media resources']},

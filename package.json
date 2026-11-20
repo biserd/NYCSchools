@@ -37,6 +37,7 @@
     "test:nysed-profile-assessments": "tsx scripts/nysed-profile-assessments.test.tsx",
     "test:classroom-pilot": "tsx scripts/test-classroom-pilot.tsx",
     "test:city-class-sizes": "tsx scripts/test-city-class-sizes.tsx",
+    "test:fifth-grade-study": "tsx scripts/fifth-grade-study.test.ts",
     "preview:classroom-pilot": "tsx scripts/preview-classroom-pilot.tsx",
     "test:district-rankings": "tsx scripts/district-ranking.test.ts",
     "test:score-movers": "tsx scripts/score-movers.test.ts",

@@ -4,6 +4,8 @@ import { RelatedBlogReading } from '@shared/RelatedBlogReading';
 import { KindergartenAppsContent } from '@shared/KindergartenAppsContent';
 import { KINDERGARTEN_APPS_SLUG } from '@shared/kindergarten-apps';
 import { CLASSROOM_ARTICLE } from '@shared/classroomPilot';
+import { FIFTH_GRADE_POST } from '@shared/fifth-grade-class-size-study';
+import { FifthGradeClassSizeContent } from '@shared/FifthGradeClassSizeContent';
 import { ClassroomPilotPreview } from '@/components/ClassroomPilotPreview';
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
@@ -1828,11 +1830,15 @@ export default function BlogPostPage() {
     );
   }
 
+  const fifthGradeStudy = post.slug === FIFTH_GRADE_POST.slug;
+  const articleImage = post.featuredImage?.startsWith('http') ? post.featuredImage
+    : post.featuredImage ? `https://nycschoolsratings.com${post.featuredImage}` : undefined;
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
     "headline": post.title,
     "description": post.description,
+    ...(articleImage ? {image:articleImage} : {}),
     "datePublished": post.publishedAt,
     "dateModified": post.updatedAt || post.publishedAt,
     "author": {
@@ -1853,9 +1859,11 @@ export default function BlogPostPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title={`${post.title} | NYC School Ratings`}
+        title={post.seoTitle ?? `${post.title} | NYC School Ratings`}
         appendSiteName={false}
         description={post.description}
+        ogImage={articleImage}
+        ogType={fifthGradeStudy ? 'article' : undefined}
         canonicalPath={`/blog/${post.slug}`}
       />
       <StructuredData data={articleSchema} />
@@ -1913,6 +1921,7 @@ export default function BlogPostPage() {
 
         {post.slug === KINDERGARTEN_APPS_SLUG && <KindergartenAppsContent />}
         {post.slug === CLASSROOM_ARTICLE.slug && <ClassroomPilotPreview view="article" />}
+        {fifthGradeStudy && <FifthGradeClassSizeContent/>}
         {post.slug === "top-nyc-schools-high-crime-neighborhoods-2026" && <DiamondsInTheRoughPost />}
         {post.slug === "does-crime-predict-nyc-school-quality-data-analysis-2026" && <CrimePredictsSchoolQualityPost />}
         {post.slug === "best-nyc-kindergartens-2026" && <BestKindergartensPost />}

@@ -80,6 +80,7 @@ import {
 } from "@shared/schema";
 import { getBlogPost, blogPosts } from "@shared/blog-data";
 import { KINDERGARTEN_APPS_SLUG } from "@shared/kindergarten-apps";
+import { FIFTH_GRADE_POST } from "@shared/fifth-grade-class-size-study";
 import { RelatedBlogReading } from '../shared/RelatedBlogReading';
 import { SCHOOL_GUIDE_BY_SLUG } from "@shared/school-guides";
 import { getSchoolSeoMeta } from "@shared/school-seo";
@@ -730,13 +731,16 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
   const post = getBlogPost(slug);
   if (!post) return null;
 
-  const title = `${post.title} | NYC School Ratings`;
+  const title = post.seoTitle ?? `${post.title} | NYC School Ratings`;
   const description = post.description;
   const appComparisonHtml = slug === KINDERGARTEN_APPS_SLUG
     ? renderToStaticMarkup(React.createElement((await import('../shared/KindergartenAppsContent')).KindergartenAppsContent))
     : '';
   const classroomArticle = slug === CLASSROOM_ARTICLE.slug;
   const classroomArticleHtml = classroomArticle ? await classroomPilotHtml('article') : '';
+  const fifthGradeStudy = slug === FIFTH_GRADE_POST.slug;
+  const fifthGradeHtml = fifthGradeStudy
+    ? renderToStaticMarkup(React.createElement((await import('../shared/FifthGradeClassSizeContent')).FifthGradeClassSizeContent)) : '';
   const stage = slug === 'best-nyc-elementary-schools-2026' ? 'elementary' : slug === 'best-nyc-middle-schools-2026' ? 'middle' : null;
   let rankingHtml = '';
   if (stage) {
@@ -783,11 +787,11 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
       <article>
         <h1>${escapeHtml(post.title)}</h1>
         <p><em>${escapeHtml(post.author)} · ${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)}</em></p>
-        ${appComparisonHtml || classroomArticleHtml ? '' : `<p>${escapeHtml(post.description)}</p>`}
+        ${appComparisonHtml || classroomArticleHtml || fifthGradeHtml ? '' : `<p>${escapeHtml(post.description)}</p>`}
         <p><a href="${SITE_ORIGIN}/blog">Read more articles on NYC School Ratings</a></p>
       </article>`;
 
-  return applyMeta(baseHtml, {
+  const rendered = applyMeta(baseHtml, {
     title,
     description,
     canonical,
@@ -795,8 +799,11 @@ async function renderBlogPost(slug: string, baseHtml: string): Promise<string | 
     jsonLd: [article, breadcrumb],
     bootHeading: post.title,
     noindex: classroomArticle && !classroomArticleHtml,
-    serverHtml: noscriptHtml + appComparisonHtml + rankingHtml + classroomArticleHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
+    serverHtml: noscriptHtml + appComparisonHtml + rankingHtml + classroomArticleHtml + fifthGradeHtml + renderToStaticMarkup(React.createElement(RelatedBlogReading, {slug})),
   });
+  if (!fifthGradeStudy) return rendered;
+  return rendered.replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i,'<meta property="og:type" content="article" />')
+    .replace('</head>',`<meta property="og:image:alt" content="${escapeAttr(FIFTH_GRADE_POST.featureAlt)}" />\n<meta property="og:image:width" content="1536" />\n<meta property="og:image:height" content="864" />\n<meta name="twitter:image:alt" content="${escapeAttr(FIFTH_GRADE_POST.featureAlt)}" />\n</head>`);
 }
 
 async function renderCompare(slug: string, baseHtml: string): Promise<string | null> {
