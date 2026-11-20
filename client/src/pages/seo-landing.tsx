@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { type School } from "@shared/schema";
 import { calculateOverallScore } from "@shared/school-utils";
 import { ClassroomPilotPreview } from "@/components/ClassroomPilotPreview";
+import { DistrictClassSizes } from "@/components/CityClassSizes";
 import { getRelatedSeoLandings, getSeoLanding, getSeoLandingPath, matchesSeoLanding, type SeoLandingKind } from "@shared/seo-landings";
 
 export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
@@ -41,6 +42,7 @@ export default function SeoLandingPage({ kind }: { kind: SeoLandingKind }) {
         {kind === 'program' && (slug === 'prek' || slug === '3k') && <KinderLearnerResourceLink/>}
         <LandingDecisionContent landing={landing} schools={matches} ready={!isLoading && !isError} />
         {kind === 'district' && slug === '2' && <ClassroomPilotPreview view="district" />}
+        {kind === 'district' && <DistrictClassSizes district={slug} />}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <h2 className="text-2xl font-semibold">{isLoading ? "Loading schools…" : `${matches.length} matching schools`}</h2>
           <div className="flex gap-2"><Button asChild variant="outline"><Link href="/compare">Compare</Link></Button><Button asChild><Link href="/recommendations">Find my match</Link></Button></div>

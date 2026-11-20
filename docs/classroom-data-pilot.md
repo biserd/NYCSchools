@@ -2,6 +2,8 @@
 
 Scope: the [P.S. 158 profile](/school/02m158-ps-158-bayard-taylor#enrollment-and-class-size), [District 2 kindergarten comparison](/district/2#kindergarten-class-size), and [public data analysis](/blog/does-falling-enrollment-mean-smaller-classes). The panels cover this pilot, not every school profile. The free article is in the blog and sitemap. The pilot does not alter directories, demographics totals, admissions, the pupil–teacher ratio field, or ratings.
 
+The separate [citywide class-size rollout](citywide-class-sizes.md) expands profile and district coverage without changing the original article's study population.
+
 ## Data and verification
 
 | Input | Selected records and grain | Interpretation |
