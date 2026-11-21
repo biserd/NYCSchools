@@ -14,6 +14,7 @@ import { registerNysedProfileAssessmentRoutes } from './nysedProfileAssessments'
 import { registerClassroomPilotRoutes } from './classroomPilot';
 import { registerSchoolEnrollmentRoutes } from './schoolEnrollment';
 import { registerCityClassSizeRoutes } from './cityClassSizes';
+import { registerSchoolClassroomPanelRoutes } from './schoolClassroomPanel';
 import { db } from "./db";
 import { setupAuth, isAuthenticated } from "./auth";
 import { tuckRouter } from "./tuck/routes";
@@ -726,6 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerClassroomPilotRoutes(app);
   registerSchoolEnrollmentRoutes(app);
   registerCityClassSizeRoutes(app);
+  registerSchoolClassroomPanelRoutes(app);
 
   app.get("/api/schools/:dbn/demographics-history", async (req: Request, res: Response) => {
     try {

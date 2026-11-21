@@ -30,10 +30,10 @@ function TotalCard({pair}:{pair:EnrollmentPair}){
   </div>;
 }
 
-function GradeView({data}:{data:SchoolEnrollment}){
+function GradeView({data,initialGrade}:{data:SchoolEnrollment;initialGrade?:string}){
   const id=useId();
-  const [grade,setGrade]=useState(()=>data.grades.find(p=>p.grade==='K')?.grade??data.grades[0]?.grade??'');
-  const selected=data.grades.find(p=>p.grade===grade)??data.grades[0];
+  const [grade,setGrade]=useState<string>();
+  const selected=data.grades.find(p=>p.grade===(grade??initialGrade))??data.grades.find(p=>p.grade==='K')??data.grades[0];
   if(!selected)return null;
   const max=Math.max(1,selected.previous.count??0,selected.current.count??0);
   return <div className="space-y-3">
@@ -67,7 +67,7 @@ function GradeView({data}:{data:SchoolEnrollment}){
   </div>;
 }
 
-export function SchoolEnrollmentVisual({data,embedded=false}:{data:SchoolEnrollment;embedded?:boolean}){
+export function SchoolEnrollmentVisual({data,embedded=false,initialGrade}:{data:SchoolEnrollment;embedded?:boolean;initialGrade?:string}){
   const id=useId();
   const Head=embedded?'h3':'h2';
   const totals=data.totals.length===2&&sameCells(data.totals[0],data.totals[1])?data.totals.slice(0,1):data.totals;
@@ -81,7 +81,7 @@ export function SchoolEnrollmentVisual({data,embedded=false}:{data:SchoolEnrollm
       {!periods.some(p=>hasRegisterValue(p.previous))&&<p className="mt-1 text-sm">No audited count was reported for this school.</p>}
     </div>
     <div className={`grid gap-2 ${totals.length>1?'sm:grid-cols-2':''}`}>{totals.map(p=><TotalCard key={p.grade} pair={p}/>)}</div>
-    <GradeView data={data}/>
+    <GradeView data={data} initialGrade={initialGrade}/>
     <p className="text-xs text-muted-foreground">Enrollment counts students on the school register. It is not a count of students in a classroom or an estimate of open seats. Preliminary counts can change. Forecasts are not shown.</p>
     <p className="text-sm"><a href={REGISTER_SOURCE} target="_blank" rel="nofollow noopener noreferrer" className="font-medium text-primary underline">NYCPS Table B enrollment registers</a></p>
   </section>;

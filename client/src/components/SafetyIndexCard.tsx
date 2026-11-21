@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { SchoolUpgradeButton } from "@shared/SchoolPremiumGate";
 import {
   Card,
   CardContent,
@@ -408,7 +409,7 @@ export function SafetyIndexCard({
                 radius selector (¼ mile to 5 miles).
               </div>
             </div>
-            <Link href="/pricing">
+            {schoolType === "public" ? <SchoolUpgradeButton href="/pricing" testId="button-safety-upgrade"/> : <Link href="/pricing">
               <Button
                 size="sm"
                 className="w-full"
@@ -417,7 +418,7 @@ export function SafetyIndexCard({
                 <Crown className="w-3.5 h-3.5 mr-1.5" />
                 See Premium Plans
               </Button>
-            </Link>
+            </Link>}
           </div>
         )}
 

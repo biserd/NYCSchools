@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { openPilotSqlite } from './data/classroom-pilot-sqlite';
-import { loadSchoolEnrollment } from '../server/schoolEnrollment';
+import { hasSchoolEnrollment,loadSchoolEnrollment } from '../server/schoolEnrollment';
 import { loadClassroomPilot } from '../server/classroomPilot';
 import { ClassroomPilotSchool } from '../shared/ClassroomPilotContent';
 import { SchoolEnrollmentVisual } from '../shared/SchoolEnrollmentVisual';
@@ -26,6 +26,7 @@ put.run('register-2027-28-forecast','96M992','K',7000,'reported');
 put.run(latest,'96M994','K',50,'reported'); // source identifier with no canonical profile
 
 const ps=await loadSchoolEnrollment('02M158',read);
+assert.equal(await hasSchoolEnrollment('02M158',read),true);
 assert.ok(ps);
 assert.deepEqual(ps.totals.map(p=>[p.grade,p.previous.count,p.current.count]),[['Total K-12',550,528],['Total',599,587]]);
 assert.deepEqual(ps.grades.filter(p=>p.grade==='K').map(p=>[p.previous.count,p.current.count]),[[92,96]]);
@@ -40,7 +41,10 @@ const queens=await loadSchoolEnrollment('24Q007',read);
 const stuy=await loadSchoolEnrollment('02M475',read);
 assert.ok(queens?.grades.some(g=>g.grade==='K'));
 assert.ok(stuy?.grades.some(g=>g.grade==='9')&&!stuy.grades.some(g=>g.grade==='K'));
-for(const dbn of ['84Q706','96M992','96M993','96M994'])assert.equal(await loadSchoolEnrollment(dbn,read),null,dbn);
+for(const dbn of ['84Q706','96M992','96M993','96M994']){
+  assert.equal(await loadSchoolEnrollment(dbn,read),null,dbn);
+  assert.equal(await hasSchoolEnrollment(dbn,read),false,dbn);
+}
 const priorOnly=await loadSchoolEnrollment('96M990',read);
 assert.ok(priorOnly);
 assert.equal(priorOnly.totals[0].current.status,'missing');

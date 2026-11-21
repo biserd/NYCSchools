@@ -5,19 +5,22 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ClipboardList, Check, Lock, Loader2 } from "lucide-react";
+import { SchoolUpgradeButton } from "@shared/SchoolPremiumGate";
 
 interface TrackSchoolButtonProps {
   schoolDbn: string;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   showLabel?: boolean;
+  standardUpgrade?: boolean;
 }
 
 export function TrackSchoolButton({ 
   schoolDbn, 
   variant = "outline", 
   size = "default",
-  showLabel = false 
+  showLabel = false,
+  standardUpgrade = false
 }: TrackSchoolButtonProps) {
   const { toast } = useToast();
   const [justTracked, setJustTracked] = useState(false);
@@ -89,6 +92,7 @@ export function TrackSchoolButton({
 
   // Not premium - show locked state
   if (!isPremium && !subLoading) {
+    if (standardUpgrade) return <SchoolUpgradeButton href="/pricing" testId="button-track-upgrade"/>;
     return (
       <Button variant={variant} size={size} asChild data-testid="button-track-upgrade">
         <Link href="/pricing">
