@@ -30,22 +30,25 @@ function ProgramRow({row,data}:{row:ClassSizeRow;data:CityClassSizeProfile}){
   </li>;
 }
 
-export function CityClassSizeContent({data,districtView=false}:{data:CityClassSizeProfile;districtView?:boolean}){
+export function CityClassSizeContent({data,districtView=false,embedded=false,initialGrade=''}:{data:CityClassSizeProfile;districtView?:boolean;embedded?:boolean;initialGrade?:string}){
   const id=useId();
+  const Heading=embedded?'h3':'h2';
+  const GroupHeading=embedded?'h4':'h3';
   const available=bands.filter(([b])=>data.rows.some(row=>row.band===b));
   const [active,setActive]=useState<ClassSizeBand>(available[0]?.[0]??'K5');
   const band=available.some(([b])=>b===active)?active:available[0]?.[0];
-  const [group,setGroup]=useState('');
+  const [group,setGroup]=useState<string|null>(null);
   const currentRows=data.rows.filter(row=>row.band===band);
   const groups=[...new Set(currentRows.map(row=>band==='K5'?row.groupName:row.department))]
     .sort((a,b)=>band==='K5'?sortGrade(a)-sortGrade(b)||a.localeCompare(b):a.localeCompare(b));
-  const selected=groups.includes(group)?group:groups[0];
+  const preferred=group??initialGrade;
+  const selected=groups.includes(preferred)?preferred:groups[0];
   const displayed=currentRows.filter(row=>(band==='K5'?row.groupName:row.department)===selected);
   const courses=[...new Set(displayed.map(row=>row.groupName))];
   if(!available.length)return null;
   return <section id="class-sizes" className="scroll-mt-20 space-y-4 rounded-xl border bg-card p-4 sm:p-6" aria-labelledby={id+'-heading'} data-testid="city-class-sizes">
     <div>
-      <h2 id={id+'-heading'} className="text-xl font-semibold">{districtView?`District ${data.district} class sizes by grade`:'Class sizes'}</h2>
+      <Heading id={id+'-heading'} className="text-xl font-semibold">{districtView?`District ${data.district} class sizes by grade`:'Class sizes'}</Heading>
       <p className="text-sm text-muted-foreground">NYC Public Schools snapshot, {classSizeDate(data.observedOn)} ({data.releaseLabel} release). Class sizes can change during the year.</p>
     </div>
     {available.length>1&&<div role="group" aria-label="Class type" className="flex flex-wrap gap-2">
@@ -64,7 +67,7 @@ export function CityClassSizeContent({data,districtView=false}:{data:CityClassSi
         const courseScopes=band==='K5'?1:new Set(data.rows.filter(r=>r.band!=='K5'&&r.groupName===name).map(r=>r.band+'|'+r.department)).size;
         const cap=courseScopes===1?data.caps.find(c=>c.scope===(band==='K5'?'grade':'course')&&c.groupName===name):undefined;
         return <div className="space-y-2" key={name}>
-          <h3 className="font-medium">{band==='K5'?classSizeGrade(name):name}</h3>
+          <GroupHeading className="font-medium">{band==='K5'?classSizeGrade(name):name}</GroupHeading>
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {displayed.filter(row=>row.groupName===name).map(row=><ProgramRow key={row.program} row={row} data={data}/>)}
           </ul>

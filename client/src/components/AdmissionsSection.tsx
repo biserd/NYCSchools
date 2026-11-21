@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Lock, Zap, Loader2 } from "lucide-react";
+import { TrendingUp, Target, Info, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Lock } from "lucide-react";
+import { SchoolPremiumGate } from "@shared/SchoolPremiumGate";
 import { useState } from "react";
 import { type AdmissionsMetrics } from "@shared/schema";
 import { getCompetitivenessLevel, getCompetitivenessDisplay } from "@shared/school-utils";
@@ -111,73 +112,9 @@ export function AdmissionsSection({ dbn, schoolName, has3k, hasPrek, gradeBand }
           ))}
         </div>
       ) : !isPremium ? (
-        <div className="relative">
-          <div className="space-y-4 blur-sm select-none pointer-events-none" aria-hidden="true">
-            {Object.keys(gradeLabels).map(grade => {
-              const metric = getLatestMetric(grade);
-              if (!metric) return null;
-
-              return (
-                <div 
-                  key={grade} 
-                  className="border rounded-lg p-3 bg-muted/30"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{gradeLabels[grade]}</span>
-                      <span className="text-xs text-muted-foreground">({metric.schoolYear})</span>
-                    </div>
-                    <Badge variant="outline" className="bg-gray-100 text-gray-600">
-                      --
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                    <div className="space-y-0.5">
-                      <div className="text-muted-foreground text-xs">Seats</div>
-                      <div className="font-medium">---</div>
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="text-muted-foreground text-xs">Applicants</div>
-                      <div className="font-medium">---</div>
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="text-muted-foreground text-xs">Apps/Seat</div>
-                      <div className="font-medium">--</div>
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="text-muted-foreground text-xs">Offer Rate</div>
-                      <div className="font-medium">--%</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-background/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg border max-w-xs">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                <Lock className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold text-lg mb-2">Unlock Admissions Data</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                See application demand, competitiveness levels, and offer rates for K, Pre-K, and 3-K programs.
-              </p>
-              <Button 
-                onClick={startCheckout}
-                disabled={checkoutPending}
-                className="bg-gradient-to-r from-primary to-primary/80"
-                data-testid="button-unlock-admissions"
-              >
-                {checkoutPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Zap className="w-4 h-4 mr-2" />
-                )}
-                Get Premium
-              </Button>
-            </div>
-          </div>
-        </div>
+        <SchoolPremiumGate kind="rows" testId="admissions-blurred" title="Unlock Admissions Data"
+          description="See application demand, competitiveness levels, and offer rates for K, Pre-K, and 3-K programs."
+          action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-unlock-admissions'}}/>
       ) : (
         <div className="space-y-4">
           {Object.keys(gradeLabels).map(grade => {

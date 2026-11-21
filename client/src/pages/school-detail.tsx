@@ -21,9 +21,9 @@ import { SafetyIndexCard } from "@/components/SafetyIndexCard";
 import { SchoolSurveySection } from "@/components/SchoolSurveySection";
 import { SchoolDemographicsHistory } from "@/components/SchoolDemographicsHistory";
 import { NysedProfileAssessments } from "@/components/NysedProfileAssessments";
-import { ClassroomPilotPreview } from "@/components/ClassroomPilotPreview";
-import { CityClassSizes } from "@/components/CityClassSizes";
-import { PILOT_SCHOOL } from "@shared/classroomPilot";
+import { SchoolClassrooms, useSchoolClassroomData } from "@/components/SchoolClassrooms";
+import { ClassroomPaywall } from "@shared/ClassroomPaywall";
+import { SchoolPremiumGate,SchoolUpgradeButton } from "@shared/SchoolPremiumGate";
 import { SEOHead } from "@/components/SEOHead";
 import { getSchoolSeoMeta } from "@shared/school-seo";
 import { getSeoLandingPath, getSeoLandingsForSchool } from "@shared/seo-landings";
@@ -60,10 +60,7 @@ import {
   Languages,
   DollarSign,
   AlertCircle,
-  Lock,
   Crown,
-  Zap,
-  Loader2,
   LogIn,
   Phone,
   ExternalLink,
@@ -167,7 +164,7 @@ export default function SchoolDetail() {
   // Track free school view - visitors get one school with full access
   const { isThisFreeSchool, isLoading: freeViewLoading } = useFreeSchoolView(dbn);
 
-  const { startCheckout, isLoading: checkoutLoading, isPending: checkoutPending } = useCheckout();
+  const { startCheckout, isPending: checkoutPending } = useCheckout();
 
   const historicalLegend = useChartLegendToggle();
   const [assessmentEra, setAssessmentEra] = useState<'current' | 'earlier'>('current');
@@ -203,6 +200,13 @@ export default function SchoolDetail() {
   }, [dbn, latestHistoricalYear]);
 
   const isHS = school ? isHighSchool(school) : false;
+  const { data:classroomPanel } = useSchoolClassroomData(dbn, Boolean(school && !isEarlyChildhoodOnly(school) && !authLoading), user?.id);
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (classroomPanel && classroomPanel.state !== 'unavailable' && ['enrollment-and-class-size', 'enrollment-by-grade', 'class-sizes'].includes(id)) {
+      (document.getElementById(id) ?? document.getElementById('enrollment-and-class-size'))?.scrollIntoView();
+    }
+  }, [dbn, classroomPanel]);
   const assessmentConfidence = school && !isHS ? getAssessmentConfidence(school) : null;
 
   const { data: graduationData } = useQuery<HsGraduation[]>({
@@ -450,6 +454,7 @@ export default function SchoolDetail() {
                 variant="outline" 
                 size="default"
                 showLabel={true}
+                standardUpgrade
               />
             </div>
           </div>
@@ -464,7 +469,7 @@ export default function SchoolDetail() {
           </section>}
           {isEarlyChildhoodOnly(schoolWithScore) && !hasPaidPremium && !authLoading && <section className="rounded-xl border border-sky-200 bg-sky-50 dark:bg-sky-950/20 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" aria-label="Plan your early-childhood search">
             <div><h2 className="font-semibold">Keep this provider in your family plan</h2><p className="text-sm text-muted-foreground mt-1">Track visits and deadlines and ask Parent Assistant about your early-childhood options. K–12 academic scores do not apply here.</p></div>
-            <Button className="min-h-11 shrink-0" disabled={checkoutPending} onClick={() => startCheckout(undefined,'click','early_childhood_profile')}>Plan with Family Premium · $9.99/month</Button>
+            <SchoolUpgradeButton pending={checkoutPending} onClick={() => startCheckout(undefined,'click','early_childhood_profile')} testId="button-upgrade-early-childhood"/>
           </section>}
           {/* School Prose Introduction — applies to all schools */}
           {schoolWithScore && (() => {
@@ -820,69 +825,9 @@ export default function SchoolDetail() {
                   </div>
                 </div>
               ) : (
-                <div className="relative" data-testid="locked-snapshot">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 blur-md select-none pointer-events-none" aria-hidden="true">
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-primary">Overall</span>
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-emerald-600">{schoolWithScore.overall_score === -1 ? 'N/A' : schoolWithScore.overall_score}</span>
-                        <span className="text-sm font-medium text-emerald-600">+8</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 80</div>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-primary">{isHS ? "Legacy academic indicator" : "Academics"}</span>
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-emerald-600">92</span>
-                        <span className="text-sm font-medium text-emerald-600">+12</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 80</div>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-primary">Climate</span>
-                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-yellow-600">78</span>
-                        <span className="text-sm font-medium text-muted-foreground">±0</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 78</div>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-primary">Progress</span>
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-emerald-600">85</span>
-                        <span className="text-sm font-medium text-emerald-600">+5</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">Dist. avg: 80</div>
-                    </div>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-background/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg border max-w-sm">
-                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                        <Lock className="w-6 h-6 text-primary" />
-                      </div>
-                      <h4 className="font-semibold text-lg mb-2">Unlock Detailed Scores</h4>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        See how {schoolDisplayName(schoolWithScore)} compares to District {schoolWithScore.district} across all key metrics
-                      </p>
-                        <Button data-testid="button-unlock-snapshot" onClick={() => startCheckout(undefined,'click','school_score_gate')} disabled={checkoutPending}>
-                          {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                          {checkoutPending ? "Loading..." : "Family Premium - $9.99/month"}
-                        </Button>
-                    </div>
-                  </div>
-                </div>
+                <SchoolPremiumGate kind="cards" testId="locked-snapshot" title="Unlock Detailed Scores"
+                  description={`See how ${schoolDisplayName(schoolWithScore)} compares to District ${schoolWithScore.district} across key metrics.`}
+                  action={{onClick:()=>startCheckout(undefined,'click','school_score_gate'),pending:checkoutPending,testId:'button-unlock-snapshot'}}/>
               )}
             </CardContent>
           </Card>
@@ -992,21 +937,11 @@ export default function SchoolDetail() {
                 />
               </div>
             ) : (
-              <Card data-testid="locked-component-scores">
-                <CardContent className="pt-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                    <Lock className="w-6 h-6 text-primary" />
-                  </div>
-                  <h4 className="font-semibold text-lg mb-2">Unlock Full Score Breakdown</h4>
-                  <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                    Understand what drives this school's performance with detailed Academics, Climate, and Progress metrics
-                  </p>
-                    <Button data-testid="button-unlock-breakdown" onClick={startCheckout} disabled={checkoutPending}>
-                      {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                      {checkoutPending ? "Loading..." : "Family Premium - $9.99/month"}
-                    </Button>
-                </CardContent>
-              </Card>
+              <Card><CardContent className="pt-6">
+                <SchoolPremiumGate kind="cards" testId="locked-component-scores" title="Unlock Full Score Breakdown"
+                  description="See the Academics, Climate, and Progress metrics behind this school’s rating."
+                  action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-unlock-breakdown'}}/>
+              </CardContent></Card>
             )
           ) : (
             <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" data-testid="card-insufficient-data-notice">
@@ -1437,27 +1372,9 @@ export default function SchoolDetail() {
                   </p>
                 </CardHeader>
                 <CardContent className="relative">
-                  {/* Blurred preview */}
-                  <div className="h-64 relative" data-testid="chart-historical-blurred">
-                    <p className="text-xs text-muted-foreground text-center pt-8">Unlock this school's dated results and historical table.</p>
-                    
-                    {/* Overlay CTA */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
-                      <div className="text-center p-6 max-w-sm">
-                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-                          <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">Unlock Historical Trends</h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          See {historicalTrend.yearsAnalyzed} years of ELA and Math performance data to understand if this school is improving, declining, or stable.
-                        </p>
-                          <Button className="gap-2" data-testid="button-upgrade-trends" onClick={startCheckout} disabled={checkoutPending}>
-                            {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-                            {checkoutPending ? "Loading..." : "Upgrade to Premium"}
-                          </Button>
-                      </div>
-                    </div>
-                  </div>
+                  <SchoolPremiumGate kind="chart" testId="chart-historical-blurred" title="Unlock Historical Trends"
+                    description={`Compare ${historicalTrend.yearsAnalyzed} years of reported ELA and Math results.`}
+                    action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-upgrade-trends'}}/>
                 </CardContent>
               </Card>
             )
@@ -1640,26 +1557,9 @@ export default function SchoolDetail() {
                             </div>
                           </div>
                         ) : (
-                          <div className="relative">
-                            <div className="filter blur-sm pointer-events-none opacity-50">
-                              <h4 className="font-semibold text-sm mb-3">4-Year Grad Rate by Subgroup</h4>
-                              <div className="space-y-2">
-                                {subgroups.slice(0, 3).map(sg => (
-                                  <div key={sg.label} className="flex items-center gap-3">
-                                    <span className="text-sm w-28 shrink-0">{sg.label}</span>
-                                    <div className="flex-1 bg-muted/50 rounded-full h-5" />
-                                    <span className="text-sm w-12 text-right">--</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Button data-testid="button-unlock-subgroups" onClick={startCheckout} disabled={checkoutPending}>
-                                  {checkoutPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                                  {checkoutPending ? "Loading..." : "Unlock Subgroup Data"}
-                                </Button>
-                            </div>
-                          </div>
+                          <SchoolPremiumGate kind="rows" testId="graduation-subgroups-blurred" title="Unlock Graduation Rates by Subgroup"
+                            description="See reported four-year graduation rates by student group."
+                            action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-unlock-subgroups'}}/>
                         );
                       })()}
                     </>
@@ -1707,24 +1607,9 @@ export default function SchoolDetail() {
                 </CardHeader>
                 {!isPremium ? (
                   <CardContent className="relative">
-                    <div className="h-64 relative" data-testid="regents-blurred">
-                      <p className="text-xs text-muted-foreground text-center pt-8">Unlock this school's dated results and historical table.</p>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
-                        <div className="text-center p-6 max-w-sm">
-                          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-                            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">Unlock Regents Exam Data</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            View dated Regents pass rates, percentages scoring 80+, and multi-year trends for each exam.
-                          </p>
-                            <Button className="gap-2" data-testid="button-upgrade-regents" onClick={startCheckout} disabled={checkoutPending}>
-                              {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-                              {checkoutPending ? "Loading..." : "Upgrade to Premium"}
-                            </Button>
-                        </div>
-                      </div>
-                    </div>
+                    <SchoolPremiumGate kind="chart" testId="regents-blurred" title="Unlock Regents Exam Data"
+                      description="View dated Regents pass rates, percentages scoring 80+, and multi-year trends for each exam."
+                      action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-upgrade-regents'}}/>
                   </CardContent>
                 ) : (
                 <CardContent>
@@ -2173,39 +2058,9 @@ export default function SchoolDetail() {
                 </CardHeader>
                 {!isPremium ? (
                   <CardContent className="relative">
-                    <div className="h-64 relative" data-testid="attendance-blurred">
-                      <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
-                        <div className="grid grid-cols-3 gap-4 mb-4">
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Attendance Rate</p>
-                            <p className="text-3xl font-bold">92.1%</p>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Chronically Absent</p>
-                            <p className="text-3xl font-bold">28.4%</p>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Year-over-Year</p>
-                            <p className="text-3xl font-bold">-2.1%</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
-                        <div className="text-center p-6 max-w-sm">
-                          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-                            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">Unlock Attendance Data</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            View attendance rates, chronic absenteeism trends, subgroup breakdowns, and year-over-year changes.
-                          </p>
-                            <Button className="gap-2" data-testid="button-upgrade-attendance" onClick={startCheckout} disabled={checkoutPending}>
-                              {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-                              {checkoutPending ? "Loading..." : "Upgrade to Premium"}
-                            </Button>
-                        </div>
-                      </div>
-                    </div>
+                    <SchoolPremiumGate kind="cards" testId="attendance-blurred" title="Unlock Attendance Data"
+                      description="View attendance rates, chronic absenteeism trends, subgroup breakdowns, and year-over-year changes."
+                      action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-upgrade-attendance'}}/>
                   </CardContent>
                 ) : (
                 <CardContent className="space-y-6">
@@ -2401,43 +2256,9 @@ export default function SchoolDetail() {
                 </CardHeader>
                 {!isPremium ? (
                   <CardContent className="relative">
-                    <div className="h-64 relative" data-testid="discipline-blurred">
-                      <div className="absolute inset-0 blur-md opacity-50 pointer-events-none select-none">
-                        <div className="grid grid-cols-4 gap-4 mb-4">
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Total Actions</p>
-                            <p className="text-3xl font-bold">24</p>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Removals</p>
-                            <p className="text-3xl font-bold">8</p>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Principal Susp.</p>
-                            <p className="text-3xl font-bold">12</p>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-4 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Supt. Susp.</p>
-                            <p className="text-3xl font-bold">4</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg">
-                        <div className="text-center p-6 max-w-sm">
-                          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-                            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">Unlock Discipline Data</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            View suspension counts, multi-year trends, and demographic breakdowns by race, gender, and student population.
-                          </p>
-                            <Button className="gap-2" data-testid="button-upgrade-discipline" onClick={startCheckout} disabled={checkoutPending}>
-                              {checkoutPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-                              {checkoutPending ? "Loading..." : "Upgrade to Premium"}
-                            </Button>
-                        </div>
-                      </div>
-                    </div>
+                    <SchoolPremiumGate kind="cards" testId="discipline-blurred" title="Unlock Discipline Data"
+                      description="View suspension counts, multi-year trends, and breakdowns by student group."
+                      action={{onClick:()=>startCheckout(),pending:checkoutPending,testId:'button-upgrade-discipline'}}/>
                   </CardContent>
                 ) : (
                 <CardContent className="space-y-6">
@@ -2671,8 +2492,13 @@ export default function SchoolDetail() {
           </Card>
 
 
-          {dbn === PILOT_SCHOOL && <ClassroomPilotPreview view="school" />}
-          {!isEarlyChildhoodOnly(schoolWithScore) && <CityClassSizes dbn={dbn} />}
+          {classroomPanel && classroomPanel.state !== 'unavailable' && <section id="enrollment-and-class-size" aria-labelledby="classrooms-and-enrollment-title" className="scroll-mt-24 space-y-4">
+            <h2 id="classrooms-and-enrollment-title" className="text-2xl font-bold tracking-tight">Classrooms &amp; enrollment</h2>
+            {classroomPanel.state === 'unlocked'
+              ? <SchoolClassrooms dbn={dbn} data={classroomPanel}/>
+              : <ClassroomPaywall coverage={classroomPanel.coverage} teaser={classroomPanel.teaser}
+                  checkout={{start:()=>startCheckout(undefined,'click','school_classrooms_gate'),pending:checkoutPending}}/>}
+          </section>}
           <SchoolDemographicsHistory dbn={dbn} />
           {/* Student Demographics Card */}
           {(schoolWithScore.economic_need_index !== null || schoolWithScore.ell_percent !== null || 

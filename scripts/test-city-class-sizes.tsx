@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { loadCityClassSizes,loadDistrictClassSizes,cityClassSizesEnabled } from '../server/cityClassSizes';
+import { loadCityClassSizes,loadDistrictClassSizes,cityClassSizesEnabled,hasCityClassSizes } from '../server/cityClassSizes';
 import { classAverage } from '../shared/city-class-size';
 import { CityClassSizeContent } from '../client/src/components/CityClassSizes';
 
@@ -16,6 +16,7 @@ for(const file of ['releases','sections','caps']) db.exec(readFileSync(`dist/cla
 const read=async <T extends Record<string,unknown>>(sql:string,params:string[]=[])=>db.prepare(sql).all(...params).map(r=>({...r})) as T[];
 const elementary=await loadCityClassSizes('02M158',read);
 assert.ok(elementary);
+assert.equal(await hasCityClassSizes('02M158',read),true);
 assert.equal(elementary.observedOn,'2026-10-31');
 assert.equal(elementary.previousOn,'2025-10-31');
 const k=elementary.rows.filter(r=>r.band==='K5'&&r.groupName==='K');
@@ -31,6 +32,8 @@ assert.ok(ms?.rows.some(r=>r.band==='MS'&&r.department==='Math'&&r.previousStude
 assert.ok(hs?.rows.some(r=>r.band==='HS'&&r.department==='English'));
 assert.equal(await loadCityClassSizes('84Q706',read),null,'Do not infer a charter result');
 assert.equal(await loadCityClassSizes('30Q472',read),null,'Do not expose records without a canonical profile');
+assert.equal(await hasCityClassSizes('84Q706',read),false);
+assert.equal(await hasCityClassSizes('30Q472',read),false,'Do not advertise unmatched source records');
 assert.equal(classAverage(0,0),null);
 assert.equal(classAverage(95,5),'19.0');
 for(let district=1;district<=32;district++){

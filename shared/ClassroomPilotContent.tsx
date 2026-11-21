@@ -1,6 +1,8 @@
 import React from 'react';
 import { CAPS_SOURCE, CLASS_SIZE_SOURCE, REGISTER_SOURCE, PILOT_DISTRICT_PATH, CLASSROOM_ARTICLE_PATH,
   classTotals, type PilotData, type RegisterCell } from './classroomPilot';
+import { enrollmentFromPilot } from './school-enrollment';
+import { SchoolEnrollmentVisual } from './SchoolEnrollmentVisual';
 
 const fmt = new Intl.NumberFormat('en-US');
 const count = (cell: RegisterCell) => cell.count === null ? cell.status === 'suppressed' ? 'Suppressed' : 'Not reported' : fmt.format(cell.count);
@@ -9,7 +11,6 @@ const link = 'font-medium text-primary underline underline-offset-4';
 const td = 'px-3 py-2';
 const th = 'px-3 py-2 font-semibold';
 const panel = 'rounded-xl border bg-card p-4 sm:p-6 space-y-4';
-const numberChange = (value: number) => value > 0 ? `+${fmt.format(value)}` : value < 0 ? `−${fmt.format(-value)}` : 'No change';
 
 function registerChange(previous: RegisterCell, current: RegisterCell) {
   return previous.count === null || current.count === null ? null : current.count - previous.count;
@@ -34,19 +35,6 @@ function ClassroomOutcome({data}:{data:PilotData}) {
         {diverged ? 'P.S. 158 enrolled fewer K–12 students, but more kindergarteners. For a kindergarten decision, look at the size of the individual classrooms.' : 'The school register counts children enrolled. The class-size report tells you how they were grouped in the official classes it covers.'}
       </p>
     </div>
-    <div className="grid gap-2 sm:grid-cols-2" aria-label="Changes in enrollment">
-      {([
-        ['K–12 enrollment',school.previousK12,school.currentK12,k12Change],
-        ['Kindergarten enrollment',school.previousK,school.currentK,kChange],
-      ] as const).map(([label,previous,current,delta])=><div key={label} className="min-w-0 rounded-lg border bg-background p-3">
-        <p className="text-sm font-medium">{label}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="text-lg font-semibold tabular-nums">{count(previous)} <span aria-hidden="true" className="text-muted-foreground">→</span><span className="sr-only"> to </span> {count(current)}</p>
-          {delta !== null && <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${delta<0?'bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200':delta>0?'bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200':'bg-muted text-foreground'}`}>{numberChange(delta)}{delta!==0?' students':''}</span>}
-        </div>
-      </div>)}
-    </div>
-    <p className="text-xs text-muted-foreground">2025–26 audited register → Oct. 31, 2026 preliminary register. The colors indicate direction, not school quality.</p>
     {range && <figure className="rounded-lg border bg-background p-3">
       <figcaption>
         <strong>{range[0] === range[1] ? `${range[0]} students in each class` : `${range[0]}–${range[1]} students per classroom`}</strong>
@@ -91,38 +79,6 @@ function OfficialSources() {
   </details>;
 }
 
-function EnrolledComparison({data}:{data:PilotData}) {
-  const {school,sources} = data;
-  return <div className="min-w-0 space-y-3">
-    <h3 className="text-lg font-semibold">How many students were enrolled?</h3>
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-sm">
-        <caption className="sr-only">P.S. 158 school and kindergarten enrollment in the two NYCPS registers</caption>
-        <thead className="bg-muted/60"><tr>
-          <th className={th} scope="col">Register count</th>
-          <th className={th} scope="col">2025–26<br/><span className="font-normal">Audited</span></th>
-          <th className={th} scope="col">2026–27<br/><span className="font-normal">Oct. 31, preliminary</span></th>
-        </tr></thead>
-        <tbody>
-          {([['Kindergarten',school.previousK,school.currentK],['K–12 only',school.previousK12,school.currentK12],['All grades, including pre-K',school.previousTotal,school.currentTotal]] as const).map(([label,prior,current])=>
-            <tr key={label} className="border-b"><th className={th} scope="row">{label}</th>
-              <td className={td}>{count(prior)}</td><td className={`${td} tabular-nums`}>{count(current)}</td></tr>)}
-        </tbody>
-      </table>
-    </div>
-    <p className="text-xs text-muted-foreground">{sources.previousRegister}; {sources.currentRegister}. Enrollment is not an estimate of open seats.</p>
-    {school.grades.length > 0 && <details className="text-sm">
-      <summary className="cursor-pointer font-medium">See enrollment by grade</summary>
-      <div className="overflow-x-auto mt-2"><table className="w-full border-collapse text-left">
-        <caption className="sr-only">P.S. 158 enrollment by grade</caption>
-        <thead className="bg-muted/60"><tr>{['Grade','2025–26 audited','Oct. 2026 preliminary'].map(x=><th key={x} className={th} scope="col">{x}</th>)}</tr></thead>
-        <tbody>{school.grades.map(row=><tr key={row.grade} className="border-b"><th className={th} scope="row">{row.grade==='K'?'Kindergarten':row.grade==='PreK'?'Pre-K':row.grade}</th><td className={td}>{count(row.previous)}</td><td className={td}>{count(row.current)}</td></tr>)}</tbody>
-      </table></div>
-      <p className="pt-2 text-xs text-muted-foreground">Grades shown had students or a suppressed count in at least one register.</p>
-    </details>}
-  </div>;
-}
-
 function ClassroomComparison({data}:{data:PilotData}) {
   const {school,district,sources} = data;
   const totals = classTotals(school.programs);
@@ -156,10 +112,11 @@ function ClassroomComparison({data}:{data:PilotData}) {
 }
 
 export function ClassroomPilotSchool({data}:{data:PilotData}) {
+  const enrollment=enrollmentFromPilot(data);
   return <section className={`${panel} scroll-mt-20`} id="enrollment-and-class-size" aria-labelledby="classroom-school-title">
     <h2 id="classroom-school-title" className="text-xl font-semibold">Enrollment &amp; Class Size</h2>
     <ClassroomOutcome data={data}/>
-    <div className="grid gap-6 lg:grid-cols-2"><EnrolledComparison data={data}/><ClassroomComparison data={data}/></div>
+    <div className="grid min-w-0 gap-6 lg:grid-cols-2">{enrollment&&<SchoolEnrollmentVisual data={enrollment} embedded/>}<ClassroomComparison data={data}/></div>
     <p className="text-sm"><a className={link} href={CLASSROOM_ARTICLE_PATH}>Read how enrollment and class size changed across the district</a></p>
     <OfficialSources/>
   </section>;

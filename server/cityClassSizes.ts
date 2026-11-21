@@ -1,15 +1,25 @@
 import type { Express } from 'express';
 import { readClassroomD1, type PilotRead } from './classroomPilot';
 import type { ClassSizeCaps, ClassSizeRow, CityClassSizeProfile } from '../shared/city-class-size';
+import { requireSchoolResearchAccess } from './schoolResearchAccess';
 
 export function cityClassSizesEnabled(){
   return ['staging','production'].includes(process.env.ENVIRONMENT??'')&&process.env.CITY_CLASS_SIZES_ENABLED==='true';
 }
 
-const fallReleases=(read:PilotRead)=>read<{id:string; observedOn:string; releaseLabel:string}>(`SELECT id,observed_on AS observedOn,release_label AS releaseLabel
-    FROM city_class_size_releases r WHERE observed_on LIKE '%-10-31'
+const fallReleaseScope=`FROM city_class_size_releases r WHERE observed_on LIKE '%-10-31'
     AND revision=(SELECT max(r2.revision) FROM city_class_size_releases r2 WHERE r2.observed_on=r.observed_on)
-    ORDER BY observed_on DESC LIMIT 2`);
+    ORDER BY observed_on DESC`;
+
+const fallReleases=(read:PilotRead)=>read<{id:string; observedOn:string; releaseLabel:string}>(
+  `SELECT id,observed_on AS observedOn,release_label AS releaseLabel ${fallReleaseScope} LIMIT 2`);
+
+export async function hasCityClassSizes(dbn:string,read:PilotRead=readClassroomD1) {
+  const rows=await read<{found:number}>(`SELECT 1 AS found FROM city_class_size_sections s
+    WHERE s.scope='school' AND s.scope_id=? AND s.release_id=(SELECT id ${fallReleaseScope} LIMIT 1)
+    AND EXISTS (SELECT 1 FROM schools WHERE dbn=s.scope_id) LIMIT 1`,[dbn]);
+  return rows.length>0;
+}
 
 export async function loadCityClassSizes(dbn:string,read:PilotRead=readClassroomD1):Promise<CityClassSizeProfile|null>{
   const [latest,previous]=await fallReleases(read);
@@ -46,12 +56,12 @@ export async function loadDistrictClassSizes(district:number,read:PilotRead=read
 }
 
 export function registerCityClassSizeRoutes(app:Express){
-  app.get('/api/schools/:dbn/class-sizes',async(req,res)=>{
+  app.get('/api/schools/:dbn/class-sizes',requireSchoolResearchAccess,async(req,res)=>{
     if(!cityClassSizesEnabled())return res.json(null);
     const dbn=String(req.params.dbn).toUpperCase();
     if(!/^\d{2}[A-Z]\d{3}$/.test(dbn))return res.status(400).json({message:'Invalid school code'});
     try{
-      return res.set('Cache-Control','public, max-age=300').json(await loadCityClassSizes(dbn));
+      return res.json(await loadCityClassSizes(dbn));
     }catch(error){
       console.error('[CITY_CLASS_SIZES]',error);
       return res.status(503).json({message:'Class size data temporarily unavailable'});

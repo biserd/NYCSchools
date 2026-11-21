@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MapPin, LogIn, Star, Loader2, Zap } from "lucide-react";
+import { Clock, MapPin, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCheckout } from "@/hooks/useCheckout";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useCommuteContext } from "@/contexts/CommuteContext";
+import { SchoolUpgradeButton } from "@shared/SchoolPremiumGate";
 
 interface CommuteTimeProps {
   schoolDbn: string;
@@ -118,16 +119,7 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
             </p>
           </div>
         </div>
-        <Button 
-          size="sm" 
-          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80" 
-          onClick={startCheckout}
-          disabled={checkoutLoading}
-          data-testid="button-upgrade-commute"
-        >
-          <Zap className="h-3 w-3 mr-1" />
-          Get Premium
-        </Button>
+        <SchoolUpgradeButton onClick={()=>startCheckout()} pending={checkoutLoading} testId="button-upgrade-commute"/>
       </div>
     );
   }
@@ -230,15 +222,7 @@ export function CommuteTime({ schoolDbn, compact = false }: CommuteTimeProps) {
               </p>
             </div>
           </div>
-          <Button 
-            size="sm" 
-            className="w-full sm:w-auto" 
-            onClick={() => setShowUpgradeModal(true)}
-            data-testid="button-upgrade-commute"
-          >
-            <Zap className="h-3 w-3 mr-1" />
-            Unlock
-          </Button>
+          <SchoolUpgradeButton onClick={() => setShowUpgradeModal(true)} testId="button-upgrade-commute"/>
         </div>
         <UpgradeModal 
           open={showUpgradeModal} 

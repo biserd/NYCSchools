@@ -49,9 +49,11 @@ import { getScoreArticle, scoreArticleSchema } from '../shared/score-articles';
 import { ScoreArticleContent } from '../shared/ScoreArticleContent';
 import { ScoreMoversTeaser } from '../shared/ScoreMoversTeaser';
 import { DATA_RELEASE,dataReleaseSchema } from '../shared/data-release';
-import { ClassroomPilotDistrict, ClassroomPilotDraft, ClassroomPilotSchool, PILOT_DRAFT_DESCRIPTION, PILOT_DRAFT_TITLE } from '../shared/ClassroomPilotContent';
-import { CLASSROOM_ARTICLE, PILOT_DRAFT_PATH, PILOT_SCHOOL } from '../shared/classroomPilot';
+import { ClassroomPilotDistrict, ClassroomPilotDraft, PILOT_DRAFT_DESCRIPTION, PILOT_DRAFT_TITLE } from '../shared/ClassroomPilotContent';
+import { CLASSROOM_ARTICLE, PILOT_DRAFT_PATH } from '../shared/classroomPilot';
 import { classroomPreviewEnabled, loadClassroomPilot } from './classroomPilot';
+import { ClassroomPaywall } from '../shared/ClassroomPaywall';
+import { getSchoolClassroomPanel } from './schoolClassroomPanel';
 import { DataReleaseContent } from '../shared/DataReleaseContent';
 import { SurveyInsightContent } from '../shared/SurveyInsightContent';
 import { SurveyResultsContent } from '../shared/SurveyResultsContent';
@@ -585,24 +587,39 @@ async function renderSchool(slug: string, baseHtml: string): Promise<string | nu
         <p><a href="${SITE_ORIGIN}/">Browse all NYC schools</a> · <a href="${SITE_ORIGIN}/compare">Compare schools</a> · <a href="${SITE_ORIGIN}/map">Map view</a></p>
       </article>`;
 
+  const [surveyMarkup, classroomMarkup] = await Promise.all([
+    surveyServerHtml(school.dbn),
+    isEarlyChildhoodOnly(school) ? '' : schoolClassroomHtml(school.dbn),
+  ]);
   return applyMeta(baseHtml, {
     title,
     description,
     canonical,
     jsonLd: [educationalOrg, breadcrumb, faq],
     bootHeading: schoolDisplayName(school),
-    serverHtml: noscriptHtml + await surveyServerHtml(school.dbn)
-      + (school.dbn === PILOT_SCHOOL ? await classroomPilotHtml('school') : ''),
+    serverHtml: noscriptHtml + surveyMarkup + classroomMarkup,
   });
 }
 
-async function classroomPilotHtml(view: 'school' | 'district' | 'draft' | 'article'): Promise<string> {
+async function schoolClassroomHtml(dbn:string):Promise<string>{
+  try {
+    const panel=await getSchoolClassroomPanel(dbn,false);
+    if (panel.state!=='locked') return '';
+    return `<section id="enrollment-and-class-size" aria-labelledby="classrooms-title"><h2 id="classrooms-title">Classrooms &amp; enrollment</h2>${
+      renderToStaticMarkup(React.createElement(ClassroomPaywall,{coverage:panel.coverage,teaser:panel.teaser}))
+    }</section>`;
+  } catch (error) {
+    console.error('[SCHOOL_CLASSROOMS_SSR]',error);
+    return '';
+  }
+}
+
+async function classroomPilotHtml(view: 'district' | 'draft' | 'article'): Promise<string> {
   if (!classroomPreviewEnabled()) return '';
   try {
     const data = await loadClassroomPilot();
     if (!data) return '';
-    return renderToStaticMarkup(view === 'school' ? React.createElement(ClassroomPilotSchool, {data}) :
-      view === 'district' ? React.createElement(ClassroomPilotDistrict, {data}) :
+    return renderToStaticMarkup(view === 'district' ? React.createElement(ClassroomPilotDistrict, {data}) :
       React.createElement(ClassroomPilotDraft, {data,showTitle:view==='draft'}));
   } catch (error) {
     console.error('[CLASSROOM_PILOT_SSR]',error);

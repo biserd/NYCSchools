@@ -10,6 +10,10 @@ This extends the separate [P.S. 158 and District 2 pilot](classroom-data-pilot.m
 - District pages show grade/group and program for Districts 1–32. Individual profiles compare an exact same-snapshot, same-grade or same-course, same-program official district average when identity and the independent totals agree. The latest workbook has 8,009 such district rows. An unreconciled district number is kept in the import but not used for comparisons.
 - The November 2025 and February 2026 files describe the same October 31, 2025 observation. Keep both revisions; use the February workbook in the visible prior-October comparison. June 15, 2026 is a distinct archived observation, not a replacement for October. Do not show secondary year-over-year changes: the November 2026 methodology added new course coverage, including exam preparation.
 
+## School profile access
+
+Classrooms &amp; enrollment on a school profile uses the same paid research entitlement as the account API, including active monthly memberships and grandfathered passes. A locked profile sends dataset availability and one sourced takeaway. Charts, district benchmarks within the panel, and school-level breakdowns are not sent to the browser before entitlement is verified. The blurred panel is decorative. Public district comparisons, the blog, and official sources stay public.
+
 ## Rehearse and release
 
 ```powershell
