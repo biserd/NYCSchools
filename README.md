@@ -1,303 +1,83 @@
 # NYC School Ratings
 
-A parent-friendly web dashboard for browsing, comparing, and researching NYC's
-public, charter, and private schools — backed by real data from the NYC DOE,
-NYC Open Data, NYSED, and the NCES.
+[NYC School Ratings](https://nycschoolsratings.com) is an independent guide for families choosing a school in New York City. Find district, charter, and private schools and early-childhood programs across all five boroughs. Compare what matters for your child's grade, save a shortlist, and keep track of school dates.
 
-Live at [**nycschoolsratings.com**](https://nycschoolsratings.com).
+[Explore the school map](https://nycschoolsratings.com/map) · [Compare schools](https://nycschoolsratings.com/compare) · [Open My Family](https://nycschoolsratings.com/family) · [See how ratings work](https://nycschoolsratings.com/methodology)
 
-## What's inside
+## What can a parent learn?
 
-- **1,500+ public elementary schools** with academic, climate, progress, and
-  survey scores. Overall score is a weighted blend:
-  `Test Proficiency × 40% + Climate × 30% + Progress × 30%`.
-- **600+ private schools** (NCES PSS data) with filtering by borough,
-  religious affiliation, and coed status.
-- **All NYC public high schools** with graduation rates, Regents results,
-  multi-year trends, and subgroup analysis (NYC DOE InfoHub).
-- **HS admissions & programs** — Fall 2025 directory data for 452 high
-  schools and 943 programs (admission methods, demand, eligibility, offer
-  rates, SHSAT stats).
-- **NYCEEC Early Childhood Centers** for 3-K and Pre-K.
-- **K / 3-K / Pre-K admissions & demand** metrics from NYC DOE LL72 reports.
-- **Attendance & chronic absenteeism** (2018-19 → 2024-25) with subgroup
-  breakdowns.
-- **Discipline & suspensions** (2018-19 → 2024-25, LL93) by type, race,
-  gender, SWD, ELL, and STH.
-- **Neighborhood Safety Index** — a 0-100 score on every public, private, and
-  NYCEEC school detail page, computed from NYPD complaint data within a
-  configurable radius (0.25 / 0.5 / 1 / 5 miles), severity-weighted, and
-  ranked as a citywide percentile. Free tier shows the score; Premium
-  unlocks radius selector, top categories, trend, and percentile.
-- **Interactive map** with school zone detection (turf.js + NYC DOE
-  boundary polygons).
-- **Side-by-side comparison** with shareable, SEO-friendly URLs
-  (e.g. `/compare/PS006-M-vs-PS290-M`).
-- **District comparison** dashboard.
-- **AI chat assistant** powered by Cloudflare Workers AI with GLM-4.7-Flash
-  (Premium).
-- **Smart Recommendations ("Find My Match")** — a short questionnaire that
-  produces personalized school suggestions.
-- **Application Tracker** to manage applications across schools (Premium).
-- **3-K / Pre-K Lottery Simulator**.
-- **Special Education (IEP) support** information.
-- **Commute Time Calculator** (auth-gated; uses Google Distance Matrix).
-- **Parent reviews & ratings** on every school.
-- **Data-driven blog** with analytical articles and Recharts visualizations.
-- **Favorites** that sync across devices for logged-in users.
-- **Developer API (Premium)** — public REST API at `/api/v1` (see below).
+| Question | Where to look |
+| --- | --- |
+| Which schools should we visit? | Use the map to search by location and see published school zones. Profiles distinguish district schools, charters, private schools, and early-childhood providers. A zone or program listing does not confirm an open seat or an offer. |
+| How big are the classes my child might enter? | **Classrooms & enrollment** shows reported class sizes by grade or course and program, eligible classes meeting the cap, and enrollment by grade where verified. A schoolwide pupil–teacher ratio is not a classroom headcount. |
+| How do academic results compare? | Profiles show dated ELA, math, and science results where reported. Grade 5 and 8 science can be compared with the same grade and test in the district where a valid benchmark exists. High school profiles also include graduation and Regents measures. |
+| What else should we ask about on a tour? | Compare school climate and surveys, attendance, program offerings, historical admissions demand, and neighborhood safety. Coverage varies by school, year, and source. |
 
-## Stack
+**Try it:** Open [P.S. 158 Bayard Taylor](https://nycschoolsratings.com/school/02m158-ps-158-bayard-taylor#enrollment-and-class-size). Its October 2026 enrollment register counted **96 kindergarteners**; its general education and integrated co-teaching class-size report counted **95 students in five classes**. The figures answer different questions. The profile keeps the dates, programs, and denominators visible.
 
-- **Frontend:** React 18 + TypeScript, Vite, Tailwind CSS, Shadcn UI,
-  Wouter, TanStack Query, Recharts, Leaflet, turf.js
-- **Backend:** Cloudflare Workers + Express + TypeScript, Drizzle ORM,
-  PostgreSQL through Hyperdrive,
-  in-memory caching layer with webhook-based invalidation
-- **Auth:** Email + password with secure session cookies; password reset
-  via signed email tokens; magic-link sign-in
-- **Payments:** Stripe (Checkout + Customer Portal + webhooks) for the
-  Freemium / Premium subscription model
-- **AI:** Cloudflare Workers AI with `@cf/zai-org/glm-4.7-flash` for chat,
-  recommendations, and early-childhood insights
-- **Email:** Cloudflare Email Service (welcome emails, password reset,
-  magic links, alerts, and drip campaign)
-- **Maps & geo:** Google Maps Geocoding API, Google Distance Matrix API,
-  Leaflet for rendering, NYC Open Data point locations and zone polygons
-- **Data:** NYC DOE InfoHub, NYC Open Data, NYSED State Report Card,
-  NCES Private School Universe Survey, NYC School Survey CSVs
+## Data behind the profiles
 
-## Running locally
+| Release | What it adds |
+| --- | --- |
+| [NYSED spring 2025 and 2026 assessments](docs/nysed-profile-assessments.md) | Separate grade 5 and grade 8 science trends, plus grade-level ELA and math on **162 verified charter profiles** for spring 2026. Changes are percentage points, not individual student growth. Suppressed results are not treated as zero. |
+| [NYCPS citywide class sizes](docs/citywide-class-sizes.md) and [enrollment registers](docs/classroom-data-pilot.md) | The October 31, 2026 class-size release matched **1,523 school profiles**. Class-size measures, cap counts, and audited versus preliminary enrollment have distinct sources and coverage. |
+| [School data refresh](docs/2026-data-refresh.md) | Documents assessment, enrollment, attendance, and other releases. NYCPS, NYSED, NYC Open Data, and NCES publish different measures on different schedules; use the source and year shown on the profile. |
 
-```bash
-npm install
-cp .dev.vars.example .dev.vars
-npm run dev          # Cloudflare Worker + Vite, served on a single origin
-npm run db:push      # Push Drizzle schema changes to the configured Postgres
+The site's ratings are its own, not official government ratings. Adding science, charter assessment, and classroom panels did **not** change the ranking formula. See the [methodology](https://nycschoolsratings.com/methodology) and [data stories](https://nycschoolsratings.com/blog).
+
+## Accounts and Family Premium
+
+Public school search and the map work without an account. [Family Premium](https://nycschoolsratings.com/pricing) is **$9.99/month** for new subscribers. It includes detailed school research, the family calendar, the Parent Assistant on the web and WhatsApp, and opt-in WhatsApp reminders. Guest checkout is supported. Existing paid members should sign in rather than buy again; grandfathered passes retain their original terms.
+
+[KinderLearner Pro](https://kinderlearner.com/) is included with Family Premium. To unlock it on the web, iPhone, or iPad, sign in to KinderLearner and verify the same email used for NYC School Ratings. KinderLearner is a separate product. This repository contains the NYC School Ratings website and shared backend, not the native iPhone/iPad client.
+
+## Developer and AI access
+
+| Interface | Access |
+| --- | --- |
+| [Developer REST API](https://nycschoolsratings.com/developers/docs) (`/api/v1`) | Eligible paid accounts can generate a Bearer API key in Settings. Use the developer docs for endpoints, request examples, and limits. |
+| [ChatGPT school research](https://nycschoolsratings.com/chatgpt) | The read-only MCP endpoints `/mcp/schools` and `/mcp/muse` let clients search schools, retrieve a profile, and compare schools without a parent account or subscriber API key. |
+| [MCP server](MCP_PUBLICATION.md) (`/mcp`) | Public research is separate from account data: reading a user's saved favorites requires OAuth. See [discovery and access boundaries](docs/agent-readiness.md). |
+
+## Working on the project
+
+The frontend is React, TypeScript, and Vite. A Cloudflare Worker serves the built assets, server-rendered public pages, and Express API. **Cloudflare D1 (SQLite)** is the production database. PostgreSQL/Neon and Hyperdrive are not part of the production runtime.
+
+| Path | Purpose |
+| --- | --- |
+| [client/src](client/src) | Search, map, school profiles, comparison, and Family screens |
+| [server/index-worker.ts](server/index-worker.ts) and [server/parent](server/parent) | Worker entry point, scheduled work, Parent Assistant, and WhatsApp delivery |
+| [shared](shared) | Shared types, school-data definitions, and presentation logic |
+| [migrations-d1](migrations-d1) and [scripts](scripts) | Reviewed D1 migrations, data imports, verification, and tests |
+| [plugins/nyc-school-ratings](plugins/nyc-school-ratings) | ChatGPT plugin package and submission notes |
+
+### Local development
+
+Use **Node.js 22 or later** and npm. From the repository root:
+
+```sh
+npm ci
+npm run dev:client
 ```
 
-Replace the example values in `.dev.vars` before starting. Both the API and
-the SPA are served from the same origin; local email delivery remains disabled
-until `EMAIL_DELIVERY_ENABLED` is explicitly changed.
+This starts the Vite frontend only. For the API and frontend together, use Wrangler's local D1 database. Copy [`.dev.vars.example`](.dev.vars.example) to `.dev.vars`, set a local-only session secret, and keep email delivery disabled. Use only development credentials for external integrations.
 
-### Environment variables
-
-The app reads the following from Worker secrets and variables. The ones
-marked **required** are needed for the app to boot; the rest enable
-specific features.
-
-| Variable                              | Purpose                                       |
-|---------------------------------------|-----------------------------------------------|
-| `DATABASE_URL` *(required)*           | PostgreSQL connection string                  |
-| `SESSION_SECRET` *(required)*         | Express session signing secret                |
-| `STRIPE_LIVE_SECRET_KEY` / `STRIPE_TEST_SECRET_KEY`           | Stripe server keys (Premium subscriptions)    |
-| `STRIPE_LIVE_PUBLISHABLE_KEY` / `STRIPE_TEST_PUBLISHABLE_KEY` | Stripe publishable keys (frontend Checkout)   |
-| `STRIPE_WEBHOOK_SECRET`               | Stripe webhook signature verification        |
-| `EMAIL_FROM` / `EMAIL_FROM_NAME`      | Cloudflare Email Service sender identity      |
-| `GOOGLE_MAPS_API_KEY`                 | Geocoding + Distance Matrix (commute calc)    |
-| `SOCRATA_APP_TOKEN`                   | NYC Open Data / NYPD complaint dataset access |
-| `CRON_SECRET`                         | Protects `POST /api/cron/*` endpoints         |
-
-## Project layout
-
-```
-client/src/
-├── components/        # Shared UI (AppHeader, FilterBar, ApiAccessCard, …)
-│   └── ui/            # Shadcn primitives
-├── pages/             # One file per route — registered in App.tsx
-├── hooks/             # useAuth, useCheckout, useToast, …
-└── lib/               # queryClient, helpers
-
-server/
-├── index-worker.ts    # Cloudflare Worker entrypoint + scheduled handlers
-├── index-dev.ts       # Dev entrypoint (Vite middleware)
-├── index-prod.ts      # Production entrypoint (static SPA)
-├── routes.ts          # Main API routes + auth, Stripe webhooks, etc.
-├── routesV1.ts        # Public Developer API (/api/v1)
-├── apiKeyAuth.ts      # API key generation, hashing, Bearer middleware,
-│                      # rate limiter, Premium recheck
-├── auth.ts            # Sessions, password hashing, magic links
-├── storage.ts         # Drizzle queries (the only place SQL lives)
-├── cache.ts           # In-memory cache with TTLs + invalidation
-├── services/          # safetyIndex, geocoding, schoolZones, …
-└── scripts/           # One-off data import / sync scripts
-
-shared/
-└── schema.ts          # Drizzle tables, Zod insert schemas, shared types
-
-scripts/               # CLI data importers (NYSED, HS data, NYCEEC, …)
-public/                # Static assets, sitemap.xml, robots.txt
+```sh
+npx wrangler d1 migrations apply DB --local --config wrangler.d1-staging.jsonc
+npm run dev
 ```
 
-Key conventions:
+The migration command creates the **local schema**, not a copy of the school dataset. An empty directory on a fresh database is expected. The staging configuration references Cloudflare bindings; features such as AI or email may require separate provider setup. Do not use `--remote` to populate a local database.
 
-- **Schema first.** All data models live in `shared/schema.ts` (Drizzle +
-  `drizzle-zod` insert schemas). Frontend and backend both import from
-  there for type safety.
-- **Reviewed D1 migrations.** Schema changes live in `migrations-d1/`.
-  Generate with `npm run db:generate:d1`, inspect the SQL, then test on staging
-  before applying to production. `db:push` is intentionally blocked.
-- **No SQL outside `server/storage.ts`.** Routes are thin and call into
-  the storage layer.
-- **Caching by default.** Hot endpoints go through `server/cache.ts`
-  (centralized TTLs, mutation protection via `structuredClone`,
-  webhook-based invalidation).
-
-## Subscription tiers
-
-The app uses a Freemium model powered by Stripe.
-
-- **Free:** browse all schools, see overall scores, save favorites, use the
-  smart recommendations questionnaire, see the Neighborhood Safety score at
-  the default radius, view one premium school detail page in full
-  ("One Free School View").
-- **Enrollment Season Pass ($29 one-time / 6 months):** AI chat assistant, side-by-side & district
-  comparison, application tracker, full safety drill-down (radius selector,
-  trend, percentile, top categories), commute time calculator, and the
-  **Developer API** (see below).
-
-Stripe state is kept in sync with the local DB via webhooks, so there is no
-"stale subscription" drift between Stripe and the app.
-
-## SEO
-
-Every page sets a unique title, meta description, canonical URL, Open
-Graph + Twitter Card tags, and JSON-LD Structured Data where applicable.
-A static `sitemap.xml` plus pre-generated comparison and school pages keep
-the site fully indexable. Performance is optimized with code-splitting,
-lazy loading for heavy pages, an eager-imported home page so the LCP text
-is in the initial chunk, deferred analytics, a trimmed Inter webfont, and
-aggressive static asset caching.
-
-## Developer API
-
-A public REST API is available to Premium subscribers at `/api/v1`. Full
-documentation and live curl examples live at
-[`/developers/docs`](https://nycschoolsratings.com/developers/docs).
-
-### Authentication
-
-All requests require a Bearer token issued from your account:
-
-1. Purchase the Enrollment Season Pass ($29 for six months; no automatic renewal).
-2. Go to **Settings → API Access** (`/settings#api-access`).
-3. Click **Generate API Key**. The plaintext key is shown exactly once —
-   copy it immediately. Only a SHA-256 hash is stored server-side.
-4. Pass the key in the `Authorization` header on every request:
-
-```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://nycschoolsratings.com/api/v1/schools?limit=5"
+```sh
+npm run check                         # TypeScript
+npm run test:nysed-profile-assessments # Assessment matching and display
+npm run test:family                   # Offline Family regression suite
+npm run build                         # Vite production assets; no deploy
 ```
 
-You can have up to 5 active keys at a time, and any key can be revoked
-instantly from the same settings page.
+Production uses [wrangler.jsonc](wrangler.jsonc); staging uses [wrangler.d1-staging.jsonc](wrangler.d1-staging.jsonc) and a separate database. Schema changes go through reviewed D1 migrations, not `db:push`. See the [D1 cutover and recovery runbook](docs/d1-production-cutover.md) before making operational changes.
 
-### Endpoints
+## Rights
 
-| Method | Path                      | Description                                                |
-|--------|---------------------------|------------------------------------------------------------|
-| GET    | `/api/v1/schools`         | List NYC schools with filters + pagination (`district`, `grade_band`, `has_3k`, `has_prek`, `has_gifted`, `limit`, `offset`) |
-| GET    | `/api/v1/schools/:dbn`    | Get a single school by DBN (e.g. `02M545`) — flat object   |
-| GET    | `/api/v1/districts`       | Aggregate stats for all 32 NYC school districts            |
-| GET    | `/api/v1/early-childhood` | NYC Early Education Centers (3-K / Pre-K) with `borough`, `program_type`, `center_type` filters |
-| GET    | `/api/v1/trends/:dbn`     | Multi-year ELA / Math / Science score history for a school |
-
-All field names use `snake_case` (e.g. `overall_score`, `ela_proficiency`,
-`grade_band`). List endpoints return `{ data: [...], pagination: {...} }`;
-detail endpoints (`/schools/:dbn`, `/trends/:dbn`) return a flat object.
-
-### Rate limits
-
-Each API key is rate-limited globally (the counters are persisted in
-Postgres so they survive deploys and span multiple server instances):
-
-- **60 requests / minute**
-- **10,000 requests / day**
-
-Every authenticated response includes the standard headers:
-
-```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 45
-X-RateLimit-Reset: 1699574400
-```
-
-Exceeding either bucket returns `429 Too Many Requests` with a
-`Retry-After` header.
-
-Unauthenticated requests (missing or invalid Bearer token) are also
-throttled per IP at 30 / minute to discourage key-guessing.
-
-### Abuse monitoring
-
-Every Developer API request is logged for security review. We email the
-account owner and revoke the key when we detect signals like a sudden
-spike in 429s or use from many distinct IPs at once (which usually means
-the key has been pasted into client-side code and leaked). If you think
-your key was leaked, revoke it from Settings → API Access and issue a
-new one — there's no penalty.
-
-### Error format
-
-All errors use a stable JSON envelope:
-
-```json
-{
-  "error": {
-    "code": "INVALID_PARAMETER",
-    "message": "district must be between 1 and 32.",
-    "details": { "parameter": "district", "provided": "99" }
-  }
-}
-```
-
-Common status codes: `400` (validation), `401` (missing/invalid key),
-`403` (Premium subscription required or revoked), `404` (not found),
-`429` (rate limited), `500` (internal).
-
-## Data sources & methodology
-
-- **Academic / climate / progress scores:** NYC DOE School Quality Reports
-- **Test proficiency (ELA / Math / Science):** NYSED State Report Card
-- **3-K / Pre-K / K admissions & demand:** NYC DOE InfoHub LL72 reports
-- **Private schools:** NCES Private School Universe Survey (PSS), 2023-24
-- **High school graduation & Regents:** NYC DOE InfoHub
-- **Attendance & absenteeism:** NYC DOE InfoHub (2018-19 → 2024-25)
-- **Discipline & suspensions:** NYC DOE InfoHub LL93 reports
-- **HS admissions & programs:** NYC DOE Fall 2025 HS Directory
-- **NYCEEC early childhood centers:** NYC Open Data
-- **School zones & locations:** NYC Open Data + turf.js point-in-polygon
-- **Neighborhood Safety Index:** NYPD complaint datasets `5uac-w243` (YTD)
-  and `qgea-i56i` (historic) on Socrata, severity-weighted over a rolling
-  12-month window. Methodology is published at
-  [`/safety-methodology`](https://nycschoolsratings.com/safety-methodology).
-
-## Deployment
-
-Production uses Cloudflare Workers and D1. Vite builds the frontend; Wrangler
-bundles the Express Worker and deploys its static assets. Email Service handles
-transactional messages. Cron Triggers run observability and drip email only;
-safety data refresh is manual-only, using the authenticated administrative flow
-and production safety queue. Neon is retained for migration recovery, not used
-by the production runtime.
-
-```bash
-npm run check
-npm run cf-dry-run
-npm run deploy
-```
-
-The Worker is deployed at
-`https://nyc-schools-ratings.biser-d.workers.dev`. Canonical production config is
-`wrangler.jsonc`; staging uses `wrangler.d1-staging.jsonc` and a separate database.
-`wrangler.d1-production.jsonc` is the explicit **maintenance-on** configuration,
-not the normal deployment command. See
-[`docs/d1-production-cutover.md`](./docs/d1-production-cutover.md) for verification,
-deferred checks, and recovery constraints. Do not roll back to Neon after D1
-accepts writes without reconciling those new writes first.
-
-## License
-
-All rights reserved. Data is sourced from the publicly available datasets
-linked above.
+All rights reserved. Third-party datasets are attributed to their respective publishers; see the [data sources and methodology](https://nycschoolsratings.com/methodology).
