@@ -1,4 +1,5 @@
 import { httpServerHandler } from "cloudflare:node";
+import { iosSignInResource } from "./iosSignIn";
 import { externalRel, isExternalWebLink } from '../shared/external-links';
 import {maintenanceResponse} from './maintenanceResponse';
 import {parentWhatsappWebhook, PARENT_WEBHOOK_PATH} from './parent/whatsapp';
@@ -131,6 +132,8 @@ async function runScheduledTask(cron: string, workerEnv: Env): Promise<void> {
 
 export default {
   async fetch(request, workerEnv, ctx): Promise<Response> {
+    const signInResource = iosSignInResource(request);
+    if (signInResource) return signInResource;
     if(Reflect.get(workerEnv,'MAINTENANCE_MODE')==='true')return maintenanceResponse(request);
       const pathname = new URL(request.url).pathname;
       if (pathname === '/.well-known/openai-apps-challenge') {

@@ -570,7 +570,9 @@ export async function sendMagicLinkLoginEmail(userEmail: string, magicLinkUrl: s
           </div>
           
           <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            If the button doesn't work, copy and paste this link into your browser:<br/>
+            ${magicLinkUrl.startsWith("https://nycschoolsratings.com/auth/ios/sign-in#")
+              ? "Open this email on the iPhone or iPad that requested it. If the button opens a browser, copy the link below and paste it in the app under Email link."
+              : "If the button doesn't work, copy and paste this link into your browser:"}<br/>
             <a href="${magicLinkUrl}" style="color: #2563eb; word-break: break-all;">${magicLinkUrl}</a>
           </p>
           
