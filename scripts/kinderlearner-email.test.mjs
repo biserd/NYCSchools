@@ -49,4 +49,9 @@ try {
     if(name==='sendWelcomeEmail') assert.doesNotMatch(message.html,/KinderLearner Pro/,'do not advertise the monthly bundle as included with a legacy Research Pass');
   }
   console.log(`PASS: ${captured.length} email templates contain no em dashes. KinderLearner inclusion and legacy Pass rules preserved. All sends mocked, no network.`);
+  const appLink='https://nycschoolsratings.com/auth/ios/sign-in#'+'a'.repeat(64);
+  assert.equal(await service.sendMagicLinkLoginEmail(parent,appLink,'Jamie'),true);
+  const appMail=captured.at(-1).html;
+  assert.equal(appMail.split('href="'+appLink+'"').length-1,2,'both links must target the associated domain directly, including the fragment');
+  assert.match(appMail,/iPhone or iPad/);
 } finally {globalThis.fetch=originalFetch;delete globalThis.__emailTestEnv;}

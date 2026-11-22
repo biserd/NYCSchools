@@ -9,6 +9,7 @@ import { sessions } from "@shared/schema";
 import { storage } from "./storage";
 import { sendAdminNewUserRegistrationNotification, sendNewUserWelcomeEmail, sendPasswordResetEmail, sendMagicLinkLoginEmail } from "./emailService";
 import { getAppUrl } from "./runtimeConfig";
+import { signInEmailUrl } from "./iosSignIn";
 
 // Rate limiting for magic link requests (in-memory, keyed by email)
 const magicLinkRateLimit = new Map<string, number>();
@@ -361,7 +362,7 @@ export function setupAuth(app: Express) {
         const sanitizedReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") 
           ? returnTo 
           : "/account";
-        const magicLinkUrl = `${baseUrl}/auth/magic-link/callback?token=${rawToken}&returnTo=${encodeURIComponent(sanitizedReturnTo)}`;
+        const magicLinkUrl = signInEmailUrl(baseUrl, rawToken, sanitizedReturnTo, req.body.client);
         
         runInBackground(
           sendMagicLinkLoginEmail(user.email, magicLinkUrl, user.firstName || undefined),
